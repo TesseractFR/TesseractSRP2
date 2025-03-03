@@ -1,0 +1,4 @@
+name: TesseractSRP2
+version: '0.1-SNAPSHOT'
+main: onl.tesseract.srp.TesseractSRP
+api-version: '1.21'
