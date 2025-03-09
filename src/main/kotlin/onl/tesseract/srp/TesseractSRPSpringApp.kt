@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
+import java.util.*
 import javax.sql.DataSource
 
 
@@ -46,6 +47,9 @@ open class TesseractSRPSpringApp {
             .build()
         build.entityManagerInterface = null
         build.jpaVendorAdapter = HibernateJpaVendorAdapter()
+        val jpaProperties = Properties()
+        jpaProperties.setProperty("hibernate.hbm2ddl.auto", "update")
+        build.setJpaProperties(jpaProperties)
         return build
     }
 }
