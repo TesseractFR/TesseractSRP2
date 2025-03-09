@@ -14,6 +14,7 @@ class TesseractSRP : JavaPlugin() {
 
     override fun onEnable() {
         // Plugin startup logic
+        val classLoader = CompoundClassLoader(listOf(classLoader, classLoader.parent))
         val resourceLoader = DefaultResourceLoader(classLoader)
         Thread.currentThread().contextClassLoader = classLoader
         ServiceContainer.getInstance().registerService(NamedspacedKeyProvider::class.java, NamedspacedKeyProvider(this))
