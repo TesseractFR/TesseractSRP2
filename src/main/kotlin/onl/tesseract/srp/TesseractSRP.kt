@@ -3,6 +3,7 @@ package onl.tesseract.srp
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
+import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.springframework.boot.SpringApplication
 import org.springframework.context.ApplicationContext
@@ -21,7 +22,13 @@ class TesseractSRP : JavaPlugin() {
         val app = SpringApplication(resourceLoader, TesseractSRPSpringApp::class.java)
         this.springContext = app.run()
         registerCommands()
+        registerListeners()
         logger.info("Tesseract SRP enabled, Spring context enabled")
+    }
+
+    private fun registerListeners() {
+        springContext.getBeansOfType(Listener::class.java)
+            .forEach { (_, bean) -> this.server.pluginManager.registerEvents(bean, this) }
     }
 
     fun registerCommands() {
