@@ -6,10 +6,13 @@ class PlayerJobProgression(
     val playerID: UUID,
     level: Int = 1,
     xp: Int = 0,
+    skillPoints: Int = 0,
 ) {
     var level: Int = level
         private set
     var xp: Int = xp
+        private set
+    var skillPoints: Int = skillPoints
         private set
 
     /**
@@ -26,12 +29,18 @@ class PlayerJobProgression(
             passedLevel++
         }
         this.xp = this.xp.coerceAtLeast(0)
+        this.skillPoints += passedLevel
         return passedLevel
     }
 
     fun addLevel(amount: Int) {
         this.level += amount
         this.level = this.level.coerceAtLeast(1)
+    }
+
+    fun addSkillPoints(points: Int) {
+        this.skillPoints += points
+        this.skillPoints = this.skillPoints.coerceAtLeast(0)
     }
 
     private fun getXpForLevel(level: Int): Int {
