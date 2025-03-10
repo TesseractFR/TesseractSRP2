@@ -88,4 +88,16 @@ class PlayerJobStaffCommand(private val service: PlayerJobService) {
             sender.sendMessage(NamedTextColor.GREEN + "Niveau retiré !")
         }
     }
+
+    @Command(name = "skillpoints")
+    @Component
+    class SkillPointCommand(private val service: PlayerJobService) {
+        @Command
+        fun give(
+            @Env(key = "player") player: Player,
+            @Argument("amount") amount: IntegerCommandArgument,
+        ) {
+            service.addSkillPoint(player.uniqueId, amount.get())
+        }
+    }
 }

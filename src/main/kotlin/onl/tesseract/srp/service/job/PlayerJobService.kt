@@ -35,4 +35,11 @@ open class PlayerJobService(private val repository: PlayerJobProgressionReposito
         progression.addXp(-progression.xp)
         repository.save(progression)
     }
+
+    @Transactional
+    open fun addSkillPoint(playerID: UUID, points: Int) {
+        val progression = getPlayerJobProgression(playerID)
+        progression.addSkillPoints(points)
+        repository.save(progression)
+    }
 }
