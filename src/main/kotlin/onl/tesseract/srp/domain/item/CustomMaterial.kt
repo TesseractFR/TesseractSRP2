@@ -8,4 +8,5 @@ enum class CustomMaterial(
     val rarity: Rarity,
 ) {
     Wood(Material.OAK_LOG, displayName = "Bois", rarity = Rarity.Common),
+    BirchWood(Material.BIRCH_LOG, displayName = "Bois de bouleau", Rarity.Common),
 }
