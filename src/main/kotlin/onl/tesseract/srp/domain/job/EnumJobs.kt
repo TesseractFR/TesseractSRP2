@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.jobs
+package onl.tesseract.srp.domain.job
 
 enum class EnumJob {
     MINEUR,

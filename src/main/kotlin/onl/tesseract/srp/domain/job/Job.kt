@@ -1,8 +1,8 @@
-package onl.tesseract.srp.domain.jobs
+package onl.tesseract.srp.domain.job
 
 import onl.tesseract.srp.domain.item.CustomMaterial
 
-class Job(
+data class Job(
     val materials: List<CustomMaterial>,
     val baseStats: Map<CustomMaterial, BaseStat>
 )

@@ -1,6 +1,6 @@
-package onl.tesseract.srp.domain.jobs
+package onl.tesseract.srp.domain.job
 
-class BaseStat(
+data class BaseStat(
     val lootChance: Float,
     val moneyGain: Int,
     val xpGain: Int,
