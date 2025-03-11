@@ -7,6 +7,7 @@ class PlayerJobProgression(
     level: Int = 1,
     xp: Int = 0,
     skillPoints: Int = 0,
+    skills: List<JobSkill> = listOf()
 ) {
     var level: Int = level
         private set
@@ -14,6 +15,9 @@ class PlayerJobProgression(
         private set
     var skillPoints: Int = skillPoints
         private set
+    private val _skills: MutableList<JobSkill> = skills.toMutableList()
+    val skills: List<JobSkill>
+        get() = _skills
 
     /**
      * Give (or remove) XP to the player. If amount is positive and enough to increase the level, the level is updated,
@@ -41,6 +45,31 @@ class PlayerJobProgression(
     fun addSkillPoints(points: Int) {
         this.skillPoints += points
         this.skillPoints = this.skillPoints.coerceAtLeast(0)
+    }
+
+    fun addSkill(skill: JobSkill): Boolean {
+        if (skill.cost > skillPoints || !isSkillAvailable(skill)) return false
+        _skills.add(skill)
+        skillPoints -= skill.cost
+        return true
+    }
+
+    fun hasSkill(skill: JobSkill): Boolean = _skills.contains(skill)
+
+    fun isSkillAvailable(skill: JobSkill): Boolean {
+        return skill.parent == null || isSkillAvailable(skill.parent)
+    }
+
+    fun getLootChanceBonus(event: JobHarvestEvent): Float {
+        return this.skills.sumOf { it.bonus.getLootChanceBonus(event).toDouble() }.toFloat()
+    }
+
+    fun getMoneyBonus(event: JobHarvestEvent): Float {
+        return this.skills.sumOf { it.bonus.getMoneyBonus(event).toDouble() }.toFloat()
+    }
+
+    fun getQuality(event: JobHarvestEvent): Float {
+        return this.skills.sumOf { it.bonus.getQualityBonus(event).toDouble() }.toFloat()
     }
 
     private fun getXpForLevel(level: Int): Int {
