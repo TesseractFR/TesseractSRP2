@@ -1,16 +1,14 @@
-package onl.tesseract.srp.service.job
+package onl.tesseract.srp.service.item
 
 import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
-import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.event.entity.EntityDeathEvent
 import org.springframework.stereotype.Component
 
 @Component
-class CustomDropListener(private val customItemService: CustomItemService) : Listener {
+class CustomItemDropListener(private val customItemService: CustomItemService) : Listener {
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
@@ -18,7 +16,8 @@ class CustomDropListener(private val customItemService: CustomItemService) : Lis
         val block = event.block
         val material = block.type
 
-        val customMaterial = CustomMaterial.entries.find { it.baseMaterial == material }
+        val customMaterial = CustomMaterial.entries.find { it.droppedByMaterial == material }
+
         if (customMaterial != null) {
             val customItem = customItemService.attemptDrop(customMaterial)
             if (customItem != null) {
@@ -26,5 +25,4 @@ class CustomDropListener(private val customItemService: CustomItemService) : Lis
             }
         }
     }
-
 }

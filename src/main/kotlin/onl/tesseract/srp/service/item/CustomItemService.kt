@@ -10,7 +10,7 @@ import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
 import onl.tesseract.srp.domain.job.Job
-import onl.tesseract.srp.service.job.JobConfig
+import onl.tesseract.srp.repository.hibernate.job.JobsConfigRepository
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.springframework.stereotype.Service
@@ -19,13 +19,16 @@ import java.util.Random
 @Service
 class CustomItemService(
     private val namespacedKeyProvider: NamedspacedKeyProvider,
-    private val jobConfig: JobConfig
+    private val jobConfig: JobsConfigRepository
 ) {
     private fun getJobs(): Map<String, Job> = jobConfig.getJobs()
 
     private fun getJobByMaterial(material: CustomMaterial): Job? {
         return getJobs().values.find { job ->
-            job.materials.any { it.name.equals(material.name, ignoreCase = true) || it.baseMaterial.name.equals(material.baseMaterial.name, ignoreCase = true) }
+            job.materials.any {
+                it.name.equals(material.name, ignoreCase = true) ||
+                        it.droppedByMaterial.name.equals(material.droppedByMaterial.name, ignoreCase = true)
+            }
         }
     }
 
@@ -34,22 +37,17 @@ class CustomItemService(
         return job.baseStats[material]
     }
 
-
     fun attemptDrop(material: CustomMaterial): CustomItem? {
         val baseStat = getBaseStat(material) ?: return null
-
         val roll = Random().nextFloat()
         return if (roll <= baseStat.lootChance) {
             val quality = generateQuality(baseStat)
             CustomItem(material, quality)
-        } else {
-            null
-        }
+        } else null
     }
 
-
     fun createCustomItem(customItem: CustomItemStack): ItemStack {
-        val item = ItemBuilder(customItem.item.material.baseMaterial)
+        val item = ItemBuilder(customItem.item.material.customMaterial)
             .name(customItem.item.material.displayName)
             .color(NamedTextColor.GREEN)
             .lore()
