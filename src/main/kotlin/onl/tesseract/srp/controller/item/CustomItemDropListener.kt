@@ -1,7 +1,8 @@
-package onl.tesseract.srp.service.item
+package onl.tesseract.srp.controller.item
 
 import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
+import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
