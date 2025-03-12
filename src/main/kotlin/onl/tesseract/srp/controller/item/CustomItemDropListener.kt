@@ -23,7 +23,8 @@ class CustomItemDropListener(private val customItemService: CustomItemService) :
         if (customMaterial != null) {
             val customItem = customItemService.attemptDrop(customMaterial)
             if (customItem != null) {
-                player.world.dropItemNaturally(block.location, customItemService.createCustomItem(CustomItemStack(customItem, 1)))
+                val itemStack = customItemService.createCustomItem(CustomItemStack(customItem, 1))
+                player.world.dropItemNaturally(block.location, itemStack)
             }
         }
     }
