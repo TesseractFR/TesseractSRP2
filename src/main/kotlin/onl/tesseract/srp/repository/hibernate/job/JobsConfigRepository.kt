@@ -31,7 +31,7 @@ class JobsConfigRepository {
             val materials = baseStatsKeys.mapNotNull { materialName ->
                 CustomMaterial.entries.find {
                     it.name.equals(materialName, ignoreCase = true) ||
-                            it.droppedByMaterial.name.equals(materialName, ignoreCase = true) ||
+                            it.dropSource.toString().equals(materialName, ignoreCase = true) ||
                             it.customMaterial.name.equals(materialName, ignoreCase = true)
                 }
             }
@@ -46,7 +46,7 @@ class JobsConfigRepository {
 
                 val material = CustomMaterial.entries.find {
                     it.name.equals(materialName, ignoreCase = true) ||
-                            it.droppedByMaterial.name.equals(materialName, ignoreCase = true) ||
+                            it.dropSource.toString().equals(materialName, ignoreCase = true) ||
                             it.customMaterial.name.equals(materialName, ignoreCase = true)
                 }
                 material?.let { it to BaseStat(lootChance, moneyGain, xpGain, QualityDistribution(expectation, stddev)) }

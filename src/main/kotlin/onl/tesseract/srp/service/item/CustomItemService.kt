@@ -27,7 +27,7 @@ class CustomItemService(
         return getJobs().values.find { job ->
             job.materials.any {
                 it.name.equals(material.name, ignoreCase = true) ||
-                        it.droppedByMaterial.name.equals(material.droppedByMaterial.name, ignoreCase = true)
+                        it.dropSource.toString().equals(material.dropSource.toString(), ignoreCase = true)
             }
         }
     }
