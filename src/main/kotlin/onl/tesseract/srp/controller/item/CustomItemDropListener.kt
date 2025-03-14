@@ -20,31 +20,27 @@ class CustomItemDropListener(private val customItemService: CustomItemService) :
         val block = event.block
         val material = block.type
 
-        val customMaterial = CustomMaterial.entries.find {
-            it.dropSource is CustomMaterialBlockSource && (it.dropSource).material == material
-        }
-        if (customMaterial != null) {
-            val customItem = customItemService.attemptDrop(customMaterial)
-            if (customItem != null) {
-                player.world.dropItemNaturally(
-                    block.location,
-                    customItemService.createCustomItem(CustomItemStack(customItem, 1))
-                )
-            }
+        val customMaterial = CustomMaterial.entries
+            .find { it.dropSource is CustomMaterialBlockSource && (it.dropSource).material == material }
+            ?: return
+        val customItem = customItemService.attemptDrop(customMaterial)
+        if (customItem != null) {
+            player.world.dropItemNaturally(
+                block.location,
+                customItemService.createCustomItem(CustomItemStack(customItem, 1))
+            )
         }
     }
 
     @EventHandler
     fun onEntityDeath(event: EntityDeathEvent) {
         val entity = event.entity
-        val customMaterial = CustomMaterial.entries.find {
-            it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type
-        }
-        if (customMaterial != null) {
-            val customItem = customItemService.attemptDrop(customMaterial)
-            if (customItem != null) {
-                event.drops.add(customItemService.createCustomItem(CustomItemStack(customItem, 1)))
-            }
+        val customMaterial = CustomMaterial.entries
+            .find { it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type }
+            ?: return
+        val customItem = customItemService.attemptDrop(customMaterial)
+        if (customItem != null) {
+            event.drops.add(customItemService.createCustomItem(CustomItemStack(customItem, 1)))
         }
     }
 }

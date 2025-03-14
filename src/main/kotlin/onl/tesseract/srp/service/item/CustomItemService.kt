@@ -25,16 +25,14 @@ class CustomItemService(
 
     private fun getJobByMaterial(material: CustomMaterial): Job? {
         return getJobs().values.find { job ->
-            job.materials.any {
-                it.name.equals(material.name, ignoreCase = true) ||
-                        it.dropSource.toString().equals(material.dropSource.toString(), ignoreCase = true)
-            }
+            job.baseStats.keys.any { it.name == material.name }
         }
     }
 
     private fun getBaseStat(material: CustomMaterial): BaseStat? {
         val job = getJobByMaterial(material) ?: return null
-        return job.baseStats[material]
+        val baseStat = job.baseStats[material]
+        return baseStat
     }
 
     fun attemptDrop(material: CustomMaterial): CustomItem? {
@@ -43,7 +41,9 @@ class CustomItemService(
         return if (roll <= baseStat.lootChance) {
             val quality = generateQuality(baseStat)
             CustomItem(material, quality)
-        } else null
+        } else {
+            null
+        }
     }
 
     fun createCustomItem(customItem: CustomItemStack): ItemStack {
