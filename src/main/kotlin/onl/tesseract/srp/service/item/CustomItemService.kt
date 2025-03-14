@@ -25,7 +25,7 @@ class CustomItemService(
 
     private fun getJobByMaterial(material: CustomMaterial): Job? {
         return getJobs().values.find { job ->
-            job.baseStats.keys.any { it.name == material.name }
+            job.materials.any { it.name == material.name }
         }
     }
 
