@@ -15,9 +15,16 @@ enum class CustomMaterial(
     val displayName: String,
     val rarity: Rarity,
 ) {
-    Wood(CustomMaterialBlockSource(Material.OAK_LOG), Material.OAK_LOG, "Bois", Rarity.Common),
-    BirchWood(CustomMaterialBlockSource(Material.BIRCH_LOG), Material.BIRCH_LOG, "Bois de bouleau", Rarity.Common),
+    Wood(Material.OAK_LOG, Material.OAK_LOG, "Bois", Rarity.Common),
+    BirchWood(Material.BIRCH_LOG, Material.BIRCH_LOG, "Bois de bouleau", Rarity.Common),
 
-    ZombieDrop(CustomMaterialEntitySource(EntityType.ZOMBIE), Material.ROTTEN_FLESH, "Chair CUstom", Rarity.Rare),
-    SkeletonDrop(CustomMaterialEntitySource(EntityType.SKELETON), Material.BONE, "Os Custom", Rarity.Rare)
+    ZombieDrop(EntityType.ZOMBIE, Material.ROTTEN_FLESH, "Chair Custom", Rarity.Rare),
+    SkeletonDrop(EntityType.SKELETON, Material.BONE, "Os Custom", Rarity.Rare);
+
+    constructor(material: Material, customMaterial: Material, displayName: String, rarity: Rarity)
+            : this(CustomMaterialBlockSource(material), customMaterial, displayName, rarity)
+
+    constructor(entityType: EntityType, customMaterial: Material, displayName: String, rarity: Rarity)
+            : this(CustomMaterialEntitySource(entityType), customMaterial, displayName, rarity)
+
 }
