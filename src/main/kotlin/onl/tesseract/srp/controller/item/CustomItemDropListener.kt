@@ -2,6 +2,8 @@ package onl.tesseract.srp.controller.item
 
 import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
+import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
+import onl.tesseract.srp.domain.item.CustomMaterialEntitySource
 import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -18,13 +20,16 @@ class CustomItemDropListener(private val customItemService: CustomItemService) :
         val block = event.block
         val material = block.type
 
-        val customMaterial = CustomMaterial.entries.find { it.dropSource == material }
-
+        val customMaterial = CustomMaterial.entries.find {
+            it.dropSource is CustomMaterialBlockSource && (it.dropSource).material == material
+        }
         if (customMaterial != null) {
             val customItem = customItemService.attemptDrop(customMaterial)
             if (customItem != null) {
-                val itemStack = customItemService.createCustomItem(CustomItemStack(customItem, 1))
-                player.world.dropItemNaturally(block.location, itemStack)
+                player.world.dropItemNaturally(
+                    block.location,
+                    customItemService.createCustomItem(CustomItemStack(customItem, 1))
+                )
             }
         }
     }
@@ -32,14 +37,15 @@ class CustomItemDropListener(private val customItemService: CustomItemService) :
     @EventHandler
     fun onEntityDeath(event: EntityDeathEvent) {
         val entity = event.entity
-        val customMaterial = CustomMaterial.entries.find { it.dropSource == entity.type }
-
+        val customMaterial = CustomMaterial.entries.find {
+            it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type
+        }
         if (customMaterial != null) {
             val customItem = customItemService.attemptDrop(customMaterial)
             if (customItem != null) {
-                val itemStack = customItemService.createCustomItem(CustomItemStack(customItem, 1))
-                entity.world.dropItemNaturally(entity.location, itemStack)
+                event.drops.add(customItemService.createCustomItem(CustomItemStack(customItem, 1)))
             }
         }
     }
 }
+
