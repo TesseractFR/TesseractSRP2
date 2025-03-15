@@ -33,6 +33,9 @@ class TesseractSRP : JavaPlugin() {
     fun registerCommands() {
         val provider = springContext.getBean(SrpCommandInstanceProvider::class.java)
         SrpStaffCommand(provider).register(this, "staffSrp")
+
+        springContext.getBeansOfType(CommandContext::class.java)
+            .forEach { (_, bean) -> bean.register(this, bean.commandDefinition.name) }
     }
 
     override fun onDisable() {
