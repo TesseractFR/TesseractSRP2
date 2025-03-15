@@ -11,17 +11,19 @@ import org.bukkit.persistence.PersistentDataType
 import org.springframework.stereotype.Service
 
 @Service
-class CustomItemService(private val namespacedKeyProvider: NamedspacedKeyProvider) {
+class CustomItemService(
+    private val namespacedKeyProvider: NamedspacedKeyProvider,
+) {
 
     fun createCustomItem(customItem: CustomItemStack): ItemStack {
-        val item = ItemBuilder(customItem.item.material.baseMaterial)
+        val item = ItemBuilder(customItem.item.material.customMaterial)
             .name(customItem.item.material.displayName)
             .color(NamedTextColor.GREEN)
             .lore()
             .newline()
             .append(NamedTextColor.GRAY + "Objet de métier")
             .newline()
-            .append(NamedTextColor.GRAY + "Qualité : " + (getQualityColorGradiant(customItem.item.quality) + "${customItem.item.quality}%"))
+            .append(NamedTextColor.GRAY + "Qualité : " + (getQualityColorGradient(customItem.item.quality) + "${customItem.item.quality}%"))
             .buildLore()
             .amount(customItem.amount)
             .build()
@@ -33,7 +35,7 @@ class CustomItemService(private val namespacedKeyProvider: NamedspacedKeyProvide
         return item
     }
 
-    private fun getQualityColorGradiant(quality: Int): TextColor {
+    private fun getQualityColorGradient(quality: Int): TextColor {
         val ratio: Float = quality.coerceAtMost(80) / 80.0f
         return TextColor.color(1.0f - ratio, ratio, 0.0f)
     }
