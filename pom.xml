@@ -130,12 +130,25 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>${kotlin.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>onl.tesseract</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract</groupId>
+            <artifactId>commandbuilder</artifactId>
+            <version>3.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract</groupId>
+            <artifactId>tesseractlib</artifactId>
+            <version>4.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Spring -->

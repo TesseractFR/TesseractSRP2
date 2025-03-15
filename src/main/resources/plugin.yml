@@ -2,9 +2,12 @@ name: TesseractSRP2
 version: '0.1-SNAPSHOT'
 main: onl.tesseract.srp.TesseractSRP
 api-version: '1.21'
+depend: [TesseractCore, MCKotlin-Paper]
 commands:
   staffSrp:
     permission: staff
     description: Commandes staff du SRP
     aliases:
       - staffs
+  jobskill:
+    description: Ouvrir le menu des compétences de métier
