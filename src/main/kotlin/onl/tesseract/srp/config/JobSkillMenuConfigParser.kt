@@ -37,7 +37,10 @@ class JobSkillMenuConfigParser {
         val matrix: Array<Array<CellType>> = Array(lines.size) { lineIndex ->
             val line = lines[lineIndex]
             return@Array Array(9) {
-                symbolDefs[line.toCharArray()[it]]!!
+                if (it >= line.length)
+                    JobSkillMenuConfig.EmptyCell
+                else
+                    symbolDefs[line.toCharArray()[it]]!!
             }
         }
         return JobSkillMenuConfig(matrix)
@@ -60,6 +63,7 @@ class JobSkillMenuConfigParser {
     private fun generateDefaultSymbols(): MutableMap<Char, CellType> {
         return mutableMapOf(
             '•' to JobSkillMenuConfig.EmptyCell,
+            ' ' to JobSkillMenuConfig.EmptyCell,
             '└' to Arrow(TopRight),
             '┘' to Arrow(TopLeft),
             '─' to Arrow(Horizontal),
@@ -67,6 +71,8 @@ class JobSkillMenuConfigParser {
             '┬' to Arrow(T),
             '┼' to Arrow(Cross),
             '┴' to Arrow(ReversedT),
+            '├' to Arrow(RightT),
+            '┤' to Arrow(LeftT),
         )
     }
 }
@@ -75,9 +81,10 @@ data class JobSkillMenuConfig(
     val cells: Array<Array<CellType>>
 ) {
 
-    inline fun forEach(action: (Int, Int, CellType) -> Unit) {
-        cells.forEachIndexed { lineIndex, line ->
-            line.forEachIndexed { colIndex, cellType ->
+    inline fun forEach(startLine: Int, height: Int, action: (Int, Int, CellType) -> Unit) {
+        val maxLineIndex = (startLine + height).coerceAtMost(cells.size)
+        for (lineIndex in startLine until maxLineIndex) {
+            this.cells[lineIndex].forEachIndexed { colIndex, cellType ->
                 action(lineIndex, colIndex, cellType)
             }
         }
@@ -97,5 +104,7 @@ data class JobSkillMenuConfig(
         T(5),
         Cross(6),
         ReversedT(7),
+        RightT(8),
+        LeftT(9),
     }
 }
