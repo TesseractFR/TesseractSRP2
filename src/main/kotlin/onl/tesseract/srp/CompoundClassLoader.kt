@@ -5,7 +5,7 @@ import java.io.InputStream
 import java.net.URL
 import java.util.*
 
-class CompoundClassLoader(private val loaders: Collection<ClassLoader>) : ClassLoader() {
+class CompoundClassLoader(private val loaders: Collection<ClassLoader>, parent: ClassLoader) : ClassLoader(parent) {
 
     override fun getResource(name: String): URL? {
         for (loader in loaders) {

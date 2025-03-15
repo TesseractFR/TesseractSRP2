@@ -1,7 +1,7 @@
 package onl.tesseract.srp
 
-import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
-import onl.tesseract.lib.service.ServiceContainer
+import onl.tesseract.commandBuilder.CommandContext
+import onl.tesseract.lib.TesseractLib
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
@@ -15,10 +15,9 @@ class TesseractSRP : JavaPlugin() {
 
     override fun onEnable() {
         // Plugin startup logic
-        val classLoader = CompoundClassLoader(listOf(classLoader, classLoader.parent))
+        val classLoader = CompoundClassLoader(listOf(classLoader, classLoader.parent, TesseractLib.javaClass.classLoader), classLoader.parent)
         val resourceLoader = DefaultResourceLoader(classLoader)
         Thread.currentThread().contextClassLoader = classLoader
-        ServiceContainer.getInstance().registerService(NamedspacedKeyProvider::class.java, NamedspacedKeyProvider(this))
         val app = SpringApplication(resourceLoader, TesseractSRPSpringApp::class.java)
         this.springContext = app.run()
         registerCommands()
