@@ -1,0 +1,70 @@
+package onl.tesseract.srp.controller.menu.job
+
+import net.kyori.adventure.text.format.NamedTextColor
+import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.lib.menu.ItemBuilder
+import onl.tesseract.lib.menu.Menu
+import onl.tesseract.lib.menu.MenuSize
+import onl.tesseract.lib.util.plus
+import onl.tesseract.lib.util.toComponent
+import onl.tesseract.srp.config.JobSkillMenuConfig
+import onl.tesseract.srp.config.JobSkillMenuConfigParser
+import onl.tesseract.srp.domain.job.EnumJob
+import org.bukkit.Material
+import org.bukkit.entity.Player
+import org.slf4j.Logger
+import java.util.UUID
+
+val logger: Logger = LoggerFactory.getLogger(JobSkillMenu::class.java)
+
+class JobSkillMenu(val playerID: UUID, val job: EnumJob) : Menu(MenuSize.Six, "Compétences".toComponent()) {
+
+    override fun placeButtons(viewer: Player) {
+
+        val menuConfig = try {
+            JobSkillMenuConfigParser().parseForJob(job)
+        } catch (e: Exception) {
+            logger.error("Failed to open skill menu for job $job", e)
+            viewer.sendMessage(NamedTextColor.RED + "Une erreur est survenue lors de l'ouverture du menu. Veuillez contacter un administrateur.")
+            close()
+            return
+        }
+
+        menuConfig.forEach { row, col, cellType ->
+
+            val index = col + ((5 - row) * 9)
+
+            if (cellType is JobSkillMenuConfig.Arrow) {
+                addButton(
+                    index,
+                    ItemBuilder(Material.STONE_BUTTON)
+                        .name(" ")
+                        .customModelData(cellType.type.customModelData)
+                        .build()
+                )
+            }
+
+            if (cellType is JobSkillMenuConfig.RootCell) {
+                addButton(
+                    index,
+                    ItemBuilder(job.icon)
+                        .name(job.displayName)
+                        .build()
+                )
+            }
+
+            if (cellType is JobSkillMenuConfig.SkillCell) {
+                val skill = cellType.skill
+                addButton(
+                    index,
+                    ItemBuilder(skill.icon)
+                        .name(skill.displayName)
+                        .lore("TODO") // TODO
+                        .build()
+                ) {
+                    // TODO call service
+                }
+            }
+        }
+    }
+}
