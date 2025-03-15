@@ -3,8 +3,14 @@ B=MINEUR_LOOT_CHANCE_1
 C=MINEUR_QUALITY_1
 D=MINEUR_MONEY_1
 =
-•B••C••D•
-•└──┼──┘•
-••••A••••
+  C   D
+  └─┬─┘
+ B  B  B
+ ├──┴──┘
+ B  D
+ │  │
+ B  C  D
+ └──┼──┘
+    A
 END
 ─│┌┐└┘├┤┬┴┼╱╲
