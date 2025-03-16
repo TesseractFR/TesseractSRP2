@@ -11,6 +11,7 @@ import java.util.*
 interface CampementRepository : Repository<Campement, UUID> {
     fun deleteById(id: UUID)
     fun isChunkClaimed(chunk: String): Boolean
+    fun getCampementByChunk(chunk: String): Campement?
 }
 
 @Component
@@ -35,13 +36,17 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
     }
 
     override fun isChunkClaimed(chunk: String): Boolean {
-        return jpaRepo.existsByChunk(chunk)
+        return jpaRepo.findCampementByChunk(chunk) != null
+    }
+
+    override fun getCampementByChunk(chunk: String): Campement? {
+        return jpaRepo.findCampementByChunk(chunk)?.toDomain()
     }
 }
 
 @org.springframework.stereotype.Repository
 interface CampementJpaRepository : JpaRepository<CampementEntity, UUID> {
-    @Query("SELECT COUNT(c) > 0 FROM CampementEntity ce JOIN ce.listChunks c WHERE c = :chunk")
-    fun existsByChunk(@Param("chunk") chunk: String): Boolean
+    @Query("SELECT ce FROM CampementEntity ce JOIN ce.listChunks c WHERE c = :chunk")
+    fun findCampementByChunk(@Param("chunk") chunk: String): CampementEntity?
 }
 
