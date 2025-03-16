@@ -4,7 +4,7 @@ import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.commandBuilder.annotation.CommandBody
 import onl.tesseract.srp.PLUGIN_INSTANCE
-import onl.tesseract.srp.util.menu.BiMenuTest
+import onl.tesseract.srp.controller.menu.job.JobSkillJobSelectionMenu
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -18,10 +18,7 @@ class JobSkillCommand : CommandContext() {
 
     @CommandBody
     fun body(player: Player) {
-
-        BiMenuTest().open(player)
-
-//        JobSkillJobSelectionMenu(player.uniqueId).open(player)
+        JobSkillJobSelectionMenu(player.uniqueId).open(player)
     }
 }
 
