@@ -11,3 +11,9 @@ commands:
       - staffs
   jobskill:
     description: Ouvrir le menu des compétences de métier
+  campement:
+    permission: campement
+    description: Gère les campements
+    aliases:
+      - c
+      - camp

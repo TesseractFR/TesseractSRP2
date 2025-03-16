@@ -15,3 +15,13 @@ val jobsChatFormat: Component = empty().color(NamedTextColor.GRAY)
             .append("] ", NamedTextColor.GOLD, TextDecoration.BOLD)
     )
 val jobsChatFormatError: Component = jobsChatFormat.color(NamedTextColor.RED)
+
+val CampementChatFormat: Component = empty().color(NamedTextColor.GRAY)
+    .append(
+        empty()
+            .append("[", NamedTextColor.DARK_AQUA, TextDecoration.BOLD)
+            .append("Campement", NamedTextColor.AQUA)
+            .append("] ", NamedTextColor.DARK_AQUA, TextDecoration.BOLD)
+    )
+val CampementChatError: Component = CampementChatFormat.color(NamedTextColor.RED)
+val CampementChatSuccess: Component = CampementChatFormat.color(NamedTextColor.GREEN)
