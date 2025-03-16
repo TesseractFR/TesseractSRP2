@@ -3,10 +3,7 @@ package onl.tesseract.srp.util.menu
 import net.citizensnpcs.api.CitizensAPI
 import net.citizensnpcs.api.npc.NPC
 import net.kyori.adventure.text.Component
-import onl.tesseract.lib.menu.AButton
-import onl.tesseract.lib.menu.Button
-import onl.tesseract.lib.menu.Menu
-import onl.tesseract.lib.menu.MenuSize
+import onl.tesseract.lib.menu.*
 import onl.tesseract.lib.service.PluginService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.task.TaskScheduler
@@ -48,6 +45,12 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
         button.draw(this, index, AButton.Side.Bottom)
     }
 
+    protected fun addBottomButton(index: Int, async: () -> ItemStack, function: Consumer<InventoryClickEvent>? = null) {
+        val button = AsyncButton(async, PLUGIN_INSTANCE, function)
+        bottomButtons[index] = button
+        button.draw(this, index, AButton.Side.Bottom)
+    }
+
     private fun getOrCreateInventoryNPC(): Player {
         val registry = CitizensAPI.getNamedNPCRegistry("BottomInventories")
             ?: CitizensAPI.createInMemoryNPCRegistry("BottomInventories")
@@ -66,6 +69,10 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
         super.clear()
         view?.bottomInventory?.clear()
         bottomButtons.clear()
+    }
+
+    fun clearTop() {
+        super.clear()
     }
 
     @EventHandler

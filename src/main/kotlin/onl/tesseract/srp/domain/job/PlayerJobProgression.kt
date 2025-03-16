@@ -49,6 +49,7 @@ class PlayerJobProgression(
 
     fun addSkill(skill: JobSkill): Boolean {
         if (skill.cost > skillPoints || !isSkillAvailable(skill)) return false
+        if (hasSkill(skill)) return false
         _skills.add(skill)
         skillPoints -= skill.cost
         return true
