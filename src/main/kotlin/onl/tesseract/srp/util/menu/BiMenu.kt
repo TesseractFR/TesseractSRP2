@@ -24,7 +24,7 @@ import org.bukkit.scheduler.BukkitRunnable
 import java.util.function.Consumer
 
 /**
- * A menu that can make use of both top and bottom inventories to display buttons.
+ * A menu that can make use of both top and bottom inventories to display buttons. Bottom buttons must be placed with [addBottomButton].
  */
 abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) : Menu(size, title, previous) {
 
@@ -40,13 +40,7 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
         viewer.openInventory(view)
         ServiceContainer[PluginService::class.java].registerEventListener(this)
         placeButtons(viewer)
-        placeBottomButtons(viewer)
     }
-
-    /**
-     * Implement this method to place buttons in bottom inventory. Bottom buttons must be placed with [addBottomButton].
-     */
-    protected abstract fun placeBottomButtons(viewer: Player)
 
     protected fun addBottomButton(index: Int, item: ItemStack, function: Consumer<InventoryClickEvent>? = null) {
         val button = Button(item, function)
@@ -66,6 +60,12 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
             }
             return@let npc.entity as Player
         }
+    }
+
+    override fun clear() {
+        super.clear()
+        view?.bottomInventory?.clear()
+        bottomButtons.clear()
     }
 
     @EventHandler

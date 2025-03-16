@@ -3,7 +3,6 @@ package onl.tesseract.srp.controller.menu.job
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.menu.ItemBuilder
-import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.menu.InventoryHeadIcons
 import onl.tesseract.lib.util.plus
@@ -11,6 +10,7 @@ import onl.tesseract.lib.util.toComponent
 import onl.tesseract.srp.config.JobSkillMenuConfig
 import onl.tesseract.srp.config.JobSkillMenuConfigParser
 import onl.tesseract.srp.domain.job.EnumJob
+import onl.tesseract.srp.util.menu.BiMenu
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.slf4j.Logger
@@ -18,7 +18,7 @@ import java.util.UUID
 
 val logger: Logger = LoggerFactory.getLogger(JobSkillMenu::class.java)
 
-class JobSkillMenu(val playerID: UUID, val job: EnumJob) : Menu(MenuSize.Six, "Compétences".toComponent()) {
+class JobSkillMenu(val playerID: UUID, val job: EnumJob) : BiMenu(MenuSize.Six, "Compétences".toComponent()) {
 
     private lateinit var menuConfig: JobSkillMenuConfig
 
@@ -43,14 +43,22 @@ class JobSkillMenu(val playerID: UUID, val job: EnumJob) : Menu(MenuSize.Six, "C
             placeCell(cellType, index)
         }
 
-        addButton(53 - 9, ItemBuilder(Material.PLAYER_HEAD)
+        addBottomButton(13, ItemBuilder(Material.PLAYER_HEAD)
             .customHead(InventoryHeadIcons.UP_ARROW.data, null)
             .name(NamedTextColor.GRAY + "Monter")
             .build()) {
             if (scroll < menuConfig.cells.size - 1)
                 openScroll(scroll + 1)
         }
-        addButton(53, ItemBuilder(Material.PLAYER_HEAD)
+        addBottomButton(21, ItemBuilder(Material.PLAYER_HEAD)
+            .customHead(InventoryHeadIcons.LEFT_ARROW_LOG.data, null)
+            .name(NamedTextColor.GRAY + "Gauche")
+            .build())
+        addBottomButton(23, ItemBuilder(Material.PLAYER_HEAD)
+            .customHead(InventoryHeadIcons.RIGHT_ARROW_LOG.data, null)
+            .name(NamedTextColor.GRAY + "Droite")
+            .build())
+        addBottomButton(31, ItemBuilder(Material.PLAYER_HEAD)
             .customHead(InventoryHeadIcons.DOWN_ARROW.data, null)
             .name(NamedTextColor.GRAY + "Descendre")
             .build()) {
