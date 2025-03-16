@@ -14,6 +14,10 @@ open class CampementService(private val repository: CampementRepository) {
         return repository.getById(ownerID)
     }
 
+    open fun getCampementByChunk(chunk: String): Campement? {
+        return repository.getCampementByChunk(chunk)
+    }
+
     @Transactional
     open fun createCampement(ownerID: UUID, listChunks: List<String>, spawnLocation: Location): Boolean {
         for (chunk in listChunks) {
