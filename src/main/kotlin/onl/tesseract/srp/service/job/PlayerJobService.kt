@@ -41,7 +41,6 @@ open class PlayerJobService(
     open fun addXp(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addXp(amount)
-        // TODO level-up event
         repository.save(progression)
     }
 
@@ -49,7 +48,6 @@ open class PlayerJobService(
     open fun addLevel(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addLevel(amount)
-        // TODO level-up event
         repository.save(progression)
     }
 

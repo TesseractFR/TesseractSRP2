@@ -6,7 +6,12 @@ import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryView
 import org.bukkit.inventory.ItemStack
 
-class CustomInventoryView(private val bottomInventory: Inventory, private val topInventory: Inventory, private val player: HumanEntity) : InventoryView {
+class CustomInventoryView(
+    private val bottomInventory: Inventory,
+    private val topInventory: Inventory,
+    private val player: HumanEntity,
+    private var title: String
+) : InventoryView {
 
     override fun getTopInventory(): Inventory = topInventory
 
@@ -78,15 +83,14 @@ class CustomInventoryView(private val bottomInventory: Inventory, private val to
         return false
     }
 
-    override fun getTitle(): String {
-        return "Hello world!"
-    }
+    @Deprecated("Overrides a deprecated method")
+    override fun getTitle(): String = title
 
-    override fun getOriginalTitle(): String {
-        return "Hello world!"
-    }
+    @Deprecated("Overrides a deprecated method")
+    override fun getOriginalTitle(): String = title
 
+    @Deprecated("Overrides a deprecated method")
     override fun setTitle(title: String) {
-
+        this.title = title
     }
 }

@@ -40,7 +40,8 @@ class JobSkillMenuConfigParser {
                 if (it >= line.length)
                     JobSkillMenuConfig.EmptyCell
                 else
-                    symbolDefs[line.toCharArray()[it]]!!
+                    symbolDefs[line.toCharArray()[it]]
+                        ?: throw ConfigurationException("Invalid character '${line.toCharArray()[it]}'")
             }
         }
         return JobSkillMenuConfig(matrix)
@@ -88,6 +89,19 @@ data class JobSkillMenuConfig(
                 action(lineIndex, colIndex, cellType)
             }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as JobSkillMenuConfig
+
+        return cells.contentDeepEquals(other.cells)
+    }
+
+    override fun hashCode(): Int {
+        return cells.contentDeepHashCode()
     }
 
     sealed interface CellType

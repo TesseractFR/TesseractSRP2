@@ -3,6 +3,7 @@ package onl.tesseract.srp.util.menu
 import net.citizensnpcs.api.CitizensAPI
 import net.citizensnpcs.api.npc.NPC
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import onl.tesseract.lib.menu.*
 import onl.tesseract.lib.service.PluginService
 import onl.tesseract.lib.service.ServiceContainer
@@ -30,9 +31,10 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
     private val bottomButtons: MutableMap<Int, AButton> = mutableMapOf()
 
     override fun open(viewer: Player) {
+        val serializedTitle = LegacyComponentSerializer.legacySection().serialize(title)
         val topInventory = Bukkit.createInventory(null, size.size, title)
         val fakePlayer = getOrCreateInventoryNPC()
-        this.view = CustomInventoryView(fakePlayer.inventory, topInventory, viewer)
+        this.view = CustomInventoryView(fakePlayer.inventory, topInventory, viewer, serializedTitle)
         this.viewer = viewer
         viewer.openInventory(view)
         ServiceContainer[PluginService::class.java].registerEventListener(this)
