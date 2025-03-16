@@ -56,33 +56,44 @@ open class CampementService(private val repository: CampementRepository) {
     @Transactional
     open fun claimChunk(ownerID: UUID, chunk: String): AnnexationResult {
         val campement = repository.getById(ownerID) ?: return AnnexationResult.NOT_ADJACENT
-
         if (campement.listChunks.contains(chunk)) {
             return AnnexationResult.ALREADY_OWNED
         }
-
         if (repository.isChunkClaimed(chunk)) {
             return AnnexationResult.ALREADY_CLAIMED
         }
-
         val (chunkX, chunkZ) = chunk.split(",").map { it.toInt() }
         val isAdjacent = campement.listChunks.any { existingChunk ->
             val (existingX, existingZ) = existingChunk.split(",").map { it.toInt() }
             (existingX == chunkX && (existingZ == chunkZ - 1 || existingZ == chunkZ + 1)) || // Même X, Z ±1
                     (existingZ == chunkZ && (existingX == chunkX - 1 || existingX == chunkX + 1))    // Même Z, X ±1
         }
-
         if (!isAdjacent) {
             return AnnexationResult.NOT_ADJACENT
         }
-
         campement.listChunks += chunk
         campement.nbChunks = campement.listChunks.size
-
         repository.save(campement)
         return AnnexationResult.SUCCESS
     }
 
+    @Transactional
+    open fun unclaimChunk(ownerID: UUID, chunk: String): Boolean {
+        val campement = repository.getById(ownerID) ?: return false
+        if (!campement.listChunks.contains(chunk)) {
+            return false
+        }
+        val updatedChunks = campement.listChunks.toMutableList()
+        updatedChunks.remove(chunk)
+        if (updatedChunks.isEmpty()) {
+            repository.deleteById(campement.id)
+            return true
+        }
+        campement.listChunks = updatedChunks
+        campement.nbChunks = updatedChunks.size
+        repository.save(campement)
+        return true
+    }
 
 
 }
