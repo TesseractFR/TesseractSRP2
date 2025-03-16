@@ -69,8 +69,8 @@ class PlayerJobProgression(
         return this.skills.sumOf { it.bonus.getMoneyBonus(event).toDouble() }.toFloat()
     }
 
-    fun getQuality(event: JobHarvestEvent): Float {
-        return this.skills.sumOf { it.bonus.getQualityBonus(event).toDouble() }.toFloat()
+    fun getQualityBonus(event: JobHarvestEvent): Int {
+        return this.skills.sumOf { it.bonus.getQualityBonus(event) }
     }
 
     private fun getXpForLevel(level: Int): Int {

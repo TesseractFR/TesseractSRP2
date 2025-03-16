@@ -4,16 +4,16 @@ import onl.tesseract.srp.domain.item.CustomItem
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
 import onl.tesseract.srp.domain.job.Job
+import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.repository.yaml.job.JobsConfigRepository
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
 class JobService(
-    private val jobConfigRepository: JobsConfigRepository
+    private val jobConfigRepository: JobsConfigRepository,
+    private val playerJobService: PlayerJobService,
 ) {
-    private val random = Random()
-
     fun getJobs(): Map<String, Job> = jobConfigRepository.getJobs()
 
     fun getJobByMaterial(material: CustomMaterial): Job? {
@@ -30,19 +30,19 @@ class JobService(
     /**
      * @return Generated item with random quality, or null if not looted
      */
-    fun generateItem(material: CustomMaterial): CustomItem? {
+    fun generateItem(playerID: UUID, material: CustomMaterial): CustomItem? {
+        val job = getJobByMaterial(material) ?: return null
+        val playerJobProgression = playerJobService.getPlayerJobProgression(playerID)
+        val event = JobHarvestEvent(playerID, job.enumJob, material)
         val baseStat = getBaseStat(material)
-        val roll = random.nextFloat()
-        return if (roll <= baseStat.lootChance) {
-            val quality = generateQuality(baseStat)
-            CustomItem(material, quality)
-        } else {
+            .multiplyLootChance(playerJobProgression.getLootChanceBonus(event))
+            .multiplyMoneyGain(playerJobProgression.getMoneyBonus(event))
+            .addQualityMean(playerJobProgression.getQualityBonus(event))
+
+        return if (baseStat.randomizeLootChance())
+            CustomItem(material, baseStat.generateQuality())
+        else
             null
-        }
     }
 
-    private fun generateQuality(baseStat: BaseStat): Int {
-        val gaussian = random.nextGaussian() * baseStat.qualityDistribution.stddev + baseStat.qualityDistribution.expectation
-        return gaussian.toInt().coerceIn(1, 100)
-    }
 }

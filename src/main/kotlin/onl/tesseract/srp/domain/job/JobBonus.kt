@@ -8,7 +8,7 @@ import onl.tesseract.srp.domain.item.CustomMaterial
 interface JobBonus {
     fun getLootChanceBonus(event: JobHarvestEvent): Float
     fun getMoneyBonus(event: JobHarvestEvent): Float
-    fun getQualityBonus(event: JobHarvestEvent): Float
+    fun getQualityBonus(event: JobHarvestEvent): Int
 
     fun getDescription(): Component
 }
@@ -20,9 +20,8 @@ data class GenericMaterialJobBonus(val material: CustomMaterial, val type: JobBo
     override fun getMoneyBonus(event: JobHarvestEvent): Float {
         return if (event.material == this.material && type == JobBonusType.Money) value else 0f
     }
-    override fun getQualityBonus(event: JobHarvestEvent): Float {
-
-        return if (event.material == this.material && type == JobBonusType.Quality) value else 0f
+    override fun getQualityBonus(event: JobHarvestEvent): Int {
+        return if (event.material == this.material && type == JobBonusType.Quality) value.toInt() else 0
     }
 
     override fun getDescription(): Component {

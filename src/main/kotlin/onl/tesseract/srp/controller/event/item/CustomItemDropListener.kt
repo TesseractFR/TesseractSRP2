@@ -24,8 +24,7 @@ class CustomItemDropListener(
 
         val customItem = CustomMaterial.entries
             .find { it.dropSource is CustomMaterialBlockSource && (it.dropSource).material == material }
-            ?.takeIf { jobService.getJobByMaterial(it) != null }
-            ?.let { jobService.generateItem(it) }
+            ?.let { jobService.generateItem(event.player.uniqueId, it) }
             ?: return
         event.player.world.dropItemNaturally(
             event.block.location,
@@ -36,10 +35,10 @@ class CustomItemDropListener(
     @EventHandler
     fun onEntityDeath(event: EntityDeathEvent) {
         val entity = event.entity
+        val killer = entity.killer ?: return
         val customItem = CustomMaterial.entries
             .find { it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type }
-            ?.takeIf { jobService.getJobByMaterial(it) != null }
-            ?.let { jobService.generateItem(it) }
+            ?.let { jobService.generateItem(killer.uniqueId, it) }
             ?: return
         event.drops.add(customItemService.createCustomItem(CustomItemStack(customItem, 1)))
     }

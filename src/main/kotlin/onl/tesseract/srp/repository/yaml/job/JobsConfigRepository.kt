@@ -4,6 +4,7 @@ import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
+import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.Job
 import onl.tesseract.srp.domain.job.QualityDistribution
 import org.bukkit.configuration.ConfigurationSection
@@ -50,7 +51,7 @@ class JobsConfigRepository {
                 }
             }?.toMap() ?: emptyMap()
 
-            loadedJobs[jobName] = Job(baseStats)
+            loadedJobs[jobName] = Job(EnumJob.valueOf(jobName), baseStats)
         }
         return loadedJobs
     }
