@@ -2,7 +2,7 @@ package onl.tesseract.srp.service.campement
 
 import jakarta.transaction.Transactional
 import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.repository.hibernate.campement.CampementRepository
+import onl.tesseract.srp.repository.hibernate.CampementRepository
 import org.bukkit.Location
 import org.springframework.stereotype.Service
 import java.util.*
@@ -11,21 +11,27 @@ import java.util.*
 open class CampementService(private val repository: CampementRepository) {
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
-        return repository.getByOwnerID(ownerID)
+        return repository.getById(ownerID)
     }
 
     @Transactional
-    open fun createCampement(ownerID: UUID, listChunks: List<String>, spawnLocation: Location) {
+    open fun createCampement(ownerID: UUID, listChunks: List<String>, spawnLocation: Location): Boolean {
+        for (chunk in listChunks) {
+            if (repository.isChunkClaimed(chunk)) {
+                return false
+            }
+        }
         val campement = Campement(
             id = UUID.randomUUID(),
             ownerID = ownerID,
             trustedPlayers = emptyList(),
-            chunks = listChunks.size,
+            nbChunks = listChunks.size,
             listChunks = listChunks,
             campLevel = 1,
             spawnLocation = spawnLocation,
         )
         repository.save(campement)
+        return true
     }
 
     @Transactional
@@ -35,7 +41,7 @@ open class CampementService(private val repository: CampementRepository) {
 
     @Transactional
     open fun setSpawnpoint(ownerID: UUID, newLocation: Location) {
-        val campement = repository.getByOwnerID(ownerID) ?: return
+        val campement = repository.getById(ownerID) ?: return
         repository.save(campement.setSpawnpoint(newLocation))
     }
 }

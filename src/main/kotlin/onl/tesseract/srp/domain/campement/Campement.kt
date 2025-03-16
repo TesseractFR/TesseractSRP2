@@ -7,13 +7,13 @@ class Campement(
     val id: UUID,
     val ownerID: UUID,
     val trustedPlayers: List<UUID>,
-    val chunks: Int,
+    val nbChunks: Int,
     val listChunks: List<String>,
     val campLevel: Int,
     val spawnLocation: Location
 ) {
 
     fun setSpawnpoint(newLocation: Location): Campement {
-        return Campement(id, ownerID, trustedPlayers, chunks, listChunks, campLevel, newLocation)
+        return Campement(id, ownerID, trustedPlayers, nbChunks, listChunks, campLevel, newLocation)
     }
 }

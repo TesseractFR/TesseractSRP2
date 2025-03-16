@@ -1,4 +1,4 @@
-package onl.tesseract.srp.repository.hibernate.campement
+package onl.tesseract.srp.repository.hibernate
 
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.campement.Campement
@@ -8,7 +8,7 @@ import java.util.*
 
 @Entity
 @Table(name = "t_campements", indexes = [
-    Index(name = "idx_campement_chunks", columnList = "chunks")
+    Index(name = "idx_campement_chunks", columnList = "nbChunks")
 ])
 class CampementEntity(
     @Id
@@ -20,15 +20,15 @@ class CampementEntity(
     val trustedPlayers: List<UUID>,
 
     @Column(nullable = false)
-    val chunks: Int,
+    val nbChunks: Int,
 
     @ElementCollection
     @CollectionTable(
         name = "t_campements_chunks",
         joinColumns = [JoinColumn(name = "ownerID")],
-        indexes = [Index(name = "idx_campement_chunk", columnList = "chunk")]
+        indexes = [Index(name = "idx_campement_chunk", columnList = "chunks")]
     )
-    @Column(name = "chunk")
+    @Column(name = "chunks")
     val listChunks: List<String>,
 
     @Column(nullable = false)
@@ -47,11 +47,11 @@ class CampementEntity(
     val spawnWorld: String
 ) {
     fun toDomain(): Campement {
-        return Campement(ownerID, ownerID, trustedPlayers, chunks, listChunks, campLevel,
+        return Campement(ownerID, ownerID, trustedPlayers, nbChunks, listChunks, campLevel,
             Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ))
     }
 }
 
 fun Campement.toEntity(): CampementEntity {
-    return CampementEntity(ownerID, trustedPlayers, chunks, listChunks, campLevel, spawnLocation.x, spawnLocation.y, spawnLocation.z, spawnLocation.world.name)
+    return CampementEntity(ownerID, trustedPlayers, nbChunks, listChunks, campLevel, spawnLocation.x, spawnLocation.y, spawnLocation.z, spawnLocation.world.name)
 }

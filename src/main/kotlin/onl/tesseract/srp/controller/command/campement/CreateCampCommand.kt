@@ -32,9 +32,12 @@ class CreateCampCommand(private val campementService: CampementService) {
             return
         }
 
-        // Création du campement
-        campementService.createCampement(playerID, chunkList, location)
-        sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ${chunkList.size} chunks.")
+        val success = campementService.createCampement(playerID, chunkList, location)
+        if (success) {
+            sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ${chunkList.size} chunks.")
+        } else {
+            sender.sendMessage("§cImpossible de créer le campement : un ou plusieurs chunks sont déjà revendiqués.")
+        }
 
     }
 
