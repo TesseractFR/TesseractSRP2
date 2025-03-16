@@ -34,7 +34,7 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
     }
 
     override fun deleteById(id: UUID) {
-        jpaRepo.deleteById(id)  // ✅ Vérifie que cette ligne est bien présente
+        jpaRepo.deleteById(id)
     }
 }
 
