@@ -7,8 +7,8 @@ class Campement(
     val id: UUID,
     val ownerID: UUID,
     val trustedPlayers: List<UUID>,
-    val nbChunks: Int,
-    val listChunks: List<String>,
+    var nbChunks: Int,
+    var listChunks: List<String>,
     val campLevel: Int,
     val spawnLocation: Location
 ) {
