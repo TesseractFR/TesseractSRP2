@@ -3,6 +3,7 @@ package onl.tesseract.srp.service.campement
 import jakarta.transaction.Transactional
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.repository.hibernate.campement.CampementRepository
+import org.bukkit.Location
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -14,26 +15,27 @@ open class CampementService(private val repository: CampementRepository) {
     }
 
     @Transactional
-    open fun createCampement(ownerID: UUID, listChunks: List<String>) {
+    open fun createCampement(ownerID: UUID, listChunks: List<String>, spawnLocation: Location) {
         val campement = Campement(
             id = UUID.randomUUID(),
             ownerID = ownerID,
             trustedPlayers = emptyList(),
             chunks = listChunks.size,
             listChunks = listChunks,
-            campLevel = 1
+            campLevel = 1,
+            spawnLocation = spawnLocation,
         )
         repository.save(campement)
     }
 
     @Transactional
-    open fun addTrustedPlayer(id: UUID, playerID: UUID) {
-        val campement = repository.getById(id) ?: return
-        repository.save(campement.addTrustedPlayer(playerID))
+    open fun deleteCampement(id: UUID) {
+        repository.deleteById(id)
     }
 
     @Transactional
-    open fun deleteCampement(id: UUID) {
-        repository.deleteById(id)
+    open fun setSpawnpoint(ownerID: UUID, newLocation: Location) {
+        val campement = repository.getByOwnerID(ownerID) ?: return
+        repository.save(campement.setSpawnpoint(newLocation))
     }
 }
