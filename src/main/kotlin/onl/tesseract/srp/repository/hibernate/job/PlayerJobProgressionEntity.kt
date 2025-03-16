@@ -1,8 +1,7 @@
 package onl.tesseract.srp.repository.hibernate.job
 
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import jakarta.persistence.*
+import onl.tesseract.srp.domain.job.JobSkill
 import onl.tesseract.srp.domain.job.PlayerJobProgression
 import java.util.*
 
@@ -13,13 +12,16 @@ class PlayerJobProgressionEntity(
     val playerID: UUID,
     val level: Int,
     val xp: Int,
+    val skillPoints: Int,
+    @ElementCollection(fetch = FetchType.EAGER)
+    val skills: List<JobSkill>,
 ) {
 
     fun toDomain(): PlayerJobProgression {
-        return PlayerJobProgression(playerID, level, xp)
+        return PlayerJobProgression(playerID, level, xp, skillPoints, skills)
     }
 }
 
 fun PlayerJobProgression.toEntity(): PlayerJobProgressionEntity {
-    return PlayerJobProgressionEntity(playerID, level, xp)
+    return PlayerJobProgressionEntity(playerID, level, xp, skillPoints, skills)
 }

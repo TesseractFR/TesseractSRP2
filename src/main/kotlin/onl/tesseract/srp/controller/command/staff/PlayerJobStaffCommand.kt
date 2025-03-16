@@ -29,6 +29,7 @@ class PlayerJobStaffCommand(private val service: PlayerJobService) {
         val progression = service.getPlayerJobProgression(player.uniqueId)
         sender.sendMessage(NamedTextColor.GREEN + "Niveau : ${progression.level}")
         sender.sendMessage(NamedTextColor.GREEN + "XP : ${progression.xp}")
+        sender.sendMessage(NamedTextColor.GREEN + "Points de compétence : ${progression.skillPoints}")
     }
 
     @Command(name = "xp")
@@ -96,8 +97,10 @@ class PlayerJobStaffCommand(private val service: PlayerJobService) {
         fun give(
             @Env(key = "player") player: Player,
             @Argument("amount") amount: IntegerCommandArgument,
+            sender: CommandSender,
         ) {
             service.addSkillPoint(player.uniqueId, amount.get())
+            sender.sendMessage(NamedTextColor.GREEN + "Points de compétence ajoutés !")
         }
     }
 }

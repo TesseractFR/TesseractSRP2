@@ -5,11 +5,12 @@ import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.toComponent
 import onl.tesseract.srp.domain.job.EnumJob
+import onl.tesseract.srp.service.job.PlayerJobService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import java.util.UUID
 
-class JobSkillJobSelectionMenu(private val playerID: UUID) : Menu(MenuSize.Two, "Métiers".toComponent()) {
+class JobSkillJobSelectionMenu(private val playerID: UUID, private val playerJobService: PlayerJobService) : Menu(MenuSize.Two, "Métiers".toComponent()) {
 
     override fun placeButtons(viewer: Player) {
         addBackButton()
@@ -19,7 +20,7 @@ class JobSkillJobSelectionMenu(private val playerID: UUID) : Menu(MenuSize.Two, 
             addButton(index, ItemBuilder(Material.DIAMOND_PICKAXE)
                 .name(enumJob.name)
                 .build()) {
-                JobSkillMenu(playerID, enumJob).open(viewer)
+                JobSkillMenu(playerID, enumJob, playerJobService).open(viewer)
             }
         }
 
