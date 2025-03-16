@@ -71,6 +71,9 @@ class CustomInventoryView(
         return InventoryType.SlotType.CONTAINER
     }
 
+    override fun open() {
+    }
+
     override fun close() {
         player.closeInventory()
     }

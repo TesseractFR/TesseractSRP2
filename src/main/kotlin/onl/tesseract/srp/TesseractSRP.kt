@@ -2,7 +2,12 @@ package onl.tesseract.srp
 
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.lib.TesseractLib
+import onl.tesseract.lib.equipment.EquipmentService
+import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
+import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
+import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
+import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.springframework.boot.SpringApplication
@@ -25,6 +30,7 @@ class TesseractSRP : JavaPlugin() {
         this.springContext = app.run()
         registerCommands()
         registerListeners()
+        registerSerializers()
         logger.info("Tesseract SRP enabled, Spring context enabled")
     }
 
@@ -36,10 +42,18 @@ class TesseractSRP : JavaPlugin() {
     fun registerCommands() {
         val provider = springContext.getBean(SrpCommandInstanceProvider::class.java)
         SrpStaffCommand(provider).register(this, "staffSrp")
-
         springContext.getBeansOfType(CommandContext::class.java)
             .forEach { (_, bean) -> bean.register(this, bean.commandDefinition.name) }
     }
+
+    private fun registerSerializers() {
+        val campementService = springContext.getBean(CampementService::class.java)
+        EquipmentYamlRepository.registerTypeSerializer(
+            AnnexionStickInvocable::class.java.simpleName,
+            AnnexionStickSerializer(campementService)
+        )
+    }
+
 
     override fun onDisable() {
         // Plugin shutdown logic

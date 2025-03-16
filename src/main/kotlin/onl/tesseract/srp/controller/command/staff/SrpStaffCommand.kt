@@ -8,5 +8,6 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
 @Command(name = "staffSrp", permission = Perm("staff"), subCommands = [
     CustomItemStaffCommand::class,
     PlayerJobStaffCommand::class,
+    CampStaffCommands::class
 ])
 class SrpStaffCommand(commandInstanceProvider: SrpCommandInstanceProvider) : CommandContext(commandInstanceProvider) {}
