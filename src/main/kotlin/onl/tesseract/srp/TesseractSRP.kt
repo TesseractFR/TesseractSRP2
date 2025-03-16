@@ -9,12 +9,15 @@ import org.springframework.boot.SpringApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.core.io.DefaultResourceLoader
 
+lateinit var PLUGIN_INSTANCE: TesseractSRP
+
 class TesseractSRP : JavaPlugin() {
 
     private lateinit var springContext: ApplicationContext
 
     override fun onEnable() {
         // Plugin startup logic
+        PLUGIN_INSTANCE = this
         val classLoader = CompoundClassLoader(listOf(classLoader, classLoader.parent, TesseractLib.javaClass.classLoader), classLoader.parent)
         val resourceLoader = DefaultResourceLoader(classLoader)
         Thread.currentThread().contextClassLoader = classLoader
