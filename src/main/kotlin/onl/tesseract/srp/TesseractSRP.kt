@@ -2,6 +2,7 @@ package onl.tesseract.srp
 
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.lib.TesseractLib
+import onl.tesseract.srp.controller.command.campement.CampementCommands
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
@@ -36,6 +37,7 @@ class TesseractSRP : JavaPlugin() {
     fun registerCommands() {
         val provider = springContext.getBean(SrpCommandInstanceProvider::class.java)
         SrpStaffCommand(provider).register(this, "staffSrp")
+        CampementCommands(provider).register(this, "campement")
 
         springContext.getBeansOfType(CommandContext::class.java)
             .forEach { (_, bean) -> bean.register(this, bean.commandDefinition.name) }
