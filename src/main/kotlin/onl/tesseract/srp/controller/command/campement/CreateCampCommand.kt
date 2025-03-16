@@ -14,6 +14,7 @@ class CreateCampCommand(private val campementService: CampementService) {
     fun onCommand(sender: Player) {
         val playerID = sender.uniqueId
         val world = sender.world
+        val location = sender.location
         val centerChunk = sender.location.chunk
 
         val chunks = listOf(
@@ -32,7 +33,7 @@ class CreateCampCommand(private val campementService: CampementService) {
         }
 
         // Création du campement
-        campementService.createCampement(playerID, chunkList)
+        campementService.createCampement(playerID, chunkList, location)
         sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ${chunkList.size} chunks.")
 
     }
