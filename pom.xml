@@ -13,7 +13,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.1.20-RC</kotlin.version>
+        <kotlin.version>2.0.21</kotlin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springboot.version>3.3.0</springboot.version>
         <jakarta-persistence.version>3.1.0</jakarta-persistence.version>
@@ -119,6 +119,10 @@
 
     <repositories>
         <repository>
+            <id>citizens-repo</id>
+            <url>https://maven.citizensnpcs.co/repo</url>
+        </repository>
+        <repository>
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
@@ -192,6 +196,12 @@
             <artifactId>junit-jupiter</artifactId>
             <version>RELEASE</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.citizensnpcs</groupId>
+            <artifactId>citizensapi</artifactId>
+            <version>2.0.36-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
