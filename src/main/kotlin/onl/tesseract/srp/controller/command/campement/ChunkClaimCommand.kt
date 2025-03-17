@@ -6,6 +6,9 @@ import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
+/**
+ * Command to claim a new chunk in your camp.
+ */
 @Component
 @Command(name = "claim", playerOnly = true)
 class ChunkClaimCommand(private val campementService: CampementService) {
@@ -31,10 +34,10 @@ class ChunkClaimCommand(private val campementService: CampementService) {
                 sender.sendMessage("§eTu possèdes déjà ce chunk.")
             }
             CampementService.AnnexationResult.ALREADY_CLAIMED -> {
-                sender.sendMessage("§cCe chunk est déjà revendiqué par un autre campement.")
+                sender.sendMessage("§cCe chunk appartient à un autre campement.")
             }
             CampementService.AnnexationResult.NOT_ADJACENT -> {
-                sender.sendMessage("§cCe chunk n'est pas adjacent à ton campement.")
+                sender.sendMessage("§cTu dois sélectionner un chunk collé à ton campement.")
             }
         }
     }
