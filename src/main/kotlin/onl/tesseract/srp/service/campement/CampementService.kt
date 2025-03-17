@@ -1,6 +1,8 @@
 package onl.tesseract.srp.service.campement
 
+import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
+import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import org.bukkit.Location
@@ -9,6 +11,11 @@ import java.util.*
 
 @Service
 open class CampementService(private val repository: CampementRepository) {
+
+    @PostConstruct
+    fun registerInServiceContainer() {
+        ServiceContainer.getInstance().registerService(CampementService::class.java, this)
+    }
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
         return repository.getById(ownerID)
@@ -98,6 +105,28 @@ open class CampementService(private val repository: CampementRepository) {
     open fun canInteractInChunk(playerID: UUID, chunk: String): Boolean {
         val campement = repository.getCampementByChunk(chunk) ?: return true
         return campement.ownerID == playerID || campement.trustedPlayers.contains(playerID)
+    }
+
+    @Transactional
+    open fun trustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
+        val campement = repository.getById(ownerID) ?: return false
+        if (trustedPlayerID in campement.trustedPlayers) {
+            return false
+        }
+        campement.trustedPlayers += trustedPlayerID
+        repository.save(campement)
+        return true
+    }
+
+    @Transactional
+    open fun untrustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
+        val campement = repository.getById(ownerID) ?: return false
+        if (trustedPlayerID !in campement.trustedPlayers) {
+            return false
+        }
+        campement.trustedPlayers -= trustedPlayerID
+        repository.save(campement)
+        return true
     }
 
 }

@@ -6,7 +6,7 @@ import java.util.*
 class Campement(
     val id: UUID,
     val ownerID: UUID,
-    val trustedPlayers: List<UUID>,
+    var trustedPlayers: List<UUID>,
     var nbChunks: Int,
     var listChunks: List<String>,
     val campLevel: Int,

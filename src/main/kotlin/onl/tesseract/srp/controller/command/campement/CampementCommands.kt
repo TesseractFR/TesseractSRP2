@@ -11,5 +11,7 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
     CampSpawnCommand::class,
     ChunkClaimCommand::class,
     ChunkUnclaimCommand::class,
+    CampTrustCommand::class,
+    CampUntrustCommand::class
 ])
 class CampementCommands(commandInstanceProvider: SrpCommandInstanceProvider) : CommandContext(commandInstanceProvider)
