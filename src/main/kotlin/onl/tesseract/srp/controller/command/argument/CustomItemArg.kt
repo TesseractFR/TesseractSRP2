@@ -1,4 +1,4 @@
-package onl.tesseract.srp.controller.command.staff
+package onl.tesseract.srp.controller.command.argument
 
 import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
