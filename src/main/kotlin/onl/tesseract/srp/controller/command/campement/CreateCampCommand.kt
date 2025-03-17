@@ -36,7 +36,7 @@ class CreateCampCommand(private val campementService: CampementService) {
         if (success) {
             sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ${chunkList.size} chunks.")
         } else {
-            sender.sendMessage("§cImpossible de créer le campement : un ou plusieurs chunks sont déjà revendiqués.")
+            sender.sendMessage("§cImpossible de créer le campement ici, tu es chez quelqu'un d'autre.")
         }
 
     }

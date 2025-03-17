@@ -14,8 +14,10 @@ class CampementEntity(
     @Id
     val ownerID: UUID,
 
-    @ElementCollection
-    @CollectionTable(name = "t_campements_trusted_players", joinColumns = [JoinColumn(name = "ownerID")])
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "t_campements_trusted_players",
+        joinColumns = [JoinColumn(name = "ownerID")])
     @Column(name = "trusted_player")
     val trustedPlayers: List<UUID>,
 

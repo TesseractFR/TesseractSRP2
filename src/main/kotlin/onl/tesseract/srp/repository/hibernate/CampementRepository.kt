@@ -46,7 +46,7 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
 
 @org.springframework.stereotype.Repository
 interface CampementJpaRepository : JpaRepository<CampementEntity, UUID> {
-    @Query("SELECT ce FROM CampementEntity ce JOIN ce.listChunks c WHERE c = :chunk")
+    @Query("SELECT ce FROM CampementEntity ce LEFT JOIN FETCH ce.trustedPlayers WHERE :chunk MEMBER OF ce.listChunks")
     fun findCampementByChunk(@Param("chunk") chunk: String): CampementEntity?
 }
 
