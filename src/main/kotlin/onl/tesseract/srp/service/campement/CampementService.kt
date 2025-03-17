@@ -95,5 +95,9 @@ open class CampementService(private val repository: CampementRepository) {
         return true
     }
 
+    open fun canInteractInChunk(playerID: UUID, chunk: String): Boolean {
+        val campement = repository.getCampementByChunk(chunk) ?: return true
+        return campement.ownerID == playerID || campement.trustedPlayers.contains(playerID)
+    }
 
 }
