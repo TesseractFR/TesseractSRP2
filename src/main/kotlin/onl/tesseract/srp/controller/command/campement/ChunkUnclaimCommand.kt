@@ -6,6 +6,9 @@ import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
+/**
+ * Command to unclaim a chunk.
+ */
 @Component
 @Command(name = "unclaim", playerOnly = true)
 class ChunkUnclaimCommand(private val campementService: CampementService) {

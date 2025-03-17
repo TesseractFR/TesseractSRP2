@@ -6,6 +6,9 @@ import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
+/**
+ * Set a new spawnpoint for your camp.
+ */
 @Component
 @Command(name = "setspawn", playerOnly = true)
 class SetCampSpawnCommand(private val campementService: CampementService) {
@@ -19,7 +22,6 @@ class SetCampSpawnCommand(private val campementService: CampementService) {
             sender.sendMessage("§cTu ne possèdes pas de campement !")
             return
         }
-
         val location = sender.location
         campementService.setSpawnpoint(playerID, location)
         sender.sendMessage("§aNouveau spawn défini ici !")

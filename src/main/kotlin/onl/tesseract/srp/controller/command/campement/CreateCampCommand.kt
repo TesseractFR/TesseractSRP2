@@ -6,6 +6,9 @@ import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
+/**
+ * Command to claim a new camp.
+ */
 @Component
 @Command(name = "create", playerOnly = true)
 class CreateCampCommand(private val campementService: CampementService) {
