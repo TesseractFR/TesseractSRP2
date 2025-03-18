@@ -60,7 +60,6 @@ open class CampementService(private val repository: CampementRepository) {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
     }
 
-    @Transactional
     open fun claimChunk(ownerID: UUID, chunk: String): AnnexationResult {
         val campement = repository.getById(ownerID) ?: return AnnexationResult.NOT_ADJACENT
         if (campement.listChunks.contains(chunk)) {
@@ -84,7 +83,6 @@ open class CampementService(private val repository: CampementRepository) {
         return AnnexationResult.SUCCESS
     }
 
-    @Transactional
     open fun unclaimChunk(ownerID: UUID, chunk: String): Boolean {
         val campement = repository.getById(ownerID) ?: return false
         if (!campement.listChunks.contains(chunk)) {
@@ -100,6 +98,23 @@ open class CampementService(private val repository: CampementRepository) {
         campement.nbChunks = updatedChunks.size
         repository.save(campement)
         return true
+    }
+
+    open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): String {
+        return if (claim) {
+            when (claimChunk(ownerID, chunk)) {
+                AnnexationResult.SUCCESS -> "§aLe chunk ($chunk) a été annexé avec succès !"
+                AnnexationResult.ALREADY_OWNED -> "§eTu possèdes déjà ce chunk."
+                AnnexationResult.ALREADY_CLAIMED -> "§cCe chunk appartient à un autre campement."
+                AnnexationResult.NOT_ADJACENT -> "§cTu dois sélectionner un chunk collé à ton campement."
+            }
+        } else {
+            if (unclaimChunk(ownerID, chunk)) {
+                "§aLe chunk ($chunk) a été retiré de ton campement !"
+            } else {
+                "§cCe chunk ne fait pas partie de ton campement."
+            }
+        }
     }
 
     open fun canInteractInChunk(playerID: UUID, chunk: String): Boolean {
