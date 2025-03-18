@@ -15,7 +15,8 @@ import java.util.*
 @Service
 open class CampementService(
     private val repository: CampementRepository,
-    @Lazy private val chunkNotificationListener: ChunkNotificationListener
+    @Lazy private val chunkNotificationListener: ChunkNotificationListener,
+    private val campementBorderRenderer: CampementBorderRenderer
 ) {
     @PostConstruct
     fun registerInServiceContainer() {
@@ -92,6 +93,7 @@ open class CampementService(
         campement.nbChunks = campement.listChunks.size
         repository.save(campement)
         updatePlayerCampementLocation(ownerID)
+        updateBordersDisplayAfterClaim(ownerID)
         return AnnexationResult.SUCCESS
     }
 
@@ -116,6 +118,7 @@ open class CampementService(
         campement.nbChunks = updatedChunks.size
         repository.save(campement)
         updatePlayerCampementLocation(ownerID)
+        updateBordersDisplayAfterClaim(ownerID)
         return true
     }
 
@@ -154,6 +157,20 @@ open class CampementService(
         val chunkZ = player.location.chunk.z
         chunkNotificationListener.updatePlayerCampementCache(playerId, chunkX, chunkZ, notify = false)
     }
+
+    /**
+     * Updates the player's camp borders after a claim or unclaim action.
+     * @param playerID UUID of the player.
+     */
+    private fun updateBordersDisplayAfterClaim(playerID: UUID) {
+        val player = Bukkit.getPlayer(playerID) ?: return
+        val campement = getCampementByOwner(playerID) ?: return
+        val chunks = campement.listChunks.map { it.split(",").map(String::toInt) }
+
+        // Réaffiche les nouvelles bordures
+        campementBorderRenderer.showBorders(player, chunks)
+    }
+
 
     /**
      * Retrieves whether a player can interact within a specific chunk.
