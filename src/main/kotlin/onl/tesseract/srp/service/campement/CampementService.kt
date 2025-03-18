@@ -3,15 +3,20 @@ package onl.tesseract.srp.service.campement
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
 import onl.tesseract.lib.service.ServiceContainer
+import onl.tesseract.srp.controller.event.campement.ChunkNotificationListener
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.repository.hibernate.CampementRepository
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.springframework.stereotype.Service
+import org.springframework.context.annotation.Lazy
 import java.util.*
 
 @Service
-open class CampementService(private val repository: CampementRepository) {
-
+open class CampementService(
+    private val repository: CampementRepository,
+    @Lazy private val chunkNotificationListener: ChunkNotificationListener
+) {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
@@ -60,6 +65,12 @@ open class CampementService(private val repository: CampementRepository) {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
     }
 
+    /**
+     * Attempts to claim a chunk for the player's camp.
+     * @param ownerID The UUID of the player claiming the chunk.
+     * @param chunk The chunk coordinates in the format "x,z".
+     * @return The result of the annexation attempt.
+     */
     open fun claimChunk(ownerID: UUID, chunk: String): AnnexationResult {
         val campement = repository.getById(ownerID) ?: return AnnexationResult.NOT_ADJACENT
         if (campement.listChunks.contains(chunk)) {
@@ -80,9 +91,16 @@ open class CampementService(private val repository: CampementRepository) {
         campement.listChunks += chunk
         campement.nbChunks = campement.listChunks.size
         repository.save(campement)
+        updatePlayerCampementLocation(ownerID)
         return AnnexationResult.SUCCESS
     }
 
+    /**
+     * Attempts to unclaim a chunk from the player's camp.
+     * @param ownerID The UUID of the player unclaiming the chunk.
+     * @param chunk The chunk coordinates in the format "x,z".
+     * @return True if the chunk was successfully unclaimed, false otherwise.
+     */
     open fun unclaimChunk(ownerID: UUID, chunk: String): Boolean {
         val campement = repository.getById(ownerID) ?: return false
         if (!campement.listChunks.contains(chunk)) {
@@ -97,9 +115,17 @@ open class CampementService(private val repository: CampementRepository) {
         campement.listChunks = updatedChunks
         campement.nbChunks = updatedChunks.size
         repository.save(campement)
+        updatePlayerCampementLocation(ownerID)
         return true
     }
 
+    /**
+     * Handles the process of claiming or unclaiming a chunk and returns a message indicating the result.
+     * @param ownerID The UUID of the player performing the action.
+     * @param chunk The chunk coordinates in the format "x,z".
+     * @param claim True to claim the chunk, false to unclaim it.
+     * @return A formatted string message describing the outcome of the operation.
+     */
     open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): String {
         return if (claim) {
             when (claimChunk(ownerID, chunk)) {
@@ -117,11 +143,36 @@ open class CampementService(private val repository: CampementRepository) {
         }
     }
 
+    /**
+     * Updates the player's current campement location in the cache.
+     * This ensures the correct campement status is maintained after a claim/unclaim.
+     * @param playerId The UUID of the player.
+     */
+    private fun updatePlayerCampementLocation(playerId: UUID) {
+        val player = Bukkit.getPlayer(playerId) ?: return
+        val chunkX = player.location.chunk.x
+        val chunkZ = player.location.chunk.z
+        chunkNotificationListener.updatePlayerCampementCache(playerId, chunkX, chunkZ, notify = false)
+    }
+
+    /**
+     * Retrieves whether a player can interact within a specific chunk.
+     * This checks if the chunk belongs to the player or if they are trusted in the owning camp.
+     * @param playerID The UUID of the player attempting interaction.
+     * @param chunk The chunk coordinates in the format "x,z".
+     * @return True if the player can interact, false otherwise.
+     */
     open fun canInteractInChunk(playerID: UUID, chunk: String): Boolean {
         val campement = repository.getCampementByChunk(chunk) ?: return true
         return campement.ownerID == playerID || campement.trustedPlayers.contains(playerID)
     }
 
+    /**
+     * Adds a trusted player to the owner's camp, allowing them to interact with camp resources.
+     * @param ownerID The UUID of the camp owner.
+     * @param trustedPlayerID The UUID of the player being added to the trusted list.
+     * @return True if the player was successfully added, false if they were already trusted.
+     */
     @Transactional
     open fun trustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
         val campement = repository.getById(ownerID) ?: return false
@@ -133,6 +184,12 @@ open class CampementService(private val repository: CampementRepository) {
         return true
     }
 
+    /**
+     * Removes a trusted player from the owner's camp, revoking their interaction privileges.
+     * @param ownerID The UUID of the camp owner.
+     * @param trustedPlayerID The UUID of the player being removed from the trusted list.
+     * @return True if the player was successfully removed, false if they were not previously trusted.
+     */
     @Transactional
     open fun untrustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
         val campement = repository.getById(ownerID) ?: return false
