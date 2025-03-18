@@ -24,7 +24,7 @@ class CampementEntity(
     @Column(nullable = false)
     val nbChunks: Int,
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "t_campements_chunks",
         joinColumns = [JoinColumn(name = "ownerID")],
