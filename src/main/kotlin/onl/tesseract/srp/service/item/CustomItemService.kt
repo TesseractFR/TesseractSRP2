@@ -29,10 +29,16 @@ class CustomItemService(
             .build()
         item.editMeta {
             val dataContainer = it.persistentDataContainer
-            dataContainer.set(namespacedKeyProvider.get("customMaterial"), PersistentDataType.STRING, customItem.item.material.name)
-            dataContainer.set(namespacedKeyProvider.get("quality"), PersistentDataType.INTEGER, customItem.item.quality)
+            dataContainer[namespacedKeyProvider.get("customMaterial"), PersistentDataType.STRING] = customItem.item.material.name
+            dataContainer[namespacedKeyProvider.get("quality"), PersistentDataType.INTEGER] = customItem.item.quality
         }
         return item
+    }
+
+    fun isCustomItem(itemStack: ItemStack): Boolean {
+        return itemStack.itemMeta
+            ?.persistentDataContainer
+            ?.has(namespacedKeyProvider.get("customMaterial")) ?: false
     }
 
     private fun getQualityColorGradient(quality: Int): TextColor {
