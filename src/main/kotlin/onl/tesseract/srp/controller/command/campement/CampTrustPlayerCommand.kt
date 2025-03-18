@@ -27,7 +27,7 @@ class CampTrustCommand(private val campementService: CampementService) {
             return
         }
         if (ownerID == trustedPlayerID) {
-            sender.sendMessage("§eC'est bien, tu as confiance en toi-même ! Mais bon, t'es déjà propriétaire :)")
+            sender.sendMessage("§eC'est bien, tu as confiance en toi ! Mais bon, t'es déjà propriétaire :)")
             return
         }
         val success = campementService.trustPlayer(ownerID, trustedPlayerID)
