@@ -7,6 +7,7 @@ import onl.tesseract.srp.PLUGIN_INSTANCE
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.enchantments.Enchantment
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
@@ -28,23 +29,15 @@ object AnnexationStick {
         )
 
         meta.lore(listOf(
-            Component.text("► ")
-                .color(NamedTextColor.GRAY)
-                .append(Component.text("Clic DROIT")
-                    .color(NamedTextColor.GREEN)
-                )
-                .append(Component.text(" pour annexer un chunk !")
-                    .color(NamedTextColor.GRAY)
-                ),
+            Component.text("► ").color(NamedTextColor.GRAY)
+                .append(Component.text("Clic DROIT").color(NamedTextColor.GREEN))
+                .append(Component.text(" pour annexer un chunk !").color(NamedTextColor.GRAY)),
 
-            Component.text("► ")
-                .color(NamedTextColor.GRAY)
-                .append(Component.text("Clic GAUCHE")
-                    .color(NamedTextColor.RED)
-                )
-                .append(Component.text(" pour le désannexer !")
-                    .color(NamedTextColor.GRAY)
-                )
+            Component.text("► ").color(NamedTextColor.GRAY)
+                .append(Component.text("Clic GAUCHE").color(NamedTextColor.RED))
+                .append(Component.text(" pour le désannexer !").color(NamedTextColor.GRAY)),
+
+            Component.text("Shift + clic pour le retirer").color(NamedTextColor.YELLOW)
         ))
 
         meta.addEnchant(Enchantment.MENDING, 1, true)
@@ -59,5 +52,27 @@ object AnnexationStick {
     fun isAnnexationStick(item: ItemStack?): Boolean {
         if (item == null || !item.hasItemMeta()) return false
         return item.itemMeta!!.persistentDataContainer.has(KEY, PersistentDataType.BYTE)
+    }
+
+    fun removeFromInventory(player: Player) {
+        val inventory = player.inventory
+        for (slot in 0..8) {
+            val item = inventory.getItem(slot)
+            if (isAnnexationStick(item)) {
+                inventory.setItem(slot, null)
+            }
+        }
+    }
+
+    fun giveToPlayer(player: Player) {
+        removeFromInventory(player)
+        val inventory = player.inventory
+        for (slot in 0..8) {
+            if (inventory.getItem(slot) == null) {
+                inventory.setItem(slot, create())
+                return
+            }
+        }
+        player.sendMessage("§cImpossible de recevoir le Bâton d'Annexion : ta barre rapide est pleine !")
     }
 }

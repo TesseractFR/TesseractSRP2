@@ -12,8 +12,7 @@ class AnnexionStickCommand {
 
     @CommandBody
     fun onCommand(sender: Player) {
-        val stick = AnnexationStick.create()
-        sender.inventory.addItem(stick)
-        sender.sendMessage("§6Tu as reçu le §eBâton d'Annexion§6 !")
+        AnnexationStick.giveToPlayer(sender)
+        sender.sendMessage("§6Tu as reçu un §eBâton d'Annexion§6 !")
     }
 }

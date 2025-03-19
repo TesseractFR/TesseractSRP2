@@ -81,7 +81,6 @@ open class CampementService(
     }
 
 
-
     enum class AnnexationResult {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
     }
@@ -125,6 +124,9 @@ open class CampementService(
      */
     open fun unclaimChunk(ownerID: UUID, chunk: String): Boolean {
         val campement = repository.getById(ownerID) ?: return false
+        if (campement.listChunks.size == 1) {
+            return false
+        }
         if (!campement.listChunks.contains(chunk)) {
             return false
         }
@@ -150,7 +152,7 @@ open class CampementService(
      * @return A formatted string message describing the outcome of the operation.
      */
     open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): String {
-        getCampementByOwner(ownerID)
+        val campement = getCampementByOwner(ownerID)
             ?: return "§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !"
 
         return if (claim) {
@@ -161,11 +163,14 @@ open class CampementService(
                 AnnexationResult.NOT_ADJACENT -> "§cTu dois sélectionner un chunk collé à ton campement."
             }
         } else {
-            if (unclaimChunk(ownerID, chunk)) {
-                "§aLe chunk ($chunk) a été retiré de ton campement !"
-            } else {
-                "§cCe chunk ne fait pas partie de ton campement."
+            if (!campement.listChunks.contains(chunk)) {
+                return "§cCe chunk ne fait pas partie de ton campement."
             }
+            if (campement.listChunks.size == 1) {
+                return "§cTu ne peux pas supprimer ton dernier chunk ! Si tu veux supprimer ton campement, utilise §e/campement delete"
+            }
+            unclaimChunk(ownerID, chunk)
+            return "§aLe chunk ($chunk) a été retiré de ton campement !"
         }
     }
 
