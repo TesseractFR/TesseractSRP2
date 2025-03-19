@@ -77,7 +77,7 @@ class CampementBorderRenderer {
         val minY = world.minHeight
         val maxY = world.maxHeight
 
-        for (z in startZ..endZ step 2) {
+        for (z in startZ..endZ step 1) {
             for (y in minY..maxY step 2) {
                 world.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
             }
@@ -95,7 +95,7 @@ class CampementBorderRenderer {
         val minY = world.minHeight
         val maxY = world.maxHeight
 
-        for (x in startX..endX step 2) {
+        for (x in startX..endX step 1) {
             for (y in minY..maxY step 2) {
                 world.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
             }

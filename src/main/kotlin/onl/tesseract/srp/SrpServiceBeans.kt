@@ -1,5 +1,6 @@
 package onl.tesseract.srp
 
+import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
 import onl.tesseract.lib.service.ServiceContainer
@@ -17,5 +18,10 @@ open class SrpServiceBeans {
     @Bean
     open fun eventService(): EventService {
         return ServiceContainer[EventService::class.java]
+    }
+
+    @Bean
+    open fun chatEntryService(): ChatEntryService {
+        return ServiceContainer[ChatEntryService::class.java]
     }
 }

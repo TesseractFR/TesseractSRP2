@@ -2,15 +2,19 @@ package onl.tesseract.srp.service.campement
 
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
+import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.event.campement.ChunkNotificationListener
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import org.springframework.context.annotation.Lazy
 import java.util.*
+
+private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
 
 @Service
 open class CampementService(
@@ -48,6 +52,7 @@ open class CampementService(
             spawnLocation = spawnLocation,
         )
         repository.save(campement)
+        updatePlayerCampementLocation(ownerID)
         return true
     }
 
@@ -74,6 +79,8 @@ open class CampementService(
         repository.save(campement)
         return campement.campLevel
     }
+
+
 
     enum class AnnexationResult {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
@@ -143,6 +150,9 @@ open class CampementService(
      * @return A formatted string message describing the outcome of the operation.
      */
     open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): String {
+        getCampementByOwner(ownerID)
+            ?: return "§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !"
+
         return if (claim) {
             when (claimChunk(ownerID, chunk)) {
                 AnnexationResult.SUCCESS -> "§aLe chunk ($chunk) a été annexé avec succès !"
