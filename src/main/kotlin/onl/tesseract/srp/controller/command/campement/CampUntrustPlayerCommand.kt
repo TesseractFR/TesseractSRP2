@@ -25,7 +25,7 @@ class CampUntrustCommand(
         val ownerID = sender.uniqueId
         val campement = campementService.getCampementByOwner(ownerID)
         if (campement == null) {
-            sender.sendMessage("§cTu ne possèdes pas de campement !")
+            sender.sendMessage("§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !")
             return
         }
         val trustedPlayerUUID = campement.trustedPlayers.find { Bukkit.getOfflinePlayer(it).name == targetName }

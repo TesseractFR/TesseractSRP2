@@ -23,7 +23,7 @@ class CampTrustCommand(private val campementService: CampementService) {
         val trustedPlayerID = targetPlayer.uniqueId
         val campement = campementService.getCampementByOwner(ownerID)
         if (campement == null) {
-            sender.sendMessage("§cTu ne possèdes pas de campement !")
+            sender.sendMessage("§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !")
             return
         }
         if (ownerID == trustedPlayerID) {

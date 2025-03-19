@@ -19,7 +19,7 @@ class SetCampSpawnCommand(private val campementService: CampementService) {
         val campement = campementService.getCampementByOwner(playerID)
 
         if (campement == null) {
-            sender.sendMessage("§cTu ne possèdes pas de campement !")
+            sender.sendMessage("§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !")
             return
         }
         val location = sender.location
