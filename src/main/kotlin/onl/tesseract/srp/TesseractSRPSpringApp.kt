@@ -1,6 +1,7 @@
 package onl.tesseract.srp
 
 import onl.tesseract.core.Config
+import org.bukkit.Bukkit
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -11,12 +12,15 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
+import org.springframework.scheduling.TaskScheduler
+import org.springframework.scheduling.annotation.EnableScheduling
 import java.util.*
 import javax.sql.DataSource
 
 
 @SpringBootApplication(scanBasePackages = ["onl.tesseract.srp"])
 @EnableJpaRepositories("onl.tesseract.srp.repository.hibernate", entityManagerFactoryRef = "defaultEntityManagerFactory")
+@EnableScheduling
 open class TesseractSRPSpringApp {
 
     @Bean
@@ -59,5 +63,11 @@ open class TesseractSRPSpringApp {
         jpaProperties.setProperty("hibernate.cache.use_query_cache", "true")
         build.setJpaProperties(jpaProperties)
         return build
+    }
+
+
+    @Bean(name = ["bukkitScheduler"])
+    open fun bukkitScheduler(): TaskScheduler {
+        return BukkitTaskScheduler(PLUGIN_INSTANCE, Bukkit.getScheduler())
     }
 }

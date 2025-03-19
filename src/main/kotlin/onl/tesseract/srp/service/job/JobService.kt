@@ -1,5 +1,6 @@
 package onl.tesseract.srp.service.job
 
+import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.item.CustomItem
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
@@ -13,6 +14,7 @@ import java.util.*
 class JobService(
     private val jobConfigRepository: JobsConfigRepository,
     private val playerJobService: PlayerJobService,
+    private val eventService: EventService,
 ) {
     fun getJobs(): Map<String, Job> = jobConfigRepository.getJobs()
 
@@ -28,7 +30,9 @@ class JobService(
     }
 
     /**
-     * @return Generated item with random quality, or null if not looted
+     * Attempt to generate an item with random quality. Probability of successful
+     * loot depends on loot ratio. Triggers a [JobLootItemEvent] in case of success.
+     * @return Generated item with random quality if the loot was successful, null otherwise.
      */
     fun generateItem(playerID: UUID, material: CustomMaterial): CustomItem? {
         val job = getJobByMaterial(material) ?: return null
@@ -39,10 +43,11 @@ class JobService(
             .multiplyMoneyGain(playerJobProgression.getMoneyBonus(event))
             .addQualityMean(playerJobProgression.getQualityBonus(event))
 
-        return if (baseStat.randomizeLootChance())
-            CustomItem(material, baseStat.generateQuality())
-        else
+        return if (baseStat.randomizeLootChance()) {
+            val item = CustomItem(material, baseStat.generateQuality())
+            eventService.callEvent(JobLootItemEvent(playerID, item, baseStat.xpGain))
+            item
+        } else
             null
     }
-
 }

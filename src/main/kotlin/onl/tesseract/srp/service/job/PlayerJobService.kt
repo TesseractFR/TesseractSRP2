@@ -18,6 +18,8 @@ open class PlayerJobService(
     private val eventService: EventService
 ) {
 
+    private val lootBatches: MutableMap<UUID, Int> = mutableMapOf()
+
     open fun getPlayerJobProgression(playerID: UUID): PlayerJobProgression {
         return repository.getById(playerID) ?: PlayerJobProgression(playerID)
     }
@@ -37,29 +39,44 @@ open class PlayerJobService(
         return added
     }
 
+    /**
+     * Register a loot by a player that generated [xpLoot] points of xp. A subsequent call to [processLootBatches] will
+     * effectively give the cumulated xp to players.
+     */
+    open fun registerLoot(playerID: UUID, xpLoot: Int) {
+        lootBatches[playerID] = lootBatches.getOrDefault(playerID, 0) + xpLoot
+    }
+
+    /**
+     * Give all registered xp loot to players and save them.
+     */
     @Transactional
-    open fun addXp(playerID: UUID, amount: Int) {
+    open fun processLootBatches() {
+        lootBatches.forEach { (playerID, xp) ->
+            addXp(playerID, xp)
+        }
+        lootBatches.clear()
+    }
+
+    fun addXp(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addXp(amount)
         repository.save(progression)
     }
 
-    @Transactional
-    open fun addLevel(playerID: UUID, amount: Int) {
+    fun addLevel(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addLevel(amount)
         repository.save(progression)
     }
 
-    @Transactional
-    open fun clearXp(playerID: UUID) {
+    fun clearXp(playerID: UUID) {
         val progression = getPlayerJobProgression(playerID)
         progression.addXp(-progression.xp)
         repository.save(progression)
     }
 
-    @Transactional
-    open fun addSkillPoint(playerID: UUID, points: Int) {
+    fun addSkillPoint(playerID: UUID, points: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addSkillPoints(points)
         repository.save(progression)
