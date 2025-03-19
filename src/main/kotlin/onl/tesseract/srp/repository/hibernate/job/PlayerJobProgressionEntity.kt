@@ -3,10 +3,13 @@ package onl.tesseract.srp.repository.hibernate.job
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.job.JobSkill
 import onl.tesseract.srp.domain.job.PlayerJobProgression
+import org.hibernate.annotations.CacheConcurrencyStrategy
 import java.util.*
 
 @Entity
 @Table(name = "t_player_job_progression")
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class PlayerJobProgressionEntity(
     @Id
     val playerID: UUID,
