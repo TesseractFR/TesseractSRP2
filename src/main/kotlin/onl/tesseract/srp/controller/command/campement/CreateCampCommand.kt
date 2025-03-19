@@ -7,7 +7,7 @@ import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
 /**
- * Command to claim a new camp.
+ * Command to create a camp by claiming the chunk the player is standing on.
  */
 @Component
 @Command(name = "create", playerOnly = true)
@@ -16,18 +16,9 @@ class CreateCampCommand(private val campementService: CampementService) {
     @CommandBody
     fun onCommand(sender: Player) {
         val playerID = sender.uniqueId
-        val world = sender.world
         val location = sender.location
-        val centerChunk = sender.location.chunk
-
-        val chunks = listOf(
-            centerChunk,
-            world.getChunkAt(centerChunk.x + 1, centerChunk.z),
-            world.getChunkAt(centerChunk.x, centerChunk.z + 1),
-            world.getChunkAt(centerChunk.x + 1, centerChunk.z + 1)
-        )
-
-        val chunkList = chunks.map { "${it.x},${it.z}" }
+        val chunk = sender.location.chunk
+        val chunkCoord = "${chunk.x},${chunk.z}"
 
         val existingCampement = campementService.getCampementByOwner(playerID)
         if (existingCampement != null) {
@@ -35,13 +26,11 @@ class CreateCampCommand(private val campementService: CampementService) {
             return
         }
 
-        val success = campementService.createCampement(playerID, chunkList, location)
+        val success = campementService.createCampement(playerID, listOf(chunkCoord), location)
         if (success) {
-            sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ${chunkList.size} chunks.")
+            sender.sendMessage("§aCampement créé avec succès ! Tu contrôles maintenant ce chunk (${chunkCoord}).")
         } else {
-            sender.sendMessage("§cImpossible de créer le campement ici, tu es chez quelqu'un d'autre.")
+            sender.sendMessage("§cImpossible de créer le campement ici, ce chunk appartient déjà à un autre campement.")
         }
-
     }
-
 }
