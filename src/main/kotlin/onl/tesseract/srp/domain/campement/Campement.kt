@@ -9,7 +9,7 @@ class Campement(
     var trustedPlayers: List<UUID>,
     var nbChunks: Int,
     var listChunks: List<String>,
-    val campLevel: Int,
+    var campLevel: Int,
     val spawnLocation: Location
 ) {
 

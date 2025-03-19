@@ -62,6 +62,19 @@ open class CampementService(
         repository.save(campement.setSpawnpoint(newLocation))
     }
 
+    /**
+     * Increments the level of the player's camp.
+     * @param ownerID The UUID of the player who owns the camp.
+     * @return The new camp level if successful, or null if the camp does not exist.
+     */
+    @Transactional
+    open fun incrementCampLevel(ownerID: UUID): Int? {
+        val campement = repository.getById(ownerID) ?: return null
+        campement.campLevel += 1
+        repository.save(campement)
+        return campement.campLevel
+    }
+
     enum class AnnexationResult {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
     }
