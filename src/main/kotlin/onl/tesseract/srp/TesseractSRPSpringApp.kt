@@ -49,6 +49,14 @@ open class TesseractSRPSpringApp {
         build.jpaVendorAdapter = HibernateJpaVendorAdapter()
         val jpaProperties = Properties()
         jpaProperties.setProperty("hibernate.hbm2ddl.auto", "update")
+        jpaProperties.setProperty("spring.jpa.show-sql", "true")
+        jpaProperties.setProperty("hibernate.show_sql", "true")
+        jpaProperties.setProperty("logging.level.org.hibernate.SQL", "DEBUG")
+        jpaProperties.setProperty("logging.level.org.hibernate.type.descriptor.sql.BasicBinder", "TRACE")
+        jpaProperties.setProperty("hibernate.cache.region.factory_class", "org.hibernate.cache.jcache.JCacheRegionFactory")
+        jpaProperties.setProperty("hibernate.generate_statistics", "false")
+        jpaProperties.setProperty("hibernate.cache.use_second_level_cache", "true")
+        jpaProperties.setProperty("hibernate.cache.use_query_cache", "true")
         build.setJpaProperties(jpaProperties)
         return build
     }
