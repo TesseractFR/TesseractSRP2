@@ -1,5 +1,7 @@
 package onl.tesseract.srp.domain.job
 
+import onl.tesseract.srp.service.job.PlayerLevelUpEvent
+import org.bukkit.event.Event
 import java.util.*
 
 class PlayerJobProgression(
@@ -19,6 +21,16 @@ class PlayerJobProgression(
     val skills: List<JobSkill>
         get() = _skills
 
+    private val _events: MutableList<Event> = mutableListOf()
+
+    fun consumeEvents(consume: (Event) -> Unit) {
+        val iterator = _events.iterator()
+        while (iterator.hasNext()) {
+            consume(iterator.next())
+            iterator.remove()
+        }
+    }
+
     /**
      * Give (or remove) XP to the player. If amount is positive and enough to increase the level, the level is updated,
      * and the xp decreased. Removing more than the current XP amount will set XP to 0 without decreasing the level.
@@ -34,12 +46,14 @@ class PlayerJobProgression(
         }
         this.xp = this.xp.coerceAtLeast(0)
         this.skillPoints += passedLevel
+        if (passedLevel > 0) _events.add(PlayerLevelUpEvent(playerID, this.level, passedLevel))
         return passedLevel
     }
 
     fun addLevel(amount: Int) {
         this.level += amount
         this.level = this.level.coerceAtLeast(1)
+        if (amount > 0) _events.add(PlayerLevelUpEvent(playerID, this.level, amount))
     }
 
     fun addSkillPoints(points: Int) {
