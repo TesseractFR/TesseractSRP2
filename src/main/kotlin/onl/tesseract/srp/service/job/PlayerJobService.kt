@@ -61,13 +61,24 @@ open class PlayerJobService(
     fun addXp(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addXp(amount)
-        repository.save(progression)
+        savePlayerProgression(progression)
     }
 
     fun addLevel(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addLevel(amount)
-        repository.save(progression)
+        savePlayerProgression(progression)
+    }
+
+    /**
+     * Save the player and emit events
+     */
+    private fun savePlayerProgression(playerJobProgression: PlayerJobProgression) {
+        repository.save(playerJobProgression)
+        playerJobProgression.consumeEvents {
+            logger.info(it.toString())
+            eventService.callEvent(it)
+        }
     }
 
     fun clearXp(playerID: UUID) {

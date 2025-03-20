@@ -17,6 +17,7 @@ class PlayerJobProgressionEntity(
     val xp: Int,
     val skillPoints: Int,
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val skills: List<JobSkill>,
 ) {
 
