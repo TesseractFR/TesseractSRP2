@@ -59,10 +59,10 @@ class CampementBorderRenderer {
             val hasTop = chunkSet.contains(chunkX to chunkZ - 1)
             val hasBottom = chunkSet.contains(chunkX to chunkZ + 1)
 
-            if (!hasLeft) drawVerticalBorder(world, minX, minZ, maxZ)
-            if (!hasRight) drawVerticalBorder(world, maxX, minZ, maxZ)
-            if (!hasTop) drawHorizontalBorder(world, minX, maxX, minZ)
-            if (!hasBottom) drawHorizontalBorder(world, minX, maxX, maxZ)
+            if (!hasLeft) drawVerticalBorder(player, minX, minZ, maxZ)
+            if (!hasRight) drawVerticalBorder(player, maxX, minZ, maxZ)
+            if (!hasTop) drawHorizontalBorder(player, minX, maxX, minZ)
+            if (!hasBottom) drawHorizontalBorder(player, minX, maxX, maxZ)
         }
     }
 
@@ -73,13 +73,14 @@ class CampementBorderRenderer {
      * @param startZ The starting Z-coordinate.
      * @param endZ The ending Z-coordinate.
      */
-    private fun drawVerticalBorder(world: World, x: Int, startZ: Int, endZ: Int) {
+    private fun drawVerticalBorder(player: Player, x: Int, startZ: Int, endZ: Int) {
+        val world = player.world
         val minY = world.minHeight
         val maxY = world.maxHeight
 
         for (z in startZ..endZ step 1) {
             for (y in minY..maxY step 2) {
-                world.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
+                player.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
             }
         }
     }
@@ -91,13 +92,14 @@ class CampementBorderRenderer {
      * @param endX The ending X-coordinate.
      * @param z The Z-coordinate of the border.
      */
-    private fun drawHorizontalBorder(world: World, startX: Int, endX: Int, z: Int) {
+    private fun drawHorizontalBorder(player: Player, startX: Int, endX: Int, z: Int) {
+        val world = player.world
         val minY = world.minHeight
         val maxY = world.maxHeight
 
         for (x in startX..endX step 1) {
             for (y in minY..maxY step 2) {
-                world.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
+                player.spawnParticle(Particle.END_ROD, x.toDouble(), y.toDouble(), z.toDouble(), 2, 0.1, 0.1, 0.1, 0.01)
             }
         }
     }

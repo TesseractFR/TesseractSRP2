@@ -1,18 +1,21 @@
 package onl.tesseract.srp.controller.event.campement
 
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Component as SpringComponent
 import org.springframework.context.annotation.Lazy
 import java.util.*
 
 /**
  * Displays the camp name or "Nature" depending on the chunk the player moves into.
  */
-@Component
+@SpringComponent
 open class ChunkNotificationListener(@Lazy private val campementService: CampementService) : Listener {
 
     private val lastCampementMap = mutableMapOf<UUID, UUID?>()
@@ -44,10 +47,10 @@ open class ChunkNotificationListener(@Lazy private val campementService: Campeme
         if (notify) {
             val player = Bukkit.getPlayer(playerId) ?: return
             if (newOwnerId == null) {
-                player.sendMessage("§a[Nature]")
+                player.sendMessage(Component.text("[Nature]", NamedTextColor.GREEN))
             } else {
                 val ownerName = Bukkit.getOfflinePlayer(newOwnerId).name ?: "Inconnu"
-                player.sendMessage("§6[Campement de $ownerName]")
+                player.sendMessage(Component.text("[Campement de $ownerName]", NamedTextColor.GOLD))
             }
         }
     }

@@ -2,13 +2,17 @@ package onl.tesseract.srp.service.campement
 
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
+import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.srp.controller.event.campement.ChunkNotificationListener
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.entity.Player
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import org.springframework.context.annotation.Lazy
@@ -33,6 +37,22 @@ open class CampementService(
 
     open fun getCampementByChunk(chunk: String): Campement? {
         return repository.getCampementByChunk(chunk)
+    }
+
+    fun getCampementOrWarn(sender: Player): Campement? {
+        val campement = getCampementByOwner(sender.uniqueId)
+        if (campement == null) {
+            sender.sendMessage(
+                ChatFormats.CHAT_ERROR.append(
+                    Component.text("Tu ne possèdes pas de campement. Utilise ")
+                ).append(
+                    Component.text("/campement create", NamedTextColor.GOLD)
+                ).append(
+                    Component.text(" pour en créer un !")
+                )
+            )
+        }
+        return campement
     }
 
     @Transactional
@@ -151,26 +171,48 @@ open class CampementService(
      * @param claim True to claim the chunk, false to unclaim it.
      * @return A formatted string message describing the outcome of the operation.
      */
-    open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): String {
+    open fun handleClaimUnclaim(ownerID: UUID, chunk: String, claim: Boolean): Component {
         val campement = getCampementByOwner(ownerID)
-            ?: return "§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !"
+            ?: return ChatFormats.CHAT_ERROR.append(
+                Component.text("Tu ne possèdes pas de campement. Utilise ")
+            ).append(
+                Component.text("/campement create", NamedTextColor.GOLD)
+            ).
+            append(Component.text(" pour en créer un !"))
 
         return if (claim) {
             when (claimChunk(ownerID, chunk)) {
-                AnnexationResult.SUCCESS -> "§aLe chunk ($chunk) a été annexé avec succès !"
-                AnnexationResult.ALREADY_OWNED -> "§eTu possèdes déjà ce chunk."
-                AnnexationResult.ALREADY_CLAIMED -> "§cCe chunk appartient à un autre campement."
-                AnnexationResult.NOT_ADJACENT -> "§cTu dois sélectionner un chunk collé à ton campement."
+                AnnexationResult.SUCCESS -> ChatFormats.CHAT_SUCCESS.append(
+                    Component.text("Le chunk ($chunk) a été annexé avec succès !")
+                )
+                AnnexationResult.ALREADY_OWNED -> ChatFormats.CHAT.append(
+                    Component.text("Tu possèdes déjà ce chunk.")
+                )
+                AnnexationResult.ALREADY_CLAIMED -> ChatFormats.CHAT_ERROR.append(
+                    Component.text("Ce chunk appartient à un autre campement.")
+                )
+                AnnexationResult.NOT_ADJACENT -> ChatFormats.CHAT_ERROR.append(
+                    Component.text("Tu dois sélectionner un chunk collé à ton campement.")
+                )
             }
         } else {
             if (!campement.listChunks.contains(chunk)) {
-                return "§cCe chunk ne fait pas partie de ton campement."
+                return ChatFormats.CHAT_ERROR.append(
+                    Component.text("Ce chunk ne fait pas partie de ton campement.")
+                )
             }
             if (campement.listChunks.size == 1) {
-                return "§cTu ne peux pas supprimer ton dernier chunk ! Si tu veux supprimer ton campement, utilise §e/campement delete"
+                return ChatFormats.CHAT_ERROR.append(
+                    Component.text("Tu ne peux pas supprimer ton dernier chunk ! Si tu veux supprimer ton campement, utilise ")
+                ).append(
+                    Component.text("/campement delete", NamedTextColor.GOLD)
+                )
             }
+
             unclaimChunk(ownerID, chunk)
-            return "§aLe chunk ($chunk) a été retiré de ton campement !"
+            ChatFormats.CHAT_SUCCESS.append(
+                Component.text("Le chunk ($chunk) a été retiré de ton campement !")
+            )
         }
     }
 

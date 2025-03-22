@@ -1,9 +1,11 @@
 package onl.tesseract.srp.domain.campement
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.equipment.Invocable
+import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.lib.util.ItemBuilder
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.srp.service.campement.CampementService
@@ -72,7 +74,7 @@ class AnnexationStickInvocable(
         if (event.isShiftClick) {
             event.isCancelled = true
             equipmentService.uninvoke(event.whoClicked as Player, this)
-            event.whoClicked.sendMessage("§eTu as retiré ton Bâton d'Annexion.")
+            event.whoClicked.sendMessage(ChatFormats.CHAT.append(Component.text("Tu as retiré ton Bâton d'Annexion.")))
         }
     }
 }

@@ -1,29 +1,25 @@
 package onl.tesseract.srp.controller.command.campement
 
+import net.kyori.adventure.text.Component
 import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.commandBuilder.annotation.CommandBody
+import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.entity.Player
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Component as SpringComponent
 
-/**
- * Set a new spawnpoint for your camp.
- */
-@Component
+
+@SpringComponent
 @Command(name = "setspawn", playerOnly = true)
-class SetCampSpawnCommand(private val campementService: CampementService) {
+class SetCampSpawnCommand(
+    private val campementService: CampementService
+) {
 
     @CommandBody
     fun onCommand(sender: Player) {
-        val playerID = sender.uniqueId
-        val campement = campementService.getCampementByOwner(playerID)
-
-        if (campement == null) {
-            sender.sendMessage("§cTu ne possèdes pas de campement. Utilise §e/campement create §cpour en créer un !")
-            return
-        }
+        val campement = campementService.getCampementOrWarn(sender) ?: return
         val location = sender.location
-        campementService.setSpawnpoint(playerID, location)
-        sender.sendMessage("§aNouveau spawn défini ici !")
+        campementService.setSpawnpoint(sender.uniqueId, location)
+        sender.sendMessage(ChatFormats.CHAT_SUCCESS.append(Component.text("Nouveau point de spawn défini ici !")))
     }
 }
