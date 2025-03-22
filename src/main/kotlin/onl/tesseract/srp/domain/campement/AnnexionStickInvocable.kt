@@ -17,20 +17,18 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import java.util.*
 
-class AnnexationStickInvocable(
+class AnnexionStickInvocable(
     playerUUID: UUID,
     private val campementService: CampementService,
     private val equipmentService: EquipmentService
 ) : Invocable(playerUUID) {
 
     override val slotType: EquipmentSlot = EquipmentSlot.HAND
-    override val uniqueName: String = "annexation_stick"
+    override val uniqueName: String = "annexion_stick"
 
-    override fun onUninvoke(player: Player, manuelRemoval: Boolean) {
-    }
+    override fun onUninvoke(player: Player, manuelRemoval: Boolean) {}
 
-    override fun onInvoke(player: Player, manuelInvocation: Boolean) {
-    }
+    override fun onInvoke(player: Player, manuelInvocation: Boolean) {}
 
     override fun createItem(): ItemStack {
         val lore = ItemLoreBuilder()
