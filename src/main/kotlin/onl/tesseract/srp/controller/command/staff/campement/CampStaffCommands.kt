@@ -9,6 +9,9 @@ import onl.tesseract.commandBuilder.annotation.Perm
     subCommands = [
         CampCreateStaffCommand::class,
         CampDeleteStaffCommand::class,
+        CampTrustStaffCommand::class,
+        CampUntrustStaffCommand::class,
+        GetCampTrustedPlayersStaffCommand::class
     ]
 )
 class CampStaffCommands
