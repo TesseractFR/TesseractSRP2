@@ -12,6 +12,7 @@ interface CampementRepository : Repository<Campement, UUID> {
     fun deleteById(id: UUID)
     fun isChunkClaimed(chunk: String): Boolean
     fun getCampementByChunk(chunk: String): Campement?
+    fun findAll(): List<Campement>
 }
 
 @Component
@@ -42,6 +43,11 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
     override fun getCampementByChunk(chunk: String): Campement? {
         return jpaRepo.findCampementByChunk(chunk)?.toDomain()
     }
+
+    override fun findAll(): List<Campement> {
+        return jpaRepo.findAll().map { it.toDomain() }
+    }
+
 }
 
 @org.springframework.stereotype.Repository

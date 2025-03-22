@@ -55,6 +55,8 @@ open class CampementService(
         return campement
     }
 
+    open fun getAllCampements(): List<Campement> = repository.findAll()
+
     @Transactional
     open fun createCampement(ownerID: UUID, listChunks: List<String>, spawnLocation: Location): Boolean {
         for (chunk in listChunks) {
