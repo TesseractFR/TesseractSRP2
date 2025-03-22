@@ -194,8 +194,6 @@ open class CampementService(
         val player = Bukkit.getPlayer(playerID) ?: return
         val campement = getCampementByOwner(playerID) ?: return
         val chunks = campement.listChunks.map { it.split(",").map(String::toInt) }
-
-        // Réaffiche les nouvelles bordures
         campementBorderRenderer.showBorders(player, chunks)
     }
 
