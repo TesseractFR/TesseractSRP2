@@ -3,10 +3,13 @@ package onl.tesseract.srp.repository.hibernate
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
+import org.hibernate.annotations.CacheConcurrencyStrategy
 import java.util.*
 
 @Entity
 @Table(name = "t_srp_player")
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class SrpPlayerEntity(
     @Id
     var uuid: UUID,
