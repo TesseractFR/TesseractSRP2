@@ -7,6 +7,7 @@ class SrpPlayer(
     val uniqueId: UUID,
     var rank: PlayerRank = PlayerRank.Survivant,
     money: Int = 0,
+    var titleID: String = rank.title.id
 ) {
 
     var money: Int = money

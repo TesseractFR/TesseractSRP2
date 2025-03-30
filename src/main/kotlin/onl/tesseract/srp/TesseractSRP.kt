@@ -1,10 +1,13 @@
 package onl.tesseract.srp
 
 import onl.tesseract.commandBuilder.CommandContext
+import onl.tesseract.core.title.TitleService
 import onl.tesseract.lib.TesseractLib
 import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
+import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
+import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
 import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.event.Listener
@@ -42,6 +45,7 @@ class TesseractSRP : JavaPlugin() {
         registerCommands()
         registerListeners()
         registerSerializers()
+        registerTitles()
         logger.info("Tesseract SRP enabled, Spring context enabled")
     }
 
@@ -65,6 +69,11 @@ class TesseractSRP : JavaPlugin() {
         )
     }
 
+    private fun registerTitles() {
+        val titleService = ServiceContainer[TitleService::class.java]
+        PlayerRank.entries.map { it.title }
+            .forEach { titleService.save(it) }
+    }
 
     override fun onDisable() {
         // Plugin shutdown logic
