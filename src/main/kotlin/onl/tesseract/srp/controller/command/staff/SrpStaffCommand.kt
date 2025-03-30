@@ -10,5 +10,6 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
     PlayerJobStaffCommand::class,
     PlayerRankStaffCommand::class,
     CampStaffCommands::class,
+    MoneyStaffCommand::class,
 ])
 class SrpStaffCommand(commandInstanceProvider: SrpCommandInstanceProvider) : CommandContext(commandInstanceProvider) {}
