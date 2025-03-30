@@ -5,6 +5,7 @@ import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
+import onl.tesseract.lib.profile.PlayerProfileService
 import onl.tesseract.lib.service.ServiceContainer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -35,5 +36,10 @@ open class SrpServiceBeans {
     @Bean
     open fun menuService(): MenuService {
         return ServiceContainer[MenuService::class.java]
+    }
+
+    @Bean
+    open fun playerProfileService(): PlayerProfileService {
+        return ServiceContainer[PlayerProfileService::class.java]
     }
 }

@@ -18,4 +18,16 @@ class SrpPlayer(
         money += amount
         return money
     }
+
+    /**
+     * Assign the next rank to the player, and withdraw money.
+     * @return False if the player already has the last rank or does not have enough money to buy the rank
+     */
+    fun buyNextRank(): Boolean {
+        val nextRank = rank.next() ?: return false
+        if (money < nextRank.cost) return false
+        addMoney(-nextRank.cost)
+        rank = nextRank
+        return true
+    }
 }

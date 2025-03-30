@@ -26,16 +26,31 @@ open class SrpPlayerService(private val repository: SrpPlayerRepository) {
         return true
     }
 
+    /**
+     * Try to buy the next rank. Withdraw money and update the player title.
+     * @return True if the rank was bought
+     */
+    @Transactional
+    open fun buyNextRank(playerID: UUID): Boolean {
+        val player = getPlayer(playerID)
+        val result = player.buyNextRank()
+        if (result)
+            savePlayer(player)
+        return result
+    }
+
+    /**
+     * Add money to a player's account
+     * @return True if the transaction is successful
+     */
     @Transactional
     open fun giveMoney(playerID: UUID, amount: Int): Boolean {
         val player = getPlayer(playerID)
-        if (player.money + amount >= 0) {
-            player.addMoney(amount)
-            savePlayer(player)
-            return true
-        } else {
+        if (player.money + amount < 0)
             return false
-        }
+        player.addMoney(amount)
+        savePlayer(player)
+        return true
     }
 
     protected open fun savePlayer(player: SrpPlayer) {
