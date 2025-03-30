@@ -2,7 +2,6 @@ package onl.tesseract.srp
 
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.lib.TesseractLib
-import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
@@ -12,7 +11,10 @@ import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.springframework.boot.SpringApplication
 import org.springframework.context.ApplicationContext
+import org.springframework.core.env.ConfigurableEnvironment
+import org.springframework.core.env.PropertiesPropertySource
 import org.springframework.core.io.DefaultResourceLoader
+import java.util.*
 
 lateinit var PLUGIN_INSTANCE: TesseractSRP
 
@@ -27,6 +29,15 @@ class TesseractSRP : JavaPlugin() {
         val resourceLoader = DefaultResourceLoader(classLoader)
         Thread.currentThread().contextClassLoader = classLoader
         val app = SpringApplication(resourceLoader, TesseractSRPSpringApp::class.java)
+        app.setDefaultProperties(mapOf("spring.config.location" to "classpath:/application.properties"))
+        app.addInitializers({ applicationContext ->
+            val env = applicationContext.environment as ConfigurableEnvironment
+            val resource = resourceLoader.getResource("application.properties")
+            val props = Properties().apply {
+                resource.inputStream.use { load(it) }
+            }
+            env.propertySources.addFirst(PropertiesPropertySource("customProperties", props))
+        })
         this.springContext = app.run()
         registerCommands()
         registerListeners()
