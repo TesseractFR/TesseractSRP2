@@ -3,6 +3,7 @@ package onl.tesseract.srp.util.menu
 import net.citizensnpcs.api.CitizensAPI
 import net.citizensnpcs.api.npc.NPC
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import onl.tesseract.lib.menu.*
 import onl.tesseract.lib.service.PluginService
@@ -75,6 +76,31 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
 
     fun clearTop() {
         super.clear()
+    }
+
+    fun addBottomBackButton(index: Int = 0) {
+        if (previous == null) return
+        addBottomButton(
+            index,
+            ItemBuilder(getBackButton())
+                .name("Retour")
+                .color(NamedTextColor.RED)
+                .build()
+        ) {
+            this.viewer?.let { this.previous?.open(it) }
+        }
+    }
+
+    fun addBottomCloseButton(index: Int = 8) {
+        addBottomButton(
+            index,
+            ItemBuilder(getCloseButton())
+                .name("Fermer")
+                .color(NamedTextColor.DARK_RED)
+                .build()
+        ) {
+            this.close()
+        }
     }
 
     @EventHandler

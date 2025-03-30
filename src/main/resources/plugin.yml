@@ -17,3 +17,6 @@ commands:
     aliases:
       - c
       - camp
+  rank:
+    permission: rank
+    description: Ouvre le menu des grades
