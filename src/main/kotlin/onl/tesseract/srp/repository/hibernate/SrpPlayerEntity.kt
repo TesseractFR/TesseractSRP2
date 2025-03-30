@@ -17,13 +17,14 @@ class SrpPlayerEntity(
     @Enumerated(EnumType.STRING)
     val rank: PlayerRank,
     val money: Int,
+    val titleId: String,
 ) {
 
     fun toDomain(): SrpPlayer {
-        return SrpPlayer(uuid, rank, money)
+        return SrpPlayer(uuid, rank, money, titleId)
     }
 }
 
 fun SrpPlayer.toEntity(): SrpPlayerEntity {
-    return SrpPlayerEntity(uniqueId, rank, money)
+    return SrpPlayerEntity(uniqueId, rank, money, titleID)
 }

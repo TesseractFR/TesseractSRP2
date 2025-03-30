@@ -34,8 +34,10 @@ open class SrpPlayerService(private val repository: SrpPlayerRepository) {
     open fun buyNextRank(playerID: UUID): Boolean {
         val player = getPlayer(playerID)
         val result = player.buyNextRank()
-        if (result)
+        if (result) {
+            player.titleID = player.rank.title.id
             savePlayer(player)
+        }
         return result
     }
 

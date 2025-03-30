@@ -1,5 +1,7 @@
 package onl.tesseract.srp
 
+import onl.tesseract.core.persistence.hibernate.boutique.TPlayerInfoService
+import onl.tesseract.core.title.TitleService
 import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.EventService
@@ -41,5 +43,15 @@ open class SrpServiceBeans {
     @Bean
     open fun playerProfileService(): PlayerProfileService {
         return ServiceContainer[PlayerProfileService::class.java]
+    }
+
+    @Bean
+    open fun playerInfoService(): TPlayerInfoService {
+        return ServiceContainer[TPlayerInfoService::class.java]
+    }
+
+    @Bean
+    open fun titleService(): TitleService {
+        return ServiceContainer[TitleService::class.java]
     }
 }
