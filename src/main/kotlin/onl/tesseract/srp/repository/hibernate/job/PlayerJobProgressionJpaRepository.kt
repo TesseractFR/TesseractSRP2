@@ -16,8 +16,8 @@ class PlayerJobProgressionRepositoryJpaAdapter(private var jpaRepo: PlayerJobPro
             ?.toDomain()
     }
 
-    override fun save(entity: PlayerJobProgression) {
-        jpaRepo.save(entity.toEntity())
+    override fun save(entity: PlayerJobProgression): PlayerJobProgression {
+        return jpaRepo.save(entity.toEntity()).toDomain()
     }
 
     override fun idOf(entity: PlayerJobProgression): UUID {

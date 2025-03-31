@@ -26,8 +26,8 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
             ?.toDomain()
     }
 
-    override fun save(entity: Campement) {
-        jpaRepo.save(entity.toEntity())
+    override fun save(entity: Campement): Campement {
+        return jpaRepo.save(entity.toEntity()).toDomain()
     }
 
     override fun idOf(entity: Campement): UUID {

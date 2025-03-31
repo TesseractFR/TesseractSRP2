@@ -8,6 +8,7 @@ import onl.tesseract.lib.command.argument.IntegerCommandArgument
 import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.job.PlayerJobService
+import onl.tesseract.srp.service.job.mission.JobMissionService
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
@@ -101,6 +102,32 @@ class PlayerJobStaffCommand(private val service: PlayerJobService) {
         ) {
             service.addSkillPoint(player.uniqueId, amount.get())
             sender.sendMessage(NamedTextColor.GREEN + "Points de compétence ajoutés !")
+        }
+    }
+
+    @Command(name = "mission", description = "Gérer les missions du joueur")
+    @Component
+    class MissionCommand(private val missionService: JobMissionService) {
+
+        @Command(description = "Voir les missions du joueur")
+        fun list(
+            @Env(key = "player") player: Player,
+            sender: CommandSender,
+        ) {
+            val missions = missionService.getMissionsForPlayer(player.uniqueId)
+            missions.forEach { sender.sendMessage(it.toString()) }
+        }
+
+        @Command(description = "Annuler une mission sans donner de récompense")
+        fun cancel(
+            @Argument("missionId") missionIdArg: IntegerCommandArgument,
+            sender: CommandSender,
+        ) {
+            val canceled = missionService.cancelMission(missionIdArg.get().toLong())
+            if (canceled)
+                sender.sendMessage(NamedTextColor.GREEN + "Mission annulée.")
+            else
+                sender.sendMessage(NamedTextColor.RED + "Mission invalide.")
         }
     }
 }

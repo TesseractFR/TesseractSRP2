@@ -4,6 +4,7 @@ import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.item.CustomItem
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
+import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.Job
 import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.repository.yaml.job.JobsConfigRepository
@@ -16,7 +17,9 @@ class JobService(
     private val playerJobService: PlayerJobService,
     private val eventService: EventService,
 ) {
-    fun getJobs(): Map<String, Job> = jobConfigRepository.getJobs()
+    fun getJobs(): Map<EnumJob, Job> = jobConfigRepository.getJobs()
+
+    fun getJob(enumJob: EnumJob): Job = getJobs()[enumJob] ?: error("Job $enumJob not configured")
 
     fun getJobByMaterial(material: CustomMaterial): Job? {
         return getJobs().values.find { job ->
