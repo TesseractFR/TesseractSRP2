@@ -11,7 +11,8 @@ class TrustedPlayerArg(name: String) : CommandArgument<String>(name) {
         builder.parser { input, _ -> input }
             .tabCompleter { _, env ->
             val service = ServiceContainer[CampementService::class.java]
-            val campement = service.getCampementByOwner(env.senderAsPlayer.uniqueId) ?: return@tabCompleter listOf()
+            val ownerName = env.get("owner", String::class.java) ?: env.senderAsPlayer.name
+            val campement = service.getCampementByOwner(Bukkit.getOfflinePlayer(ownerName).uniqueId) ?: return@tabCompleter listOf()
             listOf("<Joueur_de_Confiance>") + campement.trustedPlayers.mapNotNull {
                 Bukkit.getOfflinePlayer(it).name
             }
