@@ -23,8 +23,8 @@ class MoneyLedgerJpaAdapter(
         return ledgerRepository.findByIdOrNull(id)?.toDomain()
     }
 
-    override fun save(entity: Ledger) {
-        ledgerRepository.save(entity.toEntity())
+    override fun save(entity: Ledger): Ledger {
+        return ledgerRepository.save(entity.toEntity()).toDomain()
     }
 
     override fun idOf(entity: Ledger): UUID = entity.id

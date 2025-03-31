@@ -2,7 +2,7 @@ name: TesseractSRP2
 version: '0.1-SNAPSHOT'
 main: onl.tesseract.srp.TesseractSRP
 api-version: '1.21'
-depend: [TesseractCore, MCKotlin-Paper, Citizens]
+depend: [TesseractCore, MCKotlin-Paper, Citizens, Multiverse-Core]
 commands:
   staffSrp:
     permission: staff
@@ -20,3 +20,5 @@ commands:
   rank:
     permission: rank
     description: Ouvre le menu des grades
+  missions:
+    description: Ouvre le menu des job missions

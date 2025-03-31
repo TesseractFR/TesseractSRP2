@@ -1,9 +1,11 @@
 package onl.tesseract.srp.domain.job
 
+import kotlinx.serialization.Serializable
 import java.util.*
 
 val random = Random()
 
+@Serializable
 data class BaseStat(
     val lootChance: Float,
     val moneyGain: Int,

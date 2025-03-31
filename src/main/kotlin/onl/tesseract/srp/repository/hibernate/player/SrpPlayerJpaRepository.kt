@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import java.util.UUID
+import java.util.*
 
 interface SrpPlayerRepository : onl.tesseract.lib.repository.Repository<SrpPlayer, UUID>
 
@@ -17,8 +17,8 @@ class SrpPlayerJpaRepositoryAdapter(private val jpaRepository: SrpPlayerJpaRepos
         return jpaRepository.findByIdOrNull(id)?.toDomain()
     }
 
-    override fun save(entity: SrpPlayer) {
-        jpaRepository.save(entity.toEntity())
+    override fun save(entity: SrpPlayer): SrpPlayer {
+        return jpaRepository.save(entity.toEntity()).toDomain()
     }
 
     override fun idOf(entity: SrpPlayer): UUID = entity.uniqueId

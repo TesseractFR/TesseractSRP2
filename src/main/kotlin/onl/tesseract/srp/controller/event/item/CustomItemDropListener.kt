@@ -1,5 +1,6 @@
 package onl.tesseract.srp.controller.event.item
 
+import onl.tesseract.lib.task.TaskScheduler
 import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
@@ -18,6 +19,7 @@ class CustomItemDropListener(
     private val jobService: JobService,
     private val customItemService: CustomItemService,
     private val worldService: WorldService,
+    private val taskScheduler: TaskScheduler,
 ) : Listener {
 
     @EventHandler
@@ -29,10 +31,12 @@ class CustomItemDropListener(
             .find { it.dropSource is CustomMaterialBlockSource && (it.dropSource).material == material }
             ?.let { jobService.generateItem(event.player.uniqueId, it) }
             ?: return
-        event.player.world.dropItemNaturally(
-            event.block.location,
-            customItemService.createCustomItem(CustomItemStack(customItem, 1))
-        )
+        taskScheduler.runLater(1) {
+            event.player.world.dropItemNaturally(
+                event.block.location,
+                customItemService.createCustomItem(CustomItemStack(customItem, 1))
+            )
+        }
     }
 
     @EventHandler
