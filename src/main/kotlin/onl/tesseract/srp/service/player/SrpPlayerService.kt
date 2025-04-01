@@ -1,14 +1,20 @@
 package onl.tesseract.srp.service.player
 
+import onl.tesseract.srp.domain.money.ledger.TransactionSubType
+import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.service.money.MoneyLedgerService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @Service
-open class SrpPlayerService(private val repository: SrpPlayerRepository) {
+open class SrpPlayerService(
+    private val repository: SrpPlayerRepository,
+    private val ledgerService: MoneyLedgerService
+) {
 
     open fun getPlayer(id: UUID): SrpPlayer {
         return repository.getById(id) ?: SrpPlayer(id)
@@ -36,6 +42,14 @@ open class SrpPlayerService(private val repository: SrpPlayerRepository) {
         val result = player.buyNextRank()
         if (result) {
             player.titleID = player.rank.title.id
+            ledgerService.recordTransaction(
+                from = ledgerService.getPlayerLedger(playerID),
+                to = ledgerService.getServerLedger(),
+                amount = player.rank.cost,
+                TransactionType.Player,
+                TransactionSubType.Player.Rank,
+                player.rank.name
+            )
             savePlayer(player)
         }
         return result
@@ -46,11 +60,18 @@ open class SrpPlayerService(private val repository: SrpPlayerRepository) {
      * @return True if the transaction is successful
      */
     @Transactional
-    open fun giveMoney(playerID: UUID, amount: Int): Boolean {
+    open fun giveMoneyAsStaff(playerID: UUID, amount: Int): Boolean {
         val player = getPlayer(playerID)
         if (player.money + amount < 0)
             return false
         player.addMoney(amount)
+        ledgerService.recordTransaction(
+            from = ledgerService.getServerLedger(),
+            to = ledgerService.getPlayerLedger(playerID),
+            amount = amount,
+            TransactionType.Staff,
+            TransactionSubType.Staff.Give,
+        )
         savePlayer(player)
         return true
     }

@@ -29,7 +29,7 @@ class MoneyStaffCommand(private val playerService: SrpPlayerService) {
         @Argument("amount") amountArg: IntegerCommandArgument,
         sender: CommandSender
     ) {
-        val result = playerService.giveMoney(playerArg.get().uniqueId, amountArg.get())
+        val result = playerService.giveMoneyAsStaff(playerArg.get().uniqueId, amountArg.get())
         if (result) {
             sender.sendMessage(NamedTextColor.GREEN + "Argent ajouté")
         } else {
@@ -43,7 +43,7 @@ class MoneyStaffCommand(private val playerService: SrpPlayerService) {
         @Argument("amount") amountArg: IntegerCommandArgument,
         sender: CommandSender
     ) {
-        val result = playerService.giveMoney(playerArg.get().uniqueId, -amountArg.get())
+        val result = playerService.giveMoneyAsStaff(playerArg.get().uniqueId, -amountArg.get())
         if (result) {
             sender.sendMessage(NamedTextColor.GREEN + "Argent retiré")
         } else {
