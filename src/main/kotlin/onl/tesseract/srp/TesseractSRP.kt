@@ -8,8 +8,10 @@ import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
 import onl.tesseract.srp.domain.player.PlayerRank
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
 import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin
 import org.springframework.boot.SpringApplication
@@ -46,6 +48,7 @@ class TesseractSRP : JavaPlugin() {
         registerListeners()
         registerSerializers()
         registerTitles()
+        checkWorldsExist()
         logger.info("Tesseract SRP enabled, Spring context enabled")
     }
 
@@ -77,5 +80,10 @@ class TesseractSRP : JavaPlugin() {
 
     override fun onDisable() {
         // Plugin shutdown logic
+    }
+
+    private fun checkWorldsExist() {
+        val worldService = springContext.getBean(WorldService::class.java)
+        SrpWorld.entries.forEach { worldService.getBukkitWorld(it) }
     }
 }

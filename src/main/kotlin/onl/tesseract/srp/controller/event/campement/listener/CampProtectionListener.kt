@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.campement.InteractionAllowResult
 import onl.tesseract.srp.util.CampementChatError
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
@@ -22,7 +23,7 @@ class ChunkProtectionListener(private val campementService: CampementService) : 
         val location = event.clickedBlock?.location ?: event.player.location
         val chunk = location.chunk
 
-        if (!campementService.canInteractInChunk(player.uniqueId, chunk.x, chunk.z)) {
+        if (campementService.canInteractInChunk(player.uniqueId, chunk) == InteractionAllowResult.Deny) {
             val campement = campementService.getCampementByChunk(chunk.x, chunk.z)
             val ownerName = campement?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "Inconnu"
 

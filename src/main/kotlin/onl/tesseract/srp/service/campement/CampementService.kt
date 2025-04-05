@@ -12,10 +12,13 @@ import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
 import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.CampementRepository
+import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
+import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.slf4j.Logger
@@ -28,6 +31,7 @@ private val logger: Logger = LoggerFactory.getLogger(CampementService::class.jav
 open class CampementService(
     private val repository: CampementRepository,
     private val eventService: EventService,
+    private val worldService: WorldService,
 ) {
     @PostConstruct
     fun registerInServiceContainer() {
@@ -62,6 +66,8 @@ open class CampementService(
         val chunkX = spawnLocation.chunk.x
         val chunkZ = spawnLocation.chunk.z
         val chunk = CampementChunk(chunkX, chunkZ)
+        if (worldService.getSrpWorld(spawnLocation) != SrpWorld.Elysea)
+            return false
 
         if (repository.isChunkClaimed(chunkX, chunkZ)) {
             return false
@@ -92,6 +98,8 @@ open class CampementService(
         val campement = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
 
+        if (worldService.getSrpWorld(newLocation) != SrpWorld.Elysea)
+            return false
         val result = campement.setSpawnpoint(newLocation)
         if (result)
             repository.save(campement)
@@ -212,8 +220,13 @@ open class CampementService(
      * @param claim True to claim the chunk, false to unclaim it.
      * @return A formatted string message describing the outcome of the operation.
      */
-    open fun handleClaimUnclaim(owner: Player, chunk: CampementChunk, claim: Boolean){
+    open fun handleClaimUnclaim(owner: Player, chunk: Chunk, claim: Boolean){
         val campement = getCampementByOwner(owner.uniqueId)!!
+        if (worldService.getSrpWorld(chunk.world) != SrpWorld.Elysea) {
+            owner.sendMessage(CampementChatError + "Tu ne peux pas claim dans ce monde.")
+            return
+        }
+        val campementChunk = CampementChunk(chunk.x, chunk.z)
         if (claim) {
             when (claimChunk(owner.uniqueId, chunk.x, chunk.z)) {
                 AnnexationResult.SUCCESS -> owner.sendMessage(
@@ -235,7 +248,7 @@ open class CampementService(
                             + ".")
             }
         } else {
-            if (!campement.chunks.contains(chunk)) {
+            if (!campement.chunks.contains(campementChunk)) {
                 owner.sendMessage(
                     CampementChatError + "Ce chunk ne fait pas partie de ton campement. Visualise les bordures avec "
                             + Component.text("/campement border", NamedTextColor.GOLD)
@@ -249,14 +262,14 @@ open class CampementService(
                             + ".")
                 return
             }
-            if (chunk == CampementChunk(campement.spawnLocation)) {
+            if (campementChunk == CampementChunk(campement.spawnLocation)) {
                 owner.sendMessage(
                     CampementChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn de ton campement. Déplace-le dans un autre chunk avec "
                             + Component.text("/campement setspawn", NamedTextColor.GOLD)
                             + " avant de retirer celui-ci.")
                 return
             }
-            if (!isUnclaimValid(campement.chunks, chunk)) {
+            if (!isUnclaimValid(campement.chunks, campementChunk)) {
                 owner.sendMessage(
                     CampementChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ton campement en plusieurs parties. Visualise les bordures avec "
                             + Component.text("/campement border", NamedTextColor.GOLD)
@@ -277,9 +290,14 @@ open class CampementService(
      * @param chunk The chunk coordinates in the format "x,z".
      * @return True if the player can interact, false otherwise.
      */
-    open fun canInteractInChunk(playerID: UUID, x: Int, z: Int): Boolean {
-        val campement = repository.getCampementByChunk(x, z) ?: return true
-        return campement.ownerID == playerID || campement.trustedPlayers.contains(playerID)
+    open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
+        if (worldService.getSrpWorld(chunk.world) != SrpWorld.Elysea) return InteractionAllowResult.Ignore
+
+        val campement = repository.getCampementByChunk(chunk.x, chunk.z) ?: return InteractionAllowResult.Deny
+        return if (campement.ownerID == playerID || campement.trustedPlayers.contains(playerID))
+            InteractionAllowResult.Allow
+        else
+            InteractionAllowResult.Deny
     }
 
     /**

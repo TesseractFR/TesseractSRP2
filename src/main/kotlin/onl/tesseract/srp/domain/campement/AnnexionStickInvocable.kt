@@ -6,6 +6,7 @@ import onl.tesseract.lib.equipment.Invocable
 import onl.tesseract.lib.util.ItemBuilder
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.campement.InteractionAllowResult
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
@@ -53,14 +54,13 @@ class AnnexionStickInvocable(
     override fun use(event: PlayerInteractEvent) {
         val player = event.player
         val chunk = player.location.chunk
-        if (!campementService.canInteractInChunk(player.uniqueId, chunk.x, chunk.z)) {
+        if (campementService.canInteractInChunk(player.uniqueId, chunk) != InteractionAllowResult.Allow) {
             return
         }
         if (!campementService.hasCampement(player)) {
             event.isCancelled = true
             return
         }
-        val campChunk = CampementChunk(chunk.x, chunk.z)
         val claim = when (event.action) {
             Action.RIGHT_CLICK_BLOCK,
             Action.RIGHT_CLICK_AIR -> true
@@ -70,7 +70,7 @@ class AnnexionStickInvocable(
 
             else -> return
         }
-        campementService.handleClaimUnclaim(player, campChunk, claim)
+        campementService.handleClaimUnclaim(player, chunk, claim)
         event.isCancelled = true
     }
 }

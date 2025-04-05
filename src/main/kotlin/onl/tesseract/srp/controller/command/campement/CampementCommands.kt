@@ -13,7 +13,6 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
-import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.service.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
@@ -47,7 +46,7 @@ class CampementCommands(
         if (success) {
             sender.sendMessage(CampementChatSuccess + "Campement créé avec succès ! Tu peux désormais t'installer confortablement dans ce chunk ;)")
         } else {
-            sender.sendMessage(CampementChatError + "Impossible de créer le campement ici, ce chunk appartient déjà à un autre campement.")
+            sender.sendMessage(CampementChatError + "Impossible de créer le campement ici.")
         }
     }
 
@@ -105,19 +104,13 @@ class CampementCommands(
     @Command(name = "claim", description = "Annexer un chunk libre")
     fun claimChunk(sender: Player) {
         if (!campementService.hasCampement(sender)) return
-        val chunkX = sender.location.chunk.x
-        val chunkZ = sender.location.chunk.z
-        val chunk = CampementChunk(chunkX, chunkZ)
-        campementService.handleClaimUnclaim(sender, chunk, claim = true)
+        campementService.handleClaimUnclaim(sender, sender.chunk, claim = true)
     }
 
     @Command(name = "unclaim", description = "Désannexer un chunk de son campement.")
     fun unclaimChunk(sender: Player) {
         if (!campementService.hasCampement(sender)) return
-        val chunkX = sender.location.chunk.x
-        val chunkZ = sender.location.chunk.z
-        val chunk = CampementChunk(chunkX, chunkZ)
-        campementService.handleClaimUnclaim(sender, chunk, claim = false)
+        campementService.handleClaimUnclaim(sender, sender.chunk, claim = false)
     }
 
     @Command(
