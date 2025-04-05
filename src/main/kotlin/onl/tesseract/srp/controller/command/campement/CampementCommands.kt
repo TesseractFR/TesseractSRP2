@@ -13,6 +13,7 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
+import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
@@ -29,6 +30,7 @@ class CampementCommands(
     private var borderRenderer: CampementBorderRenderer,
     private var equipmentService: EquipmentService,
     private var menuService: MenuService,
+    private var teleportService: TeleportationService,
     commandInstanceProvider: SrpCommandInstanceProvider
 ) : CommandContext(commandInstanceProvider) {
 
@@ -87,8 +89,9 @@ class CampementCommands(
         ) {
             if (!campementService.hasCampement(sender)) return
             val campement = campementService.getCampementByOwner(sender.uniqueId) ?: return
-            sender.teleport(campement.spawnLocation)
-            sender.sendMessage(CampementChatSuccess + "Tu as été téléporté à ton campement.")
+            teleportService.teleport(sender, campement.spawnLocation) {
+                sender.sendMessage(CampementChatSuccess + "Tu as été téléporté à ton campement.")
+            }
             return
         }
         val target = Bukkit.getOfflinePlayer(targetName)
@@ -97,8 +100,9 @@ class CampementCommands(
             sender.sendMessage(CampementChatError + "${target.name} ne possède pas de campement.")
             return
         }
-        sender.teleport(campement.spawnLocation)
-        sender.sendMessage(CampementChatSuccess + "Tu as été téléporté au campement de ${target.name}.")
+        teleportService.teleport(sender, campement.spawnLocation) {
+            sender.sendMessage(CampementChatSuccess + "Tu as été téléporté au campement de ${target.name}.")
+        }
     }
 
     @Command(name = "claim", description = "Annexer un chunk libre")
