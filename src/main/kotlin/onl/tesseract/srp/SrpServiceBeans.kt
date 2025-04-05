@@ -9,6 +9,7 @@ import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
 import onl.tesseract.lib.profile.PlayerProfileService
 import onl.tesseract.lib.service.ServiceContainer
+import onl.tesseract.lib.task.TaskScheduler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -53,5 +54,10 @@ open class SrpServiceBeans {
     @Bean
     open fun titleService(): TitleService {
         return ServiceContainer[TitleService::class.java]
+    }
+
+    @Bean
+    open fun taskService(): TaskScheduler {
+        return ServiceContainer[TaskScheduler::class.java]
     }
 }
