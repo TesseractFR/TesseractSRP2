@@ -4,6 +4,7 @@ import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.item.CustomItem
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.BaseStat
+import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.Job
 import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.repository.yaml.job.JobsConfigRepository
@@ -50,4 +51,9 @@ class JobService(
         } else
             null
     }
+
+    fun getCustomMaterialsForJob(job: EnumJob): List<CustomMaterial> {
+        return getJobs()[job.name]?.materials?.toList() ?: emptyList()
+    }
+
 }

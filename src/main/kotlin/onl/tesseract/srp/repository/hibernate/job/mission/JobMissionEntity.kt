@@ -5,6 +5,7 @@ import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import org.hibernate.annotations.CacheConcurrencyStrategy
+import java.util.*
 
 @Entity
 @Table(name = "t_job_missions")
@@ -14,6 +15,9 @@ class JobMissionEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
+
+    @Column(name = "player_id", nullable = false, columnDefinition = "BINARY(16)")
+    val playerId: UUID,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -35,6 +39,7 @@ class JobMissionEntity(
     fun toDomain(): JobMission {
         return JobMission(
             id = id,
+            playerId = playerId,
             job = job,
             material = material,
             quantity = quantity,
@@ -47,6 +52,7 @@ class JobMissionEntity(
 fun JobMission.toEntity(): JobMissionEntity {
     return JobMissionEntity(
         id = id,
+        playerId = playerId,
         job = job,
         material = material,
         quantity = quantity,
