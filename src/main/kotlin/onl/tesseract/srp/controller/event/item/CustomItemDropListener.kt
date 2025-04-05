@@ -6,6 +6,7 @@ import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
 import onl.tesseract.srp.domain.item.CustomMaterialEntitySource
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.job.JobService
+import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockBreakEvent
@@ -16,10 +17,12 @@ import org.springframework.stereotype.Component
 class CustomItemDropListener(
     private val jobService: JobService,
     private val customItemService: CustomItemService,
+    private val worldService: WorldService,
 ) : Listener {
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
+        if (worldService.getSrpWorld(event.block.world)?.resourceWorld != true) return
         val material = event.block.type
 
         val customItem = CustomMaterial.entries
@@ -34,6 +37,7 @@ class CustomItemDropListener(
 
     @EventHandler
     fun onEntityDeath(event: EntityDeathEvent) {
+        if (worldService.getSrpWorld(event.entity.world)?.resourceWorld != true) return
         val entity = event.entity
         val killer = entity.killer ?: return
         val customItem = CustomMaterial.entries
