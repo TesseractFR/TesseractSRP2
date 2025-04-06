@@ -1,5 +1,6 @@
 package onl.tesseract.srp
 
+import onl.tesseract.core.boutique.BoutiqueService
 import onl.tesseract.core.persistence.hibernate.boutique.TPlayerInfoService
 import onl.tesseract.core.title.TitleService
 import onl.tesseract.lib.chat.ChatEntryService
@@ -10,6 +11,7 @@ import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
 import onl.tesseract.lib.profile.PlayerProfileService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.task.TaskScheduler
+import org.bukkit.plugin.Plugin
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -59,5 +61,15 @@ open class SrpServiceBeans {
     @Bean
     open fun taskService(): TaskScheduler {
         return ServiceContainer[TaskScheduler::class.java]
+    }
+
+    @Bean
+    open fun boutiqueService(): BoutiqueService {
+        return ServiceContainer[BoutiqueService::class.java]
+    }
+
+    @Bean
+    open fun plugin(): Plugin {
+        return PLUGIN_INSTANCE
     }
 }
