@@ -12,6 +12,15 @@ data class Job(
 }
 
 data class MissionTemplate(
+    val items: List<MissionItem>
+) {
+
+    init {
+        require(items.isNotEmpty())
+    }
+}
+
+data class MissionItem(
     val material: CustomMaterial,
     val quantity: Int,
     val minQuality: Int,
@@ -22,4 +31,3 @@ data class MissionTemplate(
         require(minQuality > 0)
     }
 }
-

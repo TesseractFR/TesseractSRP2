@@ -38,13 +38,15 @@ class JobMissionService(
 
     fun createRandomMissionForJob(playerId: UUID, enumJob: EnumJob): Boolean {
         val job = jobService.getJob(enumJob)
-        val template = job.missionTemplates.random()
+        val template = job.missionTemplates.random().items.first()
 
         val rep = getReputation(playerId, enumJob)
         val quantity = Random.nextDouble(template.quantity * 0.9, template.quantity * 1.1) * rep
         val quality = Random.nextDouble(template.minQuality * 0.9, template.minQuality * 1.1) * rep
 
-        val reward = quantity * job.baseStats[template.material]!!.moneyGain
+        val baseStat = job.baseStats[template.material]
+            ?: error("No baseStat configured for job $enumJob")
+        val reward = quantity * baseStat.moneyGain
 
         val mission = JobMission(
             id = 0L,

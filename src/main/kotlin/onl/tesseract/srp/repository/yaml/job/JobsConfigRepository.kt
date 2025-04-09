@@ -104,10 +104,15 @@ class JobsConfigRepository {
         return missions
     }
 
+    private fun readMissionTemplate(section: ConfigurationSection): MissionTemplate {
+        val items: List<MissionItem> = section.getSectionList("items", this::readMissionItem)
+        return MissionTemplate(items)
+    }
+
     /**
      * @throws ConfigurationException
      */
-    private fun readMissionTemplate(section: ConfigurationSection): MissionTemplate {
+    private fun readMissionItem(section: ConfigurationSection): MissionItem {
         val materialName = section.getString("material")
             ?: throw ConfigurationException("Missing property 'material'")
 
@@ -119,9 +124,9 @@ class JobsConfigRepository {
         val quantity = section.getInt("quantity")
         val minQuality = section.getInt("minQuality")
         return try {
-            MissionTemplate(material, quantity, minQuality)
+            MissionItem(material, quantity, minQuality)
         } catch (e: IllegalArgumentException) {
-            throw ConfigurationException("Invalid fields for job mission template", e)
+            throw ConfigurationException("Invalid fields for job mission item", e)
         }
     }
 }
