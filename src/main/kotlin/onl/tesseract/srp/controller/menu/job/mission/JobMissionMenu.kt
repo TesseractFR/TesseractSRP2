@@ -11,13 +11,9 @@ import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.service.job.mission.JobMissionService
-import onl.tesseract.srp.controller.menu.job.mission.JobMissionSelectionMenu.Companion.playerMissions
 import onl.tesseract.srp.service.job.PlayerJobService
-import onl.tesseract.srp.util.jobsChatFormat
 import onl.tesseract.srp.util.jobsChatFormatError
-import onl.tesseract.srp.util.jobsChatFormatSuccess
 import org.bukkit.Material
-import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.slf4j.Logger
 import java.util.*
@@ -28,7 +24,6 @@ class JobMissionMenu(
     private val job: EnumJob,
     private val mission: JobMission,
     private val missionService: JobMissionService,
-    private val slotIndex: Int,
     private val playerID: UUID,
     private val playerJobService: PlayerJobService,
     previous: Menu? = null
@@ -66,26 +61,15 @@ class JobMissionMenu(
                 .build()
             ) {
                 try {
-                    missionService.consumeItemsForMission(viewer, mission)
-                    val updatedProgress = missionService.getProgress(viewer, mission)
-
-                    if (updatedProgress >= mission.quantity) {
-                        viewer.sendMessage(jobsChatFormatSuccess + "Mission complétée !")
-                        viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
-                        missionService.deleteMission(viewer, mission)
-                        playerMissions[playerID]?.remove(slotIndex)
-                        viewer.closeInventory()
+                    missionService.consumeItemsForMission(viewer, mission.id)
+                    val updatedMission = missionService.getMissionById(mission.id)
+                    if (updatedMission != null) {
+                        mission.delivered = updatedMission.delivered
+                        placeButtons(viewer)
                     } else {
-                        val remaining = mission.quantity - updatedProgress
-                        viewer.sendMessage(
-                            jobsChatFormat + "Il manque encore "
-                                    + Component.text("$remaining ", YELLOW)
-                                    + Component.text(mission.material.displayName, GOLD)
-                                    + " pour terminer cette mission."
-                        )
-                        JobMissionMenu(job, mission, missionService, slotIndex, playerID, playerJobService).open(viewer)
                         viewer.closeInventory()
                     }
+
                 } catch (e: Exception) {
                     logger.error("Error while attempting to deposit items for mission $mission", e)
                     viewer.sendMessage(jobsChatFormatError + "Une erreur est survenue lors du dépôt des items.")

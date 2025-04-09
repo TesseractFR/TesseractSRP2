@@ -14,7 +14,7 @@ import java.util.*
 class JobMissionEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
+    val id: Long = 0,
 
     @Column(name = "player_id", nullable = false, columnDefinition = "BINARY(16)")
     val playerId: UUID,
@@ -33,6 +33,9 @@ class JobMissionEntity(
     @Column(nullable = false)
     val minimalQuality: Int,
 
+    @Column(name = "delivered")
+    var delivered: Int = 0,
+
     @Column(nullable = false)
     val reward: Int
 ) {
@@ -44,6 +47,7 @@ class JobMissionEntity(
             material = material,
             quantity = quantity,
             minimalQuality = minimalQuality,
+            delivered = delivered,
             reward = reward
         )
     }
@@ -51,12 +55,13 @@ class JobMissionEntity(
 
 fun JobMission.toEntity(): JobMissionEntity {
     return JobMissionEntity(
-        id = id,
+        id = this.id,
         playerId = playerId,
         job = job,
         material = material,
         quantity = quantity,
         minimalQuality = minimalQuality,
+        delivered = delivered,
         reward = reward
     )
 }

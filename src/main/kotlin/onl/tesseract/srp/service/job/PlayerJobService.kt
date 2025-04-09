@@ -3,6 +3,7 @@ package onl.tesseract.srp.service.job
 import jakarta.transaction.Transactional
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobSkill
 import onl.tesseract.srp.domain.job.PlayerJobProgression
 import onl.tesseract.srp.repository.hibernate.job.PlayerJobProgressionRepository
@@ -90,6 +91,16 @@ open class PlayerJobService(
     fun addSkillPoint(playerID: UUID, points: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addSkillPoints(points)
+        repository.save(progression)
+    }
+
+    @Transactional
+    open fun increaseReputation(playerId: UUID, job: EnumJob, amount: Double = 0.005) {
+        val progression = repository.getById(playerId)
+            ?: throw IllegalArgumentException("Cannot increase reputation, player progression not found for $playerId")
+        val newValue = progression.reputationByJob.getOrPut(job) { 1.0 } + amount
+        progression.reputationByJob[job] = newValue
+
         repository.save(progression)
     }
 }

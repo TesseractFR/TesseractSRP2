@@ -8,7 +8,6 @@ import java.util.*
 
 interface JobMissionRepository : Repository<JobMission, Long> {
     fun deleteById(id: Long)
-    fun findAll(): List<JobMission>
     fun findAllByPlayerId(playerId: UUID): List<JobMission>
 }
 
@@ -32,17 +31,12 @@ class JobMissionRepositoryJpaAdapter(
     }
 
     override fun idOf(entity: JobMission): Long {
-        return entity.id ?: error("JobMission ID is null")
+        return entity.id
     }
 
     override fun deleteById(id: Long) {
         jpaRepo.deleteById(id)
     }
-
-    override fun findAll(): List<JobMission> {
-        return jpaRepo.findAll().map { it.toDomain() }
-    }
-
 }
 
 @org.springframework.stereotype.Repository
