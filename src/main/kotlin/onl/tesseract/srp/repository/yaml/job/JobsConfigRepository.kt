@@ -2,11 +2,9 @@ package onl.tesseract.srp.repository.yaml.job
 
 import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.lib.util.getSectionList
 import onl.tesseract.srp.domain.item.CustomMaterial
-import onl.tesseract.srp.domain.job.BaseStat
-import onl.tesseract.srp.domain.job.EnumJob
-import onl.tesseract.srp.domain.job.Job
-import onl.tesseract.srp.domain.job.QualityDistribution
+import onl.tesseract.srp.domain.job.*
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.slf4j.Logger
@@ -17,9 +15,9 @@ private val logger: Logger = LoggerFactory.getLogger(JobsConfigRepository::class
 
 @Component
 class JobsConfigRepository {
-    private lateinit var jobs: Map<String, Job>
+    private lateinit var jobs: Map<EnumJob, Job>
 
-    private fun loadJobs(): Map<String, Job> {
+    private fun loadJobs(): Map<EnumJob, Job> {
         val file = File("plugins/Tesseract/jobs.yml")
         if (!file.exists()) {
             throw ConfigurationException("The file jobs.yml doesn't exist!")
@@ -31,7 +29,7 @@ class JobsConfigRepository {
             throw ConfigurationException("No jobs configured!")
         }
 
-        val loadedJobs = mutableMapOf<String, Job>()
+        val loadedJobs = mutableMapOf<EnumJob, Job>()
 
         for (jobName in jobKeys) {
             val jobSection = config.getConfigurationSection("jobs.$jobName") ?: continue
@@ -51,12 +49,14 @@ class JobsConfigRepository {
                 }
             }?.toMap() ?: emptyMap()
 
-            loadedJobs[jobName] = Job(EnumJob.valueOf(jobName), baseStats)
+            val enumJob = EnumJob.valueOf(jobName)
+            val missionTemplates = readMissionTemplateList(enumJob, jobSection)
+            loadedJobs[enumJob] = Job(enumJob, baseStats, missionTemplates)
         }
         return loadedJobs
     }
 
-    fun getJobs(): Map<String, Job> {
+    fun getJobs(): Map<EnumJob, Job> {
         if (!this::jobs.isInitialized) {
             try {
                 jobs = loadJobs()
@@ -84,5 +84,44 @@ class JobsConfigRepository {
             .also { if (it < 0) throw ConfigurationException("Missing qualityDistribution.stddev") }
 
         return BaseStat(lootChance.toFloat(), moneyGain, xpGain, QualityDistribution(expectation, stddev.toFloat()))
+    }
+
+    /**
+     * Parse mission templates. Will print error logs on error while parsing a template, but will continue to parse
+     * next templates.
+     */
+    private fun readMissionTemplateList(job: EnumJob, section: ConfigurationSection): Collection<MissionTemplate> {
+        val missions: Collection<MissionTemplate> = section.getSectionList("missions") {
+            return@getSectionList try {
+                this.readMissionTemplate(it)
+            } catch (e: Exception) {
+                logger.error("Failed to read mission template from config file", e)
+                null
+            }
+        }
+        if (missions.isEmpty())
+            logger.warn("No missions configured for job $job. Is 'missions' section missing?")
+        return missions
+    }
+
+    /**
+     * @throws ConfigurationException
+     */
+    private fun readMissionTemplate(section: ConfigurationSection): MissionTemplate {
+        val materialName = section.getString("material")
+            ?: throw ConfigurationException("Missing property 'material'")
+
+        val material = try {
+            CustomMaterial.valueOf(materialName)
+        } catch (e: IllegalArgumentException) {
+            throw ConfigurationException("Invalid field material", e)
+        }
+        val quantity = section.getInt("quantity")
+        val minQuality = section.getInt("minQuality")
+        return try {
+            MissionTemplate(material, quantity, minQuality)
+        } catch (e: IllegalArgumentException) {
+            throw ConfigurationException("Invalid fields for job mission template", e)
+        }
     }
 }

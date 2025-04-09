@@ -7,7 +7,6 @@ import onl.tesseract.lib.util.Util
 import onl.tesseract.lib.util.append
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.menu.job.mission.JobMissionSelectionMenu
-import org.bukkit.entity.Player
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.PlayerJobProgression
 import onl.tesseract.srp.domain.job.mission.JobMission
@@ -18,10 +17,11 @@ import onl.tesseract.srp.service.job.JobService
 import onl.tesseract.srp.service.job.PlayerJobService
 import onl.tesseract.srp.util.jobsChatFormat
 import onl.tesseract.srp.util.jobsChatFormatSuccess
+import org.bukkit.entity.Player
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
-import kotlin.math.roundToInt
+import kotlin.random.Random
 
 private val logger: Logger = LoggerFactory.getLogger(JobMissionService::class.java)
 
@@ -36,37 +36,31 @@ class JobMissionService(
 
     private val playerProgress = mutableMapOf<UUID, MutableMap<Long, Int>>()
 
-    fun createRandomMissionForJob(playerId: UUID, job: EnumJob): Boolean {
-        val possibleMaterials = jobService.getCustomMaterialsForJob(job)
-        val material = possibleMaterials.random()
+    fun createRandomMissionForJob(playerId: UUID, enumJob: EnumJob): Boolean {
+        val job = jobService.getJob(enumJob)
+        val template = job.missionTemplates.random()
 
-        val baseQuantity = 2..4
-        val baseQuality = 10..15
+        val rep = getReputation(playerId, enumJob)
+        val quantity = Random.nextDouble(template.quantity * 0.9, template.quantity * 1.1) * rep
+        val quality = Random.nextDouble(template.minQuality * 0.9, template.minQuality * 1.1) * rep
 
-        val rep = getReputation(playerId, job)
-
-        val quantityRange = (baseQuantity.first * rep).roundToInt()..(baseQuantity.last * rep).roundToInt()
-        val qualityRange = (baseQuality.first * rep).roundToInt()..(baseQuality.last * rep).roundToInt()
-
-        val quantity = quantityRange.random().coerceAtLeast(1)
-        val quality = qualityRange.random().coerceAtLeast(1)
-        val reward = quantity * quality
+        val reward = quantity * job.baseStats[template.material]!!.moneyGain
 
         val mission = JobMission(
             id = 0L,
             playerId = playerId,
-            job = job,
-            material = material,
-            quantity = quantity,
-            minimalQuality = quality,
-            reward = reward
+            job = enumJob,
+            material = template.material,
+            quantity = quantity.toInt().coerceAtLeast(1),
+            minimalQuality = quality.toInt().coerceAtLeast(1),
+            reward = reward.toInt()
         )
         return try {
             jobMissionRepository.save(mission)
-            logger.info("Created mission for player $playerId - Job: $job, Material: ${material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
+            logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
             true
         } catch (e: Exception) {
-            logger.error("Failed to create mission for $playerId - Job: $job", e)
+            logger.error("Failed to create mission for $playerId - Job: $enumJob", e)
             false
         }
     }
