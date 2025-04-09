@@ -1,5 +1,6 @@
 package onl.tesseract.srp.domain.job
 
+import kotlinx.serialization.Serializable
 import onl.tesseract.srp.domain.item.CustomMaterial
 
 data class Job(
@@ -11,6 +12,7 @@ data class Job(
         get() = baseStats.keys
 }
 
+@Serializable
 data class MissionTemplate(
     val items: List<MissionItem>
 ) {
@@ -20,6 +22,7 @@ data class MissionTemplate(
     }
 }
 
+@Serializable
 data class MissionItem(
     val material: CustomMaterial,
     val quantity: Int,
