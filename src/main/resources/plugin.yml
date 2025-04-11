@@ -20,3 +20,5 @@ commands:
   rank:
     permission: rank
     description: Ouvre le menu des grades
+  missions:
+    description: Ouvre le menu des job missions

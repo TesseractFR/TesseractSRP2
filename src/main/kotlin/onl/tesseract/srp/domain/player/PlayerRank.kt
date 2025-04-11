@@ -75,4 +75,27 @@ enum class PlayerRank(val title: Title, val cost: Int, val icon: Material, val t
     fun next(): PlayerRank? {
         return if (this == Empereur) null else entries[ordinal + 1]
     }
+
+    companion object {
+        fun getUnlockedSlotsForRank(rank: PlayerRank): Int {
+            return when (rank) {
+                Survivant -> 1
+                Explorateur, Aventurier -> 2
+                Noble, Baron, Seigneur -> 3
+                Vicomte, Comte, Duc -> 4
+                Roi, Empereur -> 5
+            }
+        }
+
+        fun getRequiredRankForSlot(slot: Int): PlayerRank {
+            return when (slot) {
+                0 -> Survivant
+                1 -> Explorateur
+                2 -> Noble
+                3 -> Vicomte
+                4 -> Roi
+                else -> Empereur
+            }
+        }
+    }
 }

@@ -9,7 +9,8 @@ class PlayerJobProgression(
     level: Int = 1,
     xp: Int = 0,
     skillPoints: Int = 0,
-    skills: List<JobSkill> = listOf()
+    skills: List<JobSkill> = listOf(),
+    val reputationByJob: MutableMap<EnumJob, Double> = EnumJob.entries.associateWith { 1.0 }.toMutableMap()
 ) {
     var level: Int = level
         private set
