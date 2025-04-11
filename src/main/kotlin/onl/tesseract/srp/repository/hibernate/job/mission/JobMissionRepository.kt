@@ -26,8 +26,8 @@ class JobMissionRepositoryJpaAdapter(
         return jpaRepo.findAllByPlayerId(playerId).map { it.toDomain() }
     }
 
-    override fun save(entity: JobMission) {
-        jpaRepo.save(entity.toEntity())
+    override fun save(entity: JobMission): JobMission {
+        return jpaRepo.save(entity.toEntity()).toDomain()
     }
 
     override fun idOf(entity: JobMission): Long {
