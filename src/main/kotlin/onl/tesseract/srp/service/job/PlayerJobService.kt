@@ -96,11 +96,10 @@ open class PlayerJobService(
 
     @Transactional
     open fun increaseReputation(playerId: UUID, job: EnumJob, amount: Double = 0.005) {
-        val progression = repository.getById(playerId)
-            ?: throw IllegalArgumentException("Cannot increase reputation, player progression not found for $playerId")
+        val progression = getPlayerJobProgression(playerId)
         val newValue = progression.reputationByJob.getOrPut(job) { 1.0 } + amount
         progression.reputationByJob[job] = newValue
-
         repository.save(progression)
     }
+
 }

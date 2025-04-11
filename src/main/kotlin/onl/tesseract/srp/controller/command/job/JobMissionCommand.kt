@@ -17,7 +17,7 @@ class JobMissionCommand(
     provider: CommandInstanceProvider,
     private val missionService: JobMissionService,
     private val playerService: SrpPlayerService,
-    private val playerJobService: PlayerJobService
+    private val playerJobService: PlayerJobService,
 ) : CommandContext(provider){
 
     @CommandBody

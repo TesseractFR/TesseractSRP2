@@ -2,11 +2,12 @@ package onl.tesseract.srp.service.job.mission
 
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor.*
+import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.util.Util
 import onl.tesseract.lib.util.append
 import onl.tesseract.lib.util.plus
-import onl.tesseract.srp.controller.menu.job.mission.JobMissionSelectionMenu
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.PlayerJobProgression
 import onl.tesseract.srp.domain.job.mission.JobMission
@@ -18,6 +19,7 @@ import onl.tesseract.srp.service.job.PlayerJobService
 import onl.tesseract.srp.util.jobsChatFormat
 import onl.tesseract.srp.util.jobsChatFormatSuccess
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
@@ -36,7 +38,7 @@ class JobMissionService(
 
     private val playerProgress = mutableMapOf<UUID, MutableMap<Long, Int>>()
 
-    fun createRandomMissionForJob(playerId: UUID, enumJob: EnumJob): Boolean {
+    fun createRandomMissionForJob(playerId: UUID, enumJob: EnumJob): JobMission {
         val job = jobService.getJob(enumJob)
         val template = job.missionTemplates.random().items.first()
 
@@ -46,6 +48,7 @@ class JobMissionService(
 
         val baseStat = job.baseStats[template.material]
             ?: error("No baseStat configured for job $enumJob")
+
         val reward = quantity * baseStat.moneyGain
 
         val mission = JobMission(
@@ -57,14 +60,10 @@ class JobMissionService(
             minimalQuality = quality.toInt().coerceAtLeast(1),
             reward = reward.toInt()
         )
-        return try {
-            jobMissionRepository.save(mission)
-            logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
-            true
-        } catch (e: Exception) {
-            logger.error("Failed to create mission for $playerId - Job: $enumJob", e)
-            false
-        }
+
+        val saved = jobMissionRepository.save(mission)
+        logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
+        return saved
     }
 
     fun getMissionsForPlayer(playerId: UUID): List<JobMission> {
@@ -124,9 +123,9 @@ class JobMissionService(
         return removedAmount
     }
 
-    fun getMissionProgressComponent(player: Player, mission: JobMission): Component {
+    fun buildMissionButtonItem(viewer: Player, mission: JobMission, title: String, clickMessage: String): ItemStack {
         val progress = mission.delivered
-        val inventoryAmount = player.inventory.contents
+        val inventoryAmount = viewer.inventory.contents
             .filterNotNull()
             .mapNotNull { runCatching { customItemService.getCustomItemStack(it) }.getOrNull() }
             .filter { it.item.material == mission.material && it.item.quality >= mission.minimalQuality }
@@ -135,12 +134,25 @@ class JobMissionService(
         val total = progress + inventoryAmount
         val gradientColor = Util.getGreenRedGradient(total, mission.quantity)
 
-        return Component.text("Quantité déposée : ", GRAY)
-            .append("$progress", YELLOW)
-            .append(" + ", GRAY)
-            .append("$inventoryAmount", gradientColor)
-            .append(" / ", GRAY)
-            .append("${mission.quantity}", GRAY)
+        return ItemBuilder(mission.material.customMaterial)
+            .name(Component.text(title, YELLOW))
+            .lore()
+            .append(Component.text("Métier : ", GRAY).append(mission.job.name, GOLD))
+            .newline()
+            .append(Component.text("Qualité minimale : ", GRAY).append("${mission.minimalQuality}%", AQUA))
+            .newline()
+            .append(Component.text("Récompense : ", GRAY).append("${mission.reward} lys", GREEN))
+            .newline()
+            .newline()
+            .append(Component.text("Quantité déposée : ", GRAY).append("$progress", YELLOW))
+            .newline()
+            .append(Component.text("Quantité dans l'inventaire : ", GRAY).append("$inventoryAmount", YELLOW))
+            .newline()
+            .append(Component.text("Total : ", GRAY, TextDecoration.BOLD).append("$total", gradientColor).append(" / ${mission.quantity}", GRAY))
+            .newline()
+            .append(Component.text(clickMessage, GOLD, TextDecoration.ITALIC))
+            .buildLore()
+            .build()
     }
 
     private fun completeMission(player: Player, mission: JobMission) {
@@ -148,7 +160,6 @@ class JobMissionService(
         jobMissionRepository.deleteById(mission.id)
 
         playerProgress[player.uniqueId]?.remove(mission.id)
-        JobMissionSelectionMenu.playerMissions[player.uniqueId]?.values?.removeIf { it.id == mission.id }
 
         val newRep = getReputation(player.uniqueId, mission.job)
         logger.info("[Mission] New reputation for ${player.name} from job ${mission.job.name} : $newRep")
