@@ -1,6 +1,6 @@
 package onl.tesseract.srp.controller.event.campement.listener
 
-import onl.tesseract.srp.controller.event.campement.CampLevelUpdateEvent
+import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
 import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -12,9 +12,7 @@ open class CampLevelUpdateListener(
 ) : Listener {
 
     @EventHandler
-    fun onPlayerRankUpdate(event: CampLevelUpdateEvent) {
-        val playerId = event.playerId
-        val newLevel = event.newRank.campLevel
-        campementService.setCampLevel(playerId, newLevel)
+    fun onPlayerRankUpdate(event: PlayerRankUpEvent) {
+        campementService.setCampLevel(event.playerId, event.newRank.campLevel)
     }
 }

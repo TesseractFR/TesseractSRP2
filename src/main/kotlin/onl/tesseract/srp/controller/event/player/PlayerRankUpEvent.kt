@@ -1,11 +1,11 @@
-package onl.tesseract.srp.controller.event.campement
+package onl.tesseract.srp.controller.event.player
 
 import onl.tesseract.srp.domain.player.PlayerRank
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 import java.util.*
 
-class CampLevelUpdateEvent(
+class PlayerRankUpEvent(
     val playerId: UUID,
     val newRank: PlayerRank
 ) : Event() {
