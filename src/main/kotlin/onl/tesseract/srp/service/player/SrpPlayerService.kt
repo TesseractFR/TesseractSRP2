@@ -1,5 +1,7 @@
 package onl.tesseract.srp.service.player
 
+import onl.tesseract.lib.event.EventService
+import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
@@ -13,7 +15,8 @@ import java.util.*
 @Service
 open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
-    private val ledgerService: MoneyLedgerService
+    private val ledgerService: MoneyLedgerService,
+    private val eventService: EventService
 ) {
 
     open fun getPlayer(id: UUID): SrpPlayer {
@@ -29,6 +32,7 @@ open class SrpPlayerService(
         if (player.rank == rank) return false
         player.rank = rank
         savePlayer(player)
+        eventService.callEvent(PlayerRankUpEvent(playerID, rank))
         return true
     }
 
@@ -51,6 +55,7 @@ open class SrpPlayerService(
                 player.rank.name
             )
             savePlayer(player)
+            eventService.callEvent(PlayerRankUpEvent(playerID, player.rank))
         }
         return result
     }

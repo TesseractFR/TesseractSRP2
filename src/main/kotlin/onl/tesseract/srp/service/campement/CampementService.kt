@@ -14,6 +14,7 @@ import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.CampementRepository
+import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
@@ -32,6 +33,7 @@ open class CampementService(
     private val repository: CampementRepository,
     private val eventService: EventService,
     private val worldService: WorldService,
+    private val srpPlayerService: SrpPlayerService
 ) {
     @PostConstruct
     fun registerInServiceContainer() {
@@ -72,16 +74,18 @@ open class CampementService(
         if (repository.isChunkClaimed(chunkX, chunkZ)) {
             return false
         }
+        val player = srpPlayerService.getPlayer(ownerID)
+        val campLevel = player.rank.campLevel
 
         val campement = Campement(
             ownerID = ownerID,
             trustedPlayers = emptySet(),
             chunks = mutableSetOf(chunk),
-            campLevel = 1,
+            campLevel = campLevel,
             spawnLocation = spawnLocation,
         )
 
-        logger.info("New campement created for owner $ownerID")
+        logger.info("New campement (level $campLevel) created for owner $ownerID")
         repository.save(campement)
         eventService.callEvent(CampementChunkClaimEvent(ownerID, chunk))
         return true
@@ -112,16 +116,18 @@ open class CampementService(
      * @return The new camp level if successful, or null if the camp does not exist.
      */
     @Transactional
-    open fun incrementCampLevel(ownerID: UUID): Int {
+    open fun setCampLevel(ownerID: UUID, level: Int): Boolean {
         val campement = repository.getById(ownerID)
-            ?: throw IllegalArgumentException("Campement $ownerID does not exist")
+            ?: throw IllegalArgumentException("Campement from $ownerID does not exist")
 
-        campement.campLevel += 1
-        logger.info("Campement $ownerID is now level ${campement.campLevel}")
-        repository.save(campement)
-        return campement.campLevel
+        if (campement.campLevel != level) {
+            campement.campLevel = level
+            logger.info("Campement level from $ownerID set to $level")
+            repository.save(campement)
+            return true
+        }
+        return false
     }
-
 
     enum class AnnexationResult {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
