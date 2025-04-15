@@ -1,12 +1,12 @@
 package onl.tesseract.srp.service.player
 
-import onl.tesseract.lib.service.ServiceContainer
+import onl.tesseract.lib.event.EventService
+import onl.tesseract.srp.controller.event.campement.CampLevelUpdateEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
-import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +15,8 @@ import java.util.*
 @Service
 open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
-    private val ledgerService: MoneyLedgerService
+    private val ledgerService: MoneyLedgerService,
+    private val eventService: EventService
 ) {
 
     open fun getPlayer(id: UUID): SrpPlayer {
@@ -31,8 +32,7 @@ open class SrpPlayerService(
         if (player.rank == rank) return false
         player.rank = rank
         savePlayer(player)
-        val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
-        campementService.setCampLevel(playerID, player.rank.campLevel)
+        eventService.callEvent(CampLevelUpdateEvent(playerID, rank))
         return true
     }
 
@@ -56,8 +56,7 @@ open class SrpPlayerService(
             )
             savePlayer(player)
         }
-        val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
-        campementService.setCampLevel(playerID, player.rank.campLevel)
+        eventService.callEvent(CampLevelUpdateEvent(playerID, player.rank))
         return result
     }
 
