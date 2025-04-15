@@ -7,9 +7,14 @@ import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
 import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
+import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
+import onl.tesseract.srp.domain.equipment.ElytraInvocable
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer
+import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
+import onl.tesseract.srp.repository.yaml.equipment.ElytraInvocableSerializer
+import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin

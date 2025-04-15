@@ -27,3 +27,5 @@ commands:
     description: Gestion de guilde
     aliases:
       - g
+  elytras:
+    description: Invoque les elytras customisées
