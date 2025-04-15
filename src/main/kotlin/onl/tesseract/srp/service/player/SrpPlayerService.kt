@@ -32,7 +32,7 @@ open class SrpPlayerService(
         player.rank = rank
         savePlayer(player)
         val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
-        campementService.getCampLevel(playerID, player.rank)
+        campementService.setCampLevel(playerID, player.rank.campLevel)
         return true
     }
 
@@ -57,7 +57,7 @@ open class SrpPlayerService(
             savePlayer(player)
         }
         val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
-        campementService.getCampLevel(playerID, player.rank)
+        campementService.setCampLevel(playerID, player.rank.campLevel)
         return result
     }
 

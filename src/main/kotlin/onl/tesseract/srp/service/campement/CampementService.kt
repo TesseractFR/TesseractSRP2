@@ -12,7 +12,6 @@ import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
 import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.domain.campement.CampementChunk
-import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -117,14 +116,13 @@ open class CampementService(
      * @return The new camp level if successful, or null if the camp does not exist.
      */
     @Transactional
-    open fun getCampLevel(ownerID: UUID, playerRank: PlayerRank): Boolean {
+    open fun setCampLevel(ownerID: UUID, level: Int): Boolean {
         val campement = repository.getById(ownerID)
-            ?: throw IllegalArgumentException("Campement $ownerID does not exist")
+            ?: throw IllegalArgumentException("Campement from $ownerID does not exist")
 
-        val requiredLevel = playerRank.campLevel
-        if (campement.campLevel != requiredLevel) {
-            campement.campLevel = requiredLevel
-            logger.info("Campement $ownerID level set to $requiredLevel")
+        if (campement.campLevel != level) {
+            campement.campLevel = level
+            logger.info("Campement level from $ownerID set to $level")
             repository.save(campement)
             return true
         }
