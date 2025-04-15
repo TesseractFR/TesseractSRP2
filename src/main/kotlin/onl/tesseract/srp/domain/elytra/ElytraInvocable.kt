@@ -1,9 +1,10 @@
 package onl.tesseract.srp.domain.elytra
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.equipment.Invocable
-import onl.tesseract.lib.util.ItemBuilder
+import onl.tesseract.lib.menu.ItemBuilder
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -38,7 +39,9 @@ class ElytraInvocable(
         return ItemBuilder(Material.ELYTRA)
             .name("Ailes Célestes", NamedTextColor.AQUA, TextDecoration.BOLD)
             .enchanted(true)
-            .lore("Ailes magiques forgées par les êtres Célestes.", NamedTextColor.GRAY)
+            .lore()
+            .append(Component.text("Ailes magiques forgées par les êtres Célestes.", NamedTextColor.GRAY))
+            .buildLore()
             .build()
     }
 }
