@@ -1,10 +1,12 @@
 package onl.tesseract.srp.service.player
 
+import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,6 +31,8 @@ open class SrpPlayerService(
         if (player.rank == rank) return false
         player.rank = rank
         savePlayer(player)
+        val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
+        campementService.getCampLevel(playerID, player.rank)
         return true
     }
 
@@ -52,6 +56,8 @@ open class SrpPlayerService(
             )
             savePlayer(player)
         }
+        val campementService = ServiceContainer.getInstance().getService(CampementService::class.java)
+        campementService.getCampLevel(playerID, player.rank)
         return result
     }
 
