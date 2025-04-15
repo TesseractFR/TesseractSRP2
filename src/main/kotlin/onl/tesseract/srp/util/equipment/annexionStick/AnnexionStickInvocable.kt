@@ -48,7 +48,9 @@ abstract class AnnexionStickInvocable(
         return ItemBuilder(material)
             .name(displayName, NamedTextColor.GOLD, TextDecoration.BOLD)
             .enchanted(true)
-            .lore(lore)
+            .lore()
+            .append(lore)
+            .buildLore()
             .build()
     }
 

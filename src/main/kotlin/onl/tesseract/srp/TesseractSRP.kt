@@ -8,7 +8,7 @@ import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
-import onl.tesseract.srp.domain.equipment.ElytraInvocable
+import onl.tesseract.srp.domain.elytra.ElytraInvocable
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer
