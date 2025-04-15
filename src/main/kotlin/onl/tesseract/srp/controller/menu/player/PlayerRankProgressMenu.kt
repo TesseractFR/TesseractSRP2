@@ -6,6 +6,7 @@ import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
+import onl.tesseract.lib.task.TaskScheduler
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.lib.util.menu.InventoryHeadIcons
 import onl.tesseract.lib.util.plus
@@ -19,20 +20,23 @@ import org.bukkit.Sound
 import org.bukkit.entity.Player
 import java.util.*
 
+private const val SCROLL_SPREAD: Int = 4
+
 class PlayerRankProgressMenu(private val playerID: UUID,
                              private val playerService: SrpPlayerService,
                              private val profileService: PlayerProfileService,
+                             private val scheduler: TaskScheduler,
                              previous: Menu?) :
     BiMenu(MenuSize.One, "Grades".toComponent(), previous) {
 
     override fun placeButtons(viewer: Player) {
         val player = playerService.getPlayer(playerID)
-        val scroll = player.rank.ordinal * 4
+        val scroll = player.rank.ordinal * SCROLL_SPREAD
 
         placeButtons(viewer, scroll)
     }
 
-    fun placeButtons(viewer: Player, scroll: Int) {
+    private fun placeButtons(viewer: Player, scroll: Int) {
         if (scroll < 0) return placeButtons(viewer, 0)
         val player = playerService.getPlayer(playerID)
 
@@ -47,7 +51,7 @@ class PlayerRankProgressMenu(private val playerID: UUID,
 
         addScrollButtons(scroll, viewer)
 
-        addBottomButton(4, ItemBuilder(Material.PISTON)
+        addBottomButton(SCROLL_SPREAD, ItemBuilder(Material.PISTON)
             .name("Affichage compacte")
             .lore()
             .newline()
@@ -129,7 +133,12 @@ class PlayerRankProgressMenu(private val playerID: UUID,
                     return@Button
                 if (playerService.buyNextRank(playerID)) {
                     viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f)
-                    placeButtons(viewer, (rank.ordinal - 1) * 4)
+                    val scroll = (rank.ordinal - 1) * SCROLL_SPREAD
+                    repeat(SCROLL_SPREAD) { i ->
+                        scheduler.runTimer(delay = (10 * (i + 1)).toLong(), 0, 0) {
+                            placeButtons(viewer, scroll + i + 1)
+                        }
+                    }
                 }
             })
     }
