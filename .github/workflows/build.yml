@@ -27,6 +27,8 @@ jobs:
     needs: [detekt]
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch master
+        run: git fetch origin master
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
