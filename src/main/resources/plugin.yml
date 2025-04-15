@@ -22,3 +22,5 @@ commands:
     description: Ouvre le menu des grades
   missions:
     description: Ouvre le menu des job missions
+  elytras:
+    description: Invoque les elytras customisées
