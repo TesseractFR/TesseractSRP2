@@ -17,6 +17,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springboot.version>3.3.0</springboot.version>
         <jakarta-persistence.version>3.1.0</jakarta-persistence.version>
+        <sonar.organization>tesseractfr</sonar.organization>
+        <sonar.projectKey>TesseractFR_TesseractSRP2</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <build>
@@ -130,6 +133,10 @@
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/TesseractFR/TesseractCore</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -149,18 +156,6 @@
             <groupId>onl.tesseract</groupId>
             <artifactId>core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>onl.tesseract</groupId>
-            <artifactId>commandbuilder</artifactId>
-            <version>3.0-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>onl.tesseract</groupId>
-            <artifactId>tesseractlib</artifactId>
-            <version>4.0.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
