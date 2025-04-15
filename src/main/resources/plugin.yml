@@ -24,3 +24,5 @@ commands:
     description: Ouvre le menu des job missions
   guild:
     description: Gestion de guilde
+  elytras:
+    description: Invoque les elytras customisées
