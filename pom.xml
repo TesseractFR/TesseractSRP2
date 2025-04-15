@@ -17,6 +17,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springboot.version>3.3.0</springboot.version>
         <jakarta-persistence.version>3.1.0</jakarta-persistence.version>
+        <sonar.organization>tesseractfr</sonar.organization>
+        <sonar.projectKey>TesseractFR_TesseractSRP2</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <build>
