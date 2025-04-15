@@ -12,7 +12,6 @@ import onl.tesseract.lib.task.TaskScheduler
 import onl.tesseract.srp.PLUGIN_INSTANCE
 import onl.tesseract.srp.controller.menu.job.CustomInventoryView
 import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -34,7 +33,7 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
     override fun open(viewer: Player) {
         val serializedTitle = LegacyComponentSerializer.legacySection().serialize(title)
         val topInventory = Bukkit.createInventory(null, size.size, title)
-        val fakePlayer = getOrCreateInventoryNPC()
+        val fakePlayer = getOrCreateInventoryNPC(viewer)
         this.view = CustomInventoryView(fakePlayer.inventory, topInventory, viewer, serializedTitle)
         this.viewer = viewer
         viewer.openInventory(view)
@@ -54,14 +53,16 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
         button.draw(this, index, AButton.Side.Bottom)
     }
 
-    private fun getOrCreateInventoryNPC(): Player {
+    private fun getOrCreateInventoryNPC(viewer: Player): Player {
         val registry = CitizensAPI.getNamedNPCRegistry("BottomInventories")
             ?: CitizensAPI.createInMemoryNPCRegistry("BottomInventories")
 
         return registry.createNPC(EntityType.PLAYER, "Inventory-${hashCode()}").let { npc ->
             this.npc = npc
             if (!npc.isSpawned) {
-                npc.spawn(Location(Bukkit.getWorld("world"), 0.0, 5.0, 0.0))
+                val spawnLocation = viewer.world.spawnLocation.clone()
+                spawnLocation.y = 5.0
+                npc.spawn(spawnLocation)
                 (npc.entity as Player).isInvisible = true
             }
             return@let npc.entity as Player
