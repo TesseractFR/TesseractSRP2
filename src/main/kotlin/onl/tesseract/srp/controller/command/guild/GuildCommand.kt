@@ -24,6 +24,10 @@ class GuildCommand(provider: CommandInstanceProvider, private val guildService: 
         val message = when (errorReason) {
             GuildCreationResult.Reason.Success -> NamedTextColor.GREEN + "Guilde créée"
             GuildCreationResult.Reason.NotEnoughMoney -> NamedTextColor.RED + "Tu n'a pas assez d'argent"
+            GuildCreationResult.Reason.InvalidWorld ->
+                NamedTextColor.RED + "Tu ne peux pas créer de guilde dans ce monde"
+
+            GuildCreationResult.Reason.NearSpawn -> NamedTextColor.RED + "Tu es trop proche du spawn"
         }
 
         sender.sendMessage(message)

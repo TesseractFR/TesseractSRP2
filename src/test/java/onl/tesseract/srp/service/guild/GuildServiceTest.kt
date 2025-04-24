@@ -2,12 +2,13 @@ package onl.tesseract.srp.service.guild
 
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.player.SrpPlayer
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.testutils.GuildInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
+import onl.tesseract.srp.testutils.mockWorld
 import org.bukkit.Location
-import org.bukkit.World
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -37,7 +38,7 @@ class GuildServiceTest {
     fun `Create guild - Should return the new guild - When player does not have a guild and has enough money`() {
         // Given
         val player = player(money = 10_000)
-        val location = Location(mock(World::class.java), 0.0, 0.0, 0.0)
+        val location = Location(mockWorld(SrpWorld.GuildWorld.bukkitName), 500.0, 0.0, 500.0)
 
         // When
         val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
@@ -54,7 +55,7 @@ class GuildServiceTest {
     fun `Create guild - Should return failure - When player does not have enough money`() {
         // Given
         val player = player(money = 5_000)
-        val location = Location(mock(World::class.java), 0.0, 0.0, 0.0)
+        val location = Location(mockWorld(SrpWorld.GuildWorld.bukkitName), 500.0, 0.0, 500.0)
 
         // When
         val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
@@ -63,6 +64,36 @@ class GuildServiceTest {
         assertNull(result.guild)
         assertEquals(GuildCreationResult.Reason.NotEnoughMoney, result.reason)
         assertEquals(5_000, player.money)
+    }
+
+    @Test
+    fun `Create guild - Should return failure - When location is not in guild world`() {
+        // Given
+        val player = player(money = 10_000)
+        val world = mockWorld("hey")
+        val location = Location(world, 500.0, 0.0, 500.0)
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
+
+        // Then
+        assertNull(result.guild)
+        assertEquals(GuildCreationResult.Reason.InvalidWorld, result.reason)
+    }
+
+    @Test
+    fun `Create guild - Should return failure - When location is near spawn`() {
+        // Given
+        val player = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location = Location(world, 50.0, 0.0, 50.0)
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
+
+        // Then
+        assertNull(result.guild)
+        assertEquals(GuildCreationResult.Reason.NearSpawn, result.reason)
     }
 
     private fun player(money: Int = 0): SrpPlayer {
