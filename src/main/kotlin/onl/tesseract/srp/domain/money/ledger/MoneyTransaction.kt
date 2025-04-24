@@ -34,6 +34,7 @@ enum class TransactionType {
      * Transactions related to a player's progression
      */
     Player,
+    Guild,
 }
 
 interface TransactionSubType {
@@ -48,6 +49,10 @@ interface TransactionSubType {
 
     enum class Player : TransactionSubType {
         Rank,
+    }
+
+    enum class Guild : TransactionSubType {
+        Creation,
     }
 }
 
