@@ -33,6 +33,7 @@ open class GuildService(private val guildRepository: GuildRepository, private va
             details = guild.id.toString()
         )
         if (!didPay) return GuildCreationResult.failed(GuildCreationResult.Reason.NotEnoughMoney)
+        guild.claimInitialChunks()
         val createdGuild = guildRepository.save(guild)
         return GuildCreationResult.success(createdGuild)
     }

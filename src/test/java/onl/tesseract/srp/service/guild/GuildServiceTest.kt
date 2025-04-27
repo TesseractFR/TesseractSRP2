@@ -96,6 +96,21 @@ class GuildServiceTest {
         assertEquals(GuildCreationResult.Reason.NearSpawn, result.reason)
     }
 
+    @Test
+    fun `Create guild - Should claim 9 chunks - When creating a new guild`() {
+        // Given
+        val player = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location = Location(world, 500.0, 0.0, 500.0)
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
+
+        // Then
+        assertNotNull(result.guild)
+        assertEquals(9, result.guild!!.chunks.size)
+    }
+
     private fun player(money: Int = 0): SrpPlayer {
         val srpPlayer = SrpPlayer(UUID.randomUUID(), money = money)
         return playerRepository.save(srpPlayer)
