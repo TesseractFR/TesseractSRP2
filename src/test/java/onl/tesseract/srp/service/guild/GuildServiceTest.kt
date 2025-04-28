@@ -108,6 +108,7 @@ class GuildServiceTest {
         val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
 
         // Then
+        assertEquals(GuildCreationResult.Reason.Success, result.reason)
         assertNotNull(result.guild)
         assertEquals(9, result.guild!!.chunks.size)
     }

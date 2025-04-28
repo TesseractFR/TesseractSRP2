@@ -88,10 +88,11 @@ open class SrpPlayerService(
         type: TransactionType,
         subType: TransactionSubType?,
         details: String?
-    ): Boolean {
+    ) {
         val player = getPlayer(playerID)
-        if (player.money - amount < 0)
-            return false
+        require(player.money - amount >= 0) {
+            "Player $playerID does not have enough money (current = ${player.money}, to pay = $amount)"
+        }
         player.addMoney(-amount)
         ledgerService.recordTransaction(
             from = ledgerService.getPlayerLedger(playerID),
@@ -102,7 +103,6 @@ open class SrpPlayerService(
             details
         )
         savePlayer(player)
-        return true
     }
 
     protected open fun savePlayer(player: SrpPlayer) {
