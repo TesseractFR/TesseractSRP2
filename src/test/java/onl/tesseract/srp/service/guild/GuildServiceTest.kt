@@ -10,8 +10,7 @@ import onl.tesseract.srp.testutils.GuildInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
 import onl.tesseract.srp.testutils.mockWorld
 import org.bukkit.Location
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
@@ -45,7 +44,7 @@ class GuildServiceTest {
         val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
 
         // Then
-        assertNotNull(result.guild)
+        assertTrue(result.isSuccess())
         assertEquals("MyGuild", result.guild!!.name)
         assertEquals(player.uniqueId, result.guild!!.leaderId)
         assertEquals(result.guild, guildRepository.getById(result.guild!!.id))
@@ -63,7 +62,7 @@ class GuildServiceTest {
 
         // Then
         assertNull(result.guild)
-        assertEquals(GuildCreationResult.Reason.NotEnoughMoney, result.reason)
+        assertTrue(GuildCreationResult.Reason.NotEnoughMoney in result.reason)
         assertEquals(5_000, player.money)
     }
 
@@ -79,7 +78,7 @@ class GuildServiceTest {
 
         // Then
         assertNull(result.guild)
-        assertEquals(GuildCreationResult.Reason.InvalidWorld, result.reason)
+        assertTrue(GuildCreationResult.Reason.InvalidWorld in result.reason)
     }
 
     @Test
@@ -94,7 +93,7 @@ class GuildServiceTest {
 
         // Then
         assertNull(result.guild)
-        assertEquals(GuildCreationResult.Reason.NearSpawn, result.reason)
+        assertTrue(GuildCreationResult.Reason.NearSpawn in result.reason)
     }
 
     @Test
@@ -108,7 +107,7 @@ class GuildServiceTest {
         val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
 
         // Then
-        assertEquals(GuildCreationResult.Reason.Success, result.reason)
+        assertTrue(result.isSuccess())
         assertNotNull(result.guild)
         assertEquals(9, result.guild!!.chunks.size)
     }
@@ -127,8 +126,8 @@ class GuildServiceTest {
         val result2 = guildService.createGuild(player2.uniqueId, location2, "OtherGuild")
 
         // Then
-        assertEquals(GuildCreationResult.Reason.Success, result1.reason)
-        assertEquals(GuildCreationResult.Reason.NearGuild, result2.reason)
+        assertTrue(result1.isSuccess())
+        assertTrue(GuildCreationResult.Reason.NearGuild in result2.reason)
     }
 
     @Test
@@ -144,7 +143,7 @@ class GuildServiceTest {
         val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
 
         // Then
-        assertEquals(GuildCreationResult.Reason.NameTaken, result.reason)
+        assertTrue(GuildCreationResult.Reason.NameTaken in result.reason)
     }
 
     @Test
@@ -160,7 +159,7 @@ class GuildServiceTest {
         val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
 
         // Then
-        assertEquals(GuildCreationResult.Reason.PlayerHasGuild, result.reason)
+        assertTrue(GuildCreationResult.Reason.PlayerHasGuild in result.reason)
     }
 
     private fun player(money: Int = 0): SrpPlayer {

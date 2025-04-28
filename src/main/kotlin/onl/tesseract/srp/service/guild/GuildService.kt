@@ -14,6 +14,7 @@ import java.util.*
 
 private const val SPAWN_PROTECTION_DISTANCE = 150
 private const val GUILD_COST = 10_000
+private const val GUILD_PROTECTION_RADIUS = 3
 
 @Service
 open class GuildService(private val guildRepository: GuildRepository, private val playerService: SrpPlayerService) {
@@ -21,7 +22,7 @@ open class GuildService(private val guildRepository: GuildRepository, private va
     @Transactional
     open fun createGuild(playerID: UUID, location: Location, guildName: String): GuildCreationResult {
         val checkResult = guildCreationChecks(playerID, location, guildName)
-        if (checkResult != GuildCreationResult.Reason.Success)
+        if (checkResult.isNotEmpty())
             return GuildCreationResult.failed(checkResult)
 
         val guild = Guild(-1, playerID, guildName, location)
@@ -37,35 +38,40 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         return GuildCreationResult.success(createdGuild)
     }
 
+    /**
+     * Execute creation checks
+     * @return The list of creation errors, or empty list if all checks passed
+     */
     protected open fun guildCreationChecks(
         playerID: UUID,
         location: Location,
         guildName: String
-    ): GuildCreationResult.Reason {
+    ): List<GuildCreationResult.Reason> {
+        val errorList: MutableList<GuildCreationResult.Reason> = mutableListOf()
         if (location.world.name != SrpWorld.GuildWorld.bukkitName)
-            return GuildCreationResult.Reason.InvalidWorld
+            errorList += GuildCreationResult.Reason.InvalidWorld
         if (guildRepository.findGuildByName(guildName) != null)
-            return GuildCreationResult.Reason.NameTaken
+            errorList += GuildCreationResult.Reason.NameTaken
         if (guildRepository.findGuildByLeader(playerID) != null)
-            return GuildCreationResult.Reason.PlayerHasGuild
+            errorList += GuildCreationResult.Reason.PlayerHasGuild
 
         if (location.distance(location.world.spawnLocation) <= SPAWN_PROTECTION_DISTANCE)
-            return GuildCreationResult.Reason.NearSpawn
+            errorList += GuildCreationResult.Reason.NearSpawn
 
         val srpPlayer = playerService.getPlayer(playerID)
         if (srpPlayer.money < GUILD_COST)
-            return GuildCreationResult.Reason.NotEnoughMoney
+            errorList += GuildCreationResult.Reason.NotEnoughMoney
 
         if (!checkFirstClaimAvailable(location)) {
-            return GuildCreationResult.Reason.NearGuild
+            errorList += GuildCreationResult.Reason.NearGuild
         }
-        return GuildCreationResult.Reason.Success
+        return errorList
     }
 
     protected open fun checkFirstClaimAvailable(location: Location): Boolean {
         val spawnChunk = location.chunk
-        for (x in -3..3) {
-            for (z in -3..3) {
+        for (x in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
+            for (z in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
                 val guild = guildRepository.findGuildByChunk(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
                 if (guild != null)
                     return false
@@ -75,12 +81,14 @@ open class GuildService(private val guildRepository: GuildRepository, private va
     }
 }
 
-data class GuildCreationResult(val guild: Guild?, val reason: Reason) {
+data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
 
-    enum class Reason { Success, NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild }
+    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild }
+
+    fun isSuccess(): Boolean = reason.isEmpty() && guild != null
 
     companion object {
-        fun failed(reason: Reason) = GuildCreationResult(null, reason)
-        fun success(guild: Guild) = GuildCreationResult(guild, Reason.Success)
+        fun failed(reasons: List<Reason>) = GuildCreationResult(null, reasons)
+        fun success(guild: Guild) = GuildCreationResult(guild, emptyList())
     }
 }
