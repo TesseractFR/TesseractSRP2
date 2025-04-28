@@ -1,6 +1,7 @@
 package onl.tesseract.srp.testutils
 
 import onl.tesseract.lib.repository.Repository
+import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
@@ -9,7 +10,7 @@ import java.util.*
 
 abstract class InMemoryRepository<T, ID> : Repository<T, ID> {
 
-    private val elements: MutableMap<ID, T> = mutableMapOf()
+    protected val elements: MutableMap<ID, T> = mutableMapOf()
 
     override fun getById(id: ID): T? = elements[id]
 
@@ -27,4 +28,16 @@ class SrpPlayerInMemoryRepository : SrpPlayerRepository, InMemoryRepository<SrpP
 class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>() {
 
     override fun idOf(entity: Guild): Int = entity.id
+
+    override fun findGuildByChunk(chunk: CampementChunk): Guild? {
+        return elements.values.find { chunk in it.chunks }
+    }
+
+    override fun findGuildByName(name: String): Guild? {
+        return elements.values.find { it.name == name }
+    }
+
+    override fun findGuildByLeader(leaderID: UUID): Guild? {
+        return elements.values.find { it.leaderId == leaderID }
+    }
 }

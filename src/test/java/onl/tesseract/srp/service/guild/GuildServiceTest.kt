@@ -1,6 +1,7 @@
 package onl.tesseract.srp.service.guild
 
 import onl.tesseract.lib.event.EventService
+import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.service.money.MoneyLedgerService
@@ -109,6 +110,56 @@ class GuildServiceTest {
         // Then
         assertNotNull(result.guild)
         assertEquals(9, result.guild!!.chunks.size)
+    }
+
+    @Test
+    fun `Create guild - Should return failure - When creating a new guild in another guild's territory`() {
+        // Given
+        val player1 = player(money = 10_000)
+        val player2 = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location1 = Location(world, 500.0, 0.0, 500.0)
+        val location2 = Location(world, 480.0, 0.0, 480.0)
+
+        // When
+        val result1 = guildService.createGuild(player1.uniqueId, location1, "MyGuild")
+        val result2 = guildService.createGuild(player2.uniqueId, location2, "OtherGuild")
+
+        // Then
+        assertEquals(GuildCreationResult.Reason.Success, result1.reason)
+        assertEquals(GuildCreationResult.Reason.NearGuild, result2.reason)
+    }
+
+    @Test
+    fun `Create guild - Should return failure - When name taken`() {
+        // Given
+        val player = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location1 = Location(world, 200.0, 0.0, 200.0)
+        guildRepository.save(Guild(id = 1, leaderId = UUID.randomUUID(), "MyGuild", location1))
+        val location2 = Location(world, 480.0, 0.0, 480.0)
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
+
+        // Then
+        assertEquals(GuildCreationResult.Reason.NameTaken, result.reason)
+    }
+
+    @Test
+    fun `Create guild - Should return failure - When player already has a guild`() {
+        // Given
+        val player = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location1 = Location(world, 500.0, 0.0, 500.0)
+        val location2 = Location(world, 200.0, 0.0, 200.0)
+        guildRepository.save(Guild(1, leaderId = player.uniqueId, "hello", location1))
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
+
+        // Then
+        assertEquals(GuildCreationResult.Reason.PlayerHasGuild, result.reason)
     }
 
     private fun player(money: Int = 0): SrpPlayer {

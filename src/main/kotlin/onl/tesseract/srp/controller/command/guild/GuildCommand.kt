@@ -28,6 +28,9 @@ class GuildCommand(provider: CommandInstanceProvider, private val guildService: 
                 NamedTextColor.RED + "Tu ne peux pas créer de guilde dans ce monde"
 
             GuildCreationResult.Reason.NearSpawn -> NamedTextColor.RED + "Tu es trop proche du spawn"
+            GuildCreationResult.Reason.NearGuild -> NamedTextColor.RED + "Tu es trop proche d'une autre guilde"
+            GuildCreationResult.Reason.NameTaken -> NamedTextColor.RED + "Ce nom est déjà pris"
+            GuildCreationResult.Reason.PlayerHasGuild -> NamedTextColor.RED + "Tu as déjà une guilde"
         }
 
         sender.sendMessage(message)

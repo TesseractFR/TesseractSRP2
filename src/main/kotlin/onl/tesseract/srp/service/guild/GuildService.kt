@@ -21,6 +21,11 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         if (location.world.name != SrpWorld.GuildWorld.bukkitName)
             return GuildCreationResult.failed(GuildCreationResult.Reason.InvalidWorld)
 
+        if (guildRepository.findGuildByName(guildName) != null)
+            return GuildCreationResult.failed(GuildCreationResult.Reason.NameTaken)
+        if (guildRepository.findGuildByLeader(playerID) != null)
+            return GuildCreationResult.failed(GuildCreationResult.Reason.PlayerHasGuild)
+
         if (location.distance(location.world.spawnLocation) <= SPAWN_PROTECTION_DISTANCE)
             return GuildCreationResult.failed(GuildCreationResult.Reason.NearSpawn)
 
@@ -34,6 +39,11 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         )
         if (!didPay) return GuildCreationResult.failed(GuildCreationResult.Reason.NotEnoughMoney)
         guild.claimInitialChunks()
+
+        val existingGuild = guild.chunks.any { guildRepository.findGuildByChunk(it) != null }
+        if (existingGuild)
+            return GuildCreationResult.failed(GuildCreationResult.Reason.NearGuild)
+
         val createdGuild = guildRepository.save(guild)
         return GuildCreationResult.success(createdGuild)
     }
@@ -41,7 +51,7 @@ open class GuildService(private val guildRepository: GuildRepository, private va
 
 data class GuildCreationResult(val guild: Guild?, val reason: Reason) {
 
-    enum class Reason { Success, NotEnoughMoney, InvalidWorld, NearSpawn }
+        enum class Reason { Success, NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild }
 
     companion object {
         fun failed(reason: Reason) = GuildCreationResult(null, reason)
