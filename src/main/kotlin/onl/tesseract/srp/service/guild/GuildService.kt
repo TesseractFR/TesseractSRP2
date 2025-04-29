@@ -5,6 +5,7 @@ import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
+import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -61,6 +62,8 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         val srpPlayer = playerService.getPlayer(playerID)
         if (srpPlayer.money < GUILD_COST)
             errorList += GuildCreationResult.Reason.NotEnoughMoney
+        if (srpPlayer.rank < PlayerRank.Baron)
+            errorList += GuildCreationResult.Reason.Rank
 
         if (!checkFirstClaimAvailable(location)) {
             errorList += GuildCreationResult.Reason.NearGuild
@@ -83,7 +86,7 @@ open class GuildService(private val guildRepository: GuildRepository, private va
 
 data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
 
-    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild }
+    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild, Rank }
 
     fun isSuccess(): Boolean = reason.isEmpty() && guild != null
 

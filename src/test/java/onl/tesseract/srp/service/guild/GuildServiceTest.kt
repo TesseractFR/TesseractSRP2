@@ -2,6 +2,7 @@ package onl.tesseract.srp.service.guild
 
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.service.money.MoneyLedgerService
@@ -162,8 +163,24 @@ class GuildServiceTest {
         assertTrue(GuildCreationResult.Reason.PlayerHasGuild in result.reason)
     }
 
-    private fun player(money: Int = 0): SrpPlayer {
-        val srpPlayer = SrpPlayer(UUID.randomUUID(), money = money)
+    @Test
+    fun `Create guild - Should return failure - When player does not have rank Baron`() {
+        // Given
+        val player = player(money = 10_000, rank = PlayerRank.Survivant)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val location1 = Location(world, 500.0, 0.0, 500.0)
+        val location2 = Location(world, 200.0, 0.0, 200.0)
+        guildRepository.save(Guild(1, leaderId = player.uniqueId, "hello", location1))
+
+        // When
+        val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
+
+        // Then
+        assertTrue(GuildCreationResult.Reason.Rank in result.reason)
+    }
+
+    private fun player(money: Int = 0, rank: PlayerRank = PlayerRank.Baron): SrpPlayer {
+        val srpPlayer = SrpPlayer(UUID.randomUUID(), money = money, rank = rank)
         return playerRepository.save(srpPlayer)
     }
 }
