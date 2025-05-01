@@ -40,4 +40,10 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
     override fun findGuildByLeader(leaderID: UUID): Guild? {
         return elements.values.find { it.leaderId == leaderID }
     }
+
+    override fun findGuildByMember(memberID: UUID): Guild? {
+        return elements.values.find { guild ->
+            guild.members.any { it.playerID == memberID }
+        }
+    }
 }

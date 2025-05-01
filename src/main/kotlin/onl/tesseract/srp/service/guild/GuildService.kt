@@ -82,6 +82,42 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         }
         return true
     }
+
+    @Transactional
+    open fun invite(guildID: Int, playerID: UUID): InvitationResult {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+
+        if (guildRepository.findGuildByMember(playerID) != null)
+            return InvitationResult.Failed
+
+        if (guild.joinRequests.contains(playerID)) {
+            guild.join(playerID)
+            guildRepository.save(guild)
+            return InvitationResult.Joined
+        }
+        guild.invitePlayer(playerID)
+        guildRepository.save(guild)
+        return InvitationResult.Invited
+    }
+
+    @Transactional
+    open fun join(guildID: Int, playerID: UUID): JoinResult {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+
+        if (guildRepository.findGuildByMember(playerID) != null)
+            return JoinResult.Failed
+
+        if (guild.invitations.contains(playerID)) {
+            guild.join(playerID)
+            guildRepository.save(guild)
+            return JoinResult.Joined
+        }
+        guild.askToJoin(playerID)
+        guildRepository.save(guild)
+        return JoinResult.Requested
+    }
 }
 
 data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
@@ -95,3 +131,7 @@ data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
         fun success(guild: Guild) = GuildCreationResult(guild, emptyList())
     }
 }
+
+enum class InvitationResult { Invited, Joined, Failed }
+
+enum class JoinResult { Joined, Requested, Failed }

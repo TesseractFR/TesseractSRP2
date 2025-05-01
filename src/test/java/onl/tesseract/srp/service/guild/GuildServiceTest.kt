@@ -9,6 +9,7 @@ import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.testutils.GuildInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
+import onl.tesseract.srp.testutils.fixture.SrpPlayerDomainTest
 import onl.tesseract.srp.testutils.mockWorld
 import org.bukkit.Location
 import org.junit.jupiter.api.Assertions.*
@@ -17,10 +18,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
 import java.util.*
+import kotlin.random.Random
 
-class GuildServiceTest {
+class GuildServiceTest : SrpPlayerDomainTest {
 
-    private val playerRepository = SrpPlayerInMemoryRepository()
+    override val playerRepository = SrpPlayerInMemoryRepository()
     private val guildRepository = GuildInMemoryRepository()
 
     private lateinit var guildService: GuildService
@@ -179,8 +181,87 @@ class GuildServiceTest {
         assertTrue(GuildCreationResult.Reason.Rank in result.reason)
     }
 
-    private fun player(money: Int = 0, rank: PlayerRank = PlayerRank.Baron): SrpPlayer {
-        val srpPlayer = SrpPlayer(UUID.randomUUID(), money = money, rank = rank)
-        return playerRepository.save(srpPlayer)
+    @Test
+    fun `Add member - Should add member - When inviting then joining`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val aliceGuild = guild(leader = alice)
+
+        // When / Then
+        val invitationResult = guildService.invite(aliceGuild.id, bob.uniqueId)
+        assertEquals(InvitationResult.Invited, invitationResult)
+        val joinResult = guildService.join(aliceGuild.id, bob.uniqueId)
+        assertEquals(JoinResult.Joined, joinResult)
+    }
+
+    @Test
+    fun `Add member - Should add member - When asking to join then inviting`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val aliceGuild = guild(leader = alice)
+
+        // When / Then
+        val joinResult = guildService.join(aliceGuild.id, bob.uniqueId)
+        assertEquals(JoinResult.Requested, joinResult)
+        val invitationResult = guildService.invite(aliceGuild.id, bob.uniqueId)
+        assertEquals(InvitationResult.Joined, invitationResult)
+    }
+
+    @Test
+    fun `Add member - Should fail - When inviting a player who already has a guild`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val bobGuild = guild(leader = bob)
+        val aliceGuild = guild(leader = alice)
+
+        // When
+        val invitationResult = guildService.invite(aliceGuild.id, bob.uniqueId)
+
+        // Then
+        assertEquals(InvitationResult.Failed, invitationResult)
+    }
+
+    @Test
+    fun `Add member - Should fail - When asking to join when already in a guild`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val bobGuild = guild(leader = bob)
+        val aliceGuild = guild(leader = alice)
+
+        // When
+        val joinResult = guildService.join(aliceGuild.id, bob.uniqueId)
+
+        // Then
+        assertEquals(JoinResult.Failed, joinResult)
+    }
+
+    @Test
+    fun `Add member - Should clear invitation - When joined`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val aliceGuild = guild(leader = alice)
+
+        // When
+        val invitationResult = guildService.invite(aliceGuild.id, bob.uniqueId)
+        val joinResult = guildService.join(aliceGuild.id, bob.uniqueId)
+
+        // Then
+        assertEquals(JoinResult.Joined, joinResult)
+        assertFalse(guildRepository.getById(aliceGuild.id)!!.invitations.contains(bob.uniqueId))
+    }
+
+    private fun guild(leader: SrpPlayer): Guild {
+        val guild = Guild(
+            id = Random.nextInt(),
+            leaderId = leader.uniqueId,
+            name = "MyGuild",
+            spawnLocation = mock(Location::class.java)
+        )
+        return guildRepository.save(guild)
     }
 }
