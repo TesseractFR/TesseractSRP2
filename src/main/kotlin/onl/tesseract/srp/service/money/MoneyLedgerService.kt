@@ -1,10 +1,14 @@
 package onl.tesseract.srp.service.money
 
-import onl.tesseract.srp.domain.money.ledger.*
+import onl.tesseract.srp.domain.money.ledger.Ledger
+import onl.tesseract.srp.domain.money.ledger.LedgerType
+import onl.tesseract.srp.domain.money.ledger.MoneyTransaction
+import onl.tesseract.srp.domain.money.ledger.TransactionSubType
+import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.repository.hibernate.MoneyLedgerRepository
 import org.springframework.stereotype.Service
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * Record money transactions. All money given to a player or a guild must be registered here.
@@ -40,7 +44,7 @@ class MoneyLedgerService(private val repository: MoneyLedgerRepository) {
         subType: TransactionSubType? = null,
         detail: String? = null
     ) {
-        if (amount < 0) return recordTransaction(to, from, amount, type, subType, detail)
+        if (amount < 0) return recordTransaction(to, from, -amount, type, subType, detail)
 
         val transaction = MoneyTransaction(
             ledgerFrom = from.id,
