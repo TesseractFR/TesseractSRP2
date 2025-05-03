@@ -19,7 +19,7 @@ class GuildCommand(provider: CommandInstanceProvider, private val guildService: 
 
     @Command(name = "create", playerOnly = true)
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
-        val (_, errorReason) = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
+        val (guild, errorReason) = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
 
         errorReason.map { reason ->
             return@map when (reason) {
@@ -35,5 +35,9 @@ class GuildCommand(provider: CommandInstanceProvider, private val guildService: 
                     NamedTextColor.RED + "Tu n'as pas le grade nécessaire pour créer une guilde (Baron)"
             }
         }.forEach { message -> sender.sendMessage(message) }
+
+        if (guild != null) {
+            sender.sendMessage("Guilde créée")
+        }
     }
 }
