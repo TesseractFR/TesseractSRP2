@@ -6,35 +6,17 @@ import java.util.*
 
 class Guild(
     val id: Int,
-    val leaderId: UUID,
     val name: String,
     val spawnLocation: Location,
     chunks: Set<CampementChunk> = setOf(),
-    members: List<GuildMember> = listOf(),
-    invitations: Set<UUID> = setOf(),
-    joinRequests: Set<UUID> = setOf(),
-) {
-
+    memberContainer: GuildMemberContainerImpl,
+) : GuildMemberContainer by memberContainer {
     private val _chunks: MutableSet<CampementChunk> = chunks.toMutableSet()
     val chunks: Set<CampementChunk>
         get() = _chunks
 
-    private val _members: MutableList<GuildMember> = members.toMutableList()
-    val members: List<GuildMember>
-        get() = _members
-
-    private val _invitations: MutableSet<UUID> = invitations.toMutableSet()
-    val invitations: Set<UUID>
-        get() = _invitations
-
-    private val _joinRequests: MutableSet<UUID> = joinRequests.toMutableSet()
-    val joinRequests: Set<UUID>
-        get() = _joinRequests
-
-    init {
-        if (members.none { it.playerID == leaderId })
-            _members.add(GuildMember(leaderId, GuildRole.Leader))
-    }
+    constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Location)
+            : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
 
     /**
      * @throws IllegalStateException If the guild already has chunks
@@ -49,18 +31,50 @@ class Guild(
             }
         }
     }
+}
 
-    fun invitePlayer(playerID: UUID) {
+interface GuildMemberContainer {
+    val leaderId: UUID
+    val members: List<GuildMember>
+    val invitations: Set<UUID>
+    val joinRequests: Set<UUID>
+
+    fun invitePlayer(playerID: UUID)
+    fun askToJoin(playerID: UUID)
+    fun join(playerID: UUID)
+}
+
+class GuildMemberContainerImpl(
+    override val leaderId: UUID,
+    members: List<GuildMember> = listOf(),
+    invitations: Set<UUID> = setOf(),
+    joinRequests: Set<UUID> = setOf(),
+) : GuildMemberContainer {
+    private val _members = members.toMutableList()
+    override val members: List<GuildMember> get() = _members
+
+    private val _invitations = invitations.toMutableSet()
+    override val invitations: Set<UUID> get() = _invitations
+
+    private val _joinRequests = joinRequests.toMutableSet()
+    override val joinRequests: Set<UUID> get() = _joinRequests
+
+    init {
+        if (members.none { it.playerID == leaderId })
+            _members.add(GuildMember(leaderId, GuildRole.Leader))
+    }
+
+    override fun invitePlayer(playerID: UUID) {
         require(members.none { it.playerID == playerID })
         _invitations.add(playerID)
     }
 
-    fun askToJoin(playerID: UUID) {
+    override fun askToJoin(playerID: UUID) {
         require(members.none { it.playerID == playerID })
         _joinRequests.add(playerID)
     }
 
-    fun join(playerID: UUID) {
+    override fun join(playerID: UUID) {
         require(members.none { it.playerID == playerID })
         _invitations.remove(playerID)
         _joinRequests.remove(playerID)

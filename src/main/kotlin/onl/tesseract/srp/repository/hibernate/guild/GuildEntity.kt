@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildMember
+import onl.tesseract.srp.domain.guild.GuildMemberContainerImpl
 import onl.tesseract.srp.domain.guild.GuildRole
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -16,6 +17,7 @@ import java.util.*
         Index(columnList = "name", unique = true)
     ]
 )
+@Suppress("LongParameterList")
 class GuildEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,13 +52,10 @@ class GuildEntity(
     fun toDomain(): Guild {
         return Guild(
             id,
-            leaderId,
             name,
             spawnLocation.toLocation(),
             chunks.map { it.toDomain() }.toSet(),
-            members = members.map { it.toDomain() },
-            invitations = invitations,
-            joinRequests = joinRequests
+            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests)
         )
     }
 }
