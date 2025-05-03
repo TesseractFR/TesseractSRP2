@@ -1,0 +1,7 @@
+style:
+  WildcardImport:
+    active: true
+    excludeImports:
+      - 'java.util.*'
+      - 'org.mockito.Mockito.*'
+      - 'org.junit.jupiter.api.Assertions.*'

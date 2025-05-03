@@ -14,7 +14,7 @@ jobs:
       - name: Install Detekt
         run: curl -sSLO https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8.zip && unzip detekt-cli-1.23.8.zip
       - name: Analyze
-        run: ./detekt-cli-1.23.8/bin/detekt-cli -r xml:reports/detekt.xml || echo done
+        run: ./detekt-cli-1.23.8/bin/detekt-cli --build-upon-default-config --config .detekt/detekt-config.yaml -r xml:reports/detekt.xml || echo done
       - name: Upload report
         uses: actions/upload-artifact@v4.6.2
         with:

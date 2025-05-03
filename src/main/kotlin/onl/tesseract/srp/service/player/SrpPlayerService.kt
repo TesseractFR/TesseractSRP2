@@ -81,6 +81,30 @@ open class SrpPlayerService(
         return true
     }
 
+    @Transactional
+    open fun takeMoney(
+        playerID: UUID,
+        amount: Int,
+        type: TransactionType,
+        subType: TransactionSubType?,
+        details: String?
+    ) {
+        val player = getPlayer(playerID)
+        require(player.money - amount >= 0) {
+            "Player $playerID does not have enough money (current = ${player.money}, to pay = $amount)"
+        }
+        player.addMoney(-amount)
+        ledgerService.recordTransaction(
+            from = ledgerService.getPlayerLedger(playerID),
+            to = ledgerService.getServerLedger(),
+            amount = -amount,
+            type,
+            subType,
+            details
+        )
+        savePlayer(player)
+    }
+
     protected open fun savePlayer(player: SrpPlayer) {
         repository.save(player)
     }
