@@ -14,6 +14,8 @@ interface GuildRepository : Repository<Guild, Int> {
 
     fun findGuildByChunk(chunk: CampementChunk): Guild?
 
+    fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean
+
     fun findGuildByName(name: String): Guild?
 
     fun findGuildByLeader(leaderID: UUID): Guild?
@@ -50,12 +52,19 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
     override fun findGuildByMember(memberID: UUID): Guild? {
         return jpaRepository.findByMember(memberID)?.toDomain()
     }
+
+    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+        return jpaRepository.getFirstExistingChunk(chunks.map { "${it.x},${it.z}" }) != null
+    }
 }
 
 @org.springframework.stereotype.Repository
 interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
 
     fun findByChunksContains(chunk: GuildCityChunkEntity): GuildEntity?
+
+    @Query("FROM GuildCityChunkEntity c WHERE c.coordinates in :chunks")
+    fun getFirstExistingChunk(chunks: Collection<String>): GuildCityChunkEntity?
 
     fun findByName(name: String): GuildEntity?
 

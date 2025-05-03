@@ -24,10 +24,10 @@ class GuildEntity(
     val leaderId: UUID,
     @Embedded
     val spawnLocation: SpawnLocationEntity,
-    @OneToMany
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild")
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildCityChunkEntity>,
-    @OneToMany(mappedBy = "guildID")
+    @OneToMany(mappedBy = "guildID", cascade = [CascadeType.ALL])
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection
     val invitations: Set<UUID>,
@@ -53,7 +53,7 @@ class GuildEntity(
             leaderId,
             name,
             spawnLocation.toLocation(),
-            chunks.map { CampementChunk(it.x, it.z) }.toSet(),
+            chunks.map { it.toDomain() }.toSet(),
             members = members.map { it.toDomain() },
             invitations = invitations,
             joinRequests = joinRequests
@@ -62,7 +62,26 @@ class GuildEntity(
 }
 
 @Entity
-class GuildCityChunkEntity(@Id val x: Int, @Id val z: Int)
+@Table(name = "t_city_chunks")
+class GuildCityChunkEntity(
+    @Id
+    val coordinates: String,
+    @ManyToOne(fetch = FetchType.LAZY)
+    val guild: GuildEntity? = null,
+) {
+
+    constructor(x: Int, z: Int): this("$x,$z")
+
+    fun splitCoordinates(): Pair<Int, Int> {
+        val parts = coordinates.split(",")
+        return parts[0].toInt() to parts[1].toInt()
+    }
+
+    fun toDomain(): CampementChunk {
+        val (x, z) = splitCoordinates()
+        return CampementChunk(x, z)
+    }
+}
 
 @Entity
 @Table(
@@ -70,16 +89,12 @@ class GuildCityChunkEntity(@Id val x: Int, @Id val z: Int)
         Index(columnList = "playerID", unique = true)
     ]
 )
-@IdClass(GuildMemberEntity.CompositeId::class)
 class GuildMemberEntity(
     @Id
     val playerID: UUID,
-    @Id
     val guildID: Int,
     val role: GuildRole,
 ) {
-
-    data class CompositeId(val playerID: UUID, val guildID: Int)
 
     fun toDomain(): GuildMember = GuildMember(playerID, role)
 }

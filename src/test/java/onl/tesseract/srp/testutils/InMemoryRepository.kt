@@ -46,4 +46,10 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
             guild.members.any { it.playerID == memberID }
         }
     }
+
+    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+        return elements.values.any { guild ->
+            chunks.any { guild.chunks.contains(it) }
+        }
+    }
 }

@@ -72,15 +72,14 @@ open class GuildService(private val guildRepository: GuildRepository, private va
     }
 
     protected open fun checkFirstClaimAvailable(location: Location): Boolean {
+        val chunks: MutableList<CampementChunk> = mutableListOf()
         val spawnChunk = location.chunk
         for (x in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
             for (z in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
-                val guild = guildRepository.findGuildByChunk(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
-                if (guild != null)
-                    return false
+                chunks += CampementChunk(spawnChunk.x + x, spawnChunk.z + z)
             }
         }
-        return true
+        return !guildRepository.areChunksClaimed(chunks)
     }
 
     @Transactional
