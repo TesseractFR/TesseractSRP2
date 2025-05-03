@@ -1,6 +1,18 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
-import jakarta.persistence.*
+import jakarta.persistence.CascadeType
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Embeddable
+import jakarta.persistence.Embedded
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Index
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
+import jakarta.persistence.Table
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildMember

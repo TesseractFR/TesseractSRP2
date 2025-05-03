@@ -214,7 +214,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Given
         val bob = player()
         val alice = player()
-        val bobGuild = guild(leader = bob)
+        guild(leader = bob)
         val aliceGuild = guild(leader = alice)
 
         // When
@@ -229,7 +229,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Given
         val bob = player()
         val alice = player()
-        val bobGuild = guild(leader = bob)
+        guild(leader = bob)
         val aliceGuild = guild(leader = alice)
 
         // When

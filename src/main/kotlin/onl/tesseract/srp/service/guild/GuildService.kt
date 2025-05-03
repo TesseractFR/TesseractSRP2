@@ -90,14 +90,15 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         if (guildRepository.findGuildByMember(playerID) != null)
             return InvitationResult.Failed
 
-        if (guild.joinRequests.contains(playerID)) {
+        val result = if (guild.joinRequests.contains(playerID)) {
             guild.join(playerID)
-            guildRepository.save(guild)
-            return InvitationResult.Joined
+            InvitationResult.Joined
+        } else {
+            guild.invitePlayer(playerID)
+            InvitationResult.Invited
         }
-        guild.invitePlayer(playerID)
         guildRepository.save(guild)
-        return InvitationResult.Invited
+        return result
     }
 
     @Transactional
@@ -108,14 +109,15 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         if (guildRepository.findGuildByMember(playerID) != null)
             return JoinResult.Failed
 
-        if (guild.invitations.contains(playerID)) {
+        val result = if (guild.invitations.contains(playerID)) {
             guild.join(playerID)
-            guildRepository.save(guild)
-            return JoinResult.Joined
+            JoinResult.Joined
+        } else {
+            guild.askToJoin(playerID)
+            JoinResult.Requested
         }
-        guild.askToJoin(playerID)
         guildRepository.save(guild)
-        return JoinResult.Requested
+        return result
     }
 }
 
