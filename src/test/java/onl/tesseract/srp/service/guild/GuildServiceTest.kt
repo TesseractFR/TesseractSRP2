@@ -251,6 +251,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         val joinResult = guildService.join(aliceGuild.id, bob.uniqueId)
 
         // Then
+        assertEquals(InvitationResult.Invited, invitationResult)
         assertEquals(JoinResult.Joined, joinResult)
         assertFalse(guildRepository.getById(aliceGuild.id)!!.invitations.contains(bob.uniqueId))
     }
