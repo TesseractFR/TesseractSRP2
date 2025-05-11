@@ -36,16 +36,18 @@ class GuildEntity(
     val id: Int,
     val name: String,
     val leaderId: UUID,
+    val money: Int,
+    val ledgerId: UUID,
     @Embedded
     val spawnLocation: SpawnLocationEntity,
-    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild")
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildCityChunkEntity>,
-    @OneToMany(mappedBy = "guildID", cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "guildID", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     val invitations: Set<UUID>,
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     val joinRequests: Set<UUID>,
 ) {
 
@@ -66,6 +68,8 @@ class GuildEntity(
             id,
             name,
             spawnLocation.toLocation(),
+            money,
+            ledgerId,
             chunks.map { it.toDomain() }.toSet(),
             GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests)
         )
@@ -115,6 +119,8 @@ fun Guild.toEntity(): GuildEntity {
         id,
         name,
         leaderId,
+        money,
+        moneyLedgerID,
         GuildEntity.SpawnLocationEntity(spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
         chunks.map { GuildCityChunkEntity(it.x, it.z) }.toMutableSet(),
         members = members.map { it.toEntity(id) }.toMutableList(),

@@ -53,6 +53,7 @@ interface TransactionSubType {
 
     enum class Guild : TransactionSubType {
         Creation,
+        BankTransfer,
     }
 }
 
