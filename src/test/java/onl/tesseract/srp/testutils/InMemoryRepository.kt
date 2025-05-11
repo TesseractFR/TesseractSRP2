@@ -52,4 +52,8 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
             chunks.any { guild.chunks.contains(it) }
         }
     }
+
+    override fun findAll(): Collection<Guild> {
+        return elements.values
+    }
 }
