@@ -25,7 +25,7 @@ lateinit var PLUGIN_INSTANCE: TesseractSRP
 
 class TesseractSRP : JavaPlugin() {
 
-    private lateinit var springContext: ApplicationContext
+    lateinit var springContext: ApplicationContext
 
     override fun onEnable() {
         // Plugin startup logic

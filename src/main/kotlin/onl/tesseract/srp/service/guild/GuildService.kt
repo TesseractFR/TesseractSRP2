@@ -91,8 +91,7 @@ open class GuildService(
 
     @Transactional
     open fun invite(guildID: Int, playerID: UUID): InvitationResult {
-        val guild = guildRepository.getById(guildID)
-            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        val guild = getGuild(guildID)
 
         if (guildRepository.findGuildByMember(playerID) != null)
             return InvitationResult.Failed
@@ -110,8 +109,7 @@ open class GuildService(
 
     @Transactional
     open fun join(guildID: Int, playerID: UUID): JoinResult {
-        val guild = guildRepository.getById(guildID)
-            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        val guild = getGuild(guildID)
 
         if (guildRepository.findGuildByMember(playerID) != null)
             return JoinResult.Failed
@@ -129,8 +127,7 @@ open class GuildService(
 
     @Transactional
     open fun depositMoney(guildID: Int, playerID: UUID, amount: Int): Boolean {
-        val guild = guildRepository.getById(guildID)
-            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        val guild = getGuild(guildID)
 
         if (playerService.getPlayer(playerID).money < amount) {
             return false
@@ -154,8 +151,7 @@ open class GuildService(
         amount: Int,
         transactionBuilder: TransferService.TransferTransactionBuilder
     ) {
-        val guild = guildRepository.getById(guildID)
-            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        val guild = getGuild(guildID)
         require(guild.money + amount >= 0) {
             "Guild $guildID does not have enough money (current = ${guild.money}, to pay = ${amount})"
         }
@@ -165,6 +161,25 @@ open class GuildService(
             transactionBuilder.to = ledgerService.getGuildLedger(guild.moneyLedgerID)
         guild.addMoney(amount)
         guildRepository.save(guild)
+    }
+
+    open fun giveMoneyAsStaff(guildID: Int, amount: Int) {
+        val guild = getGuild(guildID)
+        guild.addMoney(amount)
+        ledgerService.recordTransaction(
+            from = ledgerService.getServerLedger(),
+            to = ledgerService.getGuildLedger(guild.moneyLedgerID),
+            amount = amount,
+            type = TransactionType.Staff,
+            subType = TransactionSubType.Staff.Give,
+        )
+        guildRepository.save(guild)
+    }
+
+    private fun getGuild(guildID: Int): Guild {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        return guild
     }
 }
 

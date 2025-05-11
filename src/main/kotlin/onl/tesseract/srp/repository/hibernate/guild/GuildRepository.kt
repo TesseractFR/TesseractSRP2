@@ -21,6 +21,8 @@ interface GuildRepository : Repository<Guild, Int> {
     fun findGuildByLeader(leaderID: UUID): Guild?
 
     fun findGuildByMember(memberID: UUID): Guild?
+
+    fun findAll(): Collection<Guild>
 }
 
 @Component
@@ -55,6 +57,10 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
 
     override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
         return jpaRepository.getFirstExistingChunk(chunks.map { "${it.x},${it.z}" }) != null
+    }
+
+    override fun findAll(): Collection<Guild> {
+        return jpaRepository.findAll().map { it.toDomain() }
     }
 }
 
