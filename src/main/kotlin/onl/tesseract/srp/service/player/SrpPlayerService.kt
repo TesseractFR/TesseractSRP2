@@ -8,6 +8,7 @@ import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
+import onl.tesseract.srp.service.money.TransferService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -102,6 +103,23 @@ open class SrpPlayerService(
             subType,
             details
         )
+        savePlayer(player)
+    }
+
+    open fun moneyTransaction(
+        playerID: UUID,
+        amount: Int,
+        transactionBuilder: TransferService.TransferTransactionBuilder
+    ) {
+        val player = getPlayer(playerID)
+        require(player.money + amount >= 0) {
+            "Player $playerID does not have enough money (current = ${player.money}, to pay = ${amount})"
+        }
+        if (amount < 0)
+            transactionBuilder.from = ledgerService.getPlayerLedger(playerID)
+        else
+            transactionBuilder.to = ledgerService.getPlayerLedger(playerID)
+        player.addMoney(amount)
         savePlayer(player)
     }
 

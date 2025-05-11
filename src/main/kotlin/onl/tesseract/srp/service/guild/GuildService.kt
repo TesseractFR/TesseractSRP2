@@ -8,6 +8,8 @@ import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
+import onl.tesseract.srp.service.money.MoneyLedgerService
+import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import org.bukkit.Location
 import org.springframework.stereotype.Service
@@ -18,7 +20,12 @@ private const val GUILD_COST = 10_000
 private const val GUILD_PROTECTION_RADIUS = 3
 
 @Service
-open class GuildService(private val guildRepository: GuildRepository, private val playerService: SrpPlayerService) {
+open class GuildService(
+    private val guildRepository: GuildRepository,
+    private val playerService: SrpPlayerService,
+    private val ledgerService: MoneyLedgerService,
+    private val transferService: TransferService,
+) {
 
     @Transactional
     open fun createGuild(playerID: UUID, location: Location, guildName: String): GuildCreationResult {
@@ -118,6 +125,46 @@ open class GuildService(private val guildRepository: GuildRepository, private va
         }
         guildRepository.save(guild)
         return result
+    }
+
+    @Transactional
+    open fun depositMoney(guildID: Int, playerID: UUID, amount: Int): Boolean {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+
+        if (playerService.getPlayer(playerID).money < amount) {
+            return false
+        }
+        if (guild.members.none { it.playerID == playerID })
+            throw IllegalArgumentException("Player $playerID is not a member of guild $guildID")
+        transferService.transferMoney(
+            amount,
+            TransactionType.Guild,
+            TransactionSubType.Guild.BankTransfer,
+            "$playerID"
+        ) {
+            playerService.fromPlayer(playerID)
+            toGuild(guildID)
+        }
+        return true
+    }
+
+    open fun moneyTransaction(
+        guildID: Int,
+        amount: Int,
+        transactionBuilder: TransferService.TransferTransactionBuilder
+    ) {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        require(guild.money + amount >= 0) {
+            "Guild $guildID does not have enough money (current = ${guild.money}, to pay = ${amount})"
+        }
+        if (amount < 0)
+            transactionBuilder.from = ledgerService.getGuildLedger(guild.moneyLedgerID)
+        else
+            transactionBuilder.to = ledgerService.getGuildLedger(guild.moneyLedgerID)
+        guild.addMoney(amount)
+        guildRepository.save(guild)
     }
 }
 

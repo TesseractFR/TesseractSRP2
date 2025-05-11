@@ -8,12 +8,17 @@ class Guild(
     val id: Int,
     val name: String,
     val spawnLocation: Location,
+    money: Int = 0,
+    val moneyLedgerID: UUID = UUID.randomUUID(),
     chunks: Set<CampementChunk> = setOf(),
     memberContainer: GuildMemberContainerImpl,
 ) : GuildMemberContainer by memberContainer {
     private val _chunks: MutableSet<CampementChunk> = chunks.toMutableSet()
     val chunks: Set<CampementChunk>
         get() = _chunks
+
+    var money: Int = money
+        private set
 
     constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Location)
             : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
@@ -30,6 +35,10 @@ class Guild(
                 _chunks.add(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
             }
         }
+    }
+
+    fun addMoney(amount: Int) {
+        money += amount
     }
 }
 

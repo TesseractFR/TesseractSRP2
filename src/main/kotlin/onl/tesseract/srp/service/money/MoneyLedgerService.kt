@@ -20,7 +20,7 @@ class MoneyLedgerService(private val repository: MoneyLedgerRepository) {
      * Get or create a player ledger
      */
     fun getPlayerLedger(playerID: UUID): Ledger {
-        return createLedger(Ledger(playerID, LedgerType.Player))
+        return Ledger(playerID, LedgerType.Player)
     }
 
     fun getServerLedger() = Ledger(UUID.fromString("00000000-0000-0000-0000-000000000000"), LedgerType.Server)
@@ -29,6 +29,10 @@ class MoneyLedgerService(private val repository: MoneyLedgerRepository) {
         if (repository.getById(ledger.id) == null)
             repository.save(ledger)
         return ledger
+    }
+
+    fun getGuildLedger(guildID: UUID): Ledger {
+        return createLedger(Ledger(guildID, LedgerType.Guild))
     }
 
     /**

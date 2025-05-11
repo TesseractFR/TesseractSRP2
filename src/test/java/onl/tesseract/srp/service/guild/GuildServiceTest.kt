@@ -5,7 +5,9 @@ import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.repository.hibernate.MoneyLedgerRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
+import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.testutils.GuildInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
@@ -29,12 +31,13 @@ class GuildServiceTest : SrpPlayerDomainTest {
 
     @BeforeEach
     fun setup() {
+        val ledgerService = MoneyLedgerService(mock(MoneyLedgerRepository::class.java))
         val playerService = SrpPlayerService(
             playerRepository,
-            mock(MoneyLedgerService::class.java),
+            ledgerService,
             mock(EventService::class.java)
         )
-        guildService = GuildService(guildRepository, playerService)
+        guildService = GuildService(guildRepository, playerService, ledgerService, TransferService(ledgerService))
     }
 
     @Test
@@ -254,6 +257,47 @@ class GuildServiceTest : SrpPlayerDomainTest {
         assertEquals(InvitationResult.Invited, invitationResult)
         assertEquals(JoinResult.Joined, joinResult)
         assertFalse(guildRepository.getById(aliceGuild.id)!!.invitations.contains(bob.uniqueId))
+    }
+
+    @Test
+    fun `Deposit money - Should transfer from player to guild - When player has enough money`() {
+        // Given
+        val player = player(money = 150)
+        val guild = guild(leader = player)
+
+        // When
+        val success = guildService.depositMoney(guild.id, player.uniqueId, 100)
+
+        // Then
+        assertTrue(success)
+        assertEquals(50, playerRepository.getById(player.uniqueId)!!.money)
+        assertEquals(100, guild.money)
+    }
+
+    @Test
+    fun `Deposit money - Should return false - When player does not have enough money`() {
+        // Given
+        val player = player(money = 50)
+        val guild = guild(leader = player)
+
+        // When
+        val success = guildService.depositMoney(guild.id, player.uniqueId, 100)
+
+        // Then
+        assertFalse(success)
+        assertEquals(50, playerRepository.getById(player.uniqueId)!!.money)
+        assertEquals(0, guild.money)
+    }
+
+    @Test
+    fun `Deposit money - Should fail - When player is not in guild`() {
+        // Given
+        val player = player(money = 150)
+        val bob = player()
+        val guild = guild(leader = bob)
+
+        // When / Then
+        assertThrows(IllegalArgumentException::class.java) { guildService.depositMoney(guild.id, player.uniqueId, 100) }
     }
 
     private fun guild(leader: SrpPlayer): Guild {
