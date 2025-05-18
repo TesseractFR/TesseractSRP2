@@ -26,3 +26,5 @@ commands:
     description: Gestion de guilde
   elytras:
     description: Invoque les elytras customisées
+  elytrasUpgrade:
+    description: Ouvre le menu d'amélioration des ailes
