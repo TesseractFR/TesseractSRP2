@@ -3,15 +3,15 @@ package onl.tesseract.srp
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.core.title.TitleService
 import onl.tesseract.lib.TesseractLib
+import onl.tesseract.lib.event.equipment.invocable.Elytra
+import onl.tesseract.lib.persistence.yaml.equipment.ElytraSerializer
 import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
-import onl.tesseract.srp.domain.elytra.ElytraInvocable
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
-import onl.tesseract.srp.repository.yaml.equipment.ElytraInvocableSerializer
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.Listener
@@ -73,8 +73,8 @@ class TesseractSRP : JavaPlugin() {
             AnnexionStickSerializer(campementService)
         )
         EquipmentYamlRepository.registerTypeSerializer(
-            ElytraInvocable::class.java.simpleName,
-            ElytraInvocableSerializer()
+            "ELYTRA",
+            ElytraSerializer()
         )
     }
 
