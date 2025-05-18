@@ -33,7 +33,7 @@ class SrpPlayer(
         return true
     }
 
-    fun buyNextElytraUpgrade(upgrade: EnumElytraUpgrade, price: Int): Boolean {
+    fun buyNextElytraUpgrade(price: Int): Boolean {
         if (money < price) return false
         addMoney(-price)
         return true
