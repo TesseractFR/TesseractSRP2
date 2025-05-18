@@ -29,3 +29,5 @@ commands:
       - g
   elytras:
     description: Invoque les elytras customisées
+  elytrasUpgrade:
+    description: Ouvre le menu d'amélioration des ailes
