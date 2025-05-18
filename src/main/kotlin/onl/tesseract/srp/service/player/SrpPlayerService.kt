@@ -7,6 +7,7 @@ import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.service.elytra.ElytraUpgradeService
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import org.springframework.stereotype.Service
@@ -17,7 +18,8 @@ import java.util.*
 open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
     private val ledgerService: MoneyLedgerService,
-    private val eventService: EventService
+    private val eventService: EventService,
+    private val elytraUpgradeService: ElytraUpgradeService
 ) {
 
     open fun getPlayer(id: UUID): SrpPlayer {
@@ -123,6 +125,29 @@ open class SrpPlayerService(
         player.addMoney(amount)
         savePlayer(player)
     }
+
+    @Transactional
+    open fun buyNextElytraUpgrade(playerID: UUID, elytra: Elytra, upgrade: EnumElytraUpgrade): Boolean {
+        val player = getPlayer(playerID)
+        val currentLevel = elytraUpgradeService.getLevel(elytra, upgrade)
+        val price = elytraUpgradeService.getPriceForLevel(currentLevel) ?: return false
+
+        val result = player.buyNextElytraUpgrade(upgrade, price)
+        if (!result) return false
+
+        elytraUpgradeService.upgradeLevel(elytra, upgrade)
+        ledgerService.recordTransaction(
+            from = ledgerService.getPlayerLedger(playerID),
+            to = ledgerService.getServerLedger(),
+            amount = price,
+            type = TransactionType.Player,
+            subType = TransactionSubType.Player.Elytra,
+            detail = upgrade.name
+        )
+        savePlayer(player)
+        return true
+    }
+
 
     protected open fun savePlayer(player: SrpPlayer) {
         repository.save(player)
