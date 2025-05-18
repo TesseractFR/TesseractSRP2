@@ -5,8 +5,11 @@ import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.commandBuilder.CommandInstanceProvider
 import onl.tesseract.commandBuilder.annotation.Argument
 import onl.tesseract.commandBuilder.annotation.Command
+import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.command.argument.StringArg
 import onl.tesseract.lib.util.plus
+import onl.tesseract.srp.controller.menu.guild.GuildMenu
+import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.guild.GuildCreationResult
 import onl.tesseract.srp.service.guild.GuildService
 import org.bukkit.entity.Player
@@ -14,8 +17,12 @@ import org.springframework.stereotype.Component
 
 @Command(name = "guild")
 @Component
-class GuildCommand(provider: CommandInstanceProvider, private val guildService: GuildService) :
-    CommandContext(provider) {
+class GuildCommand(
+    provider: CommandInstanceProvider,
+    private val guildService: GuildService,
+    private val guildRepository: GuildRepository,
+    private val chatEntryService: ChatEntryService
+) : CommandContext(provider) {
 
     @Command(name = "create", playerOnly = true)
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
@@ -39,5 +46,11 @@ class GuildCommand(provider: CommandInstanceProvider, private val guildService: 
         if (guild != null) {
             sender.sendMessage("Guilde créée")
         }
+    }
+
+    @Command(name = "menu", playerOnly = true)
+    fun openMenu(sender: Player) {
+        GuildMenu(sender.uniqueId, guildService, guildRepository, chatEntryService)
+            .open(sender)
     }
 }
