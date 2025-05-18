@@ -1,5 +1,6 @@
 package onl.tesseract.srp.domain.player
 
+import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
 import onl.tesseract.srp.domain.exception.NotEnoughMoneyException
 import java.util.*
 
@@ -31,4 +32,11 @@ class SrpPlayer(
         rank = nextRank
         return true
     }
+
+    fun buyNextElytraUpgrade(upgrade: EnumElytraUpgrade, price: Int): Boolean {
+        if (money < price) return false
+        addMoney(-price)
+        return true
+    }
+
 }

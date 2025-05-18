@@ -47,7 +47,8 @@ interface TransactionSubType {
     }
 
     enum class Player : TransactionSubType {
-        Rank,
+        Rank, Elytra
     }
+
 }
 
