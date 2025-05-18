@@ -1,5 +1,8 @@
 package onl.tesseract.srp.service.player
 
+import onl.tesseract.lib.equipment.EquipmentService
+import onl.tesseract.lib.event.equipment.invocable.Elytra
+import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
@@ -19,6 +22,7 @@ open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
     private val ledgerService: MoneyLedgerService,
     private val eventService: EventService,
+    private var equipmentService: EquipmentService,
     private val elytraUpgradeService: ElytraUpgradeService
 ) {
 
@@ -131,10 +135,16 @@ open class SrpPlayerService(
         val currentLevel = elytraUpgradeService.getLevel(elytra, upgrade)
         val price = elytraUpgradeService.getPriceForLevel(currentLevel) ?: return false
 
-        val result = player.buyNextElytraUpgrade(upgrade, price)
+        val result = player.buyNextElytraUpgrade(price)
         if (!result) return false
 
         elytraUpgradeService.upgradeLevel(elytra, upgrade)
+
+        if (upgrade == EnumElytraUpgrade.SPEED) {
+            elytraUpgradeService.enableSpeedUpgrade(elytra)
+        }
+        equipmentService.saveEquipment(equipmentService.getEquipment(playerID))
+
         ledgerService.recordTransaction(
             from = ledgerService.getPlayerLedger(playerID),
             to = ledgerService.getServerLedger(),
