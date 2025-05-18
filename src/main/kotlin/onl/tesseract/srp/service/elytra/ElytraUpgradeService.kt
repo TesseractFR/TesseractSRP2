@@ -31,6 +31,10 @@ class ElytraUpgradeService {
         elytra.refreshItemInInventory()
     }
 
+    fun enableSpeedUpgrade(elytra: Elytra) {
+        elytra.ignoreSpeedLevel = false
+    }
+
     fun getPriceForLevel(level: Int): Int? = prices.getOrNull(level)
     fun getMaxLevel(): Int = prices.size
 
