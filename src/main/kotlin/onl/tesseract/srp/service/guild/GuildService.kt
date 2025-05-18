@@ -11,6 +11,7 @@ import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
+import onl.tesseract.srp.util.compareTo
 import org.bukkit.Location
 import org.springframework.stereotype.Service
 import java.util.*
@@ -126,7 +127,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun depositMoney(guildID: Int, playerID: UUID, amount: Int): Boolean {
+    open fun depositMoney(guildID: Int, playerID: UUID, amount: UInt): Boolean {
         val guild = getGuild(guildID)
 
         if (playerService.getPlayer(playerID).money < amount) {
@@ -135,13 +136,31 @@ open class GuildService(
         if (guild.members.none { it.playerID == playerID })
             throw IllegalArgumentException("Player $playerID is not a member of guild $guildID")
         transferService.transferMoney(
-            amount,
+            amount.toInt(),
             TransactionType.Guild,
             TransactionSubType.Guild.BankTransfer,
             "$playerID"
         ) {
             playerService.fromPlayer(playerID)
             toGuild(guildID)
+        }
+        return true
+    }
+
+    @Transactional
+    open fun withdrawMoney(guildID: Int, playerID: UUID, amount: UInt): Boolean {
+        val guild = getGuild(guildID)
+        require(guild.getMemberRole(playerID).canWithdrawMoney())
+
+        if (guild.money < amount) return false
+        transferService.transferMoney(
+            amount.toInt(),
+            TransactionType.Guild,
+            TransactionSubType.Guild.BankTransfer,
+            "$playerID"
+        ) {
+            fromGuild(guildID)
+            playerService.toPlayer(playerID)
         }
         return true
     }

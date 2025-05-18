@@ -30,8 +30,8 @@ class Guild(
         check(chunks.isEmpty())
 
         val spawnChunk = spawnLocation.chunk
-        for (x in -1 .. 1) {
-            for (z in -1 .. 1) {
+        for (x in -1..1) {
+            for (z in -1..1) {
                 _chunks.add(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
             }
         }
@@ -39,6 +39,14 @@ class Guild(
 
     fun addMoney(amount: Int) {
         money += amount
+    }
+
+    /**
+     * @throws IllegalArgumentException If the player is not a member of the guild
+     */
+    fun getMemberRole(member: UUID): GuildRole {
+        return members.find { it.playerID == member }?.role
+            ?: throw IllegalArgumentException("Player $member is not a member of guild $id")
     }
 }
 
@@ -96,4 +104,12 @@ class GuildMember(
     val role: GuildRole,
 )
 
-enum class GuildRole { Leader, Adjoint, Batisseur, Citoyen }
+enum class GuildRole {
+    Citoyen,
+    Batisseur,
+    Adjoint,
+    Leader,
+    ;
+
+    fun canWithdrawMoney(): Boolean = this >= Adjoint
+}

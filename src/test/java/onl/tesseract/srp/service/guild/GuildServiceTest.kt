@@ -266,7 +266,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         val guild = guild(leader = player)
 
         // When
-        val success = guildService.depositMoney(guild.id, player.uniqueId, 100)
+        val success = guildService.depositMoney(guild.id, player.uniqueId, 100u)
 
         // Then
         assertTrue(success)
@@ -281,7 +281,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         val guild = guild(leader = player)
 
         // When
-        val success = guildService.depositMoney(guild.id, player.uniqueId, 100)
+        val success = guildService.depositMoney(guild.id, player.uniqueId, 100u)
 
         // Then
         assertFalse(success)
@@ -297,7 +297,9 @@ class GuildServiceTest : SrpPlayerDomainTest {
         val guild = guild(leader = bob)
 
         // When / Then
-        assertThrows(IllegalArgumentException::class.java) { guildService.depositMoney(guild.id, player.uniqueId, 100) }
+        assertThrows(IllegalArgumentException::class.java) {
+            guildService.depositMoney(guild.id, player.uniqueId, 100u)
+        }
     }
 
     private fun guild(leader: SrpPlayer): Guild {
