@@ -103,24 +103,35 @@ class ElytraUpgradeMenu(
         return buttons
     }
 
-    private fun getUpgradeButton(
-        elytra: Elytra,
-        level: Int,
-        currentLevel: Int,
-        viewer: Player
-    ): Button {
-        val price = upgradeService.getPriceForLevel(level) ?: return Button(ItemBuilder(Material.BARRIER).name("Erreur").build())
-        val lore = ItemLoreBuilder().newline()
-
+    private fun getUpgradeButton(elytra: Elytra, level: Int, currentLevel: Int, viewer: Player): Button {
+        val price = upgradeService.getPriceForLevel(level)
+            ?: return Button(ItemBuilder(Material.BARRIER).name("Erreur").build())
+        val lore = ItemLoreBuilder()
         when {
             level == currentLevel -> lore.append("Niveau actuel", NamedTextColor.GREEN)
-            level == currentLevel + 1 -> {
-                lore.append("Prochain niveau", NamedTextColor.GREEN)
-                    .newline()
-                    .append("Coût : $price lys", NamedTextColor.GRAY)
-            }
+            level == currentLevel + 1 -> lore.append("Prochain niveau", NamedTextColor.GREEN)
             level < currentLevel -> lore.append("Débloqué", NamedTextColor.GRAY)
             else -> lore.append("Bloqué", NamedTextColor.RED)
+        }
+        lore.newline()
+
+        when (upgrade) {
+            EnumElytraUpgrade.SPEED ->
+                lore.append("Augmente la vitesse en vol.", NamedTextColor.YELLOW)
+            EnumElytraUpgrade.PROTECTION ->
+                lore.append("Ajoute de l’armure pendant le vol.", NamedTextColor.YELLOW)
+            EnumElytraUpgrade.BOOST_CHARGE -> {
+                val count = Elytra.getBoostCount(level)
+                lore.append("Boosts max : $count", NamedTextColor.YELLOW)
+            }
+            EnumElytraUpgrade.RECOVERY -> {
+                val seconds = Elytra.getRecoveryTime(level) / 1000
+                lore.append("Vitesse de rechargement : 1 boost / ${seconds}s", NamedTextColor.YELLOW)
+            }
+        }
+        lore.newline()
+        if (level == currentLevel + 1) {
+            lore.append("Coût : $price lys", NamedTextColor.GRAY)
         }
 
         return Button(
@@ -130,15 +141,14 @@ class ElytraUpgradeMenu(
                 .lore(lore.get())
                 .build(),
             {
-            if (level != currentLevel + 1) return@Button
-
-            if (playerService.buyNextElytraUpgrade(playerID, elytra, upgrade)) {
-                viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
-                placeButtons(viewer, elytra, (level - 1) * 4)
+                if (level != currentLevel + 1) return@Button
+                if (playerService.buyNextElytraUpgrade(playerID, elytra, upgrade)) {
+                    viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
+                    placeButtons(viewer, elytra, (level - 1) * 4)
+                }
             }
-        })
+        )
     }
-
 
 
     private fun placePlayerInfo(player: SrpPlayer) {

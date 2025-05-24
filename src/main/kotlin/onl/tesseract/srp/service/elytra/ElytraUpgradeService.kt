@@ -12,6 +12,8 @@ class ElytraUpgradeService {
         return when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel
             EnumElytraUpgrade.SPEED -> elytra.speedLevel
+            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel
+            EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel
         }
     }
 
@@ -19,6 +21,8 @@ class ElytraUpgradeService {
         when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel = level
             EnumElytraUpgrade.SPEED -> elytra.speedLevel = level
+            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel = level
+            EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel = level
         }
         elytra.refreshItemInInventory()
     }
@@ -27,6 +31,8 @@ class ElytraUpgradeService {
         when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel++
             EnumElytraUpgrade.SPEED -> elytra.speedLevel++
+            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel++
+            EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel++
         }
         elytra.refreshItemInInventory()
     }
@@ -37,6 +43,5 @@ class ElytraUpgradeService {
 
     fun getPriceForLevel(level: Int): Int? = prices.getOrNull(level)
     fun getMaxLevel(): Int = prices.size
-
 
 }
