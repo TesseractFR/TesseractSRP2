@@ -11,6 +11,7 @@ import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider
 import onl.tesseract.lib.profile.PlayerProfileService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.task.TaskScheduler
+import onl.tesseract.srp.service.elytra.ElytraUpgradeService
 import org.bukkit.plugin.Plugin
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -66,6 +67,11 @@ open class SrpServiceBeans {
     @Bean
     open fun boutiqueService(): BoutiqueService {
         return ServiceContainer[BoutiqueService::class.java]
+    }
+
+    @Bean
+    open fun elytraUpgradeService(): ElytraUpgradeService {
+        return ElytraUpgradeService()
     }
 
     @Bean

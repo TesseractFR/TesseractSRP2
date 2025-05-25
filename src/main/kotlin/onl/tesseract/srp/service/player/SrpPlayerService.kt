@@ -4,6 +4,7 @@ import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
 import onl.tesseract.lib.event.EventService
+import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
@@ -13,6 +14,7 @@ import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
 import onl.tesseract.srp.service.elytra.ElytraUpgradeService
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -21,10 +23,10 @@ import java.util.*
 open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
     private val ledgerService: MoneyLedgerService,
-    private val eventService: EventService,
-    private var equipmentService: EquipmentService,
-    private val elytraUpgradeService: ElytraUpgradeService
+    private val eventService: EventService
 ) {
+    @Autowired
+    lateinit var elytraUpgradeService: ElytraUpgradeService
 
     open fun getPlayer(id: UUID): SrpPlayer {
         return repository.getById(id) ?: SrpPlayer(id)
@@ -151,6 +153,7 @@ open class SrpPlayerService(
     @Transactional
     open fun buyNextElytraUpgrade(playerID: UUID, elytra: Elytra, upgrade: EnumElytraUpgrade): Boolean {
         val player = getPlayer(playerID)
+        val equipmentService = ServiceContainer[EquipmentService::class.java]
         val currentLevel = elytraUpgradeService.getLevel(elytra, upgrade)
         val price = elytraUpgradeService.getPriceForLevel(currentLevel) ?: return false
 

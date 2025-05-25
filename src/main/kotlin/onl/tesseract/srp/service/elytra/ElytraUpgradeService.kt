@@ -12,7 +12,7 @@ class ElytraUpgradeService {
         return when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel
             EnumElytraUpgrade.SPEED -> elytra.speedLevel
-            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel
+            EnumElytraUpgrade.BOOST_NUMBER -> elytra.boostChargeLevel
             EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel
         }
     }
@@ -21,7 +21,13 @@ class ElytraUpgradeService {
         when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel = level
             EnumElytraUpgrade.SPEED -> elytra.speedLevel = level
-            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel = level
+            EnumElytraUpgrade.BOOST_NUMBER -> {
+                elytra.boostChargeLevel = level
+                val maxCharges = Elytra.getBoostCount(level)
+                if (elytra.currentCharges > maxCharges) {
+                    elytra.currentCharges = maxCharges
+                }
+            }
             EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel = level
         }
         elytra.refreshItemInInventory()
@@ -31,7 +37,7 @@ class ElytraUpgradeService {
         when (upgrade) {
             EnumElytraUpgrade.PROTECTION -> elytra.protectionLevel++
             EnumElytraUpgrade.SPEED -> elytra.speedLevel++
-            EnumElytraUpgrade.BOOST_CHARGE -> elytra.boostChargeLevel++
+            EnumElytraUpgrade.BOOST_NUMBER -> elytra.boostChargeLevel++
             EnumElytraUpgrade.RECOVERY -> elytra.recoveryLevel++
         }
         elytra.refreshItemInInventory()
