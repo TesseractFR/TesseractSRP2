@@ -3,6 +3,8 @@ package onl.tesseract.srp
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.core.title.TitleService
 import onl.tesseract.lib.TesseractLib
+import onl.tesseract.lib.event.equipment.invocable.Elytra
+import onl.tesseract.lib.persistence.yaml.equipment.ElytraSerializer
 import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand
@@ -69,6 +71,10 @@ class TesseractSRP : JavaPlugin() {
         EquipmentYamlRepository.registerTypeSerializer(
             AnnexionStickInvocable::class.java.simpleName,
             AnnexionStickSerializer(campementService)
+        )
+        EquipmentYamlRepository.registerTypeSerializer(
+            "ELYTRA",
+            ElytraSerializer()
         )
     }
 

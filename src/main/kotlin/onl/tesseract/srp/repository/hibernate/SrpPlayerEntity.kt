@@ -18,13 +18,14 @@ class SrpPlayerEntity(
     val rank: PlayerRank,
     val money: Int,
     val titleId: String,
+    val illuminationPoints: Int
 ) {
 
     fun toDomain(): SrpPlayer {
-        return SrpPlayer(uuid, rank, money, titleId)
+        return SrpPlayer(uuid, rank, money, titleId, illuminationPoints)
     }
 }
 
 fun SrpPlayer.toEntity(): SrpPlayerEntity {
-    return SrpPlayerEntity(uniqueId, rank, money, titleID)
+    return SrpPlayerEntity(uniqueId, rank, money, titleID, illuminationPoints)
 }
