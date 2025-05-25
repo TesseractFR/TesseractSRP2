@@ -8,10 +8,13 @@ class SrpPlayer(
     val uniqueId: UUID,
     var rank: PlayerRank = PlayerRank.Survivant,
     money: Int = 0,
-    var titleID: String = rank.title.id
+    var titleID: String = rank.title.id,
+    illuminationPoints: Int = 0
 ) {
 
     var money: Int = money
+        private set
+    var illuminationPoints: Int = illuminationPoints
         private set
 
     fun addMoney(amount: Int): Int {
@@ -19,6 +22,13 @@ class SrpPlayer(
             throw NotEnoughMoneyException("Money cannot go below 0 (adding $amount to base value $money)")
         money += amount
         return money
+    }
+
+    fun addIlluminationPoints(amount: Int): Int {
+        if (illuminationPoints + amount < 0)
+            throw NotEnoughMoneyException("Illumination points cannot go below 0 (adding $amount to $illuminationPoints)")
+        illuminationPoints += amount
+        return illuminationPoints
     }
 
     /**
@@ -34,8 +44,8 @@ class SrpPlayer(
     }
 
     fun buyNextElytraUpgrade(price: Int): Boolean {
-        if (money < price) return false
-        addMoney(-price)
+        if (illuminationPoints < price) return false
+        addIlluminationPoints(-price)
         return true
     }
 

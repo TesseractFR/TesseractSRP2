@@ -131,6 +131,25 @@ open class SrpPlayerService(
     }
 
     @Transactional
+    open fun giveIlluminationPointsAsStaff(playerID: UUID, amount: Int): Boolean {
+        val player = getPlayer(playerID)
+        if (player.illuminationPoints + amount < 0)
+            return false
+        player.addIlluminationPoints(amount)
+        ledgerService.recordTransaction(
+            from = ledgerService.getServerLedger(),
+            to = ledgerService.getPlayerLedger(playerID),
+            amount = amount,
+            TransactionType.Staff,
+            TransactionSubType.Staff.Give,
+            detail = "IlluminationPoints"
+        )
+        savePlayer(player)
+        return true
+    }
+
+
+    @Transactional
     open fun buyNextElytraUpgrade(playerID: UUID, elytra: Elytra, upgrade: EnumElytraUpgrade): Boolean {
         val player = getPlayer(playerID)
         val currentLevel = elytraUpgradeService.getLevel(elytra, upgrade)
