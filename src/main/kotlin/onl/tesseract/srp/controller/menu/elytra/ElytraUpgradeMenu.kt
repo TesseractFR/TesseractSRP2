@@ -1,181 +1,113 @@
 package onl.tesseract.srp.controller.menu.elytra
 
-import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor.*
+import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.equipment.Equipment
 import onl.tesseract.lib.event.equipment.invocable.Elytra
-import onl.tesseract.lib.menu.*
+import onl.tesseract.lib.menu.ItemBuilder
+import onl.tesseract.lib.menu.Menu
+import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
-import onl.tesseract.lib.util.ItemLoreBuilder
-import onl.tesseract.lib.util.menu.InventoryHeadIcons
-import onl.tesseract.lib.util.plus
-import onl.tesseract.lib.util.toComponent
 import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.service.elytra.ElytraUpgradeService
 import onl.tesseract.srp.service.player.SrpPlayerService
-import onl.tesseract.srp.util.menu.BiMenu
-import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import java.util.*
 
 class ElytraUpgradeMenu(
-    val playerID: UUID,
-    val equipment: Equipment,
-    private val playerService: SrpPlayerService,
-    private val profileService: PlayerProfileService,
-    private val upgrade: EnumElytraUpgrade,
+    private val playerID: UUID,
+    private val equipment: Equipment,
     private val upgradeService: ElytraUpgradeService,
-    previous: Menu?
-) : BiMenu(MenuSize.One, upgrade.displayName.toComponent(), previous) {
+    private val playerService: SrpPlayerService,
+    private val playerProfileService: PlayerProfileService
+) : Menu(MenuSize.Two, Component.text("Améliorations Elytra", DARK_PURPLE)) {
 
     override fun placeButtons(viewer: Player) {
         val elytra = equipment.get(Elytra::class.java) ?: return
-        val level = upgradeService.getLevel(elytra, upgrade)
-        val scroll = level * 4
-        placeButtons(viewer, elytra, scroll)
-    }
+        val srpPlayer = playerService.getPlayer(playerID)
 
-    private fun placeButtons(viewer: Player, elytra: Elytra, scroll: Int) {
-        val player = playerService.getPlayer(playerID)
-        val buttonLine = computeButtonLine(player, elytra, viewer)
-        val safeScroll = scroll.coerceIn(0, buttonLine.size - 9)
+        EnumElytraUpgrade.entries.forEachIndexed { index, upgrade ->
+            val currentLevel = upgradeService.getLevel(elytra, upgrade)
+            val nextLevel = currentLevel + 1
+            val maxLevel = upgradeService.getMaxLevel()
+            val price = if (nextLevel < maxLevel) upgradeService.getPriceForLevel(nextLevel) else null
 
-        clear()
-        for (i in 0 until 9) {
-            val index = safeScroll + i
-            if (index in buttonLine.indices) {
-                addButton(i, buttonLine[index])
+            val builder = ItemBuilder(upgrade.material)
+                .name(Component.text(upgrade.displayName, AQUA))
+                .lore()
+                .append(Component.text(upgrade.description, GRAY, TextDecoration.ITALIC))
+                .newline().newline()
+                .append(Component.text("Niveau actuel : ", GREEN))
+                .append("${currentLevel + 1}", YELLOW)
+                .newline()
+
+            builder.append(getUpgradeStatLine(upgrade, currentLevel, isCurrent = true))
+            builder.newline().newline()
+
+            if (nextLevel < maxLevel && price != null) {
+                val canAfford = srpPlayer.illuminationPoints >= price
+                builder.append(Component.text("Prochaine amélioration :", BLUE, TextDecoration.BOLD))
+                    .newline()
+                    .append(getUpgradeStatLine(upgrade, nextLevel, isCurrent = false))
+                    .newline().newline()
+                    .append(Component.text("Coût : ", GOLD))
+                    .append(
+                        Component.text(
+                            "$price points d'illumination",
+                            if (canAfford) GREEN else RED
+                        )
+                    )
+            } else {
+                builder.append(Component.text("Amélioration maximale atteinte", DARK_GREEN))
             }
-        }
-
-        addBottomButton(21, ItemBuilder(Material.PLAYER_HEAD)
-            .customHead(InventoryHeadIcons.LEFT_ARROW.data, InventoryHeadIcons.LEFT_ARROW.signature)
-            .name("Gauche")
-            .build()) {
-            placeButtons(viewer, elytra, safeScroll - 1)
-        }
-
-        addBottomButton(23, ItemBuilder(Material.PLAYER_HEAD)
-            .customHead(InventoryHeadIcons.RIGHT_ARROW.data, InventoryHeadIcons.RIGHT_ARROW.signature)
-            .name("Droite")
-            .build()) {
-            placeButtons(viewer, elytra, safeScroll + 1)
-        }
-
-        addBottomButton(4, ItemBuilder(Material.PISTON)
-            .name("Affichage compacte")
-            .lore()
-            .newline()
-            .append("Clique pour voir tous les niveaux", NamedTextColor.GRAY)
-            .buildLore()
-            .build()) {}
-
-        placePlayerInfo(player)
-        addBottomBackButton()
-        addBottomCloseButton()
-        addMenuUsage()
-    }
-
-    private fun computeButtonLine(player: SrpPlayer, elytra: Elytra, viewer: Player): List<Button> {
-        val buttons = mutableListOf<Button>()
-        val currentLevel = upgradeService.getLevel(elytra, upgrade)
-        val maxLevel = upgradeService.getMaxLevel()
-
-        for (level in 0 until maxLevel) {
-            val levelButton = getUpgradeButton(elytra, level, currentLevel, viewer)
-            buttons.add(levelButton)
-
-            if (level == currentLevel && level + 1 < maxLevel) {
-                val nextPrice = upgradeService.getPriceForLevel(currentLevel + 1) ?: continue
-                val ratio = (3f * player.money / nextPrice).toInt().coerceAtMost(3)
-
-                repeat(3) { i ->
-                    val material = if (ratio > i)
-                        Material.LIME_STAINED_GLASS_PANE
-                    else
-                        Material.RED_STAINED_GLASS_PANE
-                    buttons.add(Button(ItemBuilder(material).name("").build()))
+            val item = builder.buildLore().build()
+            addButton(index, item) {
+                if (nextLevel >= maxLevel || price == null) return@addButton
+                if (playerService.buyNextElytraUpgrade(playerID, elytra, upgrade)) {
+                    viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
+                    open(viewer)
                 }
             }
         }
-
-        return buttons
+        placePlayerInfo(srpPlayer)
+        addBackButton()
+        addCloseButton()
     }
 
-    private fun getUpgradeButton(elytra: Elytra, level: Int, currentLevel: Int, viewer: Player): Button {
-        val price = upgradeService.getPriceForLevel(level)
-            ?: return Button(ItemBuilder(Material.BARRIER).name("Erreur").build())
-        val lore = ItemLoreBuilder()
-        when {
-            level == currentLevel -> lore.append("Niveau actuel", NamedTextColor.GREEN)
-            level == currentLevel + 1 -> lore.append("Prochain niveau", NamedTextColor.GREEN)
-            level < currentLevel -> lore.append("Débloqué", NamedTextColor.GRAY)
-            else -> lore.append("Bloqué", NamedTextColor.RED)
-        }
-        lore.newline()
+    private fun placePlayerInfo(player: SrpPlayer) {
+        addButton(16, ItemBuilder(playerProfileService.getPlayerHead(playerID))
+            .name(Component.text("Mes informations", GREEN))
+            .lore()
+            .newline()
+            .addField("Argent", Component.text("${player.money} Lys", GOLD))
+            .addField("Points d'illumination", Component.text("${player.illuminationPoints}", GOLD))
+            .addField("Grade", Component.text("${player.rank}", GOLD))
+            .buildLore()
+            .build()
+        )
+    }
 
-        when (upgrade) {
-            EnumElytraUpgrade.SPEED ->
-                lore.append("Augmente la vitesse en vol.", NamedTextColor.YELLOW)
-            EnumElytraUpgrade.PROTECTION ->
-                lore.append("Ajoute de l’armure pendant le vol.", NamedTextColor.YELLOW)
+    private fun getUpgradeStatLine(upgrade: EnumElytraUpgrade, level: Int, isCurrent: Boolean): Component {
+        val color = if (isCurrent) GRAY else YELLOW
+        return when (upgrade) {
+            EnumElytraUpgrade.SPEED -> {
+                val bonus = (0.10 * (level + 1) * 100).toInt()
+                Component.text("→ Vitesse : +$bonus%", color)
+            }
+            EnumElytraUpgrade.PROTECTION -> {
+                Component.text("→ Armure : ${0.5 * level} points", color)
+            }
             EnumElytraUpgrade.BOOST_CHARGE -> {
                 val count = Elytra.getBoostCount(level)
-                lore.append("Boosts max : $count", NamedTextColor.YELLOW)
+                Component.text("→ Boosts max : $count", color)
             }
             EnumElytraUpgrade.RECOVERY -> {
                 val seconds = Elytra.getRecoveryTime(level) / 1000
-                lore.append("Vitesse de rechargement : 1 boost / ${seconds}s", NamedTextColor.YELLOW)
+                Component.text("→ Recharge : 1 boost / ${seconds}s", color)
             }
         }
-        lore.newline()
-        if (level == currentLevel + 1) {
-            lore.append("Coût : $price lys", NamedTextColor.GRAY)
-        }
-
-        return Button(
-            ItemBuilder(Material.BEACON)
-                .name("Niveau ${level + 1}")
-                .enchanted(level <= currentLevel)
-                .lore(lore.get())
-                .build(),
-            {
-                if (level != currentLevel + 1) return@Button
-                if (playerService.buyNextElytraUpgrade(playerID, elytra, upgrade)) {
-                    viewer.playSound(viewer.location, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f)
-                    placeButtons(viewer, elytra, (level - 1) * 4)
-                }
-            }
-        )
-    }
-
-
-    private fun placePlayerInfo(player: SrpPlayer) {
-        addBottomButton(9, {
-            ItemBuilder(profileService.getPlayerHead(playerID))
-                .name("Mes informations", NamedTextColor.GREEN)
-                .lore()
-                .newline()
-                .addField("Argent", NamedTextColor.GOLD + "${player.money} Lys")
-                .addField("Grade", NamedTextColor.GOLD + "${player.rank}")
-                .buildLore()
-                .build()
-        })
-    }
-
-    private fun addMenuUsage() {
-        addBottomButton(
-            17, ItemBuilder(Material.OAK_SIGN)
-                .name("Comment utiliser ce menu ?")
-                .lore()
-                .newline()
-                .append(
-                    NamedTextColor.GRAY +
-                            "La vue du haut montre les niveaux d'amélioration. Utilise les flèches pour te déplacer et débloquer les niveaux suivants."
-                )
-                .buildLore()
-                .build()
-        )
     }
 }
