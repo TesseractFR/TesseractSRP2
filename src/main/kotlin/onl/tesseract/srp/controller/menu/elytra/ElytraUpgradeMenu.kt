@@ -100,7 +100,7 @@ class ElytraUpgradeMenu(
             EnumElytraUpgrade.PROTECTION -> {
                 Component.text("→ Armure : ${0.5 * level} points", color)
             }
-            EnumElytraUpgrade.BOOST_CHARGE -> {
+            EnumElytraUpgrade.BOOST_NUMBER -> {
                 val count = Elytra.getBoostCount(level)
                 Component.text("→ Boosts max : $count", color)
             }
