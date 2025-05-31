@@ -1,7 +1,7 @@
 package onl.tesseract.srp.service.guild
 
 import jakarta.transaction.Transactional
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
@@ -80,11 +80,11 @@ open class GuildService(
     }
 
     protected open fun checkFirstClaimAvailable(location: Location): Boolean {
-        val chunks: MutableList<CampementChunk> = mutableListOf()
+        val chunks: MutableList<Claim> = mutableListOf()
         val spawnChunk = location.chunk
         for (x in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
             for (z in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
-                chunks += CampementChunk(spawnChunk.x + x, spawnChunk.z + z)
+                chunks += Claim(spawnChunk.x + x, spawnChunk.z + z)
             }
         }
         return !guildRepository.areChunksClaimed(chunks)

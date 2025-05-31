@@ -10,8 +10,8 @@ import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
 import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -67,7 +67,7 @@ open class CampementService(
     open fun createCampement(ownerID: UUID, spawnLocation: Location): Boolean {
         val chunkX = spawnLocation.chunk.x
         val chunkZ = spawnLocation.chunk.z
-        val chunk = CampementChunk(chunkX, chunkZ)
+        val chunk = Claim(chunkX, chunkZ)
         if (worldService.getSrpWorld(spawnLocation) != SrpWorld.Elysea)
             return false
 
@@ -143,7 +143,7 @@ open class CampementService(
         val campement = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
 
-        val chunk = CampementChunk(x, z)
+        val chunk = Claim(x, z)
         if (chunk in campement.chunks) {
             return AnnexationResult.ALREADY_OWNED
         }
@@ -181,7 +181,7 @@ open class CampementService(
         val campement = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
 
-        val chunk = CampementChunk(x, z)
+        val chunk = Claim(x, z)
         val result = campement.unclaim(chunk)
         if (!result) return false
 
@@ -191,12 +191,12 @@ open class CampementService(
         return true
     }
 
-    fun isUnclaimValid(chunks: Collection<CampementChunk>, chunkToRemove: CampementChunk): Boolean {
+    fun isUnclaimValid(chunks: Collection<Claim>, chunkToRemove: Claim): Boolean {
         val remaining = chunks.filter { it != chunkToRemove }
         if (remaining.isEmpty()) return false
 
-        val visited = mutableSetOf<CampementChunk>()
-        val queue = ArrayDeque<CampementChunk>()
+        val visited = mutableSetOf<Claim>()
+        val queue = ArrayDeque<Claim>()
         queue.add(remaining.first())
         visited.add(remaining.first())
 
@@ -232,7 +232,7 @@ open class CampementService(
             owner.sendMessage(CampementChatError + "Tu ne peux pas claim dans ce monde.")
             return
         }
-        val campementChunk = CampementChunk(chunk.x, chunk.z)
+        val campementChunk = Claim(chunk.x, chunk.z)
         if (claim) {
             when (claimChunk(owner.uniqueId, chunk.x, chunk.z)) {
                 AnnexationResult.SUCCESS -> owner.sendMessage(
@@ -268,7 +268,7 @@ open class CampementService(
                             + ".")
                 return
             }
-            if (campementChunk == CampementChunk(campement.spawnLocation)) {
+            if (campementChunk == Claim(campement.spawnLocation)) {
                 owner.sendMessage(
                     CampementChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn de ton campement. Déplace-le dans un autre chunk avec "
                             + Component.text("/campement setspawn", NamedTextColor.GOLD)

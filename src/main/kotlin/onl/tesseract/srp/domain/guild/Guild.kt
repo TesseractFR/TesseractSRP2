@@ -1,6 +1,6 @@
 package onl.tesseract.srp.domain.guild
 
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.Claim
 import org.bukkit.Location
 import java.util.*
 
@@ -10,11 +10,11 @@ class Guild(
     val spawnLocation: Location,
     money: Int = 0,
     val moneyLedgerID: UUID = UUID.randomUUID(),
-    chunks: Set<CampementChunk> = setOf(),
+    chunks: Set<Claim> = setOf(),
     memberContainer: GuildMemberContainerImpl,
 ) : GuildMemberContainer by memberContainer {
-    private val _chunks: MutableSet<CampementChunk> = chunks.toMutableSet()
-    val chunks: Set<CampementChunk>
+    private val _chunks: MutableSet<Claim> = chunks.toMutableSet()
+    val chunks: Set<Claim>
         get() = _chunks
 
     var money: Int = money
@@ -32,7 +32,7 @@ class Guild(
         val spawnChunk = spawnLocation.chunk
         for (x in -1..1) {
             for (z in -1..1) {
-                _chunks.add(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
+                _chunks.add(Claim(spawnChunk.x + x, spawnChunk.z + z))
             }
         }
     }

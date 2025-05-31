@@ -1,7 +1,7 @@
 package onl.tesseract.srp.testutils
 
 import onl.tesseract.lib.repository.Repository
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
@@ -29,7 +29,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun idOf(entity: Guild): Int = entity.id
 
-    override fun findGuildByChunk(chunk: CampementChunk): Guild? {
+    override fun findGuildByChunk(chunk: Claim): Guild? {
         return elements.values.find { chunk in it.chunks }
     }
 
@@ -47,7 +47,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
         }
     }
 
-    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+    override fun areChunksClaimed(chunks: Collection<Claim>): Boolean {
         return elements.values.any { guild ->
             chunks.any { guild.chunks.contains(it) }
         }

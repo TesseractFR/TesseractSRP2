@@ -1,7 +1,7 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
 import onl.tesseract.lib.repository.Repository
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.guild.Guild
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -12,9 +12,9 @@ import kotlin.jvm.optionals.getOrNull
 
 interface GuildRepository : Repository<Guild, Int> {
 
-    fun findGuildByChunk(chunk: CampementChunk): Guild?
+    fun findGuildByChunk(chunk: Claim): Guild?
 
-    fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean
+    fun areChunksClaimed(chunks: Collection<Claim>): Boolean
 
     fun findGuildByName(name: String): Guild?
 
@@ -37,7 +37,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
         return jpaRepository.save(entity.toEntity()).toDomain()
     }
 
-    override fun findGuildByChunk(chunk: CampementChunk): Guild? {
+    override fun findGuildByChunk(chunk: Claim): Guild? {
         return jpaRepository.findByChunksContains(GuildCityChunkEntity(chunk.x, chunk.z))?.toDomain()
     }
 
@@ -55,7 +55,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
         return jpaRepository.findByMember(memberID)?.toDomain()
     }
 
-    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+    override fun areChunksClaimed(chunks: Collection<Claim>): Boolean {
         return jpaRepository.getFirstExistingChunk(chunks.map { "${it.x},${it.z}" }) != null
     }
 

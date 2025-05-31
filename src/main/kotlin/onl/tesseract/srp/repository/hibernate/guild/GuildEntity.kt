@@ -13,7 +13,7 @@ import jakarta.persistence.Index
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildMember
 import onl.tesseract.srp.domain.guild.GuildMemberContainerImpl
@@ -92,9 +92,9 @@ class GuildCityChunkEntity(
         return parts[0].toInt() to parts[1].toInt()
     }
 
-    fun toDomain(): CampementChunk {
+    fun toDomain(): Claim {
         val (x, z) = splitCoordinates()
-        return CampementChunk(x, z)
+        return Claim(x, z)
     }
 }
 

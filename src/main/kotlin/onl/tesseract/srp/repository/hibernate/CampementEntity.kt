@@ -1,8 +1,18 @@
 package onl.tesseract.srp.repository.hibernate
 
-import jakarta.persistence.*
+import jakarta.persistence.Cacheable
+import jakarta.persistence.CascadeType
+import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToMany
+import jakarta.persistence.Table
+import onl.tesseract.srp.domain.Claim
 import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.campement.CampementChunk
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.hibernate.annotations.CacheConcurrencyStrategy
@@ -77,9 +87,9 @@ data class CampementChunkEntity(
     val z: Int = 0
 ) {
 
-    fun toDomain(): CampementChunk = CampementChunk(x, z)
+    fun toDomain(): Claim = Claim(x, z)
 }
 
-fun CampementChunk.toEntity(): CampementChunkEntity {
+fun Claim.toEntity(): CampementChunkEntity {
     return CampementChunkEntity(x, z)
 }

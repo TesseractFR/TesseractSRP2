@@ -1,12 +1,13 @@
 package onl.tesseract.srp.domain.campement
 
+import onl.tesseract.srp.domain.Claim
 import org.bukkit.Location
 import java.util.*
 
 class Campement(
     val ownerID: UUID,
     trustedPlayers: Set<UUID>,
-    chunks: Set<CampementChunk>,
+    chunks: Set<Claim>,
     var campLevel: Int,
     var spawnLocation: Location
 ) {
@@ -14,8 +15,8 @@ class Campement(
     val trustedPlayers: Set<UUID>
         get() = _trustedPlayers
 
-    private val _chunks: MutableSet<CampementChunk> = chunks.toMutableSet()
-    val chunks: Set<CampementChunk>
+    private val _chunks: MutableSet<Claim> = chunks.toMutableSet()
+    val chunks: Set<Claim>
         get() = _chunks
 
     fun setSpawnpoint(newLocation: Location): Boolean {
@@ -27,16 +28,16 @@ class Campement(
     }
 
     fun isLocationInChunks(location: Location): Boolean {
-        return chunks.contains(CampementChunk(location))
+        return chunks.contains(Claim(location))
     }
 
-    fun addChunk(chunk: CampementChunk) {
+    fun addChunk(chunk: Claim) {
         if (!_chunks.add(chunk)) {
             throw IllegalArgumentException("Le chunk (${chunk.x}, ${chunk.z}) est déjà présent dans ton campement.")
         }
     }
 
-    fun unclaim(chunk: CampementChunk): Boolean {
+    fun unclaim(chunk: Claim): Boolean {
         if (_chunks.size == 1) {
             return false
         }
@@ -52,9 +53,3 @@ class Campement(
     }
 }
 
-data class CampementChunk(val x: Int, val z: Int) {
-
-    constructor(location: Location): this(location.chunk.x, location.chunk.z)
-
-    override fun toString(): String = "($x, $z)"
-}
