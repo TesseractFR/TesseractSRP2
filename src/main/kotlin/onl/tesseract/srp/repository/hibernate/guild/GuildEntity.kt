@@ -82,10 +82,10 @@ class GuildCityChunkEntity(
     @Id
     val coordinates: String,
     @ManyToOne(fetch = FetchType.LAZY)
-    val guild: GuildEntity? = null,
+    val guild: GuildEntity,
 ) {
 
-    constructor(x: Int, z: Int): this("$x,$z")
+    constructor(x: Int, z: Int, guild: GuildEntity): this("$x,$z", guild)
 
     fun splitCoordinates(): Pair<Int, Int> {
         val parts = coordinates.split(",")
@@ -115,18 +115,20 @@ class GuildMemberEntity(
 }
 
 fun Guild.toEntity(): GuildEntity {
-    return GuildEntity(
+    val entity = GuildEntity(
         id,
         name,
         leaderId,
         money,
         moneyLedgerID,
         GuildEntity.SpawnLocationEntity(spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
-        chunks.map { GuildCityChunkEntity(it.x, it.z) }.toMutableSet(),
+        mutableSetOf(),
         members = members.map { it.toEntity(id) }.toMutableList(),
         invitations = this.invitations,
         joinRequests = this.joinRequests,
     )
+    entity.chunks.addAll(chunks.map { GuildCityChunkEntity(it.x, it.z, entity) })
+    return entity
 }
 
 fun GuildMember.toEntity(guildId: Int): GuildMemberEntity = GuildMemberEntity(playerID, guildId, role)

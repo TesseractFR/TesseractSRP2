@@ -38,7 +38,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
     }
 
     override fun findGuildByChunk(chunk: Claim): Guild? {
-        return jpaRepository.findByChunksContains(GuildCityChunkEntity(chunk.x, chunk.z))?.toDomain()
+        return jpaRepository.findGuildEntityByChunk("${chunk.x}, ${chunk.z}")?.toDomain()
     }
 
     override fun idOf(entity: Guild) = entity.id
@@ -67,7 +67,8 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
 @org.springframework.stereotype.Repository
 interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
 
-    fun findByChunksContains(chunk: GuildCityChunkEntity): GuildEntity?
+    @Query("SELECT c.guild FROM GuildCityChunkEntity c WHERE c.coordinates = :chunk")
+    fun findGuildEntityByChunk(chunk: String): GuildEntity?
 
     @Query("FROM GuildCityChunkEntity c WHERE c.coordinates in :chunks")
     fun getFirstExistingChunk(chunks: Collection<String>): GuildCityChunkEntity?
