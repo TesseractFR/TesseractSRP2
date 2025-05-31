@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import onl.tesseract.srp.domain.Claim
+import onl.tesseract.srp.domain.guild.City
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildMember
 import onl.tesseract.srp.domain.guild.GuildMemberContainerImpl
@@ -67,10 +68,9 @@ class GuildEntity(
         return Guild(
             id,
             name,
-            spawnLocation.toLocation(),
             money,
             ledgerId,
-            chunks.map { it.toDomain() }.toSet(),
+            City(spawnLocation.toLocation(), chunks.map { it.toDomain() }.toSet()),
             GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests)
         )
     }
@@ -127,7 +127,7 @@ fun Guild.toEntity(): GuildEntity {
         invitations = this.invitations,
         joinRequests = this.joinRequests,
     )
-    entity.chunks.addAll(chunks.map { GuildCityChunkEntity(it.x, it.z, entity) })
+    entity.chunks.addAll(cityChunks.map { GuildCityChunkEntity(it.x, it.z, entity) })
     return entity
 }
 

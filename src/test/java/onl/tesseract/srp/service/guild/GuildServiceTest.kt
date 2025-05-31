@@ -115,7 +115,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Then
         assertTrue(result.isSuccess())
         assertNotNull(result.guild)
-        assertEquals(9, result.guild!!.chunks.size)
+        assertEquals(9, result.guild!!.cityChunks.size)
     }
 
     @Test

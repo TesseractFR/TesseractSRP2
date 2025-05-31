@@ -30,7 +30,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
     override fun idOf(entity: Guild): Int = entity.id
 
     override fun findGuildByChunk(chunk: Claim): Guild? {
-        return elements.values.find { chunk in it.chunks }
+        return elements.values.find { chunk in it.cityChunks }
     }
 
     override fun findGuildByName(name: String): Guild? {
@@ -49,7 +49,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun areChunksClaimed(chunks: Collection<Claim>): Boolean {
         return elements.values.any { guild ->
-            chunks.any { guild.chunks.contains(it) }
+            chunks.any { guild.cityChunks.contains(it) }
         }
     }
 

@@ -1,40 +1,33 @@
 package onl.tesseract.srp.domain.guild
 
-import onl.tesseract.srp.domain.Claim
 import org.bukkit.Location
 import java.util.*
 
 class Guild(
     val id: Int,
     val name: String,
-    val spawnLocation: Location,
     money: Int = 0,
     val moneyLedgerID: UUID = UUID.randomUUID(),
-    chunks: Set<Claim> = setOf(),
+    private val city: City,
     memberContainer: GuildMemberContainerImpl,
 ) : GuildMemberContainer by memberContainer {
-    private val _chunks: MutableSet<Claim> = chunks.toMutableSet()
-    val chunks: Set<Claim>
-        get() = _chunks
 
     var money: Int = money
         private set
 
+    val cityChunks get() = city.chunks
+    val spawnLocation get() = city.spawnLocation
+
     constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Location)
-            : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
+            : this(
+        id = id,
+        name = name,
+        city = City(spawnLocation),
+        memberContainer = GuildMemberContainerImpl(leaderId)
+    )
 
-    /**
-     * @throws IllegalStateException If the guild already has chunks
-     */
-    fun claimInitialChunks() {
-        check(chunks.isEmpty())
-
-        val spawnChunk = spawnLocation.chunk
-        for (x in -1..1) {
-            for (z in -1..1) {
-                _chunks.add(Claim(spawnChunk.x + x, spawnChunk.z + z))
-            }
-        }
+    fun claimInitialCityChunks() {
+        this.city.claimInitialChunks()
     }
 
     fun addMoney(amount: Int) {

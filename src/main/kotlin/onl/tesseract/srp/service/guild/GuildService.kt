@@ -42,7 +42,7 @@ open class GuildService(
             subType = TransactionSubType.Guild.Creation,
             details = guild.id.toString()
         )
-        guild.claimInitialChunks()
+        guild.claimInitialCityChunks()
         val createdGuild = guildRepository.save(guild)
         return GuildCreationResult.success(createdGuild)
     }
