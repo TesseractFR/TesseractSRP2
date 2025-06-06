@@ -1,6 +1,5 @@
 package onl.tesseract.srp
 
-import onl.tesseract.core.Config
 import org.bukkit.Bukkit
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -24,16 +23,16 @@ import javax.sql.DataSource
 open class TesseractSRPSpringApp {
 
     @Bean
-    open fun coreConfig(): Config = Config()
+    open fun srpConfig(): Config = Config()
 
     @Bean(name = ["defaultDataSource"])
     @Primary
     open fun defaultDataSource(config: Config): DataSource {
         val dataSource = DriverManagerDataSource()
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver")
-        dataSource.url = "jdbc:mysql://${config.dbHost}:3306/srp"
-        dataSource.username = config.dbUsername
-        dataSource.password = config.dbPassword
+        dataSource.url = "jdbc:mysql://${config.srpDbHost}:${config.srpDbPort}/${config.srpDbDatabase}"
+        dataSource.username = config.srpDbUsername
+        dataSource.password = config.srpDbPassword
         return dataSource
     }
 
