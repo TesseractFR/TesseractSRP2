@@ -98,7 +98,7 @@ class ElytraUpgradeMenu(
     }
 
     private fun placePlayerInfo(player: SrpPlayer) {
-        addButton(16, ItemBuilder(playerProfileService.getPlayerHead(playerID))
+        addButton(PLAYER_INFO_SLOT, ItemBuilder(playerProfileService.getPlayerHead(playerID))
             .name(Component.text("Mes informations", NamedTextColor.GREEN))
             .lore()
             .newline()
@@ -114,20 +114,29 @@ class ElytraUpgradeMenu(
     private fun getUpgradeStatLine(upgrade: EnumElytraUpgrade, level: Int): String {
         return when (upgrade) {
             EnumElytraUpgrade.SPEED -> {
-                val bonus = (0.10 * (level + 1) * 100).toInt()
+                val bonus = (SPEED_MULTIPLIER * (level + 1) * PERCENT_CONVERSION).toInt()
                 "→ Vitesse : +$bonus%"
             }
             EnumElytraUpgrade.PROTECTION -> {
-                "→ Armure : ${0.5 * level} points"
+                "→ Armure : ${PROTECTION_MULTIPLIER * level} points"
             }
             EnumElytraUpgrade.BOOST_NUMBER -> {
                 val count = Elytra.getBoostCount(level)
                 "→ Boosts max : $count"
             }
             EnumElytraUpgrade.RECOVERY -> {
-                val seconds = Elytra.getRecoveryTime(level) / 1000
+                val seconds = Elytra.getRecoveryTime(level) / MS_TO_SECONDS
                 "→ Recharge : 1 boost / ${seconds}s"
             }
         }
     }
+
+    companion object {
+        private const val SPEED_MULTIPLIER = 0.10
+        private const val PROTECTION_MULTIPLIER = 0.5
+        private const val PERCENT_CONVERSION = 100
+        private const val MS_TO_SECONDS = 1000
+        private const val PLAYER_INFO_SLOT = 16
+    }
+
 }

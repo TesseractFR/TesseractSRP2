@@ -1,5 +1,6 @@
 package onl.tesseract.srp.domain.player
 
+import onl.tesseract.srp.domain.exception.NotEnoughIlluminationPointsException
 import onl.tesseract.srp.domain.exception.NotEnoughMoneyException
 import java.util.*
 
@@ -25,7 +26,8 @@ class SrpPlayer(
 
     fun addIlluminationPoints(amount: Int): Int {
         if (illuminationPoints + amount < 0)
-            throw NotEnoughMoneyException("Illumination points cannot go below 0 (adding $amount to $illuminationPoints)")
+            throw NotEnoughIlluminationPointsException("Illumination points cannot go below 0 " +
+                    "(adding $amount to $illuminationPoints)")
         illuminationPoints += amount
         return illuminationPoints
     }
