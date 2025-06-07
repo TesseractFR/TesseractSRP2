@@ -22,9 +22,9 @@ class ElytraStaffCommand(
         @Argument("upgrade") upgradeArg: ElytraUpgradeArg,
         @Argument("level") level: IntegerCommandArgument
     ) {
-        require(level.get() in 0..9) {
-            sender.sendMessage("Le niveau doit être compris entre 0 et 9.")
-            "Le niveau doit être compris entre 0 et 9."
+        require(level.get() in MIN_UPGRADE_LEVEL..MAX_UPGRADE_LEVEL) {
+            sender.sendMessage("Le niveau doit être compris entre $MIN_UPGRADE_LEVEL et $MAX_UPGRADE_LEVEL.")
+            "Le niveau doit être compris entre $MIN_UPGRADE_LEVEL et $MAX_UPGRADE_LEVEL."
         }
 
         val equipment = equipmentService.getEquipment(playerArg.get().uniqueId)
@@ -38,5 +38,10 @@ class ElytraStaffCommand(
         equipmentService.saveEquipment(equipment)
         sender.sendMessage("Amélioration ${upgradeArg.get().displayName} de ${playerArg.get().name} " +
                 "définie au niveau ${level.get()}.")
+    }
+
+    private companion object {
+        const val MIN_UPGRADE_LEVEL = 0
+        const val MAX_UPGRADE_LEVEL = 9
     }
 }
