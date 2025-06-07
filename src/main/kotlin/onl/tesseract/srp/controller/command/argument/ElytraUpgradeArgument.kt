@@ -2,7 +2,7 @@ package onl.tesseract.srp.controller.command.argument
 
 import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
-import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
+import onl.tesseract.lib.event.equipment.invocable.EnumElytraUpgrade
 
 class ElytraUpgradeArg(name: String) : CommandArgument<EnumElytraUpgrade>(name) {
     override fun define(builder: CommandArgumentBuilderSteps.Parser<EnumElytraUpgrade>) {

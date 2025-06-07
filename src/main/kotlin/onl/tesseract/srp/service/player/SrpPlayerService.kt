@@ -1,20 +1,14 @@
 package onl.tesseract.srp.service.player
 
-import onl.tesseract.lib.equipment.EquipmentService
-import onl.tesseract.lib.event.equipment.invocable.Elytra
-import onl.tesseract.srp.domain.elytra.EnumElytraUpgrade
 import onl.tesseract.lib.event.EventService
-import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
-import onl.tesseract.srp.service.elytra.ElytraUpgradeService
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -25,9 +19,6 @@ open class SrpPlayerService(
     private val ledgerService: MoneyLedgerService,
     private val eventService: EventService
 ) {
-    @Autowired
-    lateinit var elytraUpgradeService: ElytraUpgradeService
-
     open fun getPlayer(id: UUID): SrpPlayer {
         return repository.getById(id) ?: SrpPlayer(id)
     }
@@ -132,55 +123,16 @@ open class SrpPlayerService(
     }
 
     @Transactional
-    open fun giveIlluminationPointsAsStaff(playerID: UUID, amount: Int): Boolean {
+    open fun giveIlluminationPoints(playerID: UUID, amount: Int): Boolean {
         val player = getPlayer(playerID)
         if (player.illuminationPoints + amount < 0)
             return false
         player.addIlluminationPoints(amount)
-        ledgerService.recordTransaction(
-            from = ledgerService.getServerLedger(),
-            to = ledgerService.getPlayerLedger(playerID),
-            amount = amount,
-            TransactionType.Staff,
-            TransactionSubType.Staff.Give,
-            detail = "IlluminationPoints"
-        )
         savePlayer(player)
         return true
     }
 
-
-    @Transactional
-    open fun buyNextElytraUpgrade(playerID: UUID, elytra: Elytra, upgrade: EnumElytraUpgrade): Boolean {
-        val player = getPlayer(playerID)
-        val equipmentService = ServiceContainer[EquipmentService::class.java]
-        val currentLevel = elytraUpgradeService.getLevel(elytra, upgrade)
-        val price = elytraUpgradeService.getPriceForLevel(currentLevel) ?: return false
-
-        val result = player.buyNextElytraUpgrade(price)
-        if (!result) return false
-
-        elytraUpgradeService.upgradeLevel(elytra, upgrade)
-
-        if (upgrade == EnumElytraUpgrade.SPEED) {
-            elytraUpgradeService.enableSpeedUpgrade(elytra)
-        }
-        equipmentService.saveEquipment(equipmentService.getEquipment(playerID))
-
-        ledgerService.recordTransaction(
-            from = ledgerService.getPlayerLedger(playerID),
-            to = ledgerService.getServerLedger(),
-            amount = price,
-            type = TransactionType.Player,
-            subType = TransactionSubType.Player.Elytra,
-            detail = upgrade.name
-        )
-        savePlayer(player)
-        return true
-    }
-
-
-    protected open fun savePlayer(player: SrpPlayer) {
+    open fun savePlayer(player: SrpPlayer) {
         repository.save(player)
     }
 }

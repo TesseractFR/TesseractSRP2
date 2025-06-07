@@ -29,7 +29,7 @@ class IlluminationPointStaffCommand(private val playerService: SrpPlayerService)
         @Argument("amount") amountArg: IntegerCommandArgument,
         sender: CommandSender
     ) {
-        val result = playerService.giveIlluminationPointsAsStaff(playerArg.get().uniqueId, amountArg.get())
+        val result = playerService.giveIlluminationPoints(playerArg.get().uniqueId, amountArg.get())
         if (result) {
             sender.sendMessage(NamedTextColor.GREEN + "Points d'illumination ajoutés")
         } else {
@@ -43,7 +43,7 @@ class IlluminationPointStaffCommand(private val playerService: SrpPlayerService)
         @Argument("amount") amountArg: IntegerCommandArgument,
         sender: CommandSender
     ) {
-        val result = playerService.giveIlluminationPointsAsStaff(playerArg.get().uniqueId, -amountArg.get())
+        val result = playerService.giveIlluminationPoints(playerArg.get().uniqueId, -amountArg.get())
         if (result) {
             sender.sendMessage(NamedTextColor.GREEN + "Points d'illumination retirés")
         } else {
