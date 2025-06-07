@@ -7,7 +7,7 @@ import onl.tesseract.commandBuilder.annotation.CommandBody
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.profile.PlayerProfileService
 import onl.tesseract.srp.controller.menu.elytra.ElytraUpgradeMenu
-import onl.tesseract.srp.service.elytra.ElytraUpgradeService
+import onl.tesseract.srp.service.elytra.ElytraService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
@@ -18,14 +18,14 @@ class ElytraUpgradeCommand(
     private val playerService: SrpPlayerService,
     private val playerProfileService: PlayerProfileService,
     private val equipmentService: EquipmentService,
-    private val elytraUpgradeService: ElytraUpgradeService,
+    private val elytraService: ElytraService,
     provider: CommandInstanceProvider
 ) : CommandContext(provider) {
 
     @CommandBody
     fun execute(player: Player) {
         val equipment = equipmentService.getEquipment(player.uniqueId)
-        ElytraUpgradeMenu(player.uniqueId, equipment, elytraUpgradeService, playerService, playerProfileService).open(player)
+        ElytraUpgradeMenu(player.uniqueId, equipment, playerService, playerProfileService, elytraService).open(player)
     }
 
 }
