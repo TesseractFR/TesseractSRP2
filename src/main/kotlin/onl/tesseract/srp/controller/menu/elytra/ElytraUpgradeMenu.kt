@@ -18,6 +18,12 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import java.util.*
 
+private const val SPEED_MULTIPLIER = 0.10
+private const val PROTECTION_MULTIPLIER = 0.5
+private const val PERCENT_CONVERSION = 100
+private const val MS_TO_SECONDS = 1000
+private const val PLAYER_INFO_SLOT = 16
+
 class ElytraUpgradeMenu(
     private val playerID: UUID,
     private val equipment: Equipment,
@@ -48,8 +54,8 @@ class ElytraUpgradeMenu(
             addButton(index, item) {
                 val currentLevel = elytra.getLevel(upgrade)
                 val nextLevel = currentLevel + 1
-                val maxLevel = elytra.getMaxLevel()
-                val price = if (nextLevel < maxLevel) elytra.getPriceForLevel(nextLevel) else null
+                val maxLevel = elytraService.getMaxLevel()
+                val price = if (currentLevel < maxLevel) elytraService.getPriceForLevel(currentLevel) else null
 
                 if (nextLevel >= maxLevel || price == null) return@addButton
                 if (elytraService.buyNextElytraUpgrade(playerID, elytra, upgrade)) {
@@ -67,8 +73,8 @@ class ElytraUpgradeMenu(
         val elytra = equipment.get(Elytra::class.java)!!
         val currentLevel = elytra.getLevel(upgrade)
         val nextLevel = currentLevel + 1
-        val maxLevel = elytra.getMaxLevel()
-        val price = if (nextLevel < maxLevel) elytra.getPriceForLevel(nextLevel) else null
+        val maxLevel = elytraService.getMaxLevel()
+        val price = if (currentLevel < maxLevel) elytraService.getPriceForLevel(currentLevel) else null
         val canAfford = price != null && srpPlayer.illuminationPoints >= price
 
         val builder = ItemBuilder(upgrade.material)
@@ -79,7 +85,7 @@ class ElytraUpgradeMenu(
             .append("Niveau actuel : ", NamedTextColor.GREEN)
             .append("${currentLevel + 1}", NamedTextColor.YELLOW)
             .newline()
-            .append(getUpgradeStatLine(upgrade, currentLevel), NamedTextColor.GRAY)
+            .append(getUpgradeStatLine(upgrade, currentLevel), NamedTextColor.WHITE)
             .newline().newline()
 
         if (nextLevel < maxLevel && price != null) {
@@ -90,6 +96,8 @@ class ElytraUpgradeMenu(
                 .append("Coût : ", NamedTextColor.GOLD)
                 .append(Component.text("$price points d'illumination",
                     if (canAfford) NamedTextColor.GREEN else NamedTextColor.RED))
+                .append(Component.text("(Cliquez pour acheter)",
+                    NamedTextColor.GRAY, TextDecoration.ITALIC))
         } else {
             builder.append("Amélioration maximale atteinte", NamedTextColor.DARK_GREEN)
         }
@@ -125,18 +133,10 @@ class ElytraUpgradeMenu(
                 "→ Boosts max : $count"
             }
             EnumElytraUpgrade.RECOVERY -> {
-                val seconds = Elytra.getRecoveryTime(level) / MS_TO_SECONDS
+                val seconds = Elytra.getBaseRecoveryTime(level) / MS_TO_SECONDS
                 "→ Recharge : 1 boost / ${seconds}s"
             }
         }
-    }
-
-    companion object {
-        private const val SPEED_MULTIPLIER = 0.10
-        private const val PROTECTION_MULTIPLIER = 0.5
-        private const val PERCENT_CONVERSION = 100
-        private const val MS_TO_SECONDS = 1000
-        private const val PLAYER_INFO_SLOT = 16
     }
 
 }

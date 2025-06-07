@@ -4,11 +4,14 @@ import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.lib.event.equipment.invocable.EnumElytraUpgrade
 import onl.tesseract.srp.service.player.SrpPlayerService
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
-@Component
+private const val BASE_PRICE = 100
+private const val MAX_LEVEL = 9
+
+@Service
 open class ElytraService(
     private val srpPlayerService: SrpPlayerService,
     private val equipmentService: EquipmentService
@@ -16,7 +19,7 @@ open class ElytraService(
     @Transactional
     open fun buyNextElytraUpgrade(playerID: UUID, elytra: Elytra, upgrade: EnumElytraUpgrade): Boolean {
         val currentLevel = elytra.getLevel(upgrade)
-        val price = elytra.getPriceForLevel(currentLevel)
+        val price = getPriceForLevel(currentLevel)
         val player = srpPlayerService.getPlayer(playerID)
         var success = false
 
@@ -33,4 +36,9 @@ open class ElytraService(
         }
         return success
     }
+
+    fun getPriceForLevel(level: Int): Int? =
+        if (level in 0 until MAX_LEVEL) BASE_PRICE * (level + 1) else null
+
+    fun getMaxLevel(): Int = MAX_LEVEL
 }
