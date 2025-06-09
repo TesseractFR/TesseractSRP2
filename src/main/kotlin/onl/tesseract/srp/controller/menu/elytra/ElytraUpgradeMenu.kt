@@ -3,7 +3,7 @@ package onl.tesseract.srp.controller.menu.elytra
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
-import onl.tesseract.lib.equipment.Equipment
+import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
@@ -26,13 +26,15 @@ private const val PLAYER_INFO_SLOT = 16
 
 class ElytraUpgradeMenu(
     private val playerID: UUID,
-    private val equipment: Equipment,
+    private val equipmentService: EquipmentService,
     private val playerService: SrpPlayerService,
     private val playerProfileService: PlayerProfileService,
-    private val elytraService: ElytraService
-) : Menu(MenuSize.Two, Component.text("Améliorations Elytra", NamedTextColor.DARK_PURPLE)) {
+    private val elytraService: ElytraService,
+    previous: Menu?
+) : Menu(MenuSize.Two, Component.text("Améliorations Elytra", NamedTextColor.DARK_PURPLE), previous) {
 
     override fun placeButtons(viewer: Player) {
+        val equipment = equipmentService.getEquipment(playerID)
         val elytra = equipment.get(Elytra::class.java)
         if (elytra == null) {
             viewer.closeInventory()
@@ -70,6 +72,7 @@ class ElytraUpgradeMenu(
         srpPlayer: SrpPlayer,
         upgrade: EnumElytraUpgrade
     ): ItemStack {
+        val equipment = equipmentService.getEquipment(srpPlayer.uniqueId)
         val elytra = equipment.get(Elytra::class.java)!!
         val currentLevel = elytra.getLevel(upgrade)
         val nextLevel = currentLevel + 1

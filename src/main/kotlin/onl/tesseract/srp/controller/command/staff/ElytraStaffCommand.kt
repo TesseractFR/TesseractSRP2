@@ -4,16 +4,15 @@ import onl.tesseract.commandBuilder.annotation.Argument
 import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.lib.command.argument.IntegerCommandArgument
 import onl.tesseract.lib.command.argument.PlayerArg
-import onl.tesseract.lib.equipment.EquipmentService
-import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.srp.controller.command.argument.ElytraUpgradeArg
+import onl.tesseract.srp.service.elytra.ElytraService
 import org.bukkit.command.CommandSender
 import org.springframework.stereotype.Component
 
 @Component
 @Command(name = "elytraUpgrade")
 class ElytraStaffCommand(
-    private val equipmentService: EquipmentService
+    private val elytraService: ElytraService
 ) {
     @Command(name = "set", description = "Définir le niveau des améliorations élytras pour les joueurs")
     fun set(
@@ -27,15 +26,12 @@ class ElytraStaffCommand(
             "Le niveau doit être compris entre $MIN_UPGRADE_LEVEL et $MAX_UPGRADE_LEVEL."
         }
 
-        val equipment = equipmentService.getEquipment(playerArg.get().uniqueId)
-        val elytra = equipment.get(Elytra::class.java)
-        if (elytra == null) {
+        val success = elytraService.setUpgradeLevel(playerArg.get().uniqueId, upgradeArg.get(), level.get())
+        if (!success) {
             sender.sendMessage("${playerArg.get().name} ne possède pas d'élytra personnalisée.")
             return
         }
 
-        elytra.setLevel(upgradeArg.get(), level.get())
-        equipmentService.saveEquipment(equipment)
         sender.sendMessage("Amélioration ${upgradeArg.get().displayName} de ${playerArg.get().name} " +
                 "définie au niveau ${level.get()}.")
     }

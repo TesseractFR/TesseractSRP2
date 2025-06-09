@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 private const val BASE_PRICE = 100
-private const val MAX_LEVEL = 9
+private const val MAX_LEVEL = 10
 
 @Service
 open class ElytraService(
@@ -35,6 +35,15 @@ open class ElytraService(
             success = true
         }
         return success
+    }
+
+    @Transactional
+    open fun setUpgradeLevel(playerId: UUID, upgrade: EnumElytraUpgrade, level: Int): Boolean {
+        val equipment = equipmentService.getEquipment(playerId)
+        val elytra = equipment.get(Elytra::class.java) ?: return false
+        elytra.setLevel(upgrade, level)
+        equipmentService.saveEquipment(equipment)
+        return true
     }
 
     fun getPriceForLevel(level: Int): Int? =
