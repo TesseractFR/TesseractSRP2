@@ -146,6 +146,7 @@ class ElytraMenu(
         }
     }
 
+    @Suppress("MagicNumber")
     private fun placeDecorations() {
         val graySlots = listOf(0, 1, 7, 8, 11, 13, 15, 21, 23, 29, 31, 33, 37, 43)
         val purpleSlots = listOf(2, 10, 18, 28, 38, 6, 16, 26, 34, 42)
