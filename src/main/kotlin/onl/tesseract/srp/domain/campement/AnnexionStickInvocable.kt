@@ -3,7 +3,7 @@ package onl.tesseract.srp.domain.campement
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.equipment.Invocable
-import onl.tesseract.lib.util.ItemBuilder
+import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.service.campement.InteractionAllowResult
@@ -47,7 +47,9 @@ class AnnexionStickInvocable(
         return ItemBuilder(Material.STICK)
             .name("Bâton d'Annexion", NamedTextColor.GOLD, TextDecoration.BOLD)
             .enchanted(true)
-            .lore(lore)
+            .lore()
+            .append(lore)
+            .buildLore()
             .build()
     }
 

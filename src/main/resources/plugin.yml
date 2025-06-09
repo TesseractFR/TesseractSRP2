@@ -24,3 +24,7 @@ commands:
     description: Ouvre le menu des job missions
   guild:
     description: Gestion de guilde
+  elytras:
+    description: Ouvre le menu des ailes
+  elytrasUpgrade:
+    description: Ouvre le menu d'amélioration des ailes

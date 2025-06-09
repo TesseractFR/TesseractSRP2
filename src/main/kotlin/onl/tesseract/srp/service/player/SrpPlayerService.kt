@@ -19,7 +19,6 @@ open class SrpPlayerService(
     private val ledgerService: MoneyLedgerService,
     private val eventService: EventService
 ) {
-
     open fun getPlayer(id: UUID): SrpPlayer {
         return repository.getById(id) ?: SrpPlayer(id)
     }
@@ -123,7 +122,17 @@ open class SrpPlayerService(
         savePlayer(player)
     }
 
-    protected open fun savePlayer(player: SrpPlayer) {
+    @Transactional
+    open fun giveIlluminationPoints(playerID: UUID, amount: Int): Boolean {
+        val player = getPlayer(playerID)
+        if (player.illuminationPoints + amount < 0)
+            return false
+        player.addIlluminationPoints(amount)
+        savePlayer(player)
+        return true
+    }
+
+    open fun savePlayer(player: SrpPlayer) {
         repository.save(player)
     }
 }
