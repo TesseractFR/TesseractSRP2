@@ -24,8 +24,8 @@ class ElytraUpgradeCommand(
 
     @CommandBody
     fun execute(player: Player) {
-        val equipment = equipmentService.getEquipment(player.uniqueId)
-        ElytraUpgradeMenu(player.uniqueId, equipment, playerService, playerProfileService, elytraService).open(player)
+        ElytraUpgradeMenu(player.uniqueId, equipmentService, playerService, playerProfileService, elytraService, null)
+            .open(player)
     }
 
 }

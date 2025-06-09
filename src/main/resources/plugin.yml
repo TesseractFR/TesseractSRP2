@@ -28,6 +28,6 @@ commands:
     aliases:
       - g
   elytras:
-    description: Invoque les elytras customisées
+    description: Ouvre le menu des ailes
   elytrasUpgrade:
     description: Ouvre le menu d'amélioration des ailes
