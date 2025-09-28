@@ -32,6 +32,7 @@ open class SrpPlayerService(
         val player = getPlayer(playerID)
         if (player.rank == rank) return false
         player.rank = rank
+        player.titleID = rank.title.id
         savePlayer(player)
         eventService.callEvent(PlayerRankUpEvent(playerID, rank))
         return true
