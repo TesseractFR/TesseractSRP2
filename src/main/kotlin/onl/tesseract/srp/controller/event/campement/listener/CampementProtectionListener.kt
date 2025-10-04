@@ -12,7 +12,9 @@ import org.bukkit.Chunk
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.block.Container
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.block.BlockIgniteEvent
 import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
@@ -32,13 +34,32 @@ class CampementProtectionListener(val campementService: CampementService) : Chun
 
     }
 
-
     override fun canPlaceBlock(player: Player, block: Block): Boolean {
         return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
     }
 
     override fun canBreakBlock(player: Player, block: Block): Boolean {
         return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
+    }
+
+    override fun canDamagePassiveEntity(player: Player, entity: LivingEntity): Boolean {
+        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,entity.chunk))
+    }
+
+    override fun canUseBucket(player: Player, block: Block): Boolean {
+        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
+    }
+
+    override fun canPlayerIgnite(player: Player, block: Block): Boolean {
+        return false
+    }
+
+    override fun canNaturallyIgnite(block: Block, cause: BlockIgniteEvent.IgniteCause): Boolean {
+        return false
+    }
+
+    override fun canUseRedstone(player: Player, block: Block): Boolean {
+        return false
     }
 
     override fun canOpenContainer(

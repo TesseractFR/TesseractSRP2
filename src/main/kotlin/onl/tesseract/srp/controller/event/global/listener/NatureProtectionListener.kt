@@ -7,7 +7,9 @@ import onl.tesseract.srp.util.CampementChatError
 import org.bukkit.Chunk
 import org.bukkit.block.Block
 import org.bukkit.block.Container
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
+import org.bukkit.event.block.BlockIgniteEvent
 import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
@@ -33,5 +35,25 @@ class NatureProtectionListener(val campementService: CampementService) : ChunkPr
         container: Container,
     ): Boolean {
         return true
+    }
+
+    override fun canDamagePassiveEntity(player: Player, entity: LivingEntity): Boolean {
+        return true
+    }
+
+    override fun canUseBucket(player: Player, block: Block): Boolean {
+        return false
+    }
+
+    override fun canPlayerIgnite(player: Player, block: Block): Boolean {
+        return false
+    }
+
+    override fun canNaturallyIgnite(block: Block, cause: BlockIgniteEvent.IgniteCause): Boolean {
+        return false
+    }
+
+    override fun canUseRedstone(player: Player, block: Block): Boolean {
+        return false
     }
 }
