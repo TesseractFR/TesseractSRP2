@@ -3,6 +3,7 @@ package onl.tesseract.srp.repository.hibernate.guild
 import onl.tesseract.lib.repository.Repository
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.guild.GuildRole
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -11,18 +12,14 @@ import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
 interface GuildRepository : Repository<Guild, Int> {
-
     fun findGuildByChunk(chunk: CampementChunk): Guild?
-
     fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean
-
     fun findGuildByName(name: String): Guild?
-
     fun findGuildByLeader(leaderID: UUID): Guild?
-
     fun findGuildByMember(memberID: UUID): Guild?
-
+    fun findMemberRole(playerID: UUID): GuildRole?
     fun findAll(): Collection<Guild>
+    fun deleteById(id: Int)
 }
 
 @Component
@@ -55,12 +52,20 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
         return jpaRepository.findByMember(memberID)?.toDomain()
     }
 
+    override fun findMemberRole(playerID: UUID): GuildRole? {
+        return jpaRepository.findMemberRole(playerID)
+    }
+
     override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
-        return jpaRepository.getFirstExistingChunk(chunks.map { "${it.x},${it.z}" }) != null
+        return jpaRepository.getAnyChunkClaimed(chunks.map { "${it.x},${it.z}" })
     }
 
     override fun findAll(): Collection<Guild> {
         return jpaRepository.findAll().map { it.toDomain() }
+    }
+
+    override fun deleteById(id: Int) {
+        jpaRepository.deleteById(id)
     }
 }
 
@@ -69,8 +74,10 @@ interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
 
     fun findByChunksContains(chunk: GuildCityChunkEntity): GuildEntity?
 
-    @Query("FROM GuildCityChunkEntity c WHERE c.coordinates in :chunks")
-    fun getFirstExistingChunk(chunks: Collection<String>): GuildCityChunkEntity?
+    @Query("""SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END 
+        FROM GuildEntity g JOIN g.chunks c
+        WHERE c.coordinates IN :chunks """)
+    fun getAnyChunkClaimed(@Param("chunks") chunks: Collection<String>): Boolean
 
     fun findByName(name: String): GuildEntity?
 
@@ -78,5 +85,8 @@ interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
 
     @Query("SELECT g FROM GuildEntity g JOIN g.members m WHERE m.playerID = :memberID")
     fun findByMember(@Param("memberID") memberID: UUID): GuildEntity?
+
+    @Query("SELECT m.role FROM GuildMemberEntity m WHERE m.playerID = :playerID")
+    fun findMemberRole(@Param("playerID") playerID: UUID): GuildRole?
 
 }

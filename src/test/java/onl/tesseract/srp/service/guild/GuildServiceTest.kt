@@ -1,5 +1,6 @@
 package onl.tesseract.srp.service.guild
 
+import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.PlayerRank
@@ -37,7 +38,10 @@ class GuildServiceTest : SrpPlayerDomainTest {
             ledgerService,
             mock(EventService::class.java)
         )
-        guildService = GuildService(guildRepository, playerService, ledgerService, TransferService(ledgerService))
+        val chatEntryService = mock(ChatEntryService::class.java)
+        guildService = GuildService(
+            guildRepository, playerService, ledgerService, TransferService(ledgerService), chatEntryService
+        )
     }
 
     @Test
@@ -173,12 +177,10 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Given
         val player = player(money = 10_000, rank = PlayerRank.Survivant)
         val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
-        val location1 = Location(world, 500.0, 0.0, 500.0)
-        val location2 = Location(world, 200.0, 0.0, 200.0)
-        guildRepository.save(Guild(1, leaderId = player.uniqueId, "hello", location1))
+        val location = Location(world, 500.0, 0.0, 500.0)
 
         // When
-        val result = guildService.createGuild(player.uniqueId, location2, "MyGuild")
+        val result = guildService.createGuild(player.uniqueId, location, "MyGuild")
 
         // Then
         assertTrue(GuildCreationResult.Reason.Rank in result.reason)
@@ -260,6 +262,47 @@ class GuildServiceTest : SrpPlayerDomainTest {
     }
 
     @Test
+    fun `Kick member - Should kick member - When leader`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val aliceGuild = guild(leader = alice)
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+
+        // When
+        val kickResult = guildService.kickMember(aliceGuild.id, alice.uniqueId, bob.uniqueId)
+
+        // Then
+        assertEquals(KickResult.Success, kickResult)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertFalse(updated.members.any { it.playerID == bob.uniqueId })
+        assertNull(guildRepository.findGuildByMember(bob.uniqueId))
+    }
+
+    @Test
+    fun `Kick member - Should not  kick member - When not leader`() {
+        // Given
+        val bob = player()
+        val alice = player()
+        val michel = player()
+        val aliceGuild = guild(leader = alice)
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, michel.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, michel.uniqueId))
+
+        // When
+        val kickResult = guildService.kickMember(aliceGuild.id, michel.uniqueId, bob.uniqueId)
+
+        // Then
+        assertEquals(KickResult.NotAuthorized, kickResult)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertTrue(updated.members.any { it.playerID == bob.uniqueId })
+        assertNotNull(guildRepository.findGuildByMember(bob.uniqueId))
+    }
+
+    @Test
     fun `Deposit money - Should transfer from player to guild - When player has enough money`() {
         // Given
         val player = player(money = 150)
@@ -300,6 +343,71 @@ class GuildServiceTest : SrpPlayerDomainTest {
         assertThrows(IllegalArgumentException::class.java) {
             guildService.depositMoney(guild.id, player.uniqueId, 100u)
         }
+    }
+
+    @Test
+    fun `Delete guild - Should delete when called by leader`() {
+        // Given
+        val alice = player()
+        val aliceGuild = guild(alice)
+
+        // When
+        val ok = guildService.deleteGuildAsLeader(alice.uniqueId)
+
+        // Then
+        assertTrue(ok)
+        assertNull(guildRepository.getById(aliceGuild.id))
+    }
+
+    @Test
+    fun `Delete guild - Should not delete when caller is not leader`() {
+        // Given
+        val alice = player()
+        val bob = player()
+        val aliceGuild = guild(alice)
+
+        // When
+        val ok = guildService.deleteGuildAsLeader(bob.uniqueId)
+
+        // Then
+        assertFalse(ok)
+        assertNotNull(guildRepository.getById(aliceGuild.id))
+    }
+
+    @Test
+    fun `Leave guild - Should success - When member is not leader`() {
+        // Given
+        val alice = player()
+        val bob = player()
+        val aliceGuild = guild(alice)
+
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+
+        // When
+        val leaveResult = guildService.leaveGuild(bob.uniqueId)
+
+        // Then
+        assertEquals(LeaveResult.Success, leaveResult)
+        assertNull(guildRepository.findGuildByMember(bob.uniqueId))
+    }
+
+    @Test
+    fun `Leave guild - Should not success - When member is leader`() {
+        // Given
+        val alice = player()
+        val bob = player()
+        val aliceGuild = guild(alice)
+
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+
+        // When
+        val leaveResult = guildService.leaveGuild(alice.uniqueId)
+
+        // Then
+        assertEquals(LeaveResult.LeaderMustDelete, leaveResult)
+        assertNotNull(guildRepository.findGuildByMember(alice.uniqueId))
     }
 
     private fun guild(leader: SrpPlayer): Guild {

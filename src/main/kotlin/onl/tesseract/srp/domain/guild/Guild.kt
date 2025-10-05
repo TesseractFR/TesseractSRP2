@@ -59,6 +59,8 @@ interface GuildMemberContainer {
     fun invitePlayer(playerID: UUID)
     fun askToJoin(playerID: UUID)
     fun join(playerID: UUID)
+    fun removeInvitation(playerID: UUID): Boolean
+    fun removeMember(playerID: UUID): Boolean
 }
 
 class GuildMemberContainerImpl(
@@ -96,6 +98,14 @@ class GuildMemberContainerImpl(
         _invitations.remove(playerID)
         _joinRequests.remove(playerID)
         _members.add(GuildMember(playerID, GuildRole.Citoyen))
+    }
+
+    override fun removeInvitation(playerID: UUID): Boolean = _invitations.remove(playerID)
+    override fun removeMember(playerID: UUID): Boolean {
+        if (playerID == leaderId) return false
+        _invitations.remove(playerID)
+        _joinRequests.remove(playerID)
+        return _members.removeIf { it.playerID == playerID }
     }
 }
 

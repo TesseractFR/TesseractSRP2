@@ -4,6 +4,7 @@ import onl.tesseract.lib.repository.Repository
 import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
@@ -49,6 +50,11 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
         }
     }
 
+    override fun findMemberRole(playerID: UUID): GuildRole? {
+        val guild = elements.values.find { g -> g.members.any { it.playerID == playerID } } ?: return null
+        return guild.members.firstOrNull { it.playerID == playerID }?.role
+    }
+
     override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
         return elements.values.any { guild ->
             chunks.any { guild.chunks.contains(it) }
@@ -57,6 +63,10 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun findAll(): Collection<Guild> {
         return elements.values
+    }
+
+    override fun deleteById(id: Int) {
+        elements.remove(id)
     }
 }
 

@@ -28,10 +28,10 @@ class GuildEntity(
     val ledgerId: UUID,
     @Embedded
     val spawnLocation: SpawnLocationEntity,
-    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", fetch = FetchType.EAGER)
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildCityChunkEntity>,
-    @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection(fetch = FetchType.EAGER)
     val invitations: Set<UUID>,
