@@ -1,18 +1,6 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
-import jakarta.persistence.CascadeType
-import jakarta.persistence.ElementCollection
-import jakarta.persistence.Embeddable
-import jakarta.persistence.Embedded
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.Index
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.OneToMany
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildMember
@@ -43,7 +31,7 @@ class GuildEntity(
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildCityChunkEntity>,
-    @OneToMany(mappedBy = "guildID", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection(fetch = FetchType.EAGER)
     val invitations: Set<UUID>,
@@ -107,26 +95,31 @@ class GuildCityChunkEntity(
 class GuildMemberEntity(
     @Id
     val playerID: UUID,
-    val guildID: Int,
     val role: GuildRole,
 ) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guildID")
+    lateinit var guild: GuildEntity
 
     fun toDomain(): GuildMember = GuildMember(playerID, role)
 }
 
 fun Guild.toEntity(): GuildEntity {
-    return GuildEntity(
-        id,
-        name,
-        leaderId,
-        money,
-        moneyLedgerID,
-        GuildEntity.SpawnLocationEntity(spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
-        chunks.map { GuildCityChunkEntity(it.x, it.z) }.toMutableSet(),
-        members = members.map { it.toEntity(id) }.toMutableList(),
-        invitations = this.invitations,
-        joinRequests = this.joinRequests,
+    val entity = GuildEntity(
+        id = id,
+        name = name,
+        leaderId = leaderId,
+        money = money,
+        ledgerId = moneyLedgerID,
+        spawnLocation = GuildEntity.SpawnLocationEntity(
+            spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
+        chunks = mutableSetOf(),
+        members = mutableListOf(),
+        invitations = invitations,
+        joinRequests = joinRequests,
     )
+    entity.chunks.addAll(this.chunks.map { c -> GuildCityChunkEntity("${c.x},${c.z}", entity) })
+    entity.members.addAll(this.members.map { m -> GuildMemberEntity(m.playerID, m.role).apply { guild = entity } })
+    return entity
 }
 
-fun GuildMember.toEntity(guildId: Int): GuildMemberEntity = GuildMemberEntity(playerID, guildId, role)

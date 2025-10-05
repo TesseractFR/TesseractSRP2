@@ -9,5 +9,5 @@ enum class SrpWorld(
     Anterra("Anterra", "anterra", resourceWorld = true),
     Helya("Helya", "helya", resourceWorld = true),
     Nemesis("Némesis", "nemesis", resourceWorld = true),
-    GuildWorld("Uh", "guildworld"),
+    GuildWorld("Uh", "guildWorld"),
 }

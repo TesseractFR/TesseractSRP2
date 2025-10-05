@@ -76,6 +76,7 @@ interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
 
     fun findByLeaderId(leaderID: UUID): GuildEntity?
 
-    @Query("FROM GuildEntity g JOIN GuildMemberEntity m on g.id = m.guildID WHERE m.playerID = :memberID")
+    @Query("SELECT g FROM GuildEntity g JOIN g.members m WHERE m.playerID = :memberID")
     fun findByMember(@Param("memberID") memberID: UUID): GuildEntity?
+
 }
