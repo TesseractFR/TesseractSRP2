@@ -12,11 +12,21 @@ import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import org.springframework.stereotype.Service
+import dev.lone.itemsadder.api.CustomStack
+import dev.lone.itemsadder.api.ItemsAdder
+import onl.tesseract.lib.util.ItemLoreBuilder
 
 @Service
 class CustomItemService(
     private val namespacedKeyProvider: NamedspacedKeyProvider,
 ) {
+    fun getCustomItem(namespaceId: String) : ItemStack{
+        val customItem =CustomStack.getInstance(namespaceId)
+        requireNotNull(customItem)
+        val item = customItem.itemStack
+        return item
+
+    }
 
     fun createCustomItem(customItem: CustomItemStack): ItemStack {
         val item = ItemBuilder(customItem.item.material.customMaterial)
