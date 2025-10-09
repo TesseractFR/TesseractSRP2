@@ -16,12 +16,13 @@ import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.guild.*
 import onl.tesseract.srp.util.GuildChatError
+import onl.tesseract.srp.util.GuildChatFormat
 import onl.tesseract.srp.util.GuildChatSuccess
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
 
-private val NO_GUILD_MESSAGE = "Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle."
+const val NO_GUILD_MESSAGE = "Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle."
 
 @Command(name = "guild")
 @SpringComponent
@@ -29,6 +30,7 @@ class GuildCommand(
     provider: CommandInstanceProvider,
     private val guildService: GuildService,
     private val guildRepository: GuildRepository,
+    private val guildBorderRenderer: GuildBorderRenderer,
     private val chatEntryService: ChatEntryService,
     private val menuService: MenuService,
 ) : CommandContext(provider) {
@@ -102,39 +104,43 @@ class GuildCommand(
         guildService.handleGuildInvitation(sender, target)
     }
 
-    @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")
     fun kick(sender: Player, @Argument("joueur") targetName: GuildMembersArg) {
         val role = guildService.getMemberRole(sender.uniqueId)
-            ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
-
-        if (role != GuildRole.Leader)
-            return sender.sendMessage(GuildChatError + "Tu n'as pas la permission pour exclure quelqu'un de ta guilde.")
-
+        if (role == null) {
+            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            return
+        }
+        if (role != GuildRole.Leader) {
+            sender.sendMessage(GuildChatError + "Tu n'as pas la permission pour exclure quelqu'un de ta guilde.")
+            return
+        }
         val guild = guildService.getGuildByLeader(sender.uniqueId)!!
         val target = Bukkit.getOfflinePlayer(targetName.get())
-        if (target.uniqueId == sender.uniqueId) {
-            sender.sendMessage(GuildChatError + "Tu ne peux pas t’exclure toi-même.")
-            return
-        }
-        if (guild.members.none { it.playerID == target.uniqueId }) {
-            sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
-            return
-        }
-        menuService.openConfirmationMenu(
-            sender,
-            NamedTextColor.RED + "⚠ Es-tu sûr de vouloir exclure ${target.name} de la guilde ?",
-            null
-        ) {
-            when (guildService.kickMember(guild.id, sender.uniqueId, target.uniqueId)) {
-                KickResult.Success -> {
-                    sender.sendMessage(GuildChatSuccess + "${target.name} a été exclu(e) de la guilde.")
+        when {
+            target.uniqueId == sender.uniqueId -> {
+                sender.sendMessage(GuildChatError + "Tu ne peux pas t’exclure toi-même.")
+            }
+            guild.members.none { it.playerID == target.uniqueId } -> {
+                sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
+            }
+            else -> {
+                menuService.openConfirmationMenu(
+                    sender,
+                    NamedTextColor.RED + "⚠ Es-tu sûr de vouloir exclure ${target.name} de la guilde ?",
+                    null
+                ) {
+                    when (guildService.kickMember(guild.id, sender.uniqueId, target.uniqueId)) {
+                        KickResult.Success -> {
+                            sender.sendMessage(GuildChatSuccess + "${target.name} a été exclu(e) de la guilde.")
+                        }
+                        KickResult.NotMember ->
+                            sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
+                        KickResult.NotAuthorized ->
+                            sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à exclure des membres.")
+                        KickResult.CannotKickLeader ->
+                            sender.sendMessage(GuildChatError + "Tu ne peux pas exclure le chef de la guilde.")
+                    }
                 }
-                KickResult.NotMember ->
-                    sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
-                KickResult.NotAuthorized ->
-                    sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à exclure des membres.")
-                KickResult.CannotKickLeader ->
-                    sender.sendMessage(GuildChatError + "Tu ne peux pas exclure le chef de la guilde.")
             }
         }
     }
@@ -165,5 +171,33 @@ class GuildCommand(
             }
         }
     }
+
+    @Command(name = "claim", playerOnly = true, description = "Annexer un chunk pour la guilde.")
+    fun claimChunk(sender: Player) {
+        guildService.handleClaimUnclaim(sender, sender.chunk, claim = true)
+    }
+
+    @Command(name = "unclaim", playerOnly = true, description = "Retirer un chunk de la guilde.")
+    fun unclaimChunk(sender: Player) {
+        guildService.handleClaimUnclaim(sender, sender.chunk, claim = false)
+    }
+
+    @Command(name = "border", description = "Afficher/Masquer les bordures de ta guilde.")
+    fun toggleGuildBorder(sender: Player) {
+        val guild = guildService.getGuildByMember(sender.uniqueId)
+        if (guild == null) {
+            sender.sendMessage(GuildChatError + "Tu n'as pas de guilde.")
+            return
+        }
+
+        if (guildBorderRenderer.isShowingBorders(sender)) {
+            guildBorderRenderer.clearBorders(sender)
+            sender.sendMessage(GuildChatFormat + "Les bordures de ta guilde ont été masquées.")
+        } else {
+            guildBorderRenderer.showBorders(sender, guild.chunks)
+            sender.sendMessage(GuildChatSuccess + "Les bordures de ta guilde sont maintenant visibles !")
+        }
+    }
+
 
 }

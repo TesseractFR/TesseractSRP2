@@ -3,6 +3,7 @@ package onl.tesseract.srp.service.guild
 import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.guild.GuildChunk
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import java.util.*
 import kotlin.random.Random
 
@@ -32,6 +34,7 @@ class GuildServiceTest : SrpPlayerDomainTest {
 
     @BeforeEach
     fun setup() {
+        val eventService = mock(EventService::class.java)
         val ledgerService = MoneyLedgerService(mock(MoneyLedgerRepository::class.java))
         val playerService = SrpPlayerService(
             playerRepository,
@@ -40,7 +43,8 @@ class GuildServiceTest : SrpPlayerDomainTest {
         )
         val chatEntryService = mock(ChatEntryService::class.java)
         guildService = GuildService(
-            guildRepository, playerService, ledgerService, TransferService(ledgerService), chatEntryService
+            guildRepository, playerService, eventService, ledgerService,
+            TransferService(ledgerService), chatEntryService
         )
     }
 
@@ -408,6 +412,233 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Then
         assertEquals(LeaveResult.LeaderMustDelete, leaveResult)
         assertNotNull(guildRepository.findGuildByMember(alice.uniqueId))
+    }
+
+    @Test
+    fun `Claim - Should return NOT_AUTHORIZED - When requester is not leader`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 500.0, 64.0, 500.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+        val maxX = aliceGuild.chunks.maxOf { it.x }
+        val z0 = aliceGuild.chunks.first().z
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(maxX + 1)
+            `when`(z).thenReturn(z0)
+        }
+
+        // When
+        val res = guildService.claimChunk(aliceGuild.id, bob.uniqueId, target)
+
+        // Then
+        assertEquals(GuildClaimResult.NOT_AUTHORIZED, res)
+    }
+
+    @Test
+    fun `Claim - Should return ALREADY_OWNED - When chunk already belongs to guild`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 600.0, 64.0, 600.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        val owned = aliceGuild.chunks.first()
+        val chunk = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(owned.x)
+            `when`(z).thenReturn(owned.z)
+        }
+
+        // When
+        val res = guildService.claimChunk(aliceGuild.id, alice.uniqueId, chunk)
+
+        // Then
+        assertEquals(GuildClaimResult.ALREADY_OWNED, res)
+    }
+
+    @Test
+    fun `Claim - Should return ALREADY_CLAIMED - When chunk belongs to another guild`() {
+        // Given
+        val alice = player(money = 10_000)
+        val bob   = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+
+        val aliceGuild = guildService.createGuild(alice.uniqueId, Location(world, 700.0, 64.0, 700.0), "Alpha").guild!!
+        val bobGuild = guildService.createGuild(bob.uniqueId,   Location(world, 900.0, 64.0, 900.0), "Beta").guild!!
+
+        val theirs = bobGuild.chunks.first()
+        val chunk = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(theirs.x)
+            `when`(z).thenReturn(theirs.z)
+        }
+
+        // When
+        val res = guildService.claimChunk(aliceGuild.id, alice.uniqueId, chunk)
+
+        // Then
+        assertEquals(GuildClaimResult.ALREADY_CLAIMED, res)
+    }
+
+    @Test
+    fun `Claim - Should return NOT_ADJACENT - When target is not adjacent to any owned chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 1000.0, 64.0, 1000.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        val maxX = aliceGuild.chunks.maxOf { it.x }
+        val z0 = aliceGuild.chunks.first().z
+        val chunk = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(maxX + 2) // non adjacent
+            `when`(z).thenReturn(z0)
+        }
+
+        // When
+        val res = guildService.claimChunk(aliceGuild.id, alice.uniqueId, chunk)
+
+        // Then
+        assertEquals(GuildClaimResult.NOT_ADJACENT, res)
+    }
+
+    @Test
+    fun `Claim - Should return SUCCESS - When target is adjacent and free`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 1200.0, 64.0, 1200.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        val maxX = aliceGuild.chunks.maxOf { it.x }
+        val z0 = aliceGuild.chunks.first().z
+        val chunk = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(maxX + 1) // adjacent
+            `when`(z).thenReturn(z0)
+        }
+
+        // When
+        val res = guildService.claimChunk(aliceGuild.id, alice.uniqueId, chunk)
+
+        // Then
+        assertEquals(GuildClaimResult.SUCCESS, res)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertTrue(updated.chunks.any { it.x == maxX + 1 && it.z == z0 })
+    }
+
+    @Test
+    fun `Unclaim - Should return NOT_AUTHORIZED - When requester is not leader`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 500.0, 64.0, 500.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+        val spawn = loc.chunk
+        val ownedNonSpawn = aliceGuild.chunks.first { it.x != spawn.x || it.z != spawn.z }
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(ownedNonSpawn.x)
+            `when`(z).thenReturn(ownedNonSpawn.z)
+        }
+
+        // When
+        val res = guildService.unclaimChunk(aliceGuild.id, bob.uniqueId, target)
+
+        // Then
+        assertEquals(GuildUnclaimResult.NOT_AUTHORIZED, res)
+    }
+
+    @Test
+    fun `Unclaim - Should return ALREADY_CLAIMED - When chunk does not belong to guild`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 600.0, 64.0, 600.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Beta").guild!!
+        val farX = aliceGuild.chunks.maxOf { it.x } + 10
+        val z0 = aliceGuild.chunks.first().z
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(farX)
+            `when`(z).thenReturn(z0)
+        }
+
+        // When
+        val res = guildService.unclaimChunk(aliceGuild.id, alice.uniqueId, target)
+
+        // Then
+        assertEquals(GuildUnclaimResult.ALREADY_CLAIMED, res)
+    }
+
+    @Test
+    fun `Unclaim - Should return SPAWNPOINT_CHUNK - When trying to remove spawn chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 700.0, 64.0, 700.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Gamma").guild!!
+        val spawnChunkX = loc.blockX shr 4
+        val spawnChunkZ = loc.blockZ shr 4
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(spawnChunkX)
+            `when`(z).thenReturn(spawnChunkZ)
+        }
+
+        // When
+        val res = guildService.unclaimChunk(aliceGuild.id, alice.uniqueId, target)
+
+        // Then
+        assertEquals(GuildUnclaimResult.SPAWNPOINT_CHUNK, res)
+    }
+
+    @Test
+    fun `Unclaim - Should return LAST_CHUNK - When trying to remove the only remaining chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 0.0, 64.0, 0.0)
+        val aliceGuild = Guild(id = -1, leaderId = alice.uniqueId, name = "Solo", spawnLocation = loc)
+        val saved = guildRepository.save(aliceGuild)
+        val onlyChunk = GuildChunk(5, 5)
+        saved.addChunk(onlyChunk)
+        guildRepository.save(saved)
+
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(onlyChunk.x)
+            `when`(z).thenReturn(onlyChunk.z)
+        }
+
+        // When
+        val res = guildService.unclaimChunk(saved.id, alice.uniqueId, target)
+
+        // Then
+        assertEquals(GuildUnclaimResult.LAST_CHUNK, res)
+    }
+
+    @Test
+    fun `Unclaim - Should return SUCCESS - When removing an outer owned chunk keeping territory connected`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc = Location(world, 800.0, 64.0, 800.0)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, loc, "Delta").guild!!
+        val spawn = loc.chunk
+        val cornerX = spawn.x + 1
+        val cornerZ = spawn.z + 1
+        check(aliceGuild.chunks.any { it.x == cornerX && it.z == cornerZ })
+
+        val target = mock(org.bukkit.Chunk::class.java).apply {
+            `when`(x).thenReturn(cornerX)
+            `when`(z).thenReturn(cornerZ)
+        }
+
+        // When
+        val res = guildService.unclaimChunk(aliceGuild.id, alice.uniqueId, target)
+
+        // Then
+        assertEquals(GuildUnclaimResult.SUCCESS, res)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertFalse(updated.chunks.any { it.x == cornerX && it.z == cornerZ })
     }
 
     private fun guild(leader: SrpPlayer): Guild {

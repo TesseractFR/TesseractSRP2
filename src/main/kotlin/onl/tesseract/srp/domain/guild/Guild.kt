@@ -1,6 +1,5 @@
 package onl.tesseract.srp.domain.guild
 
-import onl.tesseract.srp.domain.campement.CampementChunk
 import org.bukkit.Location
 import java.util.*
 
@@ -10,11 +9,11 @@ class Guild(
     val spawnLocation: Location,
     money: Int = 0,
     val moneyLedgerID: UUID = UUID.randomUUID(),
-    chunks: Set<CampementChunk> = setOf(),
+    chunks: Set<GuildChunk> = setOf(),
     memberContainer: GuildMemberContainerImpl,
 ) : GuildMemberContainer by memberContainer {
-    private val _chunks: MutableSet<CampementChunk> = chunks.toMutableSet()
-    val chunks: Set<CampementChunk>
+    private val _chunks: MutableSet<GuildChunk> = chunks.toMutableSet()
+    val chunks: Set<GuildChunk>
         get() = _chunks
 
     var money: Int = money
@@ -32,7 +31,7 @@ class Guild(
         val spawnChunk = spawnLocation.chunk
         for (x in -1..1) {
             for (z in -1..1) {
-                _chunks.add(CampementChunk(spawnChunk.x + x, spawnChunk.z + z))
+                _chunks.add(GuildChunk(spawnChunk.x + x, spawnChunk.z + z))
             }
         }
     }
@@ -48,6 +47,9 @@ class Guild(
         return members.find { it.playerID == member }?.role
             ?: throw IllegalArgumentException("Player $member is not a member of guild $id")
     }
+
+    fun addChunk(chunk: GuildChunk): Boolean = _chunks.add(chunk)
+    fun removeChunk(chunk: GuildChunk): Boolean = _chunks.remove(chunk)
 }
 
 interface GuildMemberContainer {
@@ -113,6 +115,11 @@ class GuildMember(
     val playerID: UUID,
     val role: GuildRole,
 )
+
+data class GuildChunk(val x: Int, val z: Int) {
+    constructor(location: Location): this(location.chunk.x, location.chunk.z)
+    override fun toString(): String = "($x, $z)"
+}
 
 enum class GuildRole {
     Citoyen,

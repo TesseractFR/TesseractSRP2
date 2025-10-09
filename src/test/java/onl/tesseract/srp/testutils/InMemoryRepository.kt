@@ -2,8 +2,8 @@ package onl.tesseract.srp.testutils
 
 import onl.tesseract.lib.repository.Repository
 import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.guild.GuildChunk
 import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.repository.hibernate.CampementRepository
@@ -32,7 +32,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun idOf(entity: Guild): Int = entity.id
 
-    override fun findGuildByChunk(chunk: CampementChunk): Guild? {
+    override fun findGuildByChunk(chunk: GuildChunk): Guild? {
         return elements.values.find { chunk in it.chunks }
     }
 
@@ -55,7 +55,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
         return guild.members.firstOrNull { it.playerID == playerID }?.role
     }
 
-    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+    override fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean {
         return elements.values.any { guild ->
             chunks.any { guild.chunks.contains(it) }
         }
@@ -67,6 +67,26 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun deleteById(id: Int) {
         elements.remove(id)
+    }
+
+    override fun save(entity: Guild): Guild {
+        val newId = if (entity.id == -1) (elements.keys.maxOrNull() ?: 0) + 1 else entity.id
+        val saved = Guild(
+            id = newId,
+            name = entity.name,
+            spawnLocation = entity.spawnLocation,
+            money = entity.money,
+            moneyLedgerID = entity.moneyLedgerID,
+            chunks = entity.chunks,
+            memberContainer = onl.tesseract.srp.domain.guild.GuildMemberContainerImpl(
+                entity.leaderId,
+                entity.members,
+                entity.invitations,
+                entity.joinRequests
+            )
+        )
+        elements[newId] = saved
+        return saved
     }
 }
 

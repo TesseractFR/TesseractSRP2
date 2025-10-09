@@ -7,6 +7,8 @@ import onl.tesseract.srp.service.campement.CampementService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.player.PlayerKickEvent
+import org.bukkit.event.player.PlayerQuitEvent
 import java.util.*
 import org.springframework.stereotype.Component
 
@@ -25,6 +27,12 @@ class CampementBorderDisplayListener(
     fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
         updateBorders(event.playerId)
     }
+
+    @EventHandler
+    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player)
+
+    @EventHandler
+    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
 
     private fun updateBorders(playerId: UUID) {
         val player = Bukkit.getPlayer(playerId) ?: return

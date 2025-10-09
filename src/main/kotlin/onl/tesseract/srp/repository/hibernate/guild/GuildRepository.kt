@@ -1,8 +1,8 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
 import onl.tesseract.lib.repository.Repository
-import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.guild.GuildChunk
 import onl.tesseract.srp.domain.guild.GuildRole
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
@@ -12,8 +12,8 @@ import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
 interface GuildRepository : Repository<Guild, Int> {
-    fun findGuildByChunk(chunk: CampementChunk): Guild?
-    fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean
+    fun findGuildByChunk(chunk: GuildChunk): Guild?
+    fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean
     fun findGuildByName(name: String): Guild?
     fun findGuildByLeader(leaderID: UUID): Guild?
     fun findGuildByMember(memberID: UUID): Guild?
@@ -34,7 +34,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
         return jpaRepository.save(entity.toEntity()).toDomain()
     }
 
-    override fun findGuildByChunk(chunk: CampementChunk): Guild? {
+    override fun findGuildByChunk(chunk: GuildChunk): Guild? {
         return jpaRepository.findByChunksContains(GuildCityChunkEntity(chunk.x, chunk.z))?.toDomain()
     }
 
@@ -56,7 +56,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository) :
         return jpaRepository.findMemberRole(playerID)
     }
 
-    override fun areChunksClaimed(chunks: Collection<CampementChunk>): Boolean {
+    override fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean {
         return jpaRepository.getAnyChunkClaimed(chunks.map { "${it.x},${it.z}" })
     }
 

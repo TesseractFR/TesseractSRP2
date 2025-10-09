@@ -19,6 +19,7 @@ import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
+import onl.tesseract.srp.util.TerritoryChunks
 import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.entity.Player
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
+private const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
 open class CampementService(
@@ -152,12 +154,8 @@ open class CampementService(
             return AnnexationResult.ALREADY_CLAIMED
         }
 
-        val isAdjacent = campement.chunks.any { existingChunk ->
-            val existingX = existingChunk.x
-            val existingZ = existingChunk.z
-            (existingX == x && (existingZ == z - 1 || existingZ == z + 1)) ||
-                    (existingZ == z && (existingX == x - 1 || existingX == x + 1))
-        }
+        val isAdjacent = campement.chunks.isNotEmpty() &&
+                TerritoryChunks.isAdjacentToAny(campement.chunks, chunk, { it.x }, { it.z })
 
         if (!isAdjacent) {
             return AnnexationResult.NOT_ADJACENT
@@ -191,34 +189,6 @@ open class CampementService(
         return true
     }
 
-    fun isUnclaimValid(chunks: Collection<CampementChunk>, chunkToRemove: CampementChunk): Boolean {
-        val remaining = chunks.filter { it != chunkToRemove }
-        if (remaining.isEmpty()) return false
-
-        val visited = mutableSetOf<CampementChunk>()
-        val queue = ArrayDeque<CampementChunk>()
-        queue.add(remaining.first())
-        visited.add(remaining.first())
-
-        while (queue.isNotEmpty()) {
-            val current = queue.removeFirst()
-            val neighbors = remaining.filter {
-                it != current && (
-                        (it.x == current.x && (it.z == current.z + 1 || it.z == current.z - 1)) ||
-                                (it.z == current.z && (it.x == current.x + 1 || it.x == current.x - 1))
-                        )
-            }
-            for (neighbor in neighbors) {
-                if (neighbor !in visited) {
-                    visited.add(neighbor)
-                    queue.add(neighbor)
-                }
-            }
-        }
-        return visited.size == remaining.size
-    }
-
-
     /**
      * Handles the process of claiming or unclaiming a chunk and returns a message indicating the result.
      * @param ownerID The player performing the action.
@@ -240,24 +210,24 @@ open class CampementService(
 
                 AnnexationResult.ALREADY_OWNED -> owner.sendMessage(
                     CampementChatFormat + "Tu possèdes déjà ce chunk. Visualise les bordures avec "
-                            + Component.text("/campement border", NamedTextColor.GOLD)
+                            + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
 
                 AnnexationResult.ALREADY_CLAIMED -> owner.sendMessage(
                     CampementChatError + "Ce chunk appartient à un autre campement. Visualise les bordures de ton campement avec "
-                            + Component.text("/campement border", NamedTextColor.GOLD)
+                            + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
 
                 AnnexationResult.NOT_ADJACENT -> owner.sendMessage(
                     CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. Visualise les bordures avec "
-                            + Component.text("/campement border", NamedTextColor.GOLD)
+                            + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
             }
         } else {
             if (!campement.chunks.contains(campementChunk)) {
                 owner.sendMessage(
                     CampementChatError + "Ce chunk ne fait pas partie de ton campement. Visualise les bordures avec "
-                            + Component.text("/campement border", NamedTextColor.GOLD)
+                            + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
                 return
             }
@@ -275,10 +245,10 @@ open class CampementService(
                             + " avant de retirer celui-ci.")
                 return
             }
-            if (!isUnclaimValid(campement.chunks, campementChunk)) {
+            if (!TerritoryChunks.isUnclaimValid(campement.chunks, campementChunk, { it.x }, { it.z })) {
                 owner.sendMessage(
                     CampementChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ton campement en plusieurs parties. Visualise les bordures avec "
-                            + Component.text("/campement border", NamedTextColor.GOLD)
+                            + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
                 return
             }
