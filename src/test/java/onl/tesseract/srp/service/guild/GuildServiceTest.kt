@@ -60,8 +60,8 @@ class GuildServiceTest : SrpPlayerDomainTest {
         // Then
         assertTrue(result.isSuccess())
         assertEquals("MyGuild", result.guild!!.name)
-        assertEquals(player.uniqueId, result.guild!!.leaderId)
-        assertEquals(result.guild, guildRepository.getById(result.guild!!.id))
+        assertEquals(player.uniqueId, result.guild.leaderId)
+        assertEquals(result.guild, guildRepository.getById(result.guild.id))
         assertEquals(0, player.money)
     }
 

@@ -30,9 +30,11 @@ class GuildBorderDisplayListener(
     fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
 
     private fun updateBorders(playerId: java.util.UUID) {
-        val player = Bukkit.getPlayer(playerId) ?: return
-        val guild = guildService.getGuildByMember(playerId) ?: return
-        if (!borderRenderer.isShowingBorders(player)) return
-        borderRenderer.showBorders(player, guild.chunks)
+        val player = Bukkit.getPlayer(playerId)
+        val guild = guildService.getGuildByMember(playerId)
+        if (player != null && guild != null && borderRenderer.isShowingBorders(player)) {
+            borderRenderer.showBorders(player, guild.chunks)
+        }
     }
+
 }
