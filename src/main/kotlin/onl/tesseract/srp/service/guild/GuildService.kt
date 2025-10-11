@@ -8,10 +8,12 @@ import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
+import onl.tesseract.srp.controller.command.guild.NO_GUILD_MESSAGE
 import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
 import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildChunk
+import onl.tesseract.srp.domain.guild.GuildRank
 import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
@@ -22,6 +24,7 @@ import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.util.*
+import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.entity.Player
@@ -47,6 +50,12 @@ open class GuildService(
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
     }
 
+    private fun getGuild(guildID: Int): Guild {
+        val guild = guildRepository.getById(guildID)
+            ?: throw IllegalArgumentException("Guild not found with id $guildID")
+        return guild
+    }
+    open fun getAllGuilds(): Collection<Guild> = guildRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = guildRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = guildRepository.findGuildByMember(memberId)
     open fun getMemberRole(playerID: UUID): GuildRole? = guildRepository.findMemberRole(playerID)
@@ -93,10 +102,10 @@ open class GuildService(
         val errorList: MutableList<GuildCreationResult.Reason> = mutableListOf()
         if (location.world.name != SrpWorld.GuildWorld.bukkitName)
             errorList += GuildCreationResult.Reason.InvalidWorld
+        else if (location.distance(location.world.spawnLocation) <= SPAWN_PROTECTION_DISTANCE)
+            errorList += GuildCreationResult.Reason.NearSpawn
         if (guildRepository.findGuildByName(guildName) != null)
             errorList += GuildCreationResult.Reason.NameTaken
-        if (location.distance(location.world.spawnLocation) <= SPAWN_PROTECTION_DISTANCE)
-            errorList += GuildCreationResult.Reason.NearSpawn
 
         val srpPlayer = playerService.getPlayer(playerID)
         if (srpPlayer.money < GUILD_COST)
@@ -119,6 +128,32 @@ open class GuildService(
             }
         }
         return !guildRepository.areChunksClaimed(chunks)
+    }
+
+    enum class GuildSpawnKind { PRIVATE, VISITOR }
+
+    open fun setSpawnpoint(
+        guildID: Int,
+        requesterID: UUID,
+        newLocation: Location,
+        kind: GuildSpawnKind = GuildSpawnKind.PRIVATE
+    ): GuildSetSpawnResult {
+        val guild = getGuild(guildID)
+        val result = if (newLocation.world.name != SrpWorld.GuildWorld.bukkitName) {
+            GuildSetSpawnResult.INVALID_WORLD
+        } else if (guild.getMemberRole(requesterID) != GuildRole.Leader) {
+            GuildSetSpawnResult.NOT_AUTHORIZED
+        } else {
+            val ok = when (kind) {
+                GuildSpawnKind.PRIVATE  -> guild.setSpawnpoint(newLocation)
+                GuildSpawnKind.VISITOR  -> guild.setVisitorSpawnpoint(newLocation)
+            }
+            if (ok) GuildSetSpawnResult.SUCCESS else GuildSetSpawnResult.OUTSIDE_TERRITORY
+        }
+        if (result == GuildSetSpawnResult.SUCCESS) {
+            guildRepository.save(guild)
+        }
+        return result
     }
 
     @Transactional
@@ -333,12 +368,6 @@ open class GuildService(
         guildRepository.save(guild)
     }
 
-    private fun getGuild(guildID: Int): Guild {
-        val guild = guildRepository.getById(guildID)
-            ?: throw IllegalArgumentException("Guild not found with id $guildID")
-        return guild
-    }
-
     /**
      * Claim a chunk for the guild, ensuring it is adjacent to existing chunks or is the first chunk.
      */
@@ -399,7 +428,7 @@ open class GuildService(
     open fun handleClaimUnclaim(player: Player, chunk: Chunk, claim: Boolean) {
         val guild = getGuildByMember(player.uniqueId)
         if (guild == null) {
-            player.sendMessage(GuildChatError + "Tu n'as pas de guilde.")
+            player.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
             return
         }
         if (chunk.world.name != SrpWorld.GuildWorld.bukkitName) {
@@ -457,6 +486,71 @@ open class GuildService(
             }
         }
     }
+
+    private fun xpToNextLevel(level: Int): Int = XP_PER_LVL_MULTIPLICATOR * level
+
+    @Transactional
+    open fun addGuildXp(guildId: Int, amount: Int) {
+        val guild = getGuild(guildId)
+        guild.addXp(amount.coerceAtLeast(0))
+        guildRepository.save(guild)
+        upgradeGuildLevel(guildId)
+    }
+
+    open fun setLevel(guildId: Int, level: Int) {
+        val g = getGuild(guildId)
+        g.level = level.coerceAtLeast(1)
+        g.xp = 0
+        guildRepository.save(g)
+    }
+
+    open fun upgradeGuildLevel(guildId: Int): Boolean {
+        val guild = getGuild(guildId)
+        val need = xpToNextLevel(guild.level)
+        if (guild.xp < need) return false
+
+        guild.xp -= need
+        guild.level += 1
+        guildRepository.save(guild)
+        notifyGuildLevelUp(guild)
+        return true
+    }
+
+    private fun notifyGuildLevelUp(guild: Guild) {
+        val server = Bukkit.getServer() ?: return // ne pas enlever le return, Bukkit.getServer() peut être null en test
+        val msg: Component =
+            GuildChatSuccess +
+                    "Ta guilde " + Component.text(guild.name, NamedTextColor.GREEN) +
+                    " est passée au niveau " + Component.text(guild.level.toString(), NamedTextColor.GOLD) + " !"
+
+        val recipients = (guild.members.map { it.playerID } + guild.leaderId).distinct()
+        recipients.forEach { uuid ->
+            server.getPlayer(uuid)?.sendMessage(msg)
+        }
+    }
+
+    open fun upgradeRank(guildId: Int, to: GuildRank): GuildUpgradeResult {
+        val g = getGuild(guildId)
+        return when {
+            to <= g.rank ->
+                GuildUpgradeResult.ALREADY_AT_OR_ABOVE
+            g.level < to.minLevel ->
+                GuildUpgradeResult.RANK_LOCKED
+            g.money < to.cost ->
+                GuildUpgradeResult.NOT_ENOUGH_MONEY
+            else -> {
+                g.money -= to.cost
+                g.rank = to
+                guildRepository.save(g)
+                GuildUpgradeResult.SUCCESS
+            }
+        }
+    }
+
+    companion object {
+        const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
+    }
+
 }
 
 data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
@@ -471,9 +565,11 @@ data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
     }
 }
 
+enum class GuildSetSpawnResult { SUCCESS, NOT_AUTHORIZED, INVALID_WORLD, OUTSIDE_TERRITORY }
 enum class InvitationResult { Invited, Joined, Failed }
 enum class JoinResult { Joined, Requested, Failed }
 enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
 enum class LeaveResult { Success, LeaderMustDelete }
 enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED }
 enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
+enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }

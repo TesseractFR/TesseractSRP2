@@ -6,18 +6,21 @@ import java.util.*
 class Guild(
     val id: Int,
     val name: String,
-    val spawnLocation: Location,
+    var spawnLocation: Location,
     money: Int = 0,
     val moneyLedgerID: UUID = UUID.randomUUID(),
     chunks: Set<GuildChunk> = setOf(),
     memberContainer: GuildMemberContainerImpl,
+    var visitorSpawnLocation: Location? = null,
+    var level: Int = 1,
+    var xp: Int = 0,
+    var rank: GuildRank = GuildRank.HAMEAU
 ) : GuildMemberContainer by memberContainer {
     private val _chunks: MutableSet<GuildChunk> = chunks.toMutableSet()
     val chunks: Set<GuildChunk>
         get() = _chunks
 
     var money: Int = money
-        private set
 
     constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Location)
             : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
@@ -36,6 +39,23 @@ class Guild(
         }
     }
 
+    /**
+     * Sets the spawn point of the guild.
+     * The new location must be within one of the guild's chunks.
+     * @return true if the spawn point was set, false otherwise
+     */
+    fun setSpawnpoint(newLocation: Location): Boolean {
+        if (!chunks.contains(GuildChunk(newLocation))) return false
+        spawnLocation = newLocation
+        return true
+    }
+
+    fun setVisitorSpawnpoint(newLocation: Location): Boolean {
+        if (!chunks.contains(GuildChunk(newLocation))) return false
+        visitorSpawnLocation = newLocation
+        return true
+    }
+
     fun addMoney(amount: Int) {
         money += amount
     }
@@ -50,6 +70,8 @@ class Guild(
 
     fun addChunk(chunk: GuildChunk): Boolean = _chunks.add(chunk)
     fun removeChunk(chunk: GuildChunk): Boolean = _chunks.remove(chunk)
+
+    fun addXp(amount: Int) { xp += amount.coerceAtLeast(0) }
 }
 
 interface GuildMemberContainer {

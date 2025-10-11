@@ -1,5 +1,6 @@
 package onl.tesseract.srp.controller.command.guild
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.commandBuilder.CommandInstanceProvider
@@ -10,10 +11,13 @@ import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.command.argument.StringArg
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
+import onl.tesseract.srp.controller.command.argument.GuildArg
 import onl.tesseract.srp.controller.command.argument.GuildMembersArg
+import onl.tesseract.srp.controller.command.argument.GuildSpawnKindArg
 import onl.tesseract.srp.controller.menu.guild.GuildMenu
 import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
+import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.guild.*
 import onl.tesseract.srp.util.GuildChatError
 import onl.tesseract.srp.util.GuildChatFormat
@@ -22,7 +26,10 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
 
-const val NO_GUILD_MESSAGE = "Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle."
+val NO_GUILD_MESSAGE: Component =
+    Component.text("Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle avec ") +
+            Component.text("/guild create <nom>", NamedTextColor.GOLD) +
+            Component.text(".")
 
 @Command(name = "guild")
 @SpringComponent
@@ -33,6 +40,7 @@ class GuildCommand(
     private val guildBorderRenderer: GuildBorderRenderer,
     private val chatEntryService: ChatEntryService,
     private val menuService: MenuService,
+    private val teleportService: TeleportationService,
 ) : CommandContext(provider) {
 
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
@@ -148,7 +156,7 @@ class GuildCommand(
     @Command(name = "leave", playerOnly = true, description = "Quitter sa guilde.")
     fun leave(sender: Player) {
         val guild = guildService.getGuildByMember(sender.uniqueId)
-            ?: return sender.sendMessage(GuildChatError + "Tu n'as pas de guilde.")
+            ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
 
         if (guild.leaderId == sender.uniqueId) {
             sender.sendMessage(
@@ -186,7 +194,7 @@ class GuildCommand(
     fun toggleGuildBorder(sender: Player) {
         val guild = guildService.getGuildByMember(sender.uniqueId)
         if (guild == null) {
-            sender.sendMessage(GuildChatError + "Tu n'as pas de guilde.")
+            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
             return
         }
 
@@ -199,5 +207,57 @@ class GuildCommand(
         }
     }
 
+    @Command(name = "setspawn", playerOnly = true, description = "Définir le spawn privé (défaut) ou visiteurs.")
+    fun setSpawn(sender: Player, @Argument("type", optional = true) kindArg: GuildSpawnKindArg?) {
+        val guild = guildService.getGuildByMember(sender.uniqueId)
+            ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+
+        val kind = kindArg?.get() ?: GuildService.GuildSpawnKind.PRIVATE
+
+        when (guildService.setSpawnpoint(guild.id, sender.uniqueId, sender.location, kind)) {
+            GuildSetSpawnResult.SUCCESS -> {
+                val label = if (kind == GuildService.GuildSpawnKind.PRIVATE) "privé" else "visiteurs"
+                sender.sendMessage(GuildChatSuccess + "Le point de spawn $label de la guilde a été défini ici.")
+            }
+            GuildSetSpawnResult.NOT_AUTHORIZED ->
+                sender.sendMessage(GuildChatError + "Tu n'as pas l'autorisation de changer le spawn.")
+            GuildSetSpawnResult.INVALID_WORLD ->
+                sender.sendMessage(GuildChatError + "Tu ne peux pas définir le spawn dans ce monde.")
+            GuildSetSpawnResult.OUTSIDE_TERRITORY ->
+                sender.sendMessage(GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. Visualise les bordures avec "
+                        + Component.text("/guild border", NamedTextColor.GOLD)
+                        + ".")
+        }
+    }
+
+    @Command(
+        name = "spawn",
+        playerOnly = true,
+        description = "Se téléporter au spawn de sa guilde (sans argument) ou d’une autre guilde."
+    )
+    fun teleportToGuildSpawn(sender: Player, @Argument("guilde", optional = true) nameArg: GuildArg?) {
+        val targetName = nameArg?.get()?.name
+        val (guild, errorMsg) = if (targetName == null) {
+            guildService.getGuildByMember(sender.uniqueId) to (GuildChatError + NO_GUILD_MESSAGE)
+        } else {
+            guildRepository.findGuildByName(targetName) to (GuildChatError + "La guilde \"$targetName\" n’existe pas.")
+        }
+        val targetGuild = guild ?: run {
+            sender.sendMessage(errorMsg)
+            return
+        }
+        val destination = if (targetName == null) {
+            targetGuild.spawnLocation
+        } else {
+            targetGuild.visitorSpawnLocation ?: targetGuild.spawnLocation
+        }
+        teleportService.teleport(sender, destination) {
+            val msg = if (targetName == null)
+                GuildChatSuccess + "Tu as été téléporté au spawn de ta guilde."
+            else
+                GuildChatSuccess + "Tu as été téléporté au spawn de la guilde ${targetGuild.name}."
+            sender.sendMessage(msg)
+        }
+    }
 
 }

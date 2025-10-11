@@ -83,7 +83,11 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
                 entity.members,
                 entity.invitations,
                 entity.joinRequests
-            )
+            ),
+            visitorSpawnLocation = entity.visitorSpawnLocation,
+            level = entity.level,
+            xp = entity.xp,
+            rank = entity.rank
         )
         elements[newId] = saved
         return saved

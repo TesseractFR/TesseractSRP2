@@ -4,6 +4,7 @@ import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildChunk
+import onl.tesseract.srp.domain.guild.GuildRank
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -639,6 +640,212 @@ class GuildServiceTest : SrpPlayerDomainTest {
         assertEquals(GuildUnclaimResult.SUCCESS, res)
         val updated = guildRepository.getById(aliceGuild.id)!!
         assertFalse(updated.chunks.any { it.x == cornerX && it.z == cornerZ })
+    }
+
+    @Test
+    fun `Set private spawn - Should return NOT_AUTHORIZED - When requester is not leader`() {
+        // Given
+        val alice = player(money = 10_000)
+        val bob   = player()
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc   = Location(world, 500.0, 64.0, 500.0)
+        val guild = guildService.createGuild(alice.uniqueId, loc, "Alpha").guild!!
+        assertEquals(InvitationResult.Invited, guildService.invite(guild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined,  guildService.join(guild.id, bob.uniqueId))
+        val inTerritory = Location(world, loc.blockX + 1.0, 64.0, loc.blockZ + 1.0)
+
+        // When
+        val res = guildService.setSpawnpoint(guild.id, bob.uniqueId, inTerritory)
+
+        // Then
+        assertEquals(GuildSetSpawnResult.NOT_AUTHORIZED, res)
+    }
+
+    @Test
+    fun `Set private spawn - Should return INVALID_WORLD - When location not in GuildWorld`() {
+        // Given
+        val alice = player(money = 10_000)
+        val gWorld = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc    = Location(gWorld, 600.0, 64.0, 600.0)
+        val guild  = guildService.createGuild(alice.uniqueId, loc, "Beta").guild!!
+
+        val otherWorld = mockWorld("overworld")
+        val badLoc     = Location(otherWorld, 1000.0, 70.0, 1000.0)
+
+        // When
+        val res = guildService.setSpawnpoint(guild.id, alice.uniqueId, badLoc)
+
+        // Then
+        assertEquals(GuildSetSpawnResult.INVALID_WORLD, res)
+    }
+
+    @Test
+    fun `Set private spawn - Should return OUTSIDE_TERRITORY - When location is not on a guild-owned chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc   = Location(world, 700.0, 64.0, 700.0)
+        val guild = guildService.createGuild(alice.uniqueId, loc, "Gamma").guild!!
+        val far = Location(world, (loc.chunk.x + 10) * 16 + 1.0, 64.0, (loc.chunk.z + 10) * 16 + 1.0)
+
+        // When
+        val res = guildService.setSpawnpoint(guild.id, alice.uniqueId, far)
+
+        // Then
+        assertEquals(GuildSetSpawnResult.OUTSIDE_TERRITORY, res)
+    }
+
+    @Test
+    fun `Set private spawn - Should return SUCCESS and update spawn - When leader sets inside-owned chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc   = Location(world, 800.0, 64.0, 800.0)
+        val guild = guildService.createGuild(alice.uniqueId, loc, "Delta").guild!!
+        val inside = Location(world, loc.blockX + 2.0, 64.0, loc.blockZ + 2.0)
+
+        // When
+        val res = guildService.setSpawnpoint(guild.id, alice.uniqueId, inside)
+
+        // Then
+        assertEquals(GuildSetSpawnResult.SUCCESS, res)
+        val updated = guildRepository.getById(guild.id)!!
+        assertEquals(inside.blockX, updated.spawnLocation.blockX)
+        assertEquals(inside.blockY, updated.spawnLocation.blockY)
+        assertEquals(inside.blockZ, updated.spawnLocation.blockZ)
+    }
+
+    // Un seul test effectué, pour vérifier que l'appel à setspawnpoint fonctionne aussi pour le spawn des visiteurs,
+    // le reste du code est identique à celui du spawn normal.
+    @Test
+    fun `Set visitor spawn - Should return SUCCESS and update visitor spawn - When leader sets inside-owned chunk`() {
+        // Given
+        val alice = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+        val loc   = Location(world, 800.0, 64.0, 800.0)
+        val guild = guildService.createGuild(alice.uniqueId, loc, "Delta").guild!!
+        val inside = Location(world, loc.blockX + 2.0, 64.0, loc.blockZ + 2.0)
+
+        // When
+        val res = guildService.setSpawnpoint(guild.id, alice.uniqueId, inside, GuildService.GuildSpawnKind.VISITOR)
+
+        // Then
+        assertEquals(GuildSetSpawnResult.SUCCESS, res)
+        val updated = guildRepository.getById(guild.id)!!
+        val visitor = updated.visitorSpawnLocation
+        assertNotNull(visitor)
+        assertEquals(inside.blockX, visitor!!.blockX)
+        assertEquals(inside.blockY, visitor.blockY)
+        assertEquals(inside.blockZ, visitor.blockZ)
+    }
+
+    @Test
+    fun `Upgrade rank - Should return SUCCESS and persist - When guild has enough level and money`() {
+        // Given
+        val alice = player(money = 50_000)
+        val aliceGuild = guild(alice)
+        val target = GuildRank.COMMUNE
+        aliceGuild.level = target.minLevel
+        aliceGuild.addMoney(target.cost)
+        guildRepository.save(aliceGuild)
+
+        // When
+        val res = guildService.upgradeRank(aliceGuild.id, target)
+
+        // Then
+        assertEquals(GuildUpgradeResult.SUCCESS, res)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertEquals(target, updated.rank)
+        assertEquals(0, updated.money)
+    }
+
+    @Test
+    fun `Upgrade rank - Should return ALREADY_AT_OR_ABOVE - When target rank is not higher`() {
+        // Given
+        val alice = player(money = 50_000)
+        val aliceGuild = guild(alice)
+        aliceGuild.rank = GuildRank.VILLE
+        aliceGuild.level = 99
+        aliceGuild.addMoney(1_000_000)
+        guildRepository.save(aliceGuild)
+        val res = guildService.upgradeRank(aliceGuild.id, GuildRank.VILLAGE)
+
+        // Then
+        assertEquals(GuildUpgradeResult.ALREADY_AT_OR_ABOVE, res)
+        assertEquals(GuildRank.VILLE, guildRepository.getById(aliceGuild.id)!!.rank)
+    }
+
+    @Test
+    fun `Upgrade rank - Should return RANK_LOCKED - When guild level is below target min level`() {
+        // Given
+        val alice = player(money = 50_000)
+        val aliceGuild = guild(alice)
+        val target = GuildRank.VILLE
+        aliceGuild.level = target.minLevel - 1
+        aliceGuild.addMoney(target.cost * 2)
+        guildRepository.save(aliceGuild)
+
+        // When
+        val res = guildService.upgradeRank(aliceGuild.id, target)
+
+        // Then
+        assertEquals(GuildUpgradeResult.RANK_LOCKED, res)
+        assertNotEquals(target, guildRepository.getById(aliceGuild.id)!!.rank)
+    }
+
+    @Test
+    fun `Upgrade rank - Should return NOT_ENOUGH_MONEY - When guild money is below target cost`() {
+        // Given
+        val alice = player(money = 50_000)
+        val aliceGuild = guild(alice)
+        val target = GuildRank.VILLAGE
+        aliceGuild.level = target.minLevel
+        aliceGuild.addMoney(target.cost - 1)
+        guildRepository.save(aliceGuild)
+
+        // When
+        val res = guildService.upgradeRank(aliceGuild.id, target)
+
+        // Then
+        assertEquals(GuildUpgradeResult.NOT_ENOUGH_MONEY, res)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertNotEquals(target, updated.rank)
+        assertEquals(target.cost - 1, updated.money)
+    }
+
+    @Test
+    fun `Add XP - Should NOT level up - When added xp is below threshold`() {
+        // Given
+        val alice = player(money = 10_000)
+        val aliceGuild = guild(alice)
+        val startLevel = aliceGuild.level
+        val need = startLevel * GuildService.XP_PER_LVL_MULTIPLICATOR
+        val amount = need - 1
+
+        // When
+        guildService.addGuildXp(aliceGuild.id, amount)
+
+        // Then
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertEquals(startLevel, updated.level)
+        assertEquals(amount, updated.xp)
+    }
+
+    @Test
+    fun `Add XP - Should level up and reset xp - When added xp meets threshold`() {
+        // Given
+        val alice = player(money = 10_000)
+        val aliceGuild = guild(alice)
+        val startLevel = aliceGuild.level
+        val need = startLevel * GuildService.XP_PER_LVL_MULTIPLICATOR
+
+        // When
+        guildService.addGuildXp(aliceGuild.id, need)
+
+        // Then
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertEquals(startLevel + 1, updated.level)
+        assertEquals(0, updated.xp)
     }
 
     private fun guild(leader: SrpPlayer): Guild {

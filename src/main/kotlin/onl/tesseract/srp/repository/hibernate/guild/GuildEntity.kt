@@ -24,6 +24,13 @@ class GuildEntity(
     val ledgerId: UUID,
     @Embedded
     val spawnLocation: SpawnLocationEntity,
+    @Embedded
+    @AttributeOverrides(
+        AttributeOverride(name = "spawnX",    column = Column(name = "visitor_spawn_x")),
+        AttributeOverride(name = "spawnY",    column = Column(name = "visitor_spawn_y")),
+        AttributeOverride(name = "spawnZ",    column = Column(name = "visitor_spawn_z")),
+    )
+    val visitorSpawn: SpawnLocationEntity? = null,
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildCityChunkEntity>,
@@ -33,6 +40,13 @@ class GuildEntity(
     val invitations: Set<UUID>,
     @ElementCollection(fetch = FetchType.EAGER)
     val joinRequests: Set<UUID>,
+    @Column(nullable = false)
+    val level: Int = 1,
+    @Column(nullable = false)
+    val xp: Int = 0,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "guild_rank", nullable = false)
+    val rank: GuildRank = GuildRank.HAMEAU,
 ) {
 
     @Embeddable
@@ -55,13 +69,17 @@ class GuildEntity(
             money,
             ledgerId,
             chunks.map { it.toDomain() }.toSet(),
-            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests)
+            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests),
+            visitorSpawnLocation = visitorSpawn?.toLocation(),
+            level = level,
+            xp = xp,
+            rank = rank
         )
     }
 }
 
 @Entity
-@Table(name = "t_city_chunks")
+@Table(name = "t_guild_chunks")
 class GuildCityChunkEntity(
     @Id
     val coordinates: String,
@@ -109,10 +127,16 @@ fun Guild.toEntity(): GuildEntity {
         ledgerId = moneyLedgerID,
         spawnLocation = GuildEntity.SpawnLocationEntity(
             spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
+        visitorSpawn = visitorSpawnLocation?.let {
+            GuildEntity.SpawnLocationEntity(it.blockX, it.blockY, it.blockZ)
+        },
         chunks = mutableSetOf(),
         members = mutableListOf(),
         invitations = invitations,
         joinRequests = joinRequests,
+        level = level,
+        xp = xp,
+        rank = rank
     )
     entity.chunks.addAll(this.chunks.map { c -> GuildCityChunkEntity("${c.x},${c.z}", entity) })
     entity.members.addAll(this.members.map { m -> GuildMemberEntity(m.playerID, m.role).apply { guild = entity } })

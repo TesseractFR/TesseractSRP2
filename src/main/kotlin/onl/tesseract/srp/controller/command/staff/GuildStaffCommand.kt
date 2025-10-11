@@ -44,4 +44,35 @@ class GuildStaffCommand {
         }
     }
 
+    @Command(name = "level", description = "Gérer le niveau d'une guilde")
+    @Component
+    class LevelCommand(private val guildService: GuildService) {
+        @Command(name = "set")
+        fun setLevel(
+            @Argument("guild") guildArg: GuildArg,
+            @Argument("level") levelArg: IntegerCommandArgument,
+            sender: CommandSender
+        ) {
+            guildService.setLevel(guildArg.get().id, levelArg.get())
+            sender.sendMessage("Opération effectuée - niveau de ${guildArg.get().name} défini à ${levelArg.get()}")
+        }
+
+        @Command(name = "get")
+        fun getLevel(@Argument("guild") guildArg: GuildArg, sender: CommandSender) {
+            val level = guildArg.get().level
+            val name = guildArg.get().name
+            sender.sendMessage("$name : niveau $level")
+        }
+
+        @Command(name = "addXp")
+        fun addXp(
+            @Argument("guild") guildArg: GuildArg,
+            @Argument("amount") xpArg: IntegerCommandArgument,
+            sender: CommandSender
+        ) {
+            guildService.addGuildXp(guildArg.get().id, xpArg.get())
+            sender.sendMessage("Opération effectuée - ${xpArg.get()} XP ajoutés à ${guildArg.get().name}")
+        }
+    }
+
 }
