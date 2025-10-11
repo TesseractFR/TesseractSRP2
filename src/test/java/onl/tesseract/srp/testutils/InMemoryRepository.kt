@@ -1,9 +1,11 @@
 package onl.tesseract.srp.testutils
 
 import onl.tesseract.lib.repository.Repository
+import onl.tesseract.srp.domain.campement.Campement
 import onl.tesseract.srp.domain.campement.CampementChunk
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.player.SrpPlayer
+import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
 import java.util.*
@@ -56,4 +58,21 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
     override fun findAll(): Collection<Guild> {
         return elements.values
     }
+}
+
+class CampementInMemoryRepository : CampementRepository, InMemoryRepository<Campement, UUID>() {
+
+    override fun idOf(entity: Campement): UUID = entity.ownerID
+
+    override fun deleteById(id: UUID) {
+        elements.remove(id)
+    }
+
+    override fun isChunkClaimed(x: Int, z: Int): Boolean =
+        elements.values.any { camp -> camp.chunks.any { it.x == x && it.z == z } }
+
+    override fun getCampementByChunk(x: Int, z: Int): Campement? =
+        elements.values.firstOrNull { camp -> camp.chunks.any { it.x == x && it.z == z } }
+
+    override fun findAll(): List<Campement> = elements.values.toList()
 }
