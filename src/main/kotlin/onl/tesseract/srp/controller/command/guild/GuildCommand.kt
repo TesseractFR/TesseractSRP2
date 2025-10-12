@@ -11,11 +11,12 @@ import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.command.argument.StringArg
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
-import onl.tesseract.srp.controller.command.argument.GuildArg
-import onl.tesseract.srp.controller.command.argument.GuildMembersArg
-import onl.tesseract.srp.controller.command.argument.GuildSpawnKindArg
+import onl.tesseract.srp.controller.command.argument.guild.GuildArg
+import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
+import onl.tesseract.srp.controller.command.argument.guild.GuildSpawnKindArg
 import onl.tesseract.srp.controller.menu.guild.GuildMenu
 import onl.tesseract.srp.domain.guild.GuildRole
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.guild.*
@@ -30,6 +31,9 @@ val NO_GUILD_MESSAGE: Component =
     Component.text("Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle avec ") +
             Component.text("/guild create <nom>", NamedTextColor.GOLD) +
             Component.text(".")
+private val GUILD_WORLD = SrpWorld.GuildWorld.bukkitName
+private val NOT_IN_GUILD_WORLD_MESSAGE =
+    GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
 
 @Command(name = "guild")
 @SpringComponent
@@ -43,8 +47,16 @@ class GuildCommand(
     private val teleportService: TeleportationService,
 ) : CommandContext(provider) {
 
+    private inline fun inGuildWorld(sender: Player, block: () -> Unit) {
+        if (sender.world.name != GUILD_WORLD) {
+            sender.sendMessage(NOT_IN_GUILD_WORLD_MESSAGE)
+            return
+        }
+        block()
+    }
+
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
-    fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
+    fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) = inGuildWorld(sender) {
         val (guild, errorReason) = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
 
         errorReason.map { reason ->
@@ -112,6 +124,7 @@ class GuildCommand(
         guildService.handleGuildInvitation(sender, target)
     }
 
+    @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")
     fun kick(sender: Player, @Argument("joueur") targetName: GuildMembersArg) {
         val role = guildService.getMemberRole(sender.uniqueId)
         if (role == null) {
@@ -181,23 +194,22 @@ class GuildCommand(
     }
 
     @Command(name = "claim", playerOnly = true, description = "Annexer un chunk pour la guilde.")
-    fun claimChunk(sender: Player) {
+    fun claimChunk(sender: Player) = inGuildWorld(sender) {
         guildService.handleClaimUnclaim(sender, sender.chunk, claim = true)
     }
 
     @Command(name = "unclaim", playerOnly = true, description = "Retirer un chunk de la guilde.")
-    fun unclaimChunk(sender: Player) {
+    fun unclaimChunk(sender: Player) = inGuildWorld(sender) {
         guildService.handleClaimUnclaim(sender, sender.chunk, claim = false)
     }
 
-    @Command(name = "border", description = "Afficher/Masquer les bordures de ta guilde.")
-    fun toggleGuildBorder(sender: Player) {
+    @Command(name = "border", playerOnly = true, description = "Afficher/Masquer les bordures de ta guilde.")
+    fun toggleGuildBorder(sender: Player) = inGuildWorld(sender) {
         val guild = guildService.getGuildByMember(sender.uniqueId)
         if (guild == null) {
             sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
             return
         }
-
         if (guildBorderRenderer.isShowingBorders(sender)) {
             guildBorderRenderer.clearBorders(sender)
             sender.sendMessage(GuildChatFormat + "Les bordures de ta guilde ont été masquées.")
@@ -208,7 +220,10 @@ class GuildCommand(
     }
 
     @Command(name = "setspawn", playerOnly = true, description = "Définir le spawn privé (défaut) ou visiteurs.")
-    fun setSpawn(sender: Player, @Argument("type", optional = true) kindArg: GuildSpawnKindArg?) {
+    fun setSpawn(
+        sender: Player,
+        @Argument("type", optional = true) kindArg: GuildSpawnKindArg?
+    ) = inGuildWorld(sender) {
         val guild = guildService.getGuildByMember(sender.uniqueId)
             ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
 
@@ -224,15 +239,14 @@ class GuildCommand(
             GuildSetSpawnResult.INVALID_WORLD ->
                 sender.sendMessage(GuildChatError + "Tu ne peux pas définir le spawn dans ce monde.")
             GuildSetSpawnResult.OUTSIDE_TERRITORY ->
-                sender.sendMessage(GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. Visualise les bordures avec "
+                sender.sendMessage(GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. " +
+                        "Visualise les bordures avec "
                         + Component.text("/guild border", NamedTextColor.GOLD)
                         + ".")
         }
     }
 
-    @Command(
-        name = "spawn",
-        playerOnly = true,
+    @Command(name = "spawn", playerOnly = true,
         description = "Se téléporter au spawn de sa guilde (sans argument) ou d’une autre guilde."
     )
     fun teleportToGuildSpawn(sender: Player, @Argument("guilde", optional = true) nameArg: GuildArg?) {

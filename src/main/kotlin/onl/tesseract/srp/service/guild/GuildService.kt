@@ -11,10 +11,7 @@ import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.guild.NO_GUILD_MESSAGE
 import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
 import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
-import onl.tesseract.srp.domain.guild.Guild
-import onl.tesseract.srp.domain.guild.GuildChunk
-import onl.tesseract.srp.domain.guild.GuildRank
-import onl.tesseract.srp.domain.guild.GuildRole
+import onl.tesseract.srp.domain.guild.*
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
@@ -86,6 +83,11 @@ open class GuildService(
         return true
     }
 
+    @Transactional
+    open fun deleteGuildAsStaff(guildId: Int): Boolean {
+        guildRepository.deleteById(guildId)
+        return true
+    }
 
     /**
      * Execute creation checks
@@ -273,18 +275,83 @@ open class GuildService(
     }
 
     @Transactional
+    open fun addMemberAsStaff(guildID: Int, playerID: UUID) {
+        val guild = getGuild(guildID)
+        if (guildRepository.findGuildByMember(playerID) != null)
+            return
+        guild.join(playerID)
+        guildRepository.save(guild)
+    }
+
+    @Transactional
+    open fun setMemberRoleAsStaff(
+        guildID: Int,
+        targetID: UUID,
+        newRole: GuildRole,
+        replacementLeaderID: UUID? = null
+    ): StaffSetRoleResult {
+        val guild = getGuild(guildID)
+        fun findMember(id: UUID) = guild.members.first { it.playerID == id }
+        val outcome: StaffSetRoleResult = when {
+            findMember(targetID).role == newRole -> StaffSetRoleResult.SAME_ROLE
+            newRole == GuildRole.Leader -> {
+                val oldLeader = findMember(guild.leaderId)
+                val target    = findMember(targetID)
+                oldLeader.role = GuildRole.Citoyen
+                target.role    = GuildRole.Leader
+                guild.leaderId = targetID
+                StaffSetRoleResult.SUCCESS
+            }
+            targetID == guild.leaderId -> when (replacementLeaderID) {
+                null      -> StaffSetRoleResult.NEED_NEW_LEADER
+                targetID  -> StaffSetRoleResult.NEW_LEADER_SAME_AS_TARGET
+                else      -> {
+                    val newLeader = findMember(replacementLeaderID)
+                    val oldLeader = findMember(targetID)
+                    newLeader.role = GuildRole.Leader
+                    oldLeader.role = newRole
+                    guild.leaderId = replacementLeaderID
+                    StaffSetRoleResult.SUCCESS
+                }
+            }
+            else -> {
+                findMember(targetID).role = newRole
+                StaffSetRoleResult.SUCCESS
+            }
+        }
+        if (outcome == StaffSetRoleResult.SUCCESS) {
+            guildRepository.save(guild)
+        }
+        return outcome
+    }
+
+    @Transactional
     open fun kickMember(guildID: Int, requesterID: UUID, targetID: UUID): KickResult {
         val guild = getGuild(guildID)
-
-        val result = when {
+        return when {
             guild.leaderId != requesterID -> KickResult.NotAuthorized
+            guild.members.none { it.playerID == targetID } -> KickResult.NotMember
+            guild.leaderId == targetID -> KickResult.CannotKickLeader
             else -> {
                 guild.removeMember(targetID)
                 guildRepository.save(guild)
                 KickResult.Success
             }
         }
-        return result
+    }
+
+    @Transactional
+    open fun kickMemberAsStaff(guildID: Int, targetID: UUID): KickResult {
+        val guild = getGuild(guildID)
+        return when {
+            guild.members.none { it.playerID == targetID } -> KickResult.NotMember
+            guild.leaderId == targetID -> KickResult.CannotKickLeader
+            else -> {
+                guild.removeMember(targetID)
+                guildRepository.save(guild)
+                KickResult.Success
+            }
+        }
     }
 
     @Transactional
@@ -497,11 +564,19 @@ open class GuildService(
         upgradeGuildLevel(guildId)
     }
 
+    @Transactional
+    open fun addLevel(guildId: Int, amount: Int) {
+        val guild = getGuild(guildId)
+        guild.level += amount.coerceAtLeast(0)
+        guild.xp = 0
+        guildRepository.save(guild)
+    }
+
     open fun setLevel(guildId: Int, level: Int) {
-        val g = getGuild(guildId)
-        g.level = level.coerceAtLeast(1)
-        g.xp = 0
-        guildRepository.save(g)
+        val guild = getGuild(guildId)
+        guild.level = level.coerceAtLeast(1)
+        guild.xp = 0
+        guildRepository.save(guild)
     }
 
     open fun upgradeGuildLevel(guildId: Int): Boolean {
@@ -547,6 +622,12 @@ open class GuildService(
         }
     }
 
+    open fun setRank(guildId: Int, rank: GuildRank) {
+        val g = getGuild(guildId)
+        g.rank = rank
+        guildRepository.save(g)
+    }
+
     companion object {
         const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
     }
@@ -573,3 +654,9 @@ enum class LeaveResult { Success, LeaderMustDelete }
 enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED }
 enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
 enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
+enum class StaffSetRoleResult {
+    SUCCESS,
+    SAME_ROLE,
+    NEED_NEW_LEADER,
+    NEW_LEADER_SAME_AS_TARGET
+}

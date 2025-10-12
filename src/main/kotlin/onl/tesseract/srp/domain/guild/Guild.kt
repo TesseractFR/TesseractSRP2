@@ -75,7 +75,7 @@ class Guild(
 }
 
 interface GuildMemberContainer {
-    val leaderId: UUID
+    var leaderId: UUID
     val members: List<GuildMember>
     val invitations: Set<UUID>
     val joinRequests: Set<UUID>
@@ -88,7 +88,7 @@ interface GuildMemberContainer {
 }
 
 class GuildMemberContainerImpl(
-    override val leaderId: UUID,
+    override var leaderId: UUID,
     members: List<GuildMember> = listOf(),
     invitations: Set<UUID> = setOf(),
     joinRequests: Set<UUID> = setOf(),
@@ -135,7 +135,7 @@ class GuildMemberContainerImpl(
 
 class GuildMember(
     val playerID: UUID,
-    val role: GuildRole,
+    var role: GuildRole,
 )
 
 data class GuildChunk(val x: Int, val z: Int) {
@@ -149,6 +149,9 @@ enum class GuildRole {
     Adjoint,
     Leader,
     ;
+
+    fun setRole(newRole: GuildRole): Boolean =
+        this != Leader && newRole != Leader
 
     fun canWithdrawMoney(): Boolean = this >= Adjoint
 }

@@ -36,3 +36,13 @@ val GuildChatFormat: Component = empty().color(NamedTextColor.GRAY)
     )
 val GuildChatError: Component = GuildChatFormat.color(NamedTextColor.RED)
 val GuildChatSuccess: Component = GuildChatFormat.color(NamedTextColor.GREEN)
+
+val StaffChatFormat: Component = empty().color(NamedTextColor.GRAY)
+    .append(
+        empty()
+            .append("[", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+            .append("Staff", NamedTextColor.RED)
+            .append("] ", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+    )
+val StaffChatError: Component = StaffChatFormat.color(NamedTextColor.RED)
+val StaffChatSuccess: Component = StaffChatFormat.color(NamedTextColor.GREEN)

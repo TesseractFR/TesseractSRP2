@@ -5,6 +5,7 @@ import onl.tesseract.lib.event.EventService
 import onl.tesseract.srp.domain.guild.Guild
 import onl.tesseract.srp.domain.guild.GuildChunk
 import onl.tesseract.srp.domain.guild.GuildRank
+import onl.tesseract.srp.domain.guild.GuildRole
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -846,6 +847,144 @@ class GuildServiceTest : SrpPlayerDomainTest {
         val updated = guildRepository.getById(aliceGuild.id)!!
         assertEquals(startLevel + 1, updated.level)
         assertEquals(0, updated.xp)
+    }
+
+    @Test
+    fun `Staff setRole - Promote member to Leader - Should set new leader and demote old leader to Citoyen`() {
+        // Given
+        val alice = player()
+        val aliceGuild = guild(alice)
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(aliceGuild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined, guildService.join(aliceGuild.id, bob.uniqueId))
+
+        val g0 = guildRepository.getById(aliceGuild.id)!!
+        assertEquals(GuildRole.Leader, g0.members.first { it.playerID == alice.uniqueId }.role)
+        assertEquals(GuildRole.Citoyen, g0.members.first { it.playerID == bob.uniqueId }.role)
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(aliceGuild.id, bob.uniqueId, GuildRole.Leader)
+
+        // Then
+        assertEquals(StaffSetRoleResult.SUCCESS, res)
+        val updated = guildRepository.getById(aliceGuild.id)!!
+        assertEquals(bob.uniqueId, updated.leaderId)
+        val oldLeader = updated.members.first { it.playerID == alice.uniqueId }
+        assertEquals(GuildRole.Citoyen, oldLeader.role)
+        val newLeaderMember = updated.members.first { it.playerID == bob.uniqueId }
+        assertEquals(GuildRole.Leader, newLeaderMember.role)
+    }
+
+    @Test
+    fun `Staff setRole - Demote current leader without replacement - Should require new leader`() {
+        // Given
+        val alice = player()
+        val guild = guild(alice)
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(guild.id, alice.uniqueId, GuildRole.Batisseur)
+
+        // Then
+        assertEquals(StaffSetRoleResult.NEED_NEW_LEADER, res)
+        val updated = guildRepository.getById(guild.id)!!
+        assertEquals(alice.uniqueId, updated.leaderId)
+        val leaderMember = updated.members.first { it.playerID == alice.uniqueId }
+        assertEquals(GuildRole.Leader, leaderMember.role)
+    }
+
+    @Test
+    fun `Staff setRole - Demote current leader with replacement - Should switch leader and set old leader role`() {
+        // Given
+        val alice = player()
+        val guild = guild(alice)
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(guild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined,  guildService.join(guild.id, bob.uniqueId))
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(
+            guildID = guild.id,
+            targetID = alice.uniqueId,
+            newRole = GuildRole.Batisseur,
+            replacementLeaderID = bob.uniqueId
+        )
+
+        // Then
+        assertEquals(StaffSetRoleResult.SUCCESS, res)
+        val updated = guildRepository.getById(guild.id)!!
+        assertEquals(bob.uniqueId, updated.leaderId)
+
+        val oldLeaderMember = updated.members.first { it.playerID == alice.uniqueId }
+        assertEquals(GuildRole.Batisseur, oldLeaderMember.role)
+
+        val newLeaderMember = updated.members.first { it.playerID == bob.uniqueId }
+        assertEquals(GuildRole.Leader, newLeaderMember.role)
+    }
+
+    @Test
+    fun `Staff setRole - Demote leader with replacement equal to target - Should return NEW_LEADER_SAME_AS_TARGET`() {
+        // Given
+        val alice = player()
+        val guild = guild(alice)
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(
+            guildID = guild.id,
+            targetID = alice.uniqueId,
+            newRole = GuildRole.Citoyen,
+            replacementLeaderID = alice.uniqueId
+        )
+
+        // Then
+        assertEquals(StaffSetRoleResult.NEW_LEADER_SAME_AS_TARGET, res)
+        val updated = guildRepository.getById(guild.id)!!
+        assertEquals(alice.uniqueId, updated.leaderId)
+        val leaderMember = updated.members.first { it.playerID == alice.uniqueId }
+        assertEquals(GuildRole.Leader, leaderMember.role)
+    }
+
+    @Test
+    fun `Staff setRole - Change regular member role - Should persist new role`() {
+        // Given
+        val alice = player()
+        val guild = guild(alice)
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(guild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined,  guildService.join(guild.id, bob.uniqueId))
+        val gBefore = guildRepository.getById(guild.id)!!
+        assertEquals(GuildRole.Citoyen, gBefore.members.first { it.playerID == bob.uniqueId }.role)
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(guild.id, bob.uniqueId, GuildRole.Adjoint)
+
+        // Then
+        assertEquals(StaffSetRoleResult.SUCCESS, res)
+        val updated = guildRepository.getById(guild.id)!!
+        val member = updated.members.first { it.playerID == bob.uniqueId }
+        assertEquals(GuildRole.Adjoint, member.role)
+        assertEquals(alice.uniqueId, updated.leaderId)
+    }
+
+    @Test
+    fun `Staff setRole - Try to put the same role for a player - Should return SAME_ROLE`() {
+        // Given
+        val alice = player()
+        val guild = guild(alice)
+        val bob = player()
+        assertEquals(InvitationResult.Invited, guildService.invite(guild.id, bob.uniqueId))
+        assertEquals(JoinResult.Joined,  guildService.join(guild.id, bob.uniqueId))
+        val gBefore = guildRepository.getById(guild.id)!!
+        assertEquals(GuildRole.Citoyen, gBefore.members.first { it.playerID == bob.uniqueId }.role)
+
+        // When
+        val res = guildService.setMemberRoleAsStaff(guild.id, bob.uniqueId, GuildRole.Citoyen)
+
+        // Then
+        assertEquals(StaffSetRoleResult.SAME_ROLE, res)
+        val updated = guildRepository.getById(guild.id)!!
+        val member = updated.members.first { it.playerID == bob.uniqueId }
+        assertEquals(GuildRole.Citoyen, member.role)
+        assertEquals(alice.uniqueId, updated.leaderId)
     }
 
     private fun guild(leader: SrpPlayer): Guild {
