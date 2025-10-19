@@ -7,20 +7,16 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 
-abstract class CustomStructureListener(val structureName: String) : Listener {
+abstract class CustomStructureListener() : Listener {
 
-    abstract protected fun onClick(player: Player);
+    abstract protected fun onClick(player: Player, furniture1: CustomFurniture) : Boolean;
 
     @EventHandler
     fun onPlayerInteract(e: PlayerInteractEvent){
         val block = e.clickedBlock ?: return
-        val item = CustomFurniture.byAlreadySpawned(block)?:return
+        val furniture = CustomFurniture.byAlreadySpawned(block)?:return
         if (e.hand != EquipmentSlot.HAND) return
+        e.isCancelled = onClick(e.player,furniture)
 
-        println(item.namespacedID)
-        if (item.namespacedID == structureName){
-            e.isCancelled = true
-            onClick(e.player)
-        }
     }
 }

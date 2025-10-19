@@ -22,6 +22,8 @@ commands:
     description: Ouvre le menu des grades
   missions:
     description: Ouvre le menu des job missions
+  missions2:
+    description: Ouvre le menu des job missions
   guild:
     permission: guild
     description: Gestion de guilde
