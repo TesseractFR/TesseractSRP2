@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.craftmanship
+package onl.tesseract.srp.domain.craftingjob
 
 import org.bukkit.Material
 

@@ -25,7 +25,6 @@ class CustomItemService(
         requireNotNull(customItem)
         val item = customItem.itemStack
         return item
-
     }
 
     fun createCustomItem(customItem: CustomItemStack): ItemStack {
