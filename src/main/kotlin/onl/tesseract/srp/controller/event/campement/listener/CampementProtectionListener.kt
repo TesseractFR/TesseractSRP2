@@ -12,9 +12,10 @@ import org.bukkit.Chunk
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.block.Container
-import org.bukkit.entity.LivingEntity
-import org.bukkit.entity.Player
+import org.bukkit.entity.*
 import org.bukkit.event.block.BlockIgniteEvent
+import org.bukkit.inventory.EquipmentSlot
+import org.bukkit.inventory.ItemStack
 import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
@@ -46,12 +47,16 @@ class CampementProtectionListener(val campementService: CampementService) : Chun
         return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,entity.chunk))
     }
 
+    override fun canHostileDamagePlayer(player: Player, attacker: Entity): Boolean {
+        return false
+    }
+
     override fun canUseBucket(player: Player, block: Block): Boolean {
         return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
     }
 
     override fun canPlayerIgnite(player: Player, block: Block): Boolean {
-        return false
+        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
     }
 
     override fun canNaturallyIgnite(block: Block, cause: BlockIgniteEvent.IgniteCause): Boolean {
@@ -59,7 +64,83 @@ class CampementProtectionListener(val campementService: CampementService) : Chun
     }
 
     override fun canUseRedstone(player: Player, block: Block): Boolean {
+        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk))
+    }
+
+    override fun canFishEntity(player: Player, entity: Entity): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.location.chunk))
+    }
+
+    override fun canSaddleEntity(player: Player, entity: LivingEntity): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.location.chunk))
+    }
+
+    override fun canMountEntity(player: Player, mount: Entity): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,mount.location.chunk))
+    }
+
+    override fun canEnterVehicle(player: Player, vehicle: Vehicle): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,vehicle.location.chunk))
+    }
+
+    override fun canBreakVehicle(player: Player, vehicle: Vehicle): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId, vehicle.location.chunk))
+    }
+
+    override fun canBreakHanging(player: Player, hanging: Hanging): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,hanging.location.chunk))
+    }
+
+    override fun canEditItemFrame(player: Player, frame: ItemFrame, action: ItemFrameAction): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,frame.location.chunk))
+    }
+
+    override fun canExplosionAffect(chunk: Chunk, source: Entity?, cause: ExplosionCause): Boolean {
         return false
+    }
+
+    override fun canLeashEntity(player: Player, entity: LivingEntity, action: LeashAction): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.chunk))
+    }
+
+    override fun canShearEntity(player: Player, entity: LivingEntity): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.chunk))
+    }
+
+    override fun canBucketMob(player: Player, entity: LivingEntity): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.chunk))
+    }
+
+    override fun canNameEntity(player: Player, entity: LivingEntity, newName: Component): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,entity.chunk))
+    }
+
+    override fun canEditArmorStand(
+        player: Player,
+        stand: ArmorStand,
+        action: ArmorStandAction,
+        slot: EquipmentSlot,
+        playerItem: ItemStack,
+        standItem: ItemStack
+    ): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,stand.chunk))
+    }
+
+    override fun canBreakArmorStand(player: Player, stand: ArmorStand): Boolean {
+        return (InteractionAllowResult.Deny !=
+                campementService.canInteractInChunk(player.uniqueId,stand.chunk))
     }
 
     override fun canOpenContainer(
@@ -69,5 +150,4 @@ class CampementProtectionListener(val campementService: CampementService) : Chun
         if(Material.ENDER_CHEST == container.type) return true
         return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,container.chunk))
     }
-
 }

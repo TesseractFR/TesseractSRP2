@@ -1,49 +1,91 @@
 package onl.tesseract.srp.controller.event.global.listener
 
+import io.papermc.paper.event.player.PlayerItemFrameChangeEvent
+import io.papermc.paper.event.player.PlayerNameEntityEvent
 import net.kyori.adventure.text.Component
+import onl.tesseract.srp.PLUGIN_INSTANCE
 import org.bukkit.Chunk
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.block.Container
-import org.bukkit.block.data.Openable
-import org.bukkit.block.data.Powerable
-import org.bukkit.block.data.type.Repeater
-import org.bukkit.block.data.type.Switch
-import org.bukkit.entity.LivingEntity
-import org.bukkit.entity.Monster
-import org.bukkit.entity.Player
-import org.bukkit.entity.Projectile
+import org.bukkit.entity.*
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.block.Action
-import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.event.block.BlockIgniteEvent
-import org.bukkit.event.block.BlockPlaceEvent
-import org.bukkit.event.entity.EntityDamageByEntityEvent
-import org.bukkit.event.player.PlayerBucketEmptyEvent
-import org.bukkit.event.player.PlayerBucketFillEvent
-import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.block.*
+import org.bukkit.event.entity.*
+import org.bukkit.event.hanging.HangingBreakByEntityEvent
+import org.bukkit.event.hanging.HangingBreakEvent
+import org.bukkit.event.player.*
+import org.bukkit.event.vehicle.VehicleDamageEvent
+import org.bukkit.event.vehicle.VehicleDestroyEvent
+import org.bukkit.inventory.EquipmentSlot
+import org.bukkit.inventory.ItemStack
+
+private val nameTagMsgOnce = mutableSetOf<String>()
+private val NEUTRAL_INTERACTABLES = setOf(
+    Material.CRAFTING_TABLE,
+    Material.CARTOGRAPHY_TABLE,
+    Material.LOOM,
+    Material.GRINDSTONE,
+    Material.STONECUTTER,
+    Material.FLETCHING_TABLE,
+    Material.SMITHING_TABLE,
+    Material.BELL,
+    Material.ENCHANTING_TABLE
+)
 
 abstract class ChunkProtectionListener : Listener {
     protected abstract fun hasProcessingResponsibility(chunk: Chunk) : Boolean
-
     protected abstract fun getProtectionMessage(chunk: Chunk): Component
-
     protected abstract fun canPlaceBlock(player: Player,block: Block) : Boolean
-
     protected abstract fun canBreakBlock(player: Player,block: Block) : Boolean
-
     protected abstract fun canOpenContainer(player: Player, container: Container) : Boolean
-
     protected abstract fun canDamagePassiveEntity(player: Player, entity: LivingEntity): Boolean
-
+    protected abstract fun canHostileDamagePlayer(player: Player, attacker: Entity): Boolean
     protected abstract fun canUseBucket(player: Player, block: Block): Boolean
-
     protected abstract fun canPlayerIgnite(player: Player, block: Block): Boolean
     protected abstract fun canNaturallyIgnite(block: Block, cause: BlockIgniteEvent.IgniteCause): Boolean
-
     protected abstract fun canUseRedstone(player: Player,block: Block): Boolean
+    protected abstract fun canFishEntity(player: Player, entity: Entity): Boolean
+    protected abstract fun canSaddleEntity(player: Player, entity: LivingEntity): Boolean
+    protected abstract fun canMountEntity(player: Player, mount: Entity): Boolean
+    protected abstract fun canEnterVehicle(player: Player, vehicle: Vehicle): Boolean
+    protected abstract fun canBreakVehicle(player: Player, vehicle: Vehicle): Boolean
+    protected abstract fun canBreakHanging(player: Player, hanging: Hanging): Boolean
+    protected abstract fun canEditItemFrame(player: Player, frame: ItemFrame, action: ItemFrameAction): Boolean
+    protected abstract fun canExplosionAffect(chunk: Chunk, source: Entity?, cause: ExplosionCause): Boolean
+    protected abstract fun canLeashEntity(player: Player, entity: LivingEntity, action: LeashAction): Boolean
+    protected abstract fun canShearEntity(player: Player, entity: LivingEntity): Boolean
+    protected abstract fun canBucketMob(player: Player, entity: LivingEntity): Boolean
+    protected abstract fun canNameEntity(player: Player, entity: LivingEntity, newName: Component): Boolean
+    protected abstract fun canEditArmorStand(player: Player, stand: ArmorStand, action: ArmorStandAction,
+        slot: EquipmentSlot, playerItem: ItemStack, standItem: ItemStack): Boolean
+    protected abstract fun canBreakArmorStand(player: Player, stand: ArmorStand): Boolean
 
+    enum class LeashAction { ATTACH, DETACH }
+    enum class ExplosionCause { ENTITY, BLOCK }
+    enum class ItemFrameAction { PLACE_ITEM, ROTATE_ITEM, REMOVE_ITEM }
+    enum class ArmorStandAction { EQUIP, UNEQUIP, SWAP}
+
+    protected open fun isSaddlable(entity: Entity): Boolean = when (entity) {
+        is Pig, is Strider, is Horse, is Donkey, is Mule, is Camel -> true
+        else -> false
+    }
+
+    protected open fun isLivingMount(entity: Entity): Boolean = when (entity) {
+        is Horse, is Donkey, is Mule, is Camel, is Pig, is Strider -> true
+        else -> false
+    }
+
+    protected open fun canInteractWithBlock(player: Player, block: Block): Boolean {
+        if (block.type in NEUTRAL_INTERACTABLES) return true
+        val state = block.state
+        return if (state is Container) {
+            canOpenContainer(player, state)
+        } else {
+            canUseRedstone(player, block)
+        }
+    }
 
     @EventHandler
     fun onPlayerPlaceBlock(event: BlockPlaceEvent){
@@ -76,10 +118,33 @@ abstract class ChunkProtectionListener : Listener {
 
     @EventHandler
     fun onEntityDamagePassive(event: EntityDamageByEntityEvent) {
-        if (event.entity is Player || event.entity is Monster) return
-        if (!hasProcessingResponsibility(event.entity.chunk)) return
-        if (!canDamagePassiveEntity(event.damager as Player, event.entity as LivingEntity)) {
-            event.damager.sendMessage { getProtectionMessage(event.entity.chunk) }
+        val victim = event.entity
+        if (victim !is LivingEntity || victim is Player || victim is Monster) return
+        if (!hasProcessingResponsibility(victim.chunk)) return
+        val player: Player? = when (val d = event.damager) {
+            is Player -> d
+            is Projectile -> d.shooter as? Player
+            else -> null
+        }
+        if (player != null && !canDamagePassiveEntity(player, victim)) {
+            player.sendMessage { getProtectionMessage(victim.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onHostileDamagesPlayer(event: EntityDamageByEntityEvent) {
+        val player = event.entity as? Player ?: return
+        val attacker: Entity = when (val d = event.damager) {
+            is Projectile -> d.shooter as? Entity ?: d
+            else -> d
+        }
+        val chunk = player.location.chunk
+        val isHostile = attacker is Monster || attacker is EnderDragon
+        if (!hasProcessingResponsibility(chunk) || !isHostile) {
+            return
+        }
+        if (!canHostileDamagePlayer(player, attacker)) {
             event.isCancelled = true
         }
     }
@@ -102,59 +167,379 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
+    private fun handleIgnitionDecision(
+        block: Block,
+        player: Player?,
+        naturalCause: BlockIgniteEvent.IgniteCause?
+    ): Boolean {
+        return if (player != null) {
+            canPlayerIgnite(player, block)
+        } else {
+            canNaturallyIgnite(block, naturalCause ?: BlockIgniteEvent.IgniteCause.EXPLOSION)
+        }
+    }
+
     @EventHandler
-    fun onFlintAndSteelIgnite(event: BlockIgniteEvent) {
-        if (!hasProcessingResponsibility(event.block.chunk)) return
-        val player: Player? = when (val e = event.ignitingEntity) {
+    fun onIgnite(event: BlockIgniteEvent) {
+        val chunk = event.block.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        val player = when (val e = event.ignitingEntity) {
             is Player -> e
             is Projectile -> e.shooter as? Player
             else -> null
         }
-        val allowed = if (player != null) {
-            canPlayerIgnite(player, event.block)
-        } else {
-            canNaturallyIgnite(event.block, event.cause)
-        }
+        val allowed = handleIgnitionDecision(event.block, player, event.cause)
         if (!allowed) {
-            player?.sendMessage { getProtectionMessage(event.block.chunk) }
+            player?.sendMessage { getProtectionMessage(chunk) }
             event.isCancelled = true
         }
     }
 
     @EventHandler
-    fun onRedstoneUse(event: PlayerInteractEvent) {
-        if (event.action != Action.RIGHT_CLICK_BLOCK) return
-        val block = event.clickedBlock ?: return
-
-        val data = block.blockData
-        val isRedstoneInteractive =
-            data is Switch ||
-                    data is Powerable ||
-                    data is Openable ||
-                    data is Repeater ||
-                    data is Comparator<*>
-
-        if (isRedstoneInteractive
-            && hasProcessingResponsibility(block.chunk)
-            && !canUseRedstone(event.player, block)
-        ) {
-            event.player.sendMessage { getProtectionMessage(block.chunk) }
+    fun onTntPrime(event: TNTPrimeEvent) {
+        val block = event.block
+        val chunk = block.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        val player = when (val e = event.primingEntity) {
+            is Player -> e
+            is Projectile -> e.shooter as? Player
+            else -> null
+        }
+        val cause = when (event.cause) {
+            TNTPrimeEvent.PrimeCause.FIRE        -> BlockIgniteEvent.IgniteCause.SPREAD
+            TNTPrimeEvent.PrimeCause.REDSTONE    -> BlockIgniteEvent.IgniteCause.SPREAD
+            TNTPrimeEvent.PrimeCause.PLAYER      -> BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL
+            TNTPrimeEvent.PrimeCause.EXPLOSION   -> BlockIgniteEvent.IgniteCause.EXPLOSION
+            TNTPrimeEvent.PrimeCause.PROJECTILE  -> BlockIgniteEvent.IgniteCause.FIREBALL
+            TNTPrimeEvent.PrimeCause.BLOCK_BREAK -> BlockIgniteEvent.IgniteCause.SPREAD
+            TNTPrimeEvent.PrimeCause.DISPENSER   -> BlockIgniteEvent.IgniteCause.SPREAD
+        }
+        if (!handleIgnitionDecision(block, player, cause)) {
+            player?.sendMessage { getProtectionMessage(chunk) }
             event.isCancelled = true
         }
     }
 
     @EventHandler
-    fun onRedstonePressurePlate(event: PlayerInteractEvent) {
-        if (event.action != Action.PHYSICAL) return
-        val block = event.clickedBlock ?: return
-        val shouldCancel =
-            hasProcessingResponsibility(block.chunk) &&
-                    isPressurePlate(block.type) &&
-                    !canUseRedstone(event.player, block)
-        if (shouldCancel) {
-            event.player.sendMessage { getProtectionMessage(block.chunk) }
+    fun onAnyExplosionDamageEntity(event: EntityDamageEvent) {
+        val cause = event.cause
+        if (cause != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION &&
+            cause != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) return
+        val victimChunk = event.entity.location.chunk
+        if (!hasProcessingResponsibility(victimChunk)) return
+        val sourceEntity: Entity? = (event as? EntityDamageByEntityEvent)?.damager
+        val explosionCause = if (cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION)
+            ExplosionCause.ENTITY else ExplosionCause.BLOCK
+        if (!canExplosionAffect(victimChunk, sourceEntity, explosionCause)) {
             event.isCancelled = true
         }
     }
-    private fun isPressurePlate(type: Material): Boolean = type.name.endsWith("_PRESSURE_PLATE")
+
+    @EventHandler
+    fun onPlayerBlockInteract(event: PlayerInteractEvent) {
+        if (event.hand == EquipmentSlot.OFF_HAND || !event.hasBlock() || event.clickedBlock == null) return
+        val block = event.clickedBlock!!
+        val isRelevantAction =
+            event.action == Action.RIGHT_CLICK_BLOCK || event.action == Action.PHYSICAL
+        val isTurtleEgg = block.type == Material.TURTLE_EGG
+
+        if (isRelevantAction && hasProcessingResponsibility(block.chunk)) {
+            if (isTurtleEgg) {
+                event.isCancelled = true
+                return
+            }
+            if (!canInteractWithBlock(event.player, block)) {
+                event.player.sendMessage { getProtectionMessage(block.chunk) }
+                event.isCancelled = true
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerFishEntity(event: PlayerFishEvent) {
+        var chunkForMsg: Chunk? = null
+        if (event.state == PlayerFishEvent.State.CAUGHT_ENTITY && event.caught != null) {
+            val chunk = event.caught!!.location.chunk
+            if (hasProcessingResponsibility(chunk) && !canFishEntity(event.player, event.caught!!)) {
+                chunkForMsg = chunk
+            }
+        }
+        if (chunkForMsg != null) {
+            event.player.sendMessage { getProtectionMessage(chunkForMsg) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onTurtleEggTrampleInteract(event: EntityInteractEvent) {
+        val block = event.block
+        if (block.type == Material.TURTLE_EGG && hasProcessingResponsibility(block.chunk)) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onTurtleEggTrampleChange(event: EntityChangeBlockEvent) {
+        val block = event.block
+        if (block.type == Material.TURTLE_EGG && hasProcessingResponsibility(block.chunk)) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onPlayerSaddleEntity(event: PlayerInteractEntityEvent) {
+        val entity = event.rightClicked
+        if (!hasProcessingResponsibility(entity.location.chunk) || !isSaddlable(entity)) return
+
+        val itemMain = event.player.inventory.itemInMainHand
+        val itemOff  = event.player.inventory.itemInOffHand
+        val holdingSaddle = itemMain.type == Material.SADDLE || itemOff.type == Material.SADDLE
+        if (!holdingSaddle) return
+
+        if (!canSaddleEntity(event.player, entity as LivingEntity)) {
+            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onEntityMount(event: EntityMountEvent) {
+        val passenger = event.entity
+        val mount = event.mount
+        if (passenger !is Player || !hasProcessingResponsibility(mount.location.chunk) || !isLivingMount(mount)) return
+        if (!canMountEntity(passenger, mount)) {
+            passenger.sendMessage { getProtectionMessage(mount.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onVehicleEnter(event: org.bukkit.event.vehicle.VehicleEnterEvent) {
+        val vehicle = event.vehicle
+        val entered = event.entered
+        if (entered !is Player) return
+        if (!hasProcessingResponsibility(vehicle.location.chunk)) return
+        if (!canEnterVehicle(entered, vehicle)) {
+            entered.sendMessage { getProtectionMessage(vehicle.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    private fun handleVehicleBreak(attacker: Entity?, vehicle: Vehicle, cancel: () -> Unit) {
+        val player: Player = when (attacker) {
+            is Player -> attacker
+            is Projectile -> attacker.shooter as? Player
+            else -> null
+        } ?: return
+        if (!hasProcessingResponsibility(vehicle.location.chunk)) return
+        if (!canBreakVehicle(player, vehicle)) {
+            player.sendMessage { getProtectionMessage(vehicle.location.chunk) }
+            cancel()
+        }
+    }
+
+    @EventHandler
+    fun onVehicleDamage(event: VehicleDamageEvent) {
+        handleVehicleBreak(event.attacker, event.vehicle) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onVehicleDestroy(event: VehicleDestroyEvent) {
+        handleVehicleBreak(event.attacker, event.vehicle) {
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onHangingBreak(event: HangingBreakEvent) {
+        val hanging = event.entity
+        val chunk = hanging.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        val byEntity = event as? HangingBreakByEntityEvent
+        if (byEntity != null) {
+            val player = when (val remover = byEntity.remover) {
+                is Player -> remover
+                is Projectile -> remover.shooter as? Player
+                else -> null
+            }
+            if (player != null) {
+                if (!canBreakHanging(player, hanging)) {
+                    player.sendMessage { getProtectionMessage(chunk) }
+                    event.isCancelled = true
+                }
+                return
+            }
+        }
+    }
+
+    @EventHandler
+    fun onHitItemFrame(event: EntityDamageByEntityEvent) {
+        val frame = event.entity as? ItemFrame ?: return
+        val chunk = frame.location.chunk
+        val player = when (val d = event.damager) {
+            is Player -> d
+            is Projectile -> d.shooter as? Player
+            else -> null
+        }
+
+        if (player == null || !hasProcessingResponsibility(chunk)) {
+            return
+        }
+
+        if (!canEditItemFrame(player, frame, ItemFrameAction.REMOVE_ITEM)) {
+            player.sendMessage { getProtectionMessage(chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onItemFrameChangePaper(event: PlayerItemFrameChangeEvent) {
+        val frame = event.itemFrame
+        val chunk = frame.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+
+        val action = when (event.action) {
+            PlayerItemFrameChangeEvent.ItemFrameChangeAction.PLACE -> ItemFrameAction.PLACE_ITEM
+            PlayerItemFrameChangeEvent.ItemFrameChangeAction.ROTATE -> ItemFrameAction.ROTATE_ITEM
+            PlayerItemFrameChangeEvent.ItemFrameChangeAction.REMOVE -> ItemFrameAction.REMOVE_ITEM
+            null -> return
+        }
+        if (!canEditItemFrame(event.player, frame, action)) {
+            event.player.sendMessage { getProtectionMessage(chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onEntityExplode(event: EntityExplodeEvent) {
+        val source = event.entity
+        val originChunk = source.location.chunk
+        if (!hasProcessingResponsibility(originChunk)) return
+        if (!canExplosionAffect(originChunk, source, ExplosionCause.ENTITY)) {
+            event.isCancelled = true
+            return
+        }
+        event.blockList().removeIf { block ->
+            hasProcessingResponsibility(block.chunk) && !canExplosionAffect(block.chunk, source, ExplosionCause.ENTITY)
+        }
+    }
+
+    @EventHandler
+    fun onBlockExplode(event: BlockExplodeEvent) {
+        val originChunk = event.block.location.chunk
+        if (!hasProcessingResponsibility(originChunk)) return
+        if (!canExplosionAffect(originChunk, null, ExplosionCause.BLOCK)) {
+            event.isCancelled = true
+            return
+        }
+        event.blockList().removeIf { block ->
+            hasProcessingResponsibility(block.chunk) && !canExplosionAffect(block.chunk, null, ExplosionCause.BLOCK)
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    fun onPlayerLeashEntity(event: PlayerLeashEntityEvent) {
+        val entity = event.entity as? LivingEntity ?: return
+        if (!hasProcessingResponsibility(entity.location.chunk)) return
+        if (!canLeashEntity(event.player, entity, LeashAction.ATTACH)) {
+            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onPlayerTryUnleashEntity(event: PlayerInteractEntityEvent) {
+        if (event.hand == EquipmentSlot.OFF_HAND) return
+        val target : Entity = event.rightClicked
+        if (!hasProcessingResponsibility(target.location.chunk)) return
+        when (target) {
+            is LivingEntity -> {
+                if (target.isLeashed && !canLeashEntity(event.player, target, LeashAction.DETACH)) {
+                    event.player.sendMessage { getProtectionMessage(target.location.chunk) }
+                    event.isCancelled = true
+                }
+            }
+            is LeashHitch -> {
+                if (!canLeashEntity(event.player, event.player, LeashAction.DETACH)) {
+                    event.player.sendMessage { getProtectionMessage(target.location.chunk) }
+                    event.isCancelled = true
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerShear(event: PlayerShearEntityEvent) {
+        val entity = event.entity as? LivingEntity ?: return
+        if (!hasProcessingResponsibility(entity.location.chunk)) return
+        if (!canShearEntity(event.player, entity)) {
+            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onPlayerBucketEntity(event: PlayerBucketEntityEvent) {
+        val mob = event.entity as? LivingEntity ?: return
+        if (!hasProcessingResponsibility(mob.location.chunk)) return
+        if (!canBucketMob(event.player, mob)) {
+            event.player.sendMessage { getProtectionMessage(mob.location.chunk) }
+            event.isCancelled = true
+        }
+    }
+
+    @EventHandler
+    fun onPlayerNameEntity(event: PlayerNameEntityEvent) {
+        val target = event.entity
+        val newName = event.name ?: return
+        val chunk = target.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        if (!canNameEntity(event.player, target, newName)) {
+            event.name = null
+            event.isPersistent = false
+            event.isCancelled = true
+            val key = "${event.player.uniqueId}:${target.entityId}:${newName}"
+            if (nameTagMsgOnce.add(key)) {
+                event.player.sendMessage { getProtectionMessage(chunk) }
+                org.bukkit.Bukkit.getScheduler().runTaskLater(
+                    PLUGIN_INSTANCE, Runnable { nameTagMsgOnce.remove(key) }, 1L
+                )
+            }
+        }
+    }
+
+    @EventHandler
+    fun onArmorStandEdit(event: PlayerArmorStandManipulateEvent) {
+        val stand = event.rightClicked
+        val chunk = stand.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        val action = when {
+            !event.playerItem.type.isAir && event.armorStandItem.type.isAir -> ArmorStandAction.EQUIP
+            event.playerItem.type.isAir && !event.armorStandItem.type.isAir -> ArmorStandAction.UNEQUIP
+            else -> ArmorStandAction.SWAP
+        }
+        if (!canEditArmorStand(event.player, stand, action, event.slot, event.playerItem, event.armorStandItem)) {
+            event.isCancelled = true
+            event.player.sendMessage { getProtectionMessage(chunk) }
+        }
+    }
+
+    @EventHandler
+    fun onArmorStandDamage(event: EntityDamageByEntityEvent) {
+        val stand = event.entity as? ArmorStand ?: return
+        val chunk = stand.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        val player = when (val d = event.damager) {
+            is Player -> d
+            is Projectile -> d.shooter as? Player
+            else -> null
+        }
+        if (player == null || !canBreakArmorStand(player, stand)) {
+            event.isCancelled = true
+            player?.sendMessage { getProtectionMessage(chunk) }
+        }
+    }
+
 }
