@@ -9,6 +9,7 @@ import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.block.Container
 import org.bukkit.entity.*
+import org.bukkit.event.Cancellable
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.*
@@ -77,6 +78,18 @@ abstract class ChunkProtectionListener : Listener {
         else -> false
     }
 
+    private fun asPlayer(actor: Any?): Player? = when (actor) {
+        is Player -> actor
+        is Projectile -> actor.shooter as? Player
+        is Entity -> null
+        else -> null
+    }
+
+    private fun deny(player: Player?, chunk: Chunk, event: Cancellable) {
+        player?.sendMessage { getProtectionMessage(chunk) }
+        event.isCancelled = true
+    }
+
     protected open fun canInteractWithBlock(player: Player, block: Block): Boolean {
         if (block.type in NEUTRAL_INTERACTABLES) return true
         val state = block.state
@@ -91,8 +104,7 @@ abstract class ChunkProtectionListener : Listener {
     fun onPlayerPlaceBlock(event: BlockPlaceEvent){
         if(!hasProcessingResponsibility(event.block.chunk))return
         if(!canPlaceBlock(event.player,event.block)){
-            event.player.sendMessage { getProtectionMessage(event.block.chunk) }
-            event.isCancelled = true
+            deny(event.player, event.block.chunk, event)
         }
     }
 
@@ -101,18 +113,17 @@ abstract class ChunkProtectionListener : Listener {
         if(!event.hasBlock()
             || event.clickedBlock == null
             || event.clickedBlock!!.state !is Container)return
+        if(!hasProcessingResponsibility(event.clickedBlock!!.chunk))return
         if(!canOpenContainer(event.player,event.clickedBlock!!.state as Container)){
-                event.player.sendMessage { getProtectionMessage(event.clickedBlock!!.chunk) }
-                event.isCancelled = true
-            }
+            deny(event.player, event.clickedBlock!!.chunk, event)
+        }
     }
 
     @EventHandler
     fun onBlockBreak(event: BlockBreakEvent) {
         if(!hasProcessingResponsibility(event.block.chunk))return
         if(!canBreakBlock(event.player,event.block)){
-            event.player.sendMessage { getProtectionMessage(event.block.chunk) }
-            event.isCancelled = true
+            deny(event.player, event.block.chunk, event)
         }
     }
 
@@ -121,14 +132,9 @@ abstract class ChunkProtectionListener : Listener {
         val victim = event.entity
         if (victim !is LivingEntity || victim is Player || victim is Monster) return
         if (!hasProcessingResponsibility(victim.chunk)) return
-        val player: Player? = when (val d = event.damager) {
-            is Player -> d
-            is Projectile -> d.shooter as? Player
-            else -> null
-        }
+        val player = asPlayer(event.damager)
         if (player != null && !canDamagePassiveEntity(player, victim)) {
-            player.sendMessage { getProtectionMessage(victim.chunk) }
-            event.isCancelled = true
+            deny(player, victim.chunk, event)
         }
     }
 
@@ -153,8 +159,7 @@ abstract class ChunkProtectionListener : Listener {
     fun onBucketEmpty(event: PlayerBucketEmptyEvent) {
         if (!hasProcessingResponsibility(event.block.chunk)) return
         if (!canUseBucket(event.player, event.block)) {
-            event.player.sendMessage { getProtectionMessage(event.block.chunk) }
-            event.isCancelled = true
+            deny(event.player, event.block.chunk, event)
         }
     }
 
@@ -162,8 +167,7 @@ abstract class ChunkProtectionListener : Listener {
     fun onBucketFill(event: PlayerBucketFillEvent) {
         if (!hasProcessingResponsibility(event.block.chunk)) return
         if (!canUseBucket(event.player, event.block)) {
-            event.player.sendMessage { getProtectionMessage(event.block.chunk) }
-            event.isCancelled = true
+            deny(event.player, event.block.chunk, event)
         }
     }
 
@@ -183,15 +187,14 @@ abstract class ChunkProtectionListener : Listener {
     fun onIgnite(event: BlockIgniteEvent) {
         val chunk = event.block.chunk
         if (!hasProcessingResponsibility(chunk)) return
-        val player = when (val e = event.ignitingEntity) {
-            is Player -> e
-            is Projectile -> e.shooter as? Player
-            else -> null
-        }
-        val allowed = handleIgnitionDecision(event.block, player, event.cause)
+        val player = asPlayer(event.ignitingEntity)
+        val allowed = handleIgnitionDecision(
+            block = event.block,
+            player = player,
+            naturalCause = event.cause
+        )
         if (!allowed) {
-            player?.sendMessage { getProtectionMessage(chunk) }
-            event.isCancelled = true
+            deny(player, event.block.chunk, event)
         }
     }
 
@@ -200,11 +203,8 @@ abstract class ChunkProtectionListener : Listener {
         val block = event.block
         val chunk = block.chunk
         if (!hasProcessingResponsibility(chunk)) return
-        val player = when (val e = event.primingEntity) {
-            is Player -> e
-            is Projectile -> e.shooter as? Player
-            else -> null
-        }
+
+        val player = asPlayer(event.primingEntity)
         val cause = when (event.cause) {
             TNTPrimeEvent.PrimeCause.FIRE        -> BlockIgniteEvent.IgniteCause.SPREAD
             TNTPrimeEvent.PrimeCause.REDSTONE    -> BlockIgniteEvent.IgniteCause.SPREAD
@@ -214,9 +214,13 @@ abstract class ChunkProtectionListener : Listener {
             TNTPrimeEvent.PrimeCause.BLOCK_BREAK -> BlockIgniteEvent.IgniteCause.SPREAD
             TNTPrimeEvent.PrimeCause.DISPENSER   -> BlockIgniteEvent.IgniteCause.SPREAD
         }
-        if (!handleIgnitionDecision(block, player, cause)) {
-            player?.sendMessage { getProtectionMessage(chunk) }
-            event.isCancelled = true
+        val allowed = handleIgnitionDecision(
+            block = block,
+            player = asPlayer(event.primingEntity),
+            naturalCause = cause
+        )
+        if (!allowed) {
+            deny(player, event.block.chunk, event)
         }
     }
 
@@ -249,24 +253,18 @@ abstract class ChunkProtectionListener : Listener {
                 return
             }
             if (!canInteractWithBlock(event.player, block)) {
-                event.player.sendMessage { getProtectionMessage(block.chunk) }
-                event.isCancelled = true
+                deny(event.player, block.chunk, event)
             }
         }
     }
 
     @EventHandler
     fun onPlayerFishEntity(event: PlayerFishEvent) {
-        var chunkForMsg: Chunk? = null
-        if (event.state == PlayerFishEvent.State.CAUGHT_ENTITY && event.caught != null) {
-            val chunk = event.caught!!.location.chunk
-            if (hasProcessingResponsibility(chunk) && !canFishEntity(event.player, event.caught!!)) {
-                chunkForMsg = chunk
-            }
-        }
-        if (chunkForMsg != null) {
-            event.player.sendMessage { getProtectionMessage(chunkForMsg) }
-            event.isCancelled = true
+        if (event.state != PlayerFishEvent.State.CAUGHT_ENTITY || event.caught == null) return
+        val chunk = event.caught!!.location.chunk
+        if (!hasProcessingResponsibility(chunk)) return
+        if (!canFishEntity(event.player, event.caught!!)) {
+            deny(event.player, chunk, event)
         }
     }
 
@@ -297,8 +295,7 @@ abstract class ChunkProtectionListener : Listener {
         if (!holdingSaddle) return
 
         if (!canSaddleEntity(event.player, entity as LivingEntity)) {
-            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
-            event.isCancelled = true
+            deny(event.player, entity.location.chunk, event)
         }
     }
 
@@ -308,8 +305,7 @@ abstract class ChunkProtectionListener : Listener {
         val mount = event.mount
         if (passenger !is Player || !hasProcessingResponsibility(mount.location.chunk) || !isLivingMount(mount)) return
         if (!canMountEntity(passenger, mount)) {
-            passenger.sendMessage { getProtectionMessage(mount.location.chunk) }
-            event.isCancelled = true
+            deny(passenger, mount.location.chunk, event)
         }
     }
 
@@ -320,36 +316,26 @@ abstract class ChunkProtectionListener : Listener {
         if (entered !is Player) return
         if (!hasProcessingResponsibility(vehicle.location.chunk)) return
         if (!canEnterVehicle(entered, vehicle)) {
-            entered.sendMessage { getProtectionMessage(vehicle.location.chunk) }
-            event.isCancelled = true
+            deny(entered, vehicle.location.chunk, event)
         }
     }
 
-    private fun handleVehicleBreak(attacker: Entity?, vehicle: Vehicle, cancel: () -> Unit) {
-        val player: Player = when (attacker) {
-            is Player -> attacker
-            is Projectile -> attacker.shooter as? Player
-            else -> null
-        } ?: return
+    private fun handleVehicleBreak(attacker: Entity?, vehicle: Vehicle, event: Cancellable) {
+        val player = asPlayer(attacker) ?: return
         if (!hasProcessingResponsibility(vehicle.location.chunk)) return
         if (!canBreakVehicle(player, vehicle)) {
-            player.sendMessage { getProtectionMessage(vehicle.location.chunk) }
-            cancel()
+            deny(player, vehicle.location.chunk, event)
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onVehicleDamage(event: VehicleDamageEvent) {
-        handleVehicleBreak(event.attacker, event.vehicle) {
-            event.isCancelled = true
-        }
+        handleVehicleBreak(event.attacker, event.vehicle, event)
     }
 
     @EventHandler
     fun onVehicleDestroy(event: VehicleDestroyEvent) {
-        handleVehicleBreak(event.attacker, event.vehicle) {
-            event.isCancelled = true
-        }
+        handleVehicleBreak(event.attacker, event.vehicle, event)
     }
 
     @EventHandler
@@ -358,19 +344,10 @@ abstract class ChunkProtectionListener : Listener {
         val chunk = hanging.location.chunk
         if (!hasProcessingResponsibility(chunk)) return
         val byEntity = event as? HangingBreakByEntityEvent
-        if (byEntity != null) {
-            val player = when (val remover = byEntity.remover) {
-                is Player -> remover
-                is Projectile -> remover.shooter as? Player
-                else -> null
-            }
-            if (player != null) {
-                if (!canBreakHanging(player, hanging)) {
-                    player.sendMessage { getProtectionMessage(chunk) }
-                    event.isCancelled = true
-                }
-                return
-            }
+        val player = asPlayer(byEntity?.remover)
+        if (byEntity == null || player == null) return
+        if (!canBreakHanging(player, hanging)) {
+            deny(player, chunk, event)
         }
     }
 
@@ -378,19 +355,12 @@ abstract class ChunkProtectionListener : Listener {
     fun onHitItemFrame(event: EntityDamageByEntityEvent) {
         val frame = event.entity as? ItemFrame ?: return
         val chunk = frame.location.chunk
-        val player = when (val d = event.damager) {
-            is Player -> d
-            is Projectile -> d.shooter as? Player
-            else -> null
-        }
-
+        val player = asPlayer(event.damager)
         if (player == null || !hasProcessingResponsibility(chunk)) {
             return
         }
-
         if (!canEditItemFrame(player, frame, ItemFrameAction.REMOVE_ITEM)) {
-            player.sendMessage { getProtectionMessage(chunk) }
-            event.isCancelled = true
+            deny(player, chunk, event)
         }
     }
 
@@ -407,8 +377,7 @@ abstract class ChunkProtectionListener : Listener {
             null -> return
         }
         if (!canEditItemFrame(event.player, frame, action)) {
-            event.player.sendMessage { getProtectionMessage(chunk) }
-            event.isCancelled = true
+            deny(event.player, chunk, event)
         }
     }
 
@@ -444,8 +413,7 @@ abstract class ChunkProtectionListener : Listener {
         val entity = event.entity as? LivingEntity ?: return
         if (!hasProcessingResponsibility(entity.location.chunk)) return
         if (!canLeashEntity(event.player, entity, LeashAction.ATTACH)) {
-            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
-            event.isCancelled = true
+            deny(event.player, entity.location.chunk, event)
         }
     }
 
@@ -457,14 +425,12 @@ abstract class ChunkProtectionListener : Listener {
         when (target) {
             is LivingEntity -> {
                 if (target.isLeashed && !canLeashEntity(event.player, target, LeashAction.DETACH)) {
-                    event.player.sendMessage { getProtectionMessage(target.location.chunk) }
-                    event.isCancelled = true
+                    deny(event.player, target.location.chunk, event)
                 }
             }
             is LeashHitch -> {
                 if (!canLeashEntity(event.player, event.player, LeashAction.DETACH)) {
-                    event.player.sendMessage { getProtectionMessage(target.location.chunk) }
-                    event.isCancelled = true
+                    deny(event.player, target.location.chunk, event)
                 }
             }
         }
@@ -475,8 +441,7 @@ abstract class ChunkProtectionListener : Listener {
         val entity = event.entity as? LivingEntity ?: return
         if (!hasProcessingResponsibility(entity.location.chunk)) return
         if (!canShearEntity(event.player, entity)) {
-            event.player.sendMessage { getProtectionMessage(entity.location.chunk) }
-            event.isCancelled = true
+            deny(event.player, entity.location.chunk, event)
         }
     }
 
@@ -485,8 +450,7 @@ abstract class ChunkProtectionListener : Listener {
         val mob = event.entity as? LivingEntity ?: return
         if (!hasProcessingResponsibility(mob.location.chunk)) return
         if (!canBucketMob(event.player, mob)) {
-            event.player.sendMessage { getProtectionMessage(mob.location.chunk) }
-            event.isCancelled = true
+            deny(event.player, mob.location.chunk, event)
         }
     }
 
@@ -499,10 +463,9 @@ abstract class ChunkProtectionListener : Listener {
         if (!canNameEntity(event.player, target, newName)) {
             event.name = null
             event.isPersistent = false
-            event.isCancelled = true
+            deny(event.player, chunk, event)
             val key = "${event.player.uniqueId}:${target.entityId}:${newName}"
             if (nameTagMsgOnce.add(key)) {
-                event.player.sendMessage { getProtectionMessage(chunk) }
                 org.bukkit.Bukkit.getScheduler().runTaskLater(
                     PLUGIN_INSTANCE, Runnable { nameTagMsgOnce.remove(key) }, 1L
                 )
@@ -521,8 +484,7 @@ abstract class ChunkProtectionListener : Listener {
             else -> ArmorStandAction.SWAP
         }
         if (!canEditArmorStand(event.player, stand, action, event.slot, event.playerItem, event.armorStandItem)) {
-            event.isCancelled = true
-            event.player.sendMessage { getProtectionMessage(chunk) }
+            deny(event.player, chunk, event)
         }
     }
 
@@ -531,14 +493,9 @@ abstract class ChunkProtectionListener : Listener {
         val stand = event.entity as? ArmorStand ?: return
         val chunk = stand.location.chunk
         if (!hasProcessingResponsibility(chunk)) return
-        val player = when (val d = event.damager) {
-            is Player -> d
-            is Projectile -> d.shooter as? Player
-            else -> null
-        }
+        val player = asPlayer(event.damager)
         if (player == null || !canBreakArmorStand(player, stand)) {
-            event.isCancelled = true
-            player?.sendMessage { getProtectionMessage(chunk) }
+            deny(player, chunk, event)
         }
     }
 
