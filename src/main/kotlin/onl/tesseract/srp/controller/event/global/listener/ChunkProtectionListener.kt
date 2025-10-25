@@ -100,7 +100,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerPlaceBlock(event: BlockPlaceEvent){
         if(!hasProcessingResponsibility(event.block.chunk))return
         if(!canPlaceBlock(event.player,event.block)){
@@ -108,7 +108,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerOpenContainer(event: PlayerInteractEvent) {
         if(!event.hasBlock()
             || event.clickedBlock == null
@@ -119,7 +119,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockBreak(event: BlockBreakEvent) {
         if(!hasProcessingResponsibility(event.block.chunk))return
         if(!canBreakBlock(event.player,event.block)){
@@ -127,7 +127,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityDamagePassive(event: EntityDamageByEntityEvent) {
         val victim = event.entity
         if (victim !is LivingEntity || victim is Player || victim is Monster) return
@@ -138,7 +138,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onHostileDamagesPlayer(event: EntityDamageByEntityEvent) {
         val player = event.entity as? Player ?: return
         val attacker: Entity = when (val d = event.damager) {
@@ -155,7 +155,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBucketEmpty(event: PlayerBucketEmptyEvent) {
         if (!hasProcessingResponsibility(event.block.chunk)) return
         if (!canUseBucket(event.player, event.block)) {
@@ -163,7 +163,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBucketFill(event: PlayerBucketFillEvent) {
         if (!hasProcessingResponsibility(event.block.chunk)) return
         if (!canUseBucket(event.player, event.block)) {
@@ -183,7 +183,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onIgnite(event: BlockIgniteEvent) {
         val chunk = event.block.chunk
         if (!hasProcessingResponsibility(chunk)) return
@@ -198,7 +198,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onTntPrime(event: TNTPrimeEvent) {
         val block = event.block
         val chunk = block.chunk
@@ -224,7 +224,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onAnyExplosionDamageEntity(event: EntityDamageEvent) {
         val cause = event.cause
         if (cause != EntityDamageEvent.DamageCause.ENTITY_EXPLOSION &&
@@ -239,7 +239,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerBlockInteract(event: PlayerInteractEvent) {
         if (event.hand == EquipmentSlot.OFF_HAND || !event.hasBlock() || event.clickedBlock == null) return
         val block = event.clickedBlock!!
@@ -258,7 +258,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerFishEntity(event: PlayerFishEvent) {
         if (event.state != PlayerFishEvent.State.CAUGHT_ENTITY || event.caught == null) return
         val chunk = event.caught!!.location.chunk
@@ -268,7 +268,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onTurtleEggTrampleInteract(event: EntityInteractEvent) {
         val block = event.block
         if (block.type == Material.TURTLE_EGG && hasProcessingResponsibility(block.chunk)) {
@@ -276,7 +276,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onTurtleEggTrampleChange(event: EntityChangeBlockEvent) {
         val block = event.block
         if (block.type == Material.TURTLE_EGG && hasProcessingResponsibility(block.chunk)) {
@@ -284,7 +284,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerSaddleEntity(event: PlayerInteractEntityEvent) {
         val entity = event.rightClicked
         if (!hasProcessingResponsibility(entity.location.chunk) || !isSaddlable(entity)) return
@@ -299,7 +299,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityMount(event: EntityMountEvent) {
         val passenger = event.entity
         val mount = event.mount
@@ -309,7 +309,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onVehicleEnter(event: org.bukkit.event.vehicle.VehicleEnterEvent) {
         val vehicle = event.vehicle
         val entered = event.entered
@@ -333,12 +333,12 @@ abstract class ChunkProtectionListener : Listener {
         handleVehicleBreak(event.attacker, event.vehicle, event)
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onVehicleDestroy(event: VehicleDestroyEvent) {
         handleVehicleBreak(event.attacker, event.vehicle, event)
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onHangingBreak(event: HangingBreakEvent) {
         val hanging = event.entity
         val chunk = hanging.location.chunk
@@ -351,7 +351,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onHitItemFrame(event: EntityDamageByEntityEvent) {
         val frame = event.entity as? ItemFrame ?: return
         val chunk = frame.location.chunk
@@ -364,7 +364,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onItemFrameChangePaper(event: PlayerItemFrameChangeEvent) {
         val frame = event.itemFrame
         val chunk = frame.location.chunk
@@ -381,7 +381,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onEntityExplode(event: EntityExplodeEvent) {
         val source = event.entity
         val originChunk = source.location.chunk
@@ -395,7 +395,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onBlockExplode(event: BlockExplodeEvent) {
         val originChunk = event.block.location.chunk
         if (!hasProcessingResponsibility(originChunk)) return
@@ -417,7 +417,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerTryUnleashEntity(event: PlayerInteractEntityEvent) {
         if (event.hand == EquipmentSlot.OFF_HAND) return
         val target : Entity = event.rightClicked
@@ -436,7 +436,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerShear(event: PlayerShearEntityEvent) {
         val entity = event.entity as? LivingEntity ?: return
         if (!hasProcessingResponsibility(entity.location.chunk)) return
@@ -445,7 +445,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerBucketEntity(event: PlayerBucketEntityEvent) {
         val mob = event.entity as? LivingEntity ?: return
         if (!hasProcessingResponsibility(mob.location.chunk)) return
@@ -454,7 +454,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onPlayerNameEntity(event: PlayerNameEntityEvent) {
         val target = event.entity
         val newName = event.name ?: return
@@ -473,7 +473,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onArmorStandEdit(event: PlayerArmorStandManipulateEvent) {
         val stand = event.rightClicked
         val chunk = stand.location.chunk
@@ -488,7 +488,7 @@ abstract class ChunkProtectionListener : Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     fun onArmorStandDamage(event: EntityDamageByEntityEvent) {
         val stand = event.entity as? ArmorStand ?: return
         val chunk = stand.location.chunk
