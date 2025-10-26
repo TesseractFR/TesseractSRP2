@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.craftingjob
+package onl.tesseract.srp.domain.skill
 
 import org.bukkit.inventory.ItemStack
 
