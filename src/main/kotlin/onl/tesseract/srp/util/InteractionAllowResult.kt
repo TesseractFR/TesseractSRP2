@@ -1,4 +1,4 @@
-package onl.tesseract.srp.service.campement
+package onl.tesseract.srp.util
 
 enum class InteractionAllowResult {
     Allow, Deny, Ignore,

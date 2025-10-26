@@ -2,9 +2,13 @@ package onl.tesseract.srp.controller.event.global.listener
 
 import net.kyori.adventure.text.Component
 import onl.tesseract.lib.util.plus
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.EntityUtils
+import onl.tesseract.srp.util.GuildChatError
 import onl.tesseract.srp.util.PlayerUtils
 import org.bukkit.Chunk
 import org.bukkit.block.Block
@@ -17,16 +21,26 @@ import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
 class NatureProtectionListener(
-    val campementService: CampementService,
+    private val campementService: CampementService,
+    private val guildService: GuildService,
+    private val worldService: WorldService,
     playerUtils: PlayerUtils,
     entityUtils: EntityUtils
 ) : ChunkProtectionListener(playerUtils, entityUtils) {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
-        return campementService.getCampementByChunk(chunk.x,chunk.z) == null
+        val noCamp = campementService.getCampementByChunk(chunk.x,chunk.z) == null
+        val noGuild = guildService.getGuildByChunk(chunk.x,chunk.z) == null
+        return (noCamp && noGuild)
     }
 
     override fun getProtectionMessage(chunk: Chunk): Component {
-        return CampementChatError + "Tu ne peux pas interagir dans la nature."
+        val world = worldService.getSrpWorld(chunk.world)
+        val prefix = when (world) {
+            SrpWorld.GuildWorld -> GuildChatError
+            SrpWorld.Elysea -> CampementChatError
+            else -> Component.text("")
+        }
+        return prefix + "Tu ne peux pas interagir dans la nature."
     }
 
     override fun canPlaceBlock(player: Player, block: Block): Boolean {

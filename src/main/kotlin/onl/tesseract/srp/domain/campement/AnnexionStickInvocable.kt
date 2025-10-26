@@ -6,7 +6,7 @@ import onl.tesseract.lib.equipment.Invocable
 import onl.tesseract.lib.util.ItemBuilder
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.srp.service.campement.CampementService
-import onl.tesseract.srp.service.campement.InteractionAllowResult
+import onl.tesseract.srp.util.InteractionAllowResult
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action

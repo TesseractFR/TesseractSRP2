@@ -5,7 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.event.global.listener.ChunkProtectionListener
 import onl.tesseract.srp.service.campement.CampementService
-import onl.tesseract.srp.service.campement.InteractionAllowResult
+import onl.tesseract.srp.util.InteractionAllowResult
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.EntityUtils
 import onl.tesseract.srp.util.PlayerUtils

@@ -55,6 +55,7 @@ open class GuildService(
     open fun getAllGuilds(): Collection<Guild> = guildRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = guildRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = guildRepository.findGuildByMember(memberId)
+    open fun getGuildByChunk(chunkX: Int, chunkZ: Int) = guildRepository.findGuildByChunk(GuildChunk(chunkX, chunkZ))
     open fun getMemberRole(playerID: UUID): GuildRole? = guildRepository.findMemberRole(playerID)
 
     @Transactional
@@ -156,6 +157,20 @@ open class GuildService(
             guildRepository.save(guild)
         }
         return result
+    }
+
+    open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
+        val isGuildWorld = chunk.world.name == SrpWorld.GuildWorld.bukkitName
+        if (!isGuildWorld) return InteractionAllowResult.Ignore
+
+        val owner = guildRepository.findGuildByChunk(GuildChunk(chunk.x, chunk.z))
+        val playerGuild = guildRepository.findGuildByMember(playerID)
+        return when {
+            owner == null                   -> InteractionAllowResult.Ignore
+            playerGuild == null             -> InteractionAllowResult.Deny
+            playerGuild.id == owner.id      -> InteractionAllowResult.Allow
+            else                            -> InteractionAllowResult.Deny
+        }
     }
 
     @Transactional

@@ -14,6 +14,7 @@ import onl.tesseract.srp.testutils.CampementInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
 import onl.tesseract.srp.testutils.fixture.SrpPlayerDomainTest
 import onl.tesseract.srp.testutils.mockWorld
+import onl.tesseract.srp.util.TerritoryChunks
 import org.bukkit.Location
 import org.bukkit.Chunk as BChunk
 import org.junit.jupiter.api.Assertions.*
@@ -371,7 +372,7 @@ class CampementServiceTest : SrpPlayerDomainTest {
         campementRepository.save(camp)
 
         val campementChunk = CampementChunk(cx, cz)
-        val wouldSplit = !campementService.isUnclaimValid(camp.chunks, campementChunk)
+        val wouldSplit = !TerritoryChunks.isUnclaimValid(camp.chunks, campementChunk, { it.x }, { it.z })
 
         // When
         val ok = if (wouldSplit) {
