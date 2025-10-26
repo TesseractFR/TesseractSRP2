@@ -4,6 +4,8 @@ import net.kyori.adventure.text.Component
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
+import onl.tesseract.srp.util.EntityUtils
+import onl.tesseract.srp.util.PlayerUtils
 import org.bukkit.Chunk
 import org.bukkit.block.Block
 import org.bukkit.block.Container
@@ -14,7 +16,11 @@ import org.bukkit.inventory.ItemStack
 import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
-class NatureProtectionListener(val campementService: CampementService) : ChunkProtectionListener() {
+class NatureProtectionListener(
+    val campementService: CampementService,
+    playerUtils: PlayerUtils,
+    entityUtils: EntityUtils
+) : ChunkProtectionListener(playerUtils, entityUtils) {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
         return campementService.getCampementByChunk(chunk.x,chunk.z) == null
     }
