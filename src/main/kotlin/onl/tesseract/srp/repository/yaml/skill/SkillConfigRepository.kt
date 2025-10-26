@@ -1,11 +1,11 @@
-package onl.tesseract.srp.repository.yaml.artisanat
+package onl.tesseract.srp.repository.yaml.skill
 
 import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
-import onl.tesseract.srp.domain.craftingjob.RecipeComponent
-import onl.tesseract.srp.domain.craftingjob.Recipe
-import onl.tesseract.srp.domain.craftingjob.Skill
-import onl.tesseract.srp.domain.craftingjob.SkillTier
+import onl.tesseract.srp.domain.skill.RecipeComponent
+import onl.tesseract.srp.domain.skill.Recipe
+import onl.tesseract.srp.domain.skill.Skill
+import onl.tesseract.srp.domain.skill.SkillTier
 import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
@@ -54,7 +54,7 @@ class SkillConfigRepository(
         val tiers: Map<Int, SkillTier> = loadTiers(
             conf.getConfigurationSection("tiers") ?: throw ConfigurationException("The tiers must be set"),
             skillName)
-        skills[skillName] = Skill(tiers, structureName)
+        skills[skillName] = Skill(tiers, structureName,skillName)
 
     }
 
