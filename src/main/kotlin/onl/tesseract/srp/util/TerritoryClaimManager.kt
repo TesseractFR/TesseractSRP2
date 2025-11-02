@@ -1,11 +1,24 @@
 package onl.tesseract.srp.util
 
+import onl.tesseract.srp.domain.player.PlayerRank
+import onl.tesseract.srp.domain.player.SrpPlayer
+import org.bukkit.Location
 import kotlin.math.abs
 
 enum class ClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_TAKEN, NOT_ADJACENT, NOT_ALLOWED, TOO_CLOSE }
 enum class UnclaimResult { SUCCESS, NOT_OWNED, NOT_ALLOWED, LAST_CHUNK, IS_SPAWN_CHUNK }
+enum class CreationError {
+    ALREADY_HAS_TERRITORY,
+    INVALID_WORLD,
+    NEAR_SPAWN,
+    NAME_TAKEN,
+    NOT_ENOUGH_MONEY,
+    RANK_TOO_LOW,
+    TOO_CLOSE_TO_OTHER_TERRITORY,
+    ON_OTHER_TERRITORY
+}
 
-data class Policy(
+data class ClaimPolicy(
     val requireAdjacent: Boolean = true,
     val allowFirstAnywhere: Boolean = true,
     val forbidLastRemoval: Boolean = true,
@@ -31,10 +44,80 @@ data class UnclaimOperations<T>(
 
 object TerritoryClaimManager {
 
+    data class CreationPolicy(
+        val isCorrectWorld: (Location) -> Boolean,
+        val spawnProtectionRadius: Int = 0,
+        val protectionRadius: Int = 0,
+        val minMoney: Int? = null,
+        val minRank: PlayerRank? = null
+    )
+
+    private fun checkFirstClaim(
+        location: Location,
+        protectionRadius: Int,
+        isChunkTaken: (Int, Int) -> Boolean
+    ): Boolean {
+        if (protectionRadius <= 0) return true
+        val (cx, cz) = location.chunk.let { it.x to it.z }
+        for (dx in -protectionRadius..protectionRadius) {
+            for (dz in -protectionRadius..protectionRadius) {
+                if (dx == 0 && dz == 0) continue
+                if (isChunkTaken(cx + dx, cz + dz)) return false
+            }
+        }
+        return true
+    }
+
+    fun performCreationChecks(
+        location: Location,
+        player: SrpPlayer,
+        policy: CreationPolicy,
+        alreadyHasTerritory: (() -> Boolean)? = null,
+        isNameTaken: (() -> Boolean)? = null,
+        isChunkTaken: (Int, Int) -> Boolean
+    ): List<CreationError> {
+        val errors = mutableListOf<CreationError>()
+
+        if (alreadyHasTerritory?.invoke() == true) {
+            errors += CreationError.ALREADY_HAS_TERRITORY
+            return errors
+        }
+        val worldOk = policy.isCorrectWorld(location)
+        if (!worldOk) {
+            errors += CreationError.INVALID_WORLD
+        } else {
+            if (policy.spawnProtectionRadius > 0) {
+                val spawn = location.world.spawnLocation
+                if (location.distance(spawn) <= policy.spawnProtectionRadius) {
+                    errors += CreationError.NEAR_SPAWN
+                }
+            }
+            if (isNameTaken?.invoke() == true) {
+                errors += CreationError.NAME_TAKEN
+            }
+            if (policy.minMoney != null && player.money < policy.minMoney) {
+                errors += CreationError.NOT_ENOUGH_MONEY
+            }
+            if (policy.minRank != null && player.rank < policy.minRank) {
+                errors += CreationError.RANK_TOO_LOW
+            }
+            val (cx, cz) = location.chunk.let { it.x to it.z }
+            val onOther = isChunkTaken(cx, cz)
+            if (onOther) {
+                errors += CreationError.ON_OTHER_TERRITORY
+            } else {
+                if (!checkFirstClaim(location, policy.protectionRadius, isChunkTaken)) {
+                    errors += CreationError.TOO_CLOSE_TO_OTHER_TERRITORY
+                }
+            }
+        }
+        return errors
+    }
+
     fun <T> claim(
         owned: Collection<T>,
         target: T,
-        policy: Policy = Policy(),
+        policy: ClaimPolicy = ClaimPolicy(),
         io: ClaimOperations<T>
     ): ClaimResult {
         val res = when {
@@ -60,7 +143,7 @@ object TerritoryClaimManager {
     fun <T> unclaim(
         owned: Collection<T>,
         target: T,
-        policy: Policy = Policy(),
+        policy: ClaimPolicy = ClaimPolicy(),
         io: UnclaimOperations<T>
     ): UnclaimResult {
         val res = when {
@@ -80,7 +163,7 @@ object TerritoryClaimManager {
     private fun <T> isAdjacencyOk(
         owned: Collection<T>,
         target: T,
-        policy: Policy,
+        policy: ClaimPolicy,
         coords: (T) -> Pair<Int, Int>
     ): Boolean {
         val adjacencyRequired = policy.requireAdjacent
@@ -126,7 +209,7 @@ object TerritoryClaimManager {
 
     private fun <T> isTooCloseToOthers(
         target: T,
-        policy: Policy,
+        policy: ClaimPolicy,
         coords: (T) -> Pair<Int, Int>,
         isTakenAt: (Int, Int) -> Boolean
     ): Boolean {

@@ -57,34 +57,39 @@ class GuildCommand(
 
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) = inGuildWorld(sender) {
-        val (guild, errorReason) = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
-
-        errorReason.map { reason ->
-            return@map when (reason) {
-                GuildCreationResult.Reason.NotEnoughMoney ->
-                    GuildChatError + "Tu n'as pas assez d'argent pour créer ta guilde."
-
-                GuildCreationResult.Reason.InvalidWorld ->
-                    GuildChatError + "Tu ne peux pas créer de guilde dans ce monde."
-
-                GuildCreationResult.Reason.NearSpawn ->
-                    GuildChatError + "Tu es trop proche du spawn pour créer ta guilde."
-
-                GuildCreationResult.Reason.NearGuild -> GuildChatError + "Tu es trop proche d'une autre guilde."
-                GuildCreationResult.Reason.NameTaken ->
-                    GuildChatError + "Ce nom de guilde est déjà pris, choisis-en un autre."
-
-                GuildCreationResult.Reason.PlayerHasGuild ->
-                    GuildChatError + "Tu es déjà dans une guilde. Quitte-la pour pouvoir en créer une nouvelle."
-                GuildCreationResult.Reason.Rank ->
-                    GuildChatError + "Tu n'as pas le grade minimal nécessaire pour créer une guilde (Baron)."
+        val result = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
+        result.reason
+            .map { reason ->
+                when (reason) {
+                    GuildCreationResult.Reason.NotEnoughMoney ->
+                        GuildChatError + "Tu n'as pas assez d'argent pour créer ta guilde."
+                    GuildCreationResult.Reason.InvalidWorld ->
+                        GuildChatError + "Tu ne peux pas créer de guilde dans ce monde."
+                    GuildCreationResult.Reason.NearSpawn ->
+                        GuildChatError + "Tu es trop proche du spawn pour créer ta guilde."
+                    GuildCreationResult.Reason.NearGuild ->
+                        GuildChatError + "Tu es trop proche d'une autre guilde."
+                    GuildCreationResult.Reason.NameTaken ->
+                        GuildChatError + "Ce nom de guilde est déjà pris, choisis-en un autre."
+                    GuildCreationResult.Reason.PlayerHasGuild ->
+                        GuildChatError + "Tu es déjà dans une guilde. Quitte-la pour pouvoir en créer une nouvelle."
+                    GuildCreationResult.Reason.Rank ->
+                        GuildChatError + "Tu n'as pas le grade minimal nécessaire pour créer une guilde (Baron)."
+                    GuildCreationResult.Reason.OnOtherGuild -> {
+                        val chunk = sender.location.chunk
+                        val other = guildService.getGuildByChunk(chunk.x, chunk.z)
+                        val guildName = other?.name ?: "une autre guilde"
+                        GuildChatError + "Tu ne peux pas créer une guilde ici, " +
+                                "tu es sur le territoire de la guilde $guildName."
+                    }
+                }
             }
-        }.forEach { message -> sender.sendMessage(message) }
-
-        if (guild != null) {
-            sender.sendMessage(GuildChatSuccess + "Nouvelle guilde créée sous le nom de " + nameArg.get())
+            .forEach { sender.sendMessage(it) }
+        if (result.guild != null) {
+            sender.sendMessage(GuildChatSuccess + "Nouvelle guilde créée sous le nom de ${nameArg.get()}")
         }
     }
+
 
     @Command(name = "delete", playerOnly = true, description = "Supprimer sa guilde.")
     fun deleteGuild(sender: Player) {

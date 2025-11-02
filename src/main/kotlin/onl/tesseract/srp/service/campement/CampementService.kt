@@ -23,10 +23,10 @@ import org.bukkit.entity.Player
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
-import kotlin.math.abs
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
 private const val CAMP_PROTECTION_RADIUS = 2
+private const val SPAWN_PROTECTION_RADIUS = 15
 private const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
@@ -65,29 +65,44 @@ open class CampementService(
     }
 
     @Transactional
-    open fun createCampement(ownerID: UUID, spawnLocation: Location): Boolean {
-        val chunkX = spawnLocation.chunk.x
-        val chunkZ = spawnLocation.chunk.z
-        val chunk = CampementChunk(chunkX, chunkZ)
-        if (worldService.getSrpWorld(spawnLocation) != SrpWorld.Elysea)
-            return false
+    open fun createCampement(ownerID: UUID, spawnLocation: Location): CampementCreationResult {
+        val player = srpPlayerService.getPlayer(ownerID)
 
-        if (repository.isChunkClaimed(chunkX, chunkZ)) {
-            return false
-        }
-        for (other in repository.findAll()) {
-            if (other.ownerID == ownerID) continue
+        val errors = TerritoryClaimManager.performCreationChecks(
+            location = spawnLocation,
+            player = player,
+            policy = TerritoryClaimManager.CreationPolicy(
+                isCorrectWorld = { worldService.getSrpWorld(it) == SrpWorld.Elysea },
+                spawnProtectionRadius = SPAWN_PROTECTION_RADIUS,
+                protectionRadius = CAMP_PROTECTION_RADIUS,
+                minMoney = null,
+                minRank = null
+            ),
+            alreadyHasTerritory = { repository.getById(ownerID) != null },
+            isNameTaken = null,
+            isChunkTaken = { cx, cz ->
+                val other = repository.getCampementByChunk(cx, cz)
+                other != null && other.ownerID != ownerID
+            }
+        )
 
-            for (c in other.chunks) {
-                val dx = c.x - chunkX
-                val dz = c.z - chunkZ
-                if (abs(dx) <= CAMP_PROTECTION_RADIUS && abs(dz) <= CAMP_PROTECTION_RADIUS) {
-                    logger.info("Campement creation refused: too close to ${other.ownerID}")
-                    return false
+        if (errors.isNotEmpty()) {
+            val mapped = errors.map {
+                when (it) {
+                    CreationError.ALREADY_HAS_TERRITORY       -> CampementCreationResult.Reason.AlreadyHasCampement
+                    CreationError.INVALID_WORLD               -> CampementCreationResult.Reason.InvalidWorld
+                    CreationError.NEAR_SPAWN                  -> CampementCreationResult.Reason.NearSpawn
+                    CreationError.TOO_CLOSE_TO_OTHER_TERRITORY-> CampementCreationResult.Reason.NearCampement
+                    CreationError.ON_OTHER_TERRITORY -> CampementCreationResult.Reason.OnOtherCampement
+                    CreationError.NAME_TAKEN -> CampementCreationResult.Reason.Ignored
+                    CreationError.NOT_ENOUGH_MONEY -> CampementCreationResult.Reason.Ignored
+                    CreationError.RANK_TOO_LOW -> CampementCreationResult.Reason.Ignored
                 }
             }
+            return CampementCreationResult.failed(mapped)
         }
-        val player = srpPlayerService.getPlayer(ownerID)
+
+        val chunk = CampementChunk(spawnLocation.chunk.x, spawnLocation.chunk.z)
         val campLevel = player.rank.campLevel
 
         val campement = Campement(
@@ -97,12 +112,13 @@ open class CampementService(
             campLevel = campLevel,
             spawnLocation = spawnLocation,
         )
-
         logger.info("New campement (level $campLevel) created for owner $ownerID")
         repository.save(campement)
         eventService.callEvent(CampementChunkClaimEvent(ownerID, chunk))
-        return true
+
+        return CampementCreationResult.success(campement)
     }
+
 
     @Transactional
     open fun deleteCampement(id: UUID) {
@@ -154,7 +170,7 @@ open class CampementService(
         val claimRes = TerritoryClaimManager.claim(
             owned = camp.chunks,
             target = target,
-            policy = Policy(
+            policy = ClaimPolicy(
                 requireAdjacent = true,
                 allowFirstAnywhere = false,
                 protectionRadius = CAMP_PROTECTION_RADIUS
@@ -191,7 +207,7 @@ open class CampementService(
         val unclaimRes = TerritoryClaimManager.unclaim(
             owned = camp.chunks,
             target = target,
-            policy = Policy(
+            policy = ClaimPolicy(
                 forbidLastRemoval = true,
                 forbidSpawnRemoval = true,
                 keepConnected = true
@@ -212,7 +228,7 @@ open class CampementService(
 
     /**
      * Handles the process of claiming or unclaiming a chunk and returns a message indicating the result.
-     * @param ownerID The player performing the action.
+     * @param owner The player performing the action.
      * @param chunk Chunk to claim/unclaim
      * @param claim True to claim the chunk, false to unclaim it.
      * @return A formatted string message describing the outcome of the operation.
@@ -341,5 +357,21 @@ open class CampementService(
         repository.save(campement)
         return true
     }
+}
 
+data class CampementCreationResult(val campement: Campement?, val reason: List<Reason>) {
+
+    enum class Reason {
+        InvalidWorld,
+        NearSpawn,
+        NearCampement,
+        OnOtherCampement,
+        AlreadyHasCampement,
+        Ignored
+    }
+
+    companion object {
+        fun failed(reasons: List<Reason>) = CampementCreationResult(null, reasons)
+        fun success(campement: Campement) = CampementCreationResult(campement, emptyList())
+    }
 }

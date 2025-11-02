@@ -8,6 +8,7 @@ import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.service.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.campement.CampementCreationResult
 import onl.tesseract.srp.service.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
@@ -32,20 +33,39 @@ class CampStaffCommands(
         val location = target.location
         val chunk = location.chunk
         val chunkKey = "${chunk.x},${chunk.z}"
+        val result = campementService.createCampement(uuid, location)
 
-        if (campementService.getCampementByOwner(uuid) != null) {
-            sender.sendMessage(CampementChatError + "${target.name} possède déjà un campement.")
-            return
-        }
+        result.reason
+            .map { reason ->
+                when (reason) {
+                    CampementCreationResult.Reason.InvalidWorld ->
+                        CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
+                    CampementCreationResult.Reason.NearSpawn ->
+                        CampementChatError + "Trop proche du spawn pour créer un campement."
+                    CampementCreationResult.Reason.NearCampement ->
+                        CampementChatError + "Un autre campement est trop proche d’ici."
+                    CampementCreationResult.Reason.AlreadyHasCampement ->
+                        CampementChatError + "${target.name} possède déjà un campement."
+                    CampementCreationResult.Reason.OnOtherCampement -> {
+                        val other = campementService.getCampementByChunk(chunk.x, chunk.z)
+                        val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
+                        CampementChatError + "Impossible de créer un campement ici, " +
+                                "tu es sur le territoire de $ownerName."
+                    }
+                    CampementCreationResult.Reason.Ignored -> return
+                }
+            }
+            .forEach { sender.sendMessage(it) }
 
-        val success = campementService.createCampement(uuid, location)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "Campement créé pour ${target.name} dans le chunk $chunkKey.")
-            target.sendMessage(CampementChatSuccess + "Un administrateur t'a créé un campement dans le chunk $chunkKey.")
-        } else {
-            val existingCamp = campementService.getCampementByChunk(chunk.x, chunk.z)
-            val existingOwnerName = existingCamp?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "Inconnu"
-            sender.sendMessage(CampementChatError + "Échec : le chunk $chunkKey appartient déjà à $existingOwnerName.")
+        if (result.campement != null) {
+            sender.sendMessage(
+                CampementChatSuccess + "Campement créé pour ${target.name} dans le chunk $chunkKey."
+            )
+            target.sendMessage(
+                CampementChatSuccess + "Un administrateur t'a créé un campement dans le chunk $chunkKey."
+            )
+        } else if (result.reason.isEmpty()) {
+            sender.sendMessage(CampementChatError + "Échec de création du campement dans le chunk $chunkKey.")
         }
     }
 

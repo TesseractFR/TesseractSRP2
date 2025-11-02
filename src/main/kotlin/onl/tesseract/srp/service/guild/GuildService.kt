@@ -28,7 +28,7 @@ import org.bukkit.entity.Player
 import org.springframework.stereotype.Service
 import java.util.*
 
-private const val SPAWN_PROTECTION_DISTANCE = 150
+private const val SPAWN_PROTECTION_RADIUS = 150
 private const val GUILD_COST = 10_000
 private const val GUILD_PROTECTION_RADIUS = 3
 private const val GUILD_BORDER_COMMAND = "/guild border"
@@ -60,10 +60,38 @@ open class GuildService(
 
     @Transactional
     open fun createGuild(playerID: UUID, location: Location, guildName: String): GuildCreationResult {
-        val checkResult = guildCreationChecks(playerID, location, guildName)
-        if (checkResult.isNotEmpty())
-            return GuildCreationResult.failed(checkResult)
+        val player = playerService.getPlayer(playerID)
 
+        val errors = TerritoryClaimManager.performCreationChecks(
+            location = location,
+            player = player,
+            policy = TerritoryClaimManager.CreationPolicy(
+                isCorrectWorld = { it.world.name == SrpWorld.GuildWorld.bukkitName },
+                spawnProtectionRadius = SPAWN_PROTECTION_RADIUS,
+                protectionRadius = GUILD_PROTECTION_RADIUS,
+                minMoney = GUILD_COST,
+                minRank = PlayerRank.Baron
+            ),
+            alreadyHasTerritory = { guildRepository.findGuildByMember(playerID) != null },
+            isNameTaken = { guildRepository.findGuildByName(guildName) != null },
+            isChunkTaken = { cx, cz -> guildRepository.areChunksClaimed(listOf(GuildChunk(cx, cz))) }
+        )
+
+        if (errors.isNotEmpty()) {
+            val mapped = errors.map {
+                when (it) {
+                    CreationError.ALREADY_HAS_TERRITORY      -> GuildCreationResult.Reason.PlayerHasGuild
+                    CreationError.INVALID_WORLD              -> GuildCreationResult.Reason.InvalidWorld
+                    CreationError.NEAR_SPAWN                 -> GuildCreationResult.Reason.NearSpawn
+                    CreationError.NAME_TAKEN                 -> GuildCreationResult.Reason.NameTaken
+                    CreationError.NOT_ENOUGH_MONEY           -> GuildCreationResult.Reason.NotEnoughMoney
+                    CreationError.RANK_TOO_LOW               -> GuildCreationResult.Reason.Rank
+                    CreationError.TOO_CLOSE_TO_OTHER_TERRITORY -> GuildCreationResult.Reason.NearGuild
+                    CreationError.ON_OTHER_TERRITORY -> GuildCreationResult.Reason.OnOtherGuild
+                }
+            }
+            return GuildCreationResult.failed(mapped)
+        }
         val guild = Guild(-1, playerID, guildName, location)
         playerService.takeMoney(
             playerID,
@@ -72,10 +100,12 @@ open class GuildService(
             subType = TransactionSubType.Guild.Creation,
             details = guild.id.toString()
         )
+
         guild.claimInitialChunks()
         val createdGuild = guildRepository.save(guild)
         return GuildCreationResult.success(createdGuild)
     }
+
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
@@ -88,49 +118,6 @@ open class GuildService(
     open fun deleteGuildAsStaff(guildId: Int): Boolean {
         guildRepository.deleteById(guildId)
         return true
-    }
-
-    /**
-     * Execute creation checks
-     * @return The list of creation errors, or empty list if all checks passed
-     */
-    protected open fun guildCreationChecks(
-        playerID: UUID,
-        location: Location,
-        guildName: String
-    ): List<GuildCreationResult.Reason> {
-        if (guildRepository.findGuildByMember(playerID) != null) {
-            return listOf(GuildCreationResult.Reason.PlayerHasGuild)
-        }
-        val errorList: MutableList<GuildCreationResult.Reason> = mutableListOf()
-        if (location.world.name != SrpWorld.GuildWorld.bukkitName)
-            errorList += GuildCreationResult.Reason.InvalidWorld
-        else if (location.distance(location.world.spawnLocation) <= SPAWN_PROTECTION_DISTANCE)
-            errorList += GuildCreationResult.Reason.NearSpawn
-        if (guildRepository.findGuildByName(guildName) != null)
-            errorList += GuildCreationResult.Reason.NameTaken
-
-        val srpPlayer = playerService.getPlayer(playerID)
-        if (srpPlayer.money < GUILD_COST)
-            errorList += GuildCreationResult.Reason.NotEnoughMoney
-        if (srpPlayer.rank < PlayerRank.Baron)
-            errorList += GuildCreationResult.Reason.Rank
-
-        if (!checkFirstClaimAvailable(location)) {
-            errorList += GuildCreationResult.Reason.NearGuild
-        }
-        return errorList
-    }
-
-    protected open fun checkFirstClaimAvailable(location: Location): Boolean {
-        val chunks: MutableList<GuildChunk> = mutableListOf()
-        val spawnChunk = location.chunk
-        for (x in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
-            for (z in -GUILD_PROTECTION_RADIUS..GUILD_PROTECTION_RADIUS) {
-                chunks += GuildChunk(spawnChunk.x + x, spawnChunk.z + z)
-            }
-        }
-        return !guildRepository.areChunksClaimed(chunks)
     }
 
     enum class GuildSpawnKind { PRIVATE, VISITOR }
@@ -460,7 +447,7 @@ open class GuildService(
         val claimRes = TerritoryClaimManager.claim(
             owned = guild.chunks,
             target = target,
-            policy = Policy(
+            policy = ClaimPolicy(
                 requireAdjacent = true,
                 allowFirstAnywhere = true,
                 protectionRadius = GUILD_PROTECTION_RADIUS
@@ -501,7 +488,7 @@ open class GuildService(
         val unclaimRes = TerritoryClaimManager.unclaim(
             owned = guild.chunks,
             target = target,
-            policy = Policy(
+            policy = ClaimPolicy(
                 forbidLastRemoval = true,
                 forbidSpawnRemoval = true,
                 keepConnected = true
@@ -637,7 +624,7 @@ open class GuildService(
     }
 
     private fun notifyGuildLevelUp(guild: Guild) {
-        val server = Bukkit.getServer() ?: return // ne pas enlever le return, Bukkit.getServer() peut être null en test
+        val server = Bukkit.getServer()
         val msg: Component =
             GuildChatSuccess +
                     "Ta guilde " + Component.text(guild.name, NamedTextColor.GREEN) +
@@ -681,9 +668,8 @@ open class GuildService(
 
 data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
 
-    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, NameTaken, PlayerHasGuild, Rank }
-
-    fun isSuccess(): Boolean = reason.isEmpty() && guild != null
+    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, OnOtherGuild,
+        NameTaken, PlayerHasGuild, Rank }
 
     companion object {
         fun failed(reasons: List<Reason>) = GuildCreationResult(null, reasons)
