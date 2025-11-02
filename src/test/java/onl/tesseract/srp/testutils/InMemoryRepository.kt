@@ -71,26 +71,9 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun save(entity: Guild): Guild {
         val newId = if (entity.id == -1) (elements.keys.maxOrNull() ?: 0) + 1 else entity.id
-        val saved = Guild(
-            id = newId,
-            name = entity.name,
-            spawnLocation = entity.spawnLocation,
-            money = entity.money,
-            moneyLedgerID = entity.moneyLedgerID,
-            chunks = entity.chunks,
-            memberContainer = onl.tesseract.srp.domain.guild.GuildMemberContainerImpl(
-                entity.leaderId,
-                entity.members,
-                entity.invitations,
-                entity.joinRequests
-            ),
-            visitorSpawnLocation = entity.visitorSpawnLocation,
-            level = entity.level,
-            xp = entity.xp,
-            rank = entity.rank
-        )
-        elements[newId] = saved
-        return saved
+        entity.id = newId
+        elements[newId] = entity
+        return entity
     }
 }
 

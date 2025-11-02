@@ -14,9 +14,8 @@ import onl.tesseract.srp.testutils.CampementInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
 import onl.tesseract.srp.testutils.fixture.SrpPlayerDomainTest
 import onl.tesseract.srp.testutils.mockWorld
-import onl.tesseract.srp.util.TerritoryChunks
+import onl.tesseract.srp.util.TerritoryClaimManager
 import org.bukkit.Location
-import org.bukkit.Chunk as BChunk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -247,10 +246,9 @@ class CampementServiceTest : SrpPlayerDomainTest {
         val cx = loc.chunk.x
         val cz = loc.chunk.z
         val targetX = cx + 2
-        val targetZ = cz
 
         // When
-        val res = campementService.claimChunk(owner.uniqueId, targetX, targetZ)
+        val res = campementService.claimChunk(owner.uniqueId, targetX, cz)
 
         // Then
         assertEquals(CampementService.AnnexationResult.NOT_ADJACENT, res)
@@ -268,15 +266,42 @@ class CampementServiceTest : SrpPlayerDomainTest {
         val cx = loc.chunk.x
         val cz = loc.chunk.z
         val adjX = cx + 1
-        val adjZ = cz
 
         // When
-        val res = campementService.claimChunk(owner.uniqueId, adjX, adjZ)
+        val res = campementService.claimChunk(owner.uniqueId, adjX, cz)
 
         // Then
         assertEquals(CampementService.AnnexationResult.SUCCESS, res)
         val saved = campementRepository.getById(owner.uniqueId)!!
-        assertTrue(saved.chunks.contains(CampementChunk(adjX, adjZ)))
+        assertTrue(saved.chunks.contains(CampementChunk(adjX, cz)))
+    }
+
+    @Test
+    fun `Claim - Should return TOO_CLOSE - When target is within protection radius of another camp`() {
+        val alice = player(rank = PlayerRank.Baron)
+        val bob   = player(rank = PlayerRank.Baron)
+        val world = mockWorld("elysea")
+
+        // Alice en (10,10)
+        val aliceLoc = Location(world, 160.0, 64.0, 160.0)
+        `when`(worldService.getSrpWorld(aliceLoc)).thenReturn(SrpWorld.Elysea)
+        assertTrue(campementService.createCampement(alice.uniqueId, aliceLoc))
+
+        // Bob en (13,10)
+        val bobLoc = Location(world, 208.0, 64.0, 160.0)
+        `when`(worldService.getSrpWorld(bobLoc)).thenReturn(SrpWorld.Elysea)
+        assertTrue(campementService.createCampement(bob.uniqueId, bobLoc))
+
+        val targetX = 12
+        val targetZ = 10
+
+        // When
+        val res = campementService.claimChunk(bob.uniqueId, targetX, targetZ)
+
+        // Then
+        assertEquals(CampementService.AnnexationResult.TOO_CLOSE, res)
+        val saved = campementRepository.getById(bob.uniqueId)!!
+        assertFalse(saved.chunks.contains(CampementChunk(targetX, targetZ)))
     }
 
     @Test
@@ -372,7 +397,10 @@ class CampementServiceTest : SrpPlayerDomainTest {
         campementRepository.save(camp)
 
         val campementChunk = CampementChunk(cx, cz)
-        val wouldSplit = !TerritoryChunks.isUnclaimValid(camp.chunks, campementChunk, { it.x }, { it.z })
+        val wouldSplit = !TerritoryClaimManager.isUnclaimValid(
+            camp.chunks,
+            campementChunk
+        ) { it.x to it.z }
 
         // When
         val ok = if (wouldSplit) {

@@ -17,11 +17,13 @@ import onl.tesseract.srp.testutils.GuildInMemoryRepository
 import onl.tesseract.srp.testutils.SrpPlayerInMemoryRepository
 import onl.tesseract.srp.testutils.fixture.SrpPlayerDomainTest
 import onl.tesseract.srp.testutils.mockWorld
+import org.bukkit.Chunk
 import org.bukkit.Location
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertNull
+import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import java.util.*
@@ -502,6 +504,30 @@ class GuildServiceTest : SrpPlayerDomainTest {
 
         // Then
         assertEquals(GuildClaimResult.NOT_ADJACENT, res)
+    }
+
+    @Test
+    fun `Claim - Should return TOO_CLOSE - When target is within protection radius of another guild`() {
+        val alice = player(money = 10_000)
+        val bob   = player(money = 10_000)
+        val world = mockWorld(SrpWorld.GuildWorld.bukkitName)
+
+        // Alice crée en (10,10)
+        val aliceGuild = guildService.createGuild(alice.uniqueId, Location(world, 160.0, 64.0, 160.0), "Alpha").guild!!
+
+        // Bob crée en (13,10)
+        val bobGuild = guildService.createGuild(bob.uniqueId, Location(world, 208.0, 64.0, 160.0), "Beta").guild!!
+
+        // Bob tente de claim (12,10) — adjacent à (13,10), mais à ≤ 2 de (10,10)
+        val chunk = mock(Chunk::class.java)
+        `when`(chunk.x).thenReturn(12)
+        `when`(chunk.z).thenReturn(10)
+
+        val res = guildService.claimChunk(bobGuild.id, bob.uniqueId, chunk)
+
+        assertEquals(GuildClaimResult.TOO_CLOSE, res)
+        val updated = guildRepository.getById(bobGuild.id)!!
+        assertFalse(updated.chunks.any { it.x == 12 && it.z == 10 })
     }
 
     @Test

@@ -4,7 +4,7 @@ import org.bukkit.Location
 import java.util.*
 
 class Guild(
-    val id: Int,
+    var id: Int,
     val name: String,
     var spawnLocation: Location,
     money: Int = 0,

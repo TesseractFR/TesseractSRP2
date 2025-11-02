@@ -6,76 +6,11 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
-import kotlin.math.abs
 
 private const val CHUNK_SIZE = 16
 private const val TICKS_PER_SECOND = 20L
 
-object TerritoryChunks {
-
-    /**
-     * Check if the `target` chunk is adjacent (4-directionally) to any chunk in `existing`.
-     *
-     * @param existing The collection of existing chunks.
-     * @param target The chunk to check for adjacency.
-     * @param x Function to extract the x-coordinate from a chunk.
-     * @param z Function to extract the z-coordinate from a chunk.
-     * @return True if `target` is adjacent to any chunk in `existing`, false otherwise.
-     */
-    fun <C> isAdjacentToAny(
-        existing: Collection<C>,
-        target: C,
-        x: (C) -> Int,
-        z: (C) -> Int
-    ): Boolean {
-        val tx = x(target)
-        val tz = z(target)
-        return existing.any { e ->
-            val dx = x(e) - tx
-            val dz = z(e) - tz
-            abs(dx) + abs(dz) == 1
-        }
-    }
-
-    /**
-     * Check if removing `toRemove` from `chunks` would still leave all remaining chunks connected.
-     * Two chunks are considered connected if they share a side (4-directional connectivity).
-     *
-     * @param chunks The collection of chunks before removal.
-     * @param toRemove The chunk to be removed.
-     * @param x Function to extract the x-coordinate from a chunk.
-     * @param z Function to extract the z-coordinate from a chunk.
-     * @return True if the remaining chunks are still connected after removal, false otherwise.
-     */
-    fun <C> isUnclaimValid(
-        chunks: Collection<C>,
-        toRemove: C,
-        x: (C) -> Int,
-        z: (C) -> Int
-    ): Boolean {
-        val remaining = chunks.filter { it != toRemove }
-        if (remaining.isEmpty()) return false
-
-        fun is4Neighbor(a: C, b: C): Boolean =
-            abs(x(a) - x(b)) + abs(z(a) - z(b)) == 1
-
-        val visited = mutableSetOf<C>()
-        val queue = ArrayDeque<C>()
-        val start = remaining.first()
-        visited += start
-        queue += start
-
-        while (queue.isNotEmpty()) {
-            val cur = queue.removeFirst()
-            remaining.asSequence()
-                .filter { it !== cur && is4Neighbor(cur, it) && it !in visited }
-                .forEach { n ->
-                    visited += n
-                    queue += n
-                }
-        }
-        return visited.size == remaining.size
-    }
+object TerritoryBordersManager {
 
     data class BorderRenderConfig(
         val maxDistance: Int = 50,

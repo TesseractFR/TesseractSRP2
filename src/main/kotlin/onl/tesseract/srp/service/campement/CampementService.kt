@@ -23,8 +23,10 @@ import org.bukkit.entity.Player
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
+import kotlin.math.abs
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
+private const val CAMP_PROTECTION_RADIUS = 2
 private const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
@@ -72,6 +74,18 @@ open class CampementService(
 
         if (repository.isChunkClaimed(chunkX, chunkZ)) {
             return false
+        }
+        for (other in repository.findAll()) {
+            if (other.ownerID == ownerID) continue
+
+            for (c in other.chunks) {
+                val dx = c.x - chunkX
+                val dz = c.z - chunkZ
+                if (abs(dx) <= CAMP_PROTECTION_RADIUS && abs(dz) <= CAMP_PROTECTION_RADIUS) {
+                    logger.info("Campement creation refused: too close to ${other.ownerID}")
+                    return false
+                }
+            }
         }
         val player = srpPlayerService.getPlayer(ownerID)
         val campLevel = player.rank.campLevel
@@ -129,61 +143,71 @@ open class CampementService(
     }
 
     enum class AnnexationResult {
-        SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT
+        SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, TOO_CLOSE, NOT_ALLOWED
     }
 
-    /**
-     * Attempts to claim a chunk for the player's camp.
-     * @param ownerID The UUID of the player claiming the chunk.
-     * @param chunk The chunk coordinates in the format "x,z".
-     * @return The result of the annexation attempt.
-     */
     open fun claimChunk(ownerID: UUID, x: Int, z: Int): AnnexationResult {
-        val campement = repository.getById(ownerID)
+        val camp = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
+        val target = CampementChunk(x, z)
 
-        val chunk = CampementChunk(x, z)
-        if (chunk in campement.chunks) {
-            return AnnexationResult.ALREADY_OWNED
+        val claimRes = TerritoryClaimManager.claim(
+            owned = camp.chunks,
+            target = target,
+            policy = Policy(
+                requireAdjacent = true,
+                allowFirstAnywhere = false,
+                protectionRadius = CAMP_PROTECTION_RADIUS
+            ),
+            io = ClaimOperations(
+                authorized = { true },
+                takenElsewhere = { c -> repository.isChunkClaimed(c.x, c.z) },
+                addAndPersist = { c ->
+                    camp.addChunk(c)
+                    repository.save(camp)
+                    eventService.callEvent(CampementChunkClaimEvent(ownerID, c))
+                },
+                coords = { c -> c.x to c.z },
+                isTakenAt = { cx, cz ->
+                    val other = repository.getCampementByChunk(cx, cz)
+                    other != null && other.ownerID != ownerID
+                }
+            )
+        )
+        return when (claimRes) {
+            ClaimResult.SUCCESS        -> AnnexationResult.SUCCESS
+            ClaimResult.ALREADY_OWNED  -> AnnexationResult.ALREADY_OWNED
+            ClaimResult.ALREADY_TAKEN  -> AnnexationResult.ALREADY_CLAIMED
+            ClaimResult.NOT_ADJACENT   -> AnnexationResult.NOT_ADJACENT
+            ClaimResult.NOT_ALLOWED    -> AnnexationResult.NOT_ALLOWED
+            ClaimResult.TOO_CLOSE      -> AnnexationResult.TOO_CLOSE
         }
-
-        if (repository.isChunkClaimed(x, z)) {
-            return AnnexationResult.ALREADY_CLAIMED
-        }
-
-        val isAdjacent = campement.chunks.isNotEmpty() &&
-                TerritoryChunks.isAdjacentToAny(campement.chunks, chunk, { it.x }, { it.z })
-
-        if (!isAdjacent) {
-            return AnnexationResult.NOT_ADJACENT
-        }
-
-        campement.addChunk(chunk)
-        logger.info("Campement $ownerID claimed chunk $chunk")
-        repository.save(campement)
-        eventService.callEvent(CampementChunkClaimEvent(ownerID, chunk))
-        return AnnexationResult.SUCCESS
     }
 
-
-    /**
-     * Attempts to unclaim a chunk from the player's camp.
-     * @param ownerID The UUID of the player unclaiming the chunk.
-     * @param chunk The chunk coordinates in the format "x,z".
-     * @return True if the chunk was successfully unclaimed, false otherwise.
-     */
     open fun unclaimChunk(ownerID: UUID, x: Int, z: Int): Boolean {
-        val campement = repository.getById(ownerID)
+        val camp = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
-
-        val chunk = CampementChunk(x, z)
-        val result = campement.unclaim(chunk)
-        if (!result) return false
-
-        logger.info("Campement $ownerID unclaimed chunk $chunk")
-        repository.save(campement)
-        eventService.callEvent(CampementChunkUnclaimEvent(ownerID, chunk))
-        return true
+        val target = CampementChunk(x, z)
+        val unclaimRes = TerritoryClaimManager.unclaim(
+            owned = camp.chunks,
+            target = target,
+            policy = Policy(
+                forbidLastRemoval = true,
+                forbidSpawnRemoval = true,
+                keepConnected = true
+            ),
+            io = UnclaimOperations(
+                authorized = { true },
+                isSpawnChunk = { c -> c == CampementChunk(camp.spawnLocation) },
+                removeAndPersist = { c ->
+                    camp.unclaim(c)
+                    repository.save(camp)
+                    eventService.callEvent(CampementChunkUnclaimEvent(ownerID, c))
+                },
+                coords = { c -> c.x to c.z }
+            )
+        )
+        return unclaimRes == UnclaimResult.SUCCESS
     }
 
     /**
@@ -211,14 +235,26 @@ open class CampementService(
                             + ".")
 
                 AnnexationResult.ALREADY_CLAIMED -> owner.sendMessage(
-                    CampementChatError + "Ce chunk appartient à un autre campement. Visualise les bordures de ton campement avec "
+                    CampementChatError + "Ce chunk appartient à un autre campement. " +
+                            "Visualise les bordures de ton campement avec "
                             + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
 
                 AnnexationResult.NOT_ADJACENT -> owner.sendMessage(
-                    CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. Visualise les bordures avec "
+                    CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. " +
+                            "Visualise les bordures avec "
                             + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
+
+                AnnexationResult.TOO_CLOSE -> owner.sendMessage(
+                    CampementChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d’un autre campement. " +
+                            "Visualise les bordures avec " +
+                            Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD) + "."
+                )
+
+                AnnexationResult.NOT_ALLOWED -> owner.sendMessage(
+                    CampementChatError + "Tu n'es pas autorisé à annexer ce chunk."
+                )
             }
         } else {
             if (!campement.chunks.contains(campementChunk)) {
@@ -230,21 +266,24 @@ open class CampementService(
             }
             if (campement.chunks.size == 1) {
                 owner.sendMessage(
-                    CampementChatError + "Tu ne peux pas supprimer ton dernier chunk ! Si tu veux supprimer ton campement, utilise "
+                    CampementChatError + "Tu ne peux pas supprimer ton dernier chunk ! " +
+                            "Si tu veux supprimer ton campement, utilise "
                             + Component.text("/campement delete", NamedTextColor.GOLD)
                             + ".")
                 return
             }
             if (campementChunk == CampementChunk(campement.spawnLocation)) {
                 owner.sendMessage(
-                    CampementChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn de ton campement. Déplace-le dans un autre chunk avec "
+                    CampementChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn " +
+                            "de ton campement. Déplace-le dans un autre chunk avec "
                             + Component.text("/campement setspawn", NamedTextColor.GOLD)
                             + " avant de retirer celui-ci.")
                 return
             }
-            if (!TerritoryChunks.isUnclaimValid(campement.chunks, campementChunk, { it.x }, { it.z })) {
+            if (!TerritoryClaimManager.isUnclaimValid(campement.chunks, campementChunk) { _ -> chunk.x to chunk.z }) {
                 owner.sendMessage(
-                    CampementChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ton campement en plusieurs parties. Visualise les bordures avec "
+                    CampementChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ton campement " +
+                            "en plusieurs parties. Visualise les bordures avec "
                             + Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
                             + ".")
                 return

@@ -1,6 +1,6 @@
 package onl.tesseract.srp.service.campement
 
-import onl.tesseract.srp.util.TerritoryChunks
+import onl.tesseract.srp.util.TerritoryBordersManager
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 import org.springframework.stereotype.Component
@@ -17,7 +17,7 @@ open class CampementBorderRenderer {
      */
     fun showBorders(player: Player, chunks: List<List<Int>>) {
         clearBorders(player)
-        activeBorders[player] = TerritoryChunks.startBorderTask(
+        activeBorders[player] = TerritoryBordersManager.startBorderTask(
             player = player,
             chunksProvider = { chunks },
             x = { it[0] },

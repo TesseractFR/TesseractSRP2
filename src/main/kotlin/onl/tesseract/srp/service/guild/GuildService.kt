@@ -456,24 +456,39 @@ open class GuildService(
     open fun claimChunk(guildID: Int, requesterID: UUID, chunk: Chunk): GuildClaimResult {
         val guild = getGuild(guildID)
         val target = GuildChunk(chunk.x, chunk.z)
-        val result = when {
-            guild.getMemberRole(requesterID) != GuildRole.Leader ->
-                GuildClaimResult.NOT_AUTHORIZED
-            target in guild.chunks ->
-                GuildClaimResult.ALREADY_OWNED
-            guildRepository.areChunksClaimed(listOf(target)) ->
-                GuildClaimResult.ALREADY_CLAIMED
-            !(guild.chunks.isEmpty() ||
-                    TerritoryChunks.isAdjacentToAny(guild.chunks, target, { it.x }, { it.z })) ->
-                GuildClaimResult.NOT_ADJACENT
-            else -> {
-                guild.addChunk(target)
-                guildRepository.save(guild)
-                eventService.callEvent(GuildChunkClaimEvent(requesterID, target))
-                GuildClaimResult.SUCCESS
-            }
+
+        val claimRes = TerritoryClaimManager.claim(
+            owned = guild.chunks,
+            target = target,
+            policy = Policy(
+                requireAdjacent = true,
+                allowFirstAnywhere = true,
+                protectionRadius = GUILD_PROTECTION_RADIUS
+            ),
+            io = ClaimOperations(
+                authorized = { guild.getMemberRole(requesterID) == GuildRole.Leader },
+                takenElsewhere = { c -> guildRepository.areChunksClaimed(listOf(c)) },
+                addAndPersist = { c ->
+                    guild.addChunk(c)
+                    guildRepository.save(guild)
+                    eventService.callEvent(GuildChunkClaimEvent(requesterID, c))
+                },
+                coords = { c -> c.x to c.z },
+                isTakenAt = { x, z ->
+                    val otherGuild = guildRepository.findGuildByChunk(GuildChunk(x, z))
+                    otherGuild != null && otherGuild.id != guildID
+                }
+            )
+        )
+
+        return when (claimRes) {
+            ClaimResult.SUCCESS         -> GuildClaimResult.SUCCESS
+            ClaimResult.ALREADY_OWNED   -> GuildClaimResult.ALREADY_OWNED
+            ClaimResult.ALREADY_TAKEN   -> GuildClaimResult.ALREADY_CLAIMED
+            ClaimResult.NOT_ADJACENT    -> GuildClaimResult.NOT_ADJACENT
+            ClaimResult.NOT_ALLOWED     -> GuildClaimResult.NOT_AUTHORIZED
+            ClaimResult.TOO_CLOSE       -> GuildClaimResult.TOO_CLOSE
         }
-        return result
     }
 
     /**
@@ -482,25 +497,35 @@ open class GuildService(
     open fun unclaimChunk(guildID: Int, requesterID: UUID, chunk: Chunk): GuildUnclaimResult {
         val guild = getGuild(guildID)
         val target = GuildChunk(chunk.x, chunk.z)
-        val result = when {
-            guild.getMemberRole(requesterID) != GuildRole.Leader ->
-                GuildUnclaimResult.NOT_AUTHORIZED
-            target !in guild.chunks ->
-                GuildUnclaimResult.ALREADY_CLAIMED
-            guild.chunks.size == 1 ->
-                GuildUnclaimResult.LAST_CHUNK
-            target == GuildChunk(guild.spawnLocation) ->
-                GuildUnclaimResult.SPAWNPOINT_CHUNK
-            !TerritoryChunks.isUnclaimValid(guild.chunks, target, { it.x }, { it.z }) ->
-                GuildUnclaimResult.NOT_AUTHORIZED
-            else -> {
-                guild.removeChunk(target)
-                guildRepository.save(guild)
-                eventService.callEvent(GuildChunkUnclaimEvent(requesterID, target))
-                GuildUnclaimResult.SUCCESS
-            }
+
+        val unclaimRes = TerritoryClaimManager.unclaim(
+            owned = guild.chunks,
+            target = target,
+            policy = Policy(
+                forbidLastRemoval = true,
+                forbidSpawnRemoval = true,
+                keepConnected = true
+            ),
+            io = UnclaimOperations(
+                authorized = { guild.getMemberRole(requesterID) == GuildRole.Leader },
+                isSpawnChunk = { c -> c == GuildChunk(guild.spawnLocation)
+                        || c == guild.visitorSpawnLocation?.let { GuildChunk(it) }
+                               },
+                removeAndPersist = { c ->
+                    guild.removeChunk(c)
+                    guildRepository.save(guild)
+                    eventService.callEvent(GuildChunkUnclaimEvent(requesterID, c))
+                },
+                coords = { c -> c.x to c.z }
+            )
+        )
+        return when (unclaimRes) {
+            UnclaimResult.SUCCESS         -> GuildUnclaimResult.SUCCESS
+            UnclaimResult.NOT_OWNED       -> GuildUnclaimResult.ALREADY_CLAIMED
+            UnclaimResult.NOT_ALLOWED     -> GuildUnclaimResult.NOT_AUTHORIZED
+            UnclaimResult.LAST_CHUNK      -> GuildUnclaimResult.LAST_CHUNK
+            UnclaimResult.IS_SPAWN_CHUNK  -> GuildUnclaimResult.SPAWNPOINT_CHUNK
         }
-        return result
     }
 
     /**
@@ -539,6 +564,10 @@ open class GuildService(
                 GuildClaimResult.NOT_AUTHORIZED -> player.sendMessage(
                     GuildChatError + "Tu n'es pas autorisé à annexer un chunk pour la guilde."
                 )
+
+                GuildClaimResult.TOO_CLOSE -> player.sendMessage(
+                    GuildChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d'une autre guilde."
+                )
             }
         } else {
             when (unclaimChunk(guild.id, player.uniqueId, chunk)) {
@@ -556,12 +585,13 @@ open class GuildService(
                             Component.text("/guild delete", NamedTextColor.GOLD) + "."
                 )
                 GuildUnclaimResult.SPAWNPOINT_CHUNK -> player.sendMessage(
-                    GuildChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn de " +
+                    GuildChatError + "Tu ne peux pas désannexer ce chunk, il contient un point de spawn de " +
                             "ta guilde. Déplace-le dans un autre chunk avec " +
-                            Component.text("/guild setspawn", NamedTextColor.GOLD) + " avant de retirer celui-ci."
+                            Component.text("/guild setspawn (private/visitor)", NamedTextColor.GOLD)
+                            + " avant de retirer celui-ci."
                 )
                 GuildUnclaimResult.NOT_AUTHORIZED -> player.sendMessage(
-                    GuildChatError + "Tu n'as pas la permission OU ce retrait diviserait ta guilde " +
+                    GuildChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ta guilde " +
                             "en plusieurs parties. Visualise les bordures avec " +
                             Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
                 )
@@ -666,7 +696,7 @@ enum class InvitationResult { Invited, Joined, Failed }
 enum class JoinResult { Joined, Requested, Failed }
 enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
 enum class LeaveResult { Success, LeaderMustDelete }
-enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED }
+enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED, TOO_CLOSE }
 enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
 enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
 enum class StaffSetRoleResult {
