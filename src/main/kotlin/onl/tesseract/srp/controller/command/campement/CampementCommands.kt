@@ -1,5 +1,6 @@
 package onl.tesseract.srp.controller.command.campement
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.commandBuilder.annotation.Argument
@@ -17,14 +18,15 @@ import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.campement.CampementCreationResult
 import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.campement.CampementSetSpawnResult
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Component as SpringComponent
 
-@Component
+@SpringComponent
 @Command(name = "campement", playerOnly = true)
 class CampementCommands(
     private var campementService: CampementService,
@@ -86,39 +88,57 @@ class CampementCommands(
         }
     }
 
-    @Command(name = "setspawn", description = "Placer un nouveau point de spawn de campement.")
-    fun setSpawn(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
-        if (campementService.setSpawnpoint(sender.uniqueId, sender.location)) {
-            sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
-        } else {
-            sender.sendMessage(CampementChatError + "Impossible de déplacer le point de spawn ici.")
-        }
-    }
-
     @Command(
         name = "spawn",
-        description = "Se téléporter au spawn de son campement (pas d'argument dans la commande) ou de celui d’un autre joueur."
+        description = "Se téléporter au spawn de son campement (pas d'argument) ou de celui d’un autre joueur."
     )
     fun teleportToCampementSpawn(sender: Player, @Argument("joueur", optional = true) ownerName: CampOwnerArg?) {
         val targetName = ownerName?.get()
-        if (targetName == null || targetName == sender.name
-        ) {
+        if (targetName == null || targetName == sender.name) {
             if (!campementService.hasCampement(sender)) return
-            val campement = campementService.getCampementByOwner(sender.uniqueId) ?: return
-            teleportService.teleport(sender, campement.spawnLocation) {
+            val loc = campementService.getCampSpawn(sender.uniqueId)
+            if (loc == null) {
+                sender.sendMessage(CampementChatError + "Aucun spawn défini pour ton campement.")
+                return
+            }
+            teleportService.teleport(sender, loc) {
                 sender.sendMessage(CampementChatSuccess + "Tu as été téléporté à ton campement.")
             }
             return
         }
         val target = Bukkit.getOfflinePlayer(targetName)
-        val campement = campementService.getCampementByOwner(target.uniqueId)
-        if (campement == null) {
+        val loc = campementService.getCampSpawn(target.uniqueId)
+        if (loc == null) {
             sender.sendMessage(CampementChatError + "${target.name} ne possède pas de campement.")
             return
         }
-        teleportService.teleport(sender, campement.spawnLocation) {
+        teleportService.teleport(sender, loc) {
             sender.sendMessage(CampementChatSuccess + "Tu as été téléporté au campement de ${target.name}.")
+        }
+    }
+
+    @Command(name = "setspawn", description = "Placer un nouveau point de spawn de campement.")
+    fun setCampementSpawn(sender: Player) {
+        if (!campementService.hasCampement(sender)) return
+
+        when (campementService.setSpawnpoint(sender.uniqueId, sender.location)) {
+            CampementSetSpawnResult.SUCCESS -> {
+                sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
+            }
+            CampementSetSpawnResult.INVALID_WORLD -> {
+                sender.sendMessage(CampementChatError +
+                        "Tu ne peux pas définir le spawn de ton campement dans ce monde.")
+            }
+            CampementSetSpawnResult.OUTSIDE_TERRITORY -> {
+                sender.sendMessage(
+                    CampementChatError + "Tu dois être dans un chunk de ton campement pour définir le spawn. " +
+                            "Visualise les bordures avec " +
+                            Component.text("/campement border", NamedTextColor.GOLD) + "."
+                )
+            }
+            CampementSetSpawnResult.NOT_AUTHORIZED -> {
+                sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
+            }
         }
     }
 
@@ -144,16 +164,20 @@ class CampementCommands(
         val trustedPlayerID = targetPlayerArg.get().uniqueId
 
         if (ownerID == trustedPlayerID) {
-            sender.sendMessage(CampementChatFormat + "C'est bien, tu as confiance en toi ! Mais bon, t'es déjà propriétaire :)")
+            sender.sendMessage(CampementChatFormat + "C'est bien, tu as confiance en toi ! " +
+                    "Mais bon, t'es déjà propriétaire :)")
             return
         }
 
         val success = campementService.trustPlayer(ownerID, trustedPlayerID)
         if (success) {
-            sender.sendMessage(CampementChatSuccess + "${targetPlayerArg.get().name} a été ajouté en tant que joueur de confiance dans ton campement !")
-            targetPlayerArg.get().sendMessage(CampementChatSuccess + "Tu as été ajouté en tant que joueur de confiance dans le campement de ${sender.name}.")
+            sender.sendMessage(CampementChatSuccess + "${targetPlayerArg.get().name} a été ajouté " +
+                    "en tant que joueur de confiance dans ton campement !")
+            targetPlayerArg.get().sendMessage(CampementChatSuccess + "Tu as été ajouté en tant que " +
+                    "joueur de confiance dans le campement de ${sender.name}.")
         } else {
-            sender.sendMessage(CampementChatError + "Impossible d'ajouter ce joueur. Assure-toi d'être le propriétaire du campement et que le joueur n'est pas déjà ajouté.")
+            sender.sendMessage(CampementChatError + "Impossible d'ajouter ce joueur. " +
+                    "Assure-toi d'être le propriétaire du campement et que le joueur n'est pas déjà ajouté.")
         }
     }
 
@@ -175,7 +199,8 @@ class CampementCommands(
 
         val success = campementService.untrustPlayer(ownerID, trustedPlayerUUID)
         if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la liste des joueurs de confiance de ton campement !")
+            sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
+                    "liste des joueurs de confiance de ton campement !")
         } else {
             sender.sendMessage(CampementChatError + "Erreur lors du retrait de ${target.name}.")
         }
@@ -216,5 +241,4 @@ class CampementCommands(
             menu.mainHandInvocationMenu(invocable, sender)
         }
     }
-
 }

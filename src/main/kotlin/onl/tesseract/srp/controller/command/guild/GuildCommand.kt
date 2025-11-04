@@ -224,8 +224,12 @@ class GuildCommand(
         }
     }
 
-    @Command(name = "setspawn", playerOnly = true, description = "Définir le spawn privé (défaut) ou visiteurs.")
-    fun setSpawn(
+    @Command(
+        name = "setspawn",
+        playerOnly = true,
+        description = "Définir le spawn privé (défaut) ou visiteurs."
+    )
+    fun setGuildSpawn(
         sender: Player,
         @Argument("type", optional = true) kindArg: GuildSpawnKindArg?
     ) = inGuildWorld(sender) {
@@ -233,7 +237,6 @@ class GuildCommand(
             ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
 
         val kind = kindArg?.get() ?: GuildService.GuildSpawnKind.PRIVATE
-
         when (guildService.setSpawnpoint(guild.id, sender.uniqueId, sender.location, kind)) {
             GuildSetSpawnResult.SUCCESS -> {
                 val label = if (kind == GuildService.GuildSpawnKind.PRIVATE) "privé" else "visiteurs"
@@ -244,14 +247,16 @@ class GuildCommand(
             GuildSetSpawnResult.INVALID_WORLD ->
                 sender.sendMessage(GuildChatError + "Tu ne peux pas définir le spawn dans ce monde.")
             GuildSetSpawnResult.OUTSIDE_TERRITORY ->
-                sender.sendMessage(GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. " +
-                        "Visualise les bordures avec "
-                        + Component.text("/guild border", NamedTextColor.GOLD)
-                        + ".")
+                sender.sendMessage(
+                    GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. " +
+                            "Visualise les bordures avec " + Component.text("/guild border", NamedTextColor.GOLD) + "."
+                )
         }
     }
 
-    @Command(name = "spawn", playerOnly = true,
+    @Command(
+        name = "spawn",
+        playerOnly = true,
         description = "Se téléporter au spawn de sa guilde (sans argument) ou d’une autre guilde."
     )
     fun teleportToGuildSpawn(sender: Player, @Argument("guilde", optional = true) nameArg: GuildArg?) {
@@ -262,13 +267,17 @@ class GuildCommand(
             guildRepository.findGuildByName(targetName) to (GuildChatError + "La guilde \"$targetName\" n’existe pas.")
         }
         val targetGuild = guild ?: run {
-            sender.sendMessage(errorMsg)
-            return
+            sender.sendMessage(errorMsg); return
         }
         val destination = if (targetName == null) {
-            targetGuild.spawnLocation
+            guildService.getPrivateSpawn(targetGuild.id)
         } else {
-            targetGuild.visitorSpawnLocation ?: targetGuild.spawnLocation
+            guildService.getVisitorSpawn(targetGuild.id) ?: guildService.getPrivateSpawn(targetGuild.id)
+        }
+
+        if (destination == null) {
+            sender.sendMessage(GuildChatError + "Aucun spawn défini pour cette guilde.")
+            return
         }
         teleportService.teleport(sender, destination) {
             val msg = if (targetName == null)

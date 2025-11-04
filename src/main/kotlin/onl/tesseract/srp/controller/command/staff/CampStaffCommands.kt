@@ -93,7 +93,9 @@ class CampStaffCommands(
     }
 
     @Command(name = "trust", description = "Ajouter un membre (target) dans le campement d'un joueur (owner)")
-    fun trustPlayer(sender: CommandSender, @Argument("owner") ownerName: CampOwnerArg, @Argument("target") targetName: PlayerArg) {
+    fun trustPlayer(sender: CommandSender,
+                    @Argument("owner") ownerName: CampOwnerArg,
+                    @Argument("target") targetName: PlayerArg) {
         val owner = Bukkit.getOfflinePlayer(ownerName.get())
         val target = targetName.get()
 
@@ -101,14 +103,16 @@ class CampStaffCommands(
         val targetUUID = target.uniqueId
 
         if (ownerUUID == targetUUID) {
-            sender.sendMessage(CampementChatFormat + "Impossible d'ajouter le propriétaire lui-même en tant que joueur de confiance.")
+            sender.sendMessage(CampementChatFormat +
+                    "Impossible d'ajouter le propriétaire lui-même en tant que joueur de confiance.")
             return
         }
 
         val success = campementService.trustPlayer(ownerUUID, targetUUID)
         if (success) {
             sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
-            target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} en tant que joueur de confiance.")
+            target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
+                    "en tant que joueur de confiance.")
         } else {
             sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
         }
@@ -116,7 +120,9 @@ class CampStaffCommands(
 
 
     @Command(name = "untrust", description = "Retirer un joueur de confiance (target) du campement d'un joueur (owner)")
-    fun untrustPlayer(sender: CommandSender, @Argument("owner") ownerName: CampOwnerArg, @Argument("target") targetName: TrustedPlayerArg) {
+    fun untrustPlayer(sender: CommandSender,
+                      @Argument("owner") ownerName: CampOwnerArg,
+                      @Argument("target") targetName: TrustedPlayerArg) {
         val owner = Bukkit.getOfflinePlayer(ownerName.get())
         val target = Bukkit.getOfflinePlayer(targetName.get())
 
@@ -148,7 +154,8 @@ class CampStaffCommands(
         if (trusted.isEmpty()) {
             sender.sendMessage(CampementChatFormat + "Aucun joueur de confiance pour le campement de ${owner.name}.")
         } else {
-            sender.sendMessage(CampementChatFormat + "Joueurs de confiance du campement de ${owner.name} : ${trusted.joinToString(", ")}")
+            sender.sendMessage(CampementChatFormat +
+                    "Joueurs de confiance du campement de ${owner.name} : ${trusted.joinToString(", ")}")
         }
     }
 }

@@ -126,25 +126,38 @@ open class GuildService(
         guildID: Int,
         requesterID: UUID,
         newLocation: Location,
-        kind: GuildSpawnKind = GuildSpawnKind.PRIVATE
+        kind: GuildSpawnKind
     ): GuildSetSpawnResult {
         val guild = getGuild(guildID)
-        val result = if (newLocation.world.name != SrpWorld.GuildWorld.bukkitName) {
-            GuildSetSpawnResult.INVALID_WORLD
-        } else if (guild.getMemberRole(requesterID) != GuildRole.Leader) {
-            GuildSetSpawnResult.NOT_AUTHORIZED
-        } else {
-            val ok = when (kind) {
-                GuildSpawnKind.PRIVATE  -> guild.setSpawnpoint(newLocation)
-                GuildSpawnKind.VISITOR  -> guild.setVisitorSpawnpoint(newLocation)
-            }
-            if (ok) GuildSetSpawnResult.SUCCESS else GuildSetSpawnResult.OUTSIDE_TERRITORY
+        val res = TerritorySpawnManager.setSpawn(
+            newLocation,
+            policy = TerritorySpawnManager.SetSpawnPolicy(
+                isCorrectWorld = { it.world.name == SrpWorld.GuildWorld.bukkitName },
+                requireInsideTerritory = true
+            ),
+            io = TerritorySpawnManager.SetSpawnOperations(
+                authorized = { guild.getMemberRole(requesterID) == GuildRole.Leader },
+                isInsideTerritory = { loc -> guild.chunks.contains(GuildChunk(loc.chunk.x, loc.chunk.z)) },
+                setAndPersist = { loc ->
+                    val ok = when (kind) {
+                        GuildSpawnKind.PRIVATE -> guild.setSpawnpoint(loc)
+                        GuildSpawnKind.VISITOR -> guild.setVisitorSpawnpoint(loc)
+                    }
+                    if (ok) guildRepository.save(guild)
+                    ok
+                }
+            )
+        )
+        return when (res) {
+            TerritorySpawnManager.SetSpawnResult.SUCCESS           -> GuildSetSpawnResult.SUCCESS
+            TerritorySpawnManager.SetSpawnResult.NOT_AUTHORIZED    -> GuildSetSpawnResult.NOT_AUTHORIZED
+            TerritorySpawnManager.SetSpawnResult.INVALID_WORLD     -> GuildSetSpawnResult.INVALID_WORLD
+            TerritorySpawnManager.SetSpawnResult.OUTSIDE_TERRITORY -> GuildSetSpawnResult.OUTSIDE_TERRITORY
         }
-        if (result == GuildSetSpawnResult.SUCCESS) {
-            guildRepository.save(guild)
-        }
-        return result
     }
+
+    open fun getPrivateSpawn(guildId: Int): Location? = getGuild(guildId).spawnLocation
+    open fun getVisitorSpawn(guildId: Int): Location? = getGuild(guildId).visitorSpawnLocation
 
     open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
         val isGuildWorld = chunk.world.name == SrpWorld.GuildWorld.bukkitName

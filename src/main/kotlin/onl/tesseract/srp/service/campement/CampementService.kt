@@ -127,17 +127,39 @@ open class CampementService(
     }
 
     @Transactional
-    open fun setSpawnpoint(ownerID: UUID, newLocation: Location): Boolean {
+    open fun setSpawnpoint(ownerID: UUID, newLocation: Location): CampementSetSpawnResult {
         val campement = repository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement $ownerID does not exist")
 
-        if (worldService.getSrpWorld(newLocation) != SrpWorld.Elysea)
-            return false
-        val result = campement.setSpawnpoint(newLocation)
-        if (result)
-            repository.save(campement)
-        return result
+        val res = TerritorySpawnManager.setSpawn(
+            newLocation,
+            policy = TerritorySpawnManager.SetSpawnPolicy(
+                isCorrectWorld = { worldService.getSrpWorld(it) == SrpWorld.Elysea },
+                requireInsideTerritory = true
+            ),
+            io = TerritorySpawnManager.SetSpawnOperations(
+                authorized = { true },
+                isInsideTerritory = { loc ->
+                    campement.chunks.contains(CampementChunk(loc.chunk.x, loc.chunk.z))
+                },
+                setAndPersist = { loc ->
+                    val ok = campement.setSpawnpoint(loc)
+                    if (ok) repository.save(campement)
+                    ok
+                }
+            )
+        )
+
+        return when (res) {
+            TerritorySpawnManager.SetSpawnResult.SUCCESS           -> CampementSetSpawnResult.SUCCESS
+            TerritorySpawnManager.SetSpawnResult.INVALID_WORLD     -> CampementSetSpawnResult.INVALID_WORLD
+            TerritorySpawnManager.SetSpawnResult.OUTSIDE_TERRITORY -> CampementSetSpawnResult.OUTSIDE_TERRITORY
+            TerritorySpawnManager.SetSpawnResult.NOT_AUTHORIZED    -> CampementSetSpawnResult.NOT_AUTHORIZED
+        }
     }
+
+    open fun getCampSpawn(ownerID: UUID): Location? =
+        repository.getById(ownerID)?.spawnLocation
 
     /**
      * Increments the level of the player's camp.
@@ -358,6 +380,8 @@ open class CampementService(
         return true
     }
 }
+
+enum class CampementSetSpawnResult { SUCCESS, INVALID_WORLD, OUTSIDE_TERRITORY, NOT_AUTHORIZED }
 
 data class CampementCreationResult(val campement: Campement?, val reason: List<Reason>) {
 
