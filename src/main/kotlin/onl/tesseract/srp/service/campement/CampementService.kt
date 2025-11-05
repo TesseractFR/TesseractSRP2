@@ -35,11 +35,65 @@ open class CampementService(
     private val eventService: EventService,
     private val worldService: WorldService,
     private val srpPlayerService: SrpPlayerService
-) {
+) : TerritoryService<CampementChunk, UUID>() {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
     }
+
+    override val spawnProtectionRadius: Int = SPAWN_PROTECTION_RADIUS
+    override val territoryProtectionRadius: Int = CAMP_PROTECTION_RADIUS
+
+    private fun camp(ownerID: UUID): Campement =
+        repository.getById(ownerID) ?: error("Campement $ownerID does not exist")
+
+    override fun isCorrectWorld(loc: Location): Boolean = worldService.getSrpWorld(loc.world) == SrpWorld.Elysea
+    override fun hasTerritory(ownerId: UUID): Boolean = repository.getById(ownerId) != null
+    override fun isChunkTaken(x: Int, z: Int): Boolean = repository.getCampementByChunk(x, z) != null
+    override fun isTakenByOther(ownerId: UUID, x: Int, z: Int): Boolean {
+        val other = repository.getCampementByChunk(x, z) ?: return false
+        return other.ownerID != ownerId
+    }
+    override fun ownerOf(x: Int, z: Int): UUID? = repository.getCampementByChunk(x, z)?.ownerID
+    override fun getOwnedChunks(ownerId: UUID): MutableSet<CampementChunk> =
+        camp(ownerId).chunks.toMutableSet()
+
+    override fun chunkOf(x: Int, z: Int): CampementChunk = CampementChunk(x, z)
+    override fun chunkOf(loc: Location): CampementChunk = CampementChunk(loc.chunk.x, loc.chunk.z)
+    override fun coords(c: CampementChunk): Pair<Int, Int> = c.x to c.z
+
+    override fun isAuthorizedToClaim(ownerId: UUID, requesterId: UUID): Boolean =
+        ownerId == requesterId
+
+    override fun isAuthorizedToUnclaim(ownerId: UUID, requesterId: UUID): Boolean =
+        ownerId == requesterId
+
+    override fun isAuthorizedToSetSpawn(ownerId: UUID, requesterId: UUID): Boolean =
+        ownerId == requesterId
+
+    override fun persistAfterClaim(ownerId: UUID, claimed: CampementChunk) {
+        val c = camp(ownerId)
+        c.addChunk(claimed)
+        repository.save(c)
+        eventService.callEvent(CampementChunkClaimEvent(ownerId, claimed))
+    }
+
+    override fun persistAfterUnclaim(ownerId: UUID, unclaimed: CampementChunk) {
+        val c = camp(ownerId)
+        c.unclaim(unclaimed)
+        repository.save(c)
+        eventService.callEvent(CampementChunkUnclaimEvent(ownerId, unclaimed))
+    }
+
+    override fun persistSpawn(ownerId: UUID, loc: Location): Boolean {
+        val c = camp(ownerId)
+        val ok = c.setSpawnpoint(loc)
+        if (ok) repository.save(c)
+        return ok
+    }
+
+    override fun isSpawnChunk(ownerId: UUID, c: CampementChunk): Boolean =
+        c == CampementChunk(camp(ownerId).spawnLocation)
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
         return repository.getById(ownerID)
@@ -51,9 +105,6 @@ open class CampementService(
 
     open fun getAllCampements(): List<Campement> = repository.findAll()
 
-    /**
-     * Check if the player has a campement and send him an error message if not.
-     */
     open fun hasCampement(sender: Player): Boolean {
         val has = getCampementByOwner(sender.uniqueId) != null
         if (!has) {
@@ -67,58 +118,47 @@ open class CampementService(
     @Transactional
     open fun createCampement(ownerID: UUID, spawnLocation: Location): CampementCreationResult {
         val player = srpPlayerService.getPlayer(ownerID)
-
-        val errors = TerritoryClaimManager.performCreationChecks(
+        val errors = performCreationChecks(
+            ownerId = ownerID,
             location = spawnLocation,
-            player = player,
-            policy = TerritoryClaimManager.CreationPolicy(
-                isCorrectWorld = { worldService.getSrpWorld(it) == SrpWorld.Elysea },
-                spawnProtectionRadius = SPAWN_PROTECTION_RADIUS,
-                protectionRadius = CAMP_PROTECTION_RADIUS,
-                minMoney = null,
-                minRank = null
-            ),
-            alreadyHasTerritory = { repository.getById(ownerID) != null },
-            isNameTaken = null,
-            isChunkTaken = { cx, cz ->
-                val other = repository.getCampementByChunk(cx, cz)
-                other != null && other.ownerID != ownerID
-            }
+            playerMoney = null,
+            playerRank = player.rank,
+            minMoney = null,
+            minRank = null,
+            alreadyHas = (repository.getById(ownerID) != null),
+            isNameTaken = null
         )
 
         if (errors.isNotEmpty()) {
             val mapped = errors.map {
                 when (it) {
-                    CreationError.ALREADY_HAS_TERRITORY       -> CampementCreationResult.Reason.AlreadyHasCampement
-                    CreationError.INVALID_WORLD               -> CampementCreationResult.Reason.InvalidWorld
-                    CreationError.NEAR_SPAWN                  -> CampementCreationResult.Reason.NearSpawn
-                    CreationError.TOO_CLOSE_TO_OTHER_TERRITORY-> CampementCreationResult.Reason.NearCampement
+                    CreationError.ALREADY_HAS_TERRITORY -> CampementCreationResult.Reason.AlreadyHasCampement
+                    CreationError.INVALID_WORLD -> CampementCreationResult.Reason.InvalidWorld
+                    CreationError.NEAR_SPAWN -> CampementCreationResult.Reason.NearSpawn
+                    CreationError.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementCreationResult.Reason.NearCampement
                     CreationError.ON_OTHER_TERRITORY -> CampementCreationResult.Reason.OnOtherCampement
-                    CreationError.NAME_TAKEN -> CampementCreationResult.Reason.Ignored
-                    CreationError.NOT_ENOUGH_MONEY -> CampementCreationResult.Reason.Ignored
+                    CreationError.NAME_TAKEN,
+                    CreationError.NOT_ENOUGH_MONEY,
                     CreationError.RANK_TOO_LOW -> CampementCreationResult.Reason.Ignored
                 }
             }
             return CampementCreationResult.failed(mapped)
         }
-
-        val chunk = CampementChunk(spawnLocation.chunk.x, spawnLocation.chunk.z)
+        val spawnChunk = CampementChunk(spawnLocation.chunk.x, spawnLocation.chunk.z)
         val campLevel = player.rank.campLevel
-
         val campement = Campement(
             ownerID = ownerID,
             trustedPlayers = emptySet(),
-            chunks = mutableSetOf(chunk),
+            chunks = mutableSetOf(spawnChunk),
             campLevel = campLevel,
-            spawnLocation = spawnLocation,
+            spawnLocation = spawnLocation
         )
         logger.info("New campement (level $campLevel) created for owner $ownerID")
         repository.save(campement)
-        eventService.callEvent(CampementChunkClaimEvent(ownerID, chunk))
+        eventService.callEvent(CampementChunkClaimEvent(ownerID, spawnChunk))
 
         return CampementCreationResult.success(campement)
     }
-
 
     @Transactional
     open fun deleteCampement(id: UUID) {
@@ -127,39 +167,15 @@ open class CampementService(
     }
 
     @Transactional
-    open fun setSpawnpoint(ownerID: UUID, newLocation: Location): CampementSetSpawnResult {
-        val campement = repository.getById(ownerID)
-            ?: throw IllegalArgumentException("Campement $ownerID does not exist")
-
-        val res = TerritorySpawnManager.setSpawn(
-            newLocation,
-            policy = TerritorySpawnManager.SetSpawnPolicy(
-                isCorrectWorld = { worldService.getSrpWorld(it) == SrpWorld.Elysea },
-                requireInsideTerritory = true
-            ),
-            io = TerritorySpawnManager.SetSpawnOperations(
-                authorized = { true },
-                isInsideTerritory = { loc ->
-                    campement.chunks.contains(CampementChunk(loc.chunk.x, loc.chunk.z))
-                },
-                setAndPersist = { loc ->
-                    val ok = campement.setSpawnpoint(loc)
-                    if (ok) repository.save(campement)
-                    ok
-                }
-            )
-        )
-
-        return when (res) {
-            TerritorySpawnManager.SetSpawnResult.SUCCESS           -> CampementSetSpawnResult.SUCCESS
-            TerritorySpawnManager.SetSpawnResult.INVALID_WORLD     -> CampementSetSpawnResult.INVALID_WORLD
-            TerritorySpawnManager.SetSpawnResult.OUTSIDE_TERRITORY -> CampementSetSpawnResult.OUTSIDE_TERRITORY
-            TerritorySpawnManager.SetSpawnResult.NOT_AUTHORIZED    -> CampementSetSpawnResult.NOT_AUTHORIZED
+    open fun setSpawnpoint(ownerID: UUID, newLocation: Location): CampementSetSpawnResult =
+        when (doSetSpawn(ownerID, ownerID, newLocation)) {
+            SetSpawnResult.SUCCESS -> CampementSetSpawnResult.SUCCESS
+            SetSpawnResult.INVALID_WORLD -> CampementSetSpawnResult.INVALID_WORLD
+            SetSpawnResult.OUTSIDE_TERRITORY -> CampementSetSpawnResult.OUTSIDE_TERRITORY
+            SetSpawnResult.NOT_AUTHORIZED -> CampementSetSpawnResult.NOT_AUTHORIZED
         }
-    }
 
-    open fun getCampSpawn(ownerID: UUID): Location? =
-        repository.getById(ownerID)?.spawnLocation
+    open fun getCampSpawn(ownerID: UUID): Location? = repository.getById(ownerID)?.spawnLocation
 
     /**
      * Increments the level of the player's camp.
@@ -180,119 +196,62 @@ open class CampementService(
         return false
     }
 
-    enum class AnnexationResult {
+    enum class CampClaimResult {
         SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, TOO_CLOSE, NOT_ALLOWED
     }
 
-    open fun claimChunk(ownerID: UUID, x: Int, z: Int): AnnexationResult {
-        val camp = repository.getById(ownerID)
-            ?: throw IllegalArgumentException("Campement $ownerID does not exist")
-        val target = CampementChunk(x, z)
-
-        val claimRes = TerritoryClaimManager.claim(
-            owned = camp.chunks,
-            target = target,
-            policy = ClaimPolicy(
-                requireAdjacent = true,
-                allowFirstAnywhere = false,
-                protectionRadius = CAMP_PROTECTION_RADIUS
-            ),
-            io = ClaimOperations(
-                authorized = { true },
-                takenElsewhere = { c -> repository.isChunkClaimed(c.x, c.z) },
-                addAndPersist = { c ->
-                    camp.addChunk(c)
-                    repository.save(camp)
-                    eventService.callEvent(CampementChunkClaimEvent(ownerID, c))
-                },
-                coords = { c -> c.x to c.z },
-                isTakenAt = { cx, cz ->
-                    val other = repository.getCampementByChunk(cx, cz)
-                    other != null && other.ownerID != ownerID
-                }
-            )
-        )
-        return when (claimRes) {
-            ClaimResult.SUCCESS        -> AnnexationResult.SUCCESS
-            ClaimResult.ALREADY_OWNED  -> AnnexationResult.ALREADY_OWNED
-            ClaimResult.ALREADY_TAKEN  -> AnnexationResult.ALREADY_CLAIMED
-            ClaimResult.NOT_ADJACENT   -> AnnexationResult.NOT_ADJACENT
-            ClaimResult.NOT_ALLOWED    -> AnnexationResult.NOT_ALLOWED
-            ClaimResult.TOO_CLOSE      -> AnnexationResult.TOO_CLOSE
+    open fun claimChunk(ownerID: UUID, x: Int, z: Int): CampClaimResult =
+        when (doClaim(ownerID, ownerID, x, z)) {
+            ClaimResult.SUCCESS -> CampClaimResult.SUCCESS
+            ClaimResult.ALREADY_OWNED -> CampClaimResult.ALREADY_OWNED
+            ClaimResult.ALREADY_TAKEN -> CampClaimResult.ALREADY_CLAIMED
+            ClaimResult.NOT_ADJACENT -> CampClaimResult.NOT_ADJACENT
+            ClaimResult.NOT_ALLOWED -> CampClaimResult.NOT_ALLOWED
+            ClaimResult.TOO_CLOSE -> CampClaimResult.TOO_CLOSE
         }
-    }
 
-    open fun unclaimChunk(ownerID: UUID, x: Int, z: Int): Boolean {
-        val camp = repository.getById(ownerID)
-            ?: throw IllegalArgumentException("Campement $ownerID does not exist")
-        val target = CampementChunk(x, z)
-        val unclaimRes = TerritoryClaimManager.unclaim(
-            owned = camp.chunks,
-            target = target,
-            policy = ClaimPolicy(
-                forbidLastRemoval = true,
-                forbidSpawnRemoval = true,
-                keepConnected = true
-            ),
-            io = UnclaimOperations(
-                authorized = { true },
-                isSpawnChunk = { c -> c == CampementChunk(camp.spawnLocation) },
-                removeAndPersist = { c ->
-                    camp.unclaim(c)
-                    repository.save(camp)
-                    eventService.callEvent(CampementChunkUnclaimEvent(ownerID, c))
-                },
-                coords = { c -> c.x to c.z }
-            )
-        )
-        return unclaimRes == UnclaimResult.SUCCESS
-    }
+    open fun unclaimChunk(ownerID: UUID, x: Int, z: Int): Boolean =
+        when (doUnclaim(ownerID, ownerID, x, z)) {
+            UnclaimResult.SUCCESS -> true
+            UnclaimResult.NOT_OWNED -> false
+            UnclaimResult.NOT_ALLOWED -> false
+            UnclaimResult.LAST_CHUNK -> false
+            UnclaimResult.IS_SPAWN_CHUNK -> false
+        }
 
-    /**
-     * Retrieves whether a player can interact within a specific chunk.
-     * This checks if the chunk belongs to the player or if they are trusted in the owning camp.
-     * @param playerID The UUID of the player attempting interaction.
-     * @param chunk The chunk coordinates in the format "x,z".
-     * @return True if the player can interact, false otherwise.
-     */
     open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
-        if (worldService.getSrpWorld(chunk.world) != SrpWorld.Elysea) return InteractionAllowResult.Ignore
+        val isElysea = worldService.getSrpWorld(chunk.world) == SrpWorld.Elysea
+        val camp = if (isElysea) repository.getCampementByChunk(chunk.x, chunk.z) else null
 
-        val campement = repository.getCampementByChunk(chunk.x, chunk.z) ?: return InteractionAllowResult.Deny
-        return if (campement.ownerID == playerID || campement.trustedPlayers.contains(playerID))
-            InteractionAllowResult.Allow
-        else
-            InteractionAllowResult.Deny
+        val result = when {
+            !isElysea -> InteractionAllowResult.Ignore
+            camp == null -> InteractionAllowResult.Deny
+            camp.ownerID == playerID || camp.trustedPlayers.contains(playerID) -> InteractionAllowResult.Allow
+            else -> InteractionAllowResult.Deny
+        }
+        return result
     }
 
-    /**
-     * Adds a trusted player to the owner's camp, allowing them to interact with camp resources.
-     * @param ownerID The UUID of the camp owner.
-     * @param trustedPlayerID The UUID of the player being added to the trusted list.
-     * @return True if the player was successfully added, false if they were already trusted.
-     */
     @Transactional
     open fun trustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
-        val campement = repository.getById(ownerID) ?: return false
-        if (!campement.addTrustedPlayer(trustedPlayerID)) return false
-        logger.info("Player $trustedPlayerID is now a trusted member of campement $ownerID")
-        repository.save(campement)
-        return true
+        val camp = repository.getById(ownerID) ?: return false
+        val success = camp.addTrustedPlayer(trustedPlayerID)
+        if (success) {
+            logger.info("Player $trustedPlayerID is now a trusted member of campement $ownerID")
+            repository.save(camp)
+        }
+        return success
     }
 
-    /**
-     * Removes a trusted player from the owner's camp, revoking their interaction privileges.
-     * @param ownerID The UUID of the camp owner.
-     * @param trustedPlayerID The UUID of the player being removed from the trusted list.
-     * @return True if the player was successfully removed, false if they were not previously trusted.
-     */
     @Transactional
     open fun untrustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
-        val campement = repository.getById(ownerID) ?: return false
-        if (!campement.removeTrustedPlayer(trustedPlayerID)) return false
-        logger.info("Removed player $trustedPlayerID from trusted members of of campement $ownerID")
-        repository.save(campement)
-        return true
+        val camp = repository.getById(ownerID) ?: return false
+        val success = camp.removeTrustedPlayer(trustedPlayerID)
+        if (success) {
+            logger.info("Removed player $trustedPlayerID from trusted members of campement $ownerID")
+            repository.save(camp)
+        }
+        return success
     }
 }
 

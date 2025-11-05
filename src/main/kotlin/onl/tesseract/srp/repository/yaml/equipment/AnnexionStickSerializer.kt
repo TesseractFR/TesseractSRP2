@@ -23,7 +23,6 @@ class AnnexionStickSerializer(
 
         return AnnexionStickInvocable(
             uuid,
-            campementService,
             isInvoked = invoked,
             handSlot = handSlot
         )

@@ -31,8 +31,10 @@ val NO_GUILD_MESSAGE: Component =
     Component.text("Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle avec ") +
             Component.text("/guild create <nom>", NamedTextColor.GOLD) +
             Component.text(".")
-private val GUILD_BORDER_MESSAGE = "Visualise les bordures avec " +
-        Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
+private val GUILD_BORDER_MESSAGE: Component =
+    Component.text("Visualise les bordures avec ")
+        .append(Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD))
+        .append(Component.text("."))
 private val GUILD_WORLD = SrpWorld.GuildWorld.bukkitName
 private val NOT_IN_GUILD_WORLD_MESSAGE =
     GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."

@@ -21,13 +21,14 @@ import onl.tesseract.srp.service.campement.*
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
-import onl.tesseract.srp.util.TerritoryClaimManager
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
 
-private val CAMPEMENT_BORDER_MESSAGE = "Visualise les bordures avec " +
-        Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD) + "."
+private val CAMPEMENT_BORDER_MESSAGE: Component =
+    Component.text("Visualise les bordures avec ")
+        .append(Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD))
+        .append(Component.text("."))
 
 @SpringComponent
 @Command(name = "campement", playerOnly = true)
@@ -154,23 +155,23 @@ class CampementCommands(
         }
 
         when (campementService.claimChunk(sender.uniqueId, sender.chunk.x, sender.chunk.z)) {
-            CampementService.AnnexationResult.SUCCESS -> sender.sendMessage(
+            CampementService.CampClaimResult.SUCCESS -> sender.sendMessage(
                 CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été annexé avec succès."
             )
-            CampementService.AnnexationResult.ALREADY_OWNED -> sender.sendMessage(
+            CampementService.CampClaimResult.ALREADY_OWNED -> sender.sendMessage(
                 CampementChatFormat + "Tu possèdes déjà ce chunk. " + CAMPEMENT_BORDER_MESSAGE
             )
-            CampementService.AnnexationResult.ALREADY_CLAIMED -> sender.sendMessage(
+            CampementService.CampClaimResult.ALREADY_CLAIMED -> sender.sendMessage(
                 CampementChatError + "Ce chunk appartient à un autre campement. " + CAMPEMENT_BORDER_MESSAGE
             )
-            CampementService.AnnexationResult.NOT_ADJACENT -> sender.sendMessage(
+            CampementService.CampClaimResult.NOT_ADJACENT -> sender.sendMessage(
                 CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. " + CAMPEMENT_BORDER_MESSAGE
             )
-            CampementService.AnnexationResult.TOO_CLOSE -> sender.sendMessage(
+            CampementService.CampClaimResult.TOO_CLOSE -> sender.sendMessage(
                 CampementChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d’un autre campement. "
                         + CAMPEMENT_BORDER_MESSAGE
             )
-            CampementService.AnnexationResult.NOT_ALLOWED -> sender.sendMessage(
+            CampementService.CampClaimResult.NOT_ALLOWED -> sender.sendMessage(
                 CampementChatError + "Tu n'es pas autorisé à annexer ce chunk."
             )
         }
@@ -184,43 +185,26 @@ class CampementCommands(
             sender.sendMessage(CampementChatError + "Tu ne peux pas unclaim dans ce monde.")
             return
         }
-
         val campement = campementService.getCampementByOwner(sender.uniqueId)!!
         val campementChunk = CampementChunk(sender.chunk.x, sender.chunk.z)
+
         if (!campement.chunks.contains(campementChunk)) {
             sender.sendMessage(
-                CampementChatError + "Ce chunk ne fait pas partie de ton campement. "
-                        + CAMPEMENT_BORDER_MESSAGE
+                CampementChatError + "Ce chunk ne fait pas partie de ton campement. " + CAMPEMENT_BORDER_MESSAGE
             )
             return
         }
-        if (campement.chunks.size == 1) {
+        val ok = campementService.unclaimChunk(sender.uniqueId, sender.chunk.x, sender.chunk.z)
+        if (ok) {
             sender.sendMessage(
-                CampementChatError + "Tu ne peux pas supprimer ton dernier chunk ! " +
-                        "Si tu veux supprimer ton campement, utilise " +
-                        Component.text("/campement delete", NamedTextColor.GOLD) + "."
+                CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ton campement."
             )
-            return
-        }
-        if (campementChunk == CampementChunk(campement.spawnLocation)) {
+        } else {
             sender.sendMessage(
-                CampementChatError + "Tu ne peux pas désannexer ce chunk, il contient le point de spawn " +
-                        "de ton campement. Déplace-le dans un autre chunk avec " +
-                        Component.text("/campement setspawn", NamedTextColor.GOLD) + " avant de retirer celui-ci."
+                CampementChatError + "Impossible de désannexer ce chunk (dernier chunk, " +
+                        "chunk de spawn, ou cela diviserait ton campement). " + CAMPEMENT_BORDER_MESSAGE
             )
-            return
         }
-        if (!TerritoryClaimManager.isUnclaimValid(campement.chunks, campementChunk) { c -> c.x to c.z }) {
-            sender.sendMessage(
-                CampementChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ton campement " +
-                        "en plusieurs parties. " + CAMPEMENT_BORDER_MESSAGE
-            )
-            return
-        }
-        campementService.unclaimChunk(sender.uniqueId, sender.chunk.x, sender.chunk.z)
-        sender.sendMessage(
-            CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ton campement."
-        )
     }
 
     @Command(
