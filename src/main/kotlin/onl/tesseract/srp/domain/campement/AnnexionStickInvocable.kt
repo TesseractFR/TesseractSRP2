@@ -3,10 +3,8 @@ package onl.tesseract.srp.domain.campement
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.equipment.Invocable
-import onl.tesseract.lib.util.ItemBuilder
+import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.util.ItemLoreBuilder
-import onl.tesseract.srp.service.campement.CampementService
-import onl.tesseract.srp.util.InteractionAllowResult
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
@@ -18,7 +16,6 @@ import java.util.*
 
 class AnnexionStickInvocable(
     playerUUID: UUID,
-    private val campementService: CampementService,
     isInvoked: Boolean = false,
     handSlot: Int = 0
 ) : Invocable(playerUUID, isInvoked, handSlot) {
@@ -26,10 +23,10 @@ class AnnexionStickInvocable(
     override val slotType: EquipmentSlot = EquipmentSlot.HAND
     override val uniqueName: String = this::class.simpleName!!
 
-    override fun onUninvoke(player: Player, manuelRemoval: Boolean) {}
+    override fun onUninvoke(player: Player, manuelRemoval: Boolean) {/* Rien */}
 
-    override fun onInvoke(player: Player, manuelInvocation: Boolean) {}
-    override fun useInInventory(event: InventoryClickEvent) {}
+    override fun onInvoke(player: Player, manuelInvocation: Boolean) {/* Rien */}
+    override fun useInInventory(event: InventoryClickEvent) {/* Rien */}
 
     override fun createItem(): ItemStack {
         val lore = ItemLoreBuilder()
@@ -52,25 +49,14 @@ class AnnexionStickInvocable(
     }
 
     override fun use(event: PlayerInteractEvent) {
-        val player = event.player
-        val chunk = player.location.chunk
-        if (campementService.canInteractInChunk(player.uniqueId, chunk) != InteractionAllowResult.Allow) {
-            return
-        }
-        if (!campementService.hasCampement(player)) {
-            event.isCancelled = true
-            return
-        }
-        val claim = when (event.action) {
-            Action.RIGHT_CLICK_BLOCK,
-            Action.RIGHT_CLICK_AIR -> true
-
-            Action.LEFT_CLICK_BLOCK,
-            Action.LEFT_CLICK_AIR -> false
-
+        val isClaim = when (event.action) {
+            Action.RIGHT_CLICK_BLOCK, Action.RIGHT_CLICK_AIR -> true
+            Action.LEFT_CLICK_BLOCK, Action.LEFT_CLICK_AIR   -> false
             else -> return
         }
-        campementService.handleClaimUnclaim(player, chunk, claim)
+
+        val cmd = if (isClaim) "campement claim" else "campement unclaim"
+        event.player.performCommand(cmd)
         event.isCancelled = true
     }
 }

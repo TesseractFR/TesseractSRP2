@@ -8,7 +8,6 @@ import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
-import onl.tesseract.srp.controller.command.guild.NO_GUILD_MESSAGE
 import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
 import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
 import onl.tesseract.srp.domain.guild.*
@@ -31,7 +30,7 @@ import java.util.*
 private const val SPAWN_PROTECTION_RADIUS = 150
 private const val GUILD_COST = 10_000
 private const val GUILD_PROTECTION_RADIUS = 3
-private const val GUILD_BORDER_COMMAND = "/guild border"
+const val GUILD_BORDER_COMMAND = "/guild border"
 
 @Service
 open class GuildService(
@@ -525,77 +524,6 @@ open class GuildService(
             UnclaimResult.NOT_ALLOWED     -> GuildUnclaimResult.NOT_AUTHORIZED
             UnclaimResult.LAST_CHUNK      -> GuildUnclaimResult.LAST_CHUNK
             UnclaimResult.IS_SPAWN_CHUNK  -> GuildUnclaimResult.SPAWNPOINT_CHUNK
-        }
-    }
-
-    /**
-     * Handle the claim or unclaim of a chunk for the guild of the player.
-     * Sends messages to the player based on the result.
-     */
-    open fun handleClaimUnclaim(player: Player, chunk: Chunk, claim: Boolean) {
-        val guild = getGuildByMember(player.uniqueId)
-        if (guild == null) {
-            player.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
-            return
-        }
-        if (chunk.world.name != SrpWorld.GuildWorld.bukkitName) {
-            player.sendMessage(GuildChatError + "Tu ne peux pas claim dans ce monde.")
-            return
-        }
-        if (claim) {
-            when (claimChunk(guild.id, player.uniqueId, chunk)) {
-                GuildClaimResult.SUCCESS -> player.sendMessage(
-                    GuildChatSuccess + "Le chunk (${chunk.x}, ${chunk.z}) a été annexé avec succès pour la guilde."
-                )
-                GuildClaimResult.ALREADY_OWNED -> player.sendMessage(
-                    GuildChatFormat + "Ta guilde possède déjà ce chunk. Visualise les bordures avec " +
-                            Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
-                )
-                GuildClaimResult.ALREADY_CLAIMED -> player.sendMessage(
-                    GuildChatError + "Ce chunk appartient à une autre guilde. " +
-                            "Visualise les bordures de ta guilde avec " +
-                            Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
-                )
-                GuildClaimResult.NOT_ADJACENT -> player.sendMessage(
-                    GuildChatError + "Tu dois sélectionner un chunk collé au territoire de ta guilde. " +
-                            "Visualise les bordures avec " +
-                            Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
-                )
-                GuildClaimResult.NOT_AUTHORIZED -> player.sendMessage(
-                    GuildChatError + "Tu n'es pas autorisé à annexer un chunk pour la guilde."
-                )
-
-                GuildClaimResult.TOO_CLOSE -> player.sendMessage(
-                    GuildChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d'une autre guilde."
-                )
-            }
-        } else {
-            when (unclaimChunk(guild.id, player.uniqueId, chunk)) {
-                GuildUnclaimResult.SUCCESS -> player.sendMessage(
-                    GuildChatSuccess + "Le chunk (${chunk.x}, ${chunk.z}) a été retiré de ta guilde."
-                )
-                GuildUnclaimResult.ALREADY_CLAIMED -> player.sendMessage(
-                    GuildChatError + "Ce chunk ne fait pas partie du territoire de ta guilde. " +
-                            "Visualise les bordures avec " +
-                            Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
-                )
-                GuildUnclaimResult.LAST_CHUNK -> player.sendMessage(
-                    GuildChatError + "Tu ne peux pas retirer le dernier chunk de ta guilde ! " +
-                            "Si tu veux supprimer ta guilde, utilise " +
-                            Component.text("/guild delete", NamedTextColor.GOLD) + "."
-                )
-                GuildUnclaimResult.SPAWNPOINT_CHUNK -> player.sendMessage(
-                    GuildChatError + "Tu ne peux pas désannexer ce chunk, il contient un point de spawn de " +
-                            "ta guilde. Déplace-le dans un autre chunk avec " +
-                            Component.text("/guild setspawn (private/visitor)", NamedTextColor.GOLD)
-                            + " avant de retirer celui-ci."
-                )
-                GuildUnclaimResult.NOT_AUTHORIZED -> player.sendMessage(
-                    GuildChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ta guilde " +
-                            "en plusieurs parties. Visualise les bordures avec " +
-                            Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
-                )
-            }
         }
     }
 

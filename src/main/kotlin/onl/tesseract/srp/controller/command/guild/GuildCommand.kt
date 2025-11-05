@@ -31,6 +31,8 @@ val NO_GUILD_MESSAGE: Component =
     Component.text("Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle avec ") +
             Component.text("/guild create <nom>", NamedTextColor.GOLD) +
             Component.text(".")
+private val GUILD_BORDER_MESSAGE = "Visualise les bordures avec " +
+        Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD) + "."
 private val GUILD_WORLD = SrpWorld.GuildWorld.bukkitName
 private val NOT_IN_GUILD_WORLD_MESSAGE =
     GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
@@ -200,12 +202,67 @@ class GuildCommand(
 
     @Command(name = "claim", playerOnly = true, description = "Annexer un chunk pour la guilde.")
     fun claimChunk(sender: Player) = inGuildWorld(sender) {
-        guildService.handleClaimUnclaim(sender, sender.chunk, claim = true)
+        val guild = guildService.getGuildByMember(sender.uniqueId)
+        if (guild == null) {
+            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            return@inGuildWorld
+        }
+
+        when (guildService.claimChunk(guild.id, sender.uniqueId, sender.chunk)) {
+            GuildClaimResult.SUCCESS -> sender.sendMessage(
+                GuildChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) " +
+                        "a été annexé avec succès pour la guilde."
+            )
+            GuildClaimResult.ALREADY_OWNED -> sender.sendMessage(
+                GuildChatFormat + "Ta guilde possède déjà ce chunk. " + GUILD_BORDER_MESSAGE
+            )
+            GuildClaimResult.ALREADY_CLAIMED -> sender.sendMessage(
+                GuildChatError + "Ce chunk appartient à une autre guilde. " + GUILD_BORDER_MESSAGE
+            )
+            GuildClaimResult.NOT_ADJACENT -> sender.sendMessage(
+                GuildChatError + "Tu dois sélectionner un chunk collé au territoire de ta guilde. "
+                        + GUILD_BORDER_MESSAGE
+            )
+            GuildClaimResult.NOT_AUTHORIZED -> sender.sendMessage(
+                GuildChatError + "Tu n'es pas autorisé à annexer un chunk pour la guilde."
+            )
+            GuildClaimResult.TOO_CLOSE -> sender.sendMessage(
+                GuildChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d'une autre guilde."
+            )
+        }
     }
 
     @Command(name = "unclaim", playerOnly = true, description = "Retirer un chunk de la guilde.")
     fun unclaimChunk(sender: Player) = inGuildWorld(sender) {
-        guildService.handleClaimUnclaim(sender, sender.chunk, claim = false)
+        val guild = guildService.getGuildByMember(sender.uniqueId)
+        if (guild == null) {
+            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            return@inGuildWorld
+        }
+
+        when (guildService.unclaimChunk(guild.id, sender.uniqueId, sender.chunk)) {
+            GuildUnclaimResult.SUCCESS -> sender.sendMessage(
+                GuildChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ta guilde."
+            )
+            GuildUnclaimResult.ALREADY_CLAIMED -> sender.sendMessage(
+                GuildChatError + "Ce chunk ne fait pas partie du territoire de ta guilde. " + GUILD_BORDER_MESSAGE
+            )
+            GuildUnclaimResult.LAST_CHUNK -> sender.sendMessage(
+                GuildChatError + "Tu ne peux pas retirer le dernier chunk de ta guilde ! " +
+                        "Si tu veux supprimer ta guilde, utilise " +
+                        Component.text("/guild delete", NamedTextColor.GOLD) + "."
+            )
+            GuildUnclaimResult.SPAWNPOINT_CHUNK -> sender.sendMessage(
+                GuildChatError + "Tu ne peux pas désannexer ce chunk, il contient un point de spawn de " +
+                        "ta guilde. Déplace-le dans un autre chunk avec " +
+                        Component.text("/guild setspawn (private/visitor)", NamedTextColor.GOLD) +
+                        " avant de retirer celui-ci."
+            )
+            GuildUnclaimResult.NOT_AUTHORIZED -> sender.sendMessage(
+                GuildChatError + "Tu ne peux pas désannexer ce chunk, cela diviserait ta guilde " +
+                        "en plusieurs parties. " + GUILD_BORDER_MESSAGE
+            )
+        }
     }
 
     @Command(name = "border", playerOnly = true, description = "Afficher/Masquer les bordures de ta guilde.")
@@ -248,8 +305,8 @@ class GuildCommand(
                 sender.sendMessage(GuildChatError + "Tu ne peux pas définir le spawn dans ce monde.")
             GuildSetSpawnResult.OUTSIDE_TERRITORY ->
                 sender.sendMessage(
-                    GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. " +
-                            "Visualise les bordures avec " + Component.text("/guild border", NamedTextColor.GOLD) + "."
+                    GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. "
+                            + GUILD_BORDER_MESSAGE
                 )
         }
     }
