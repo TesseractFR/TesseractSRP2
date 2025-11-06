@@ -1,6 +1,7 @@
 package onl.tesseract.srp.util
 
 import onl.tesseract.srp.domain.player.PlayerRank
+import org.bukkit.Chunk
 import org.bukkit.Location
 import org.springframework.stereotype.Component
 import java.util.*
@@ -21,6 +22,7 @@ abstract class TerritoryService<C, O> {
     protected abstract val territoryProtectionRadius: Int
 
     protected abstract fun isCorrectWorld(loc: Location): Boolean
+
     protected abstract fun hasTerritory(ownerId: O): Boolean
     protected abstract fun isChunkTaken(x: Int, z: Int): Boolean
     protected abstract fun isTakenByOther(ownerId: O, x: Int, z: Int): Boolean
@@ -84,7 +86,10 @@ abstract class TerritoryService<C, O> {
 
         val firstClaim = owned.isEmpty()
         val adjacencyOk = when {
-            !firstClaim && requireAdjacent() -> owned.any { n -> orthogonalDistance(coords(n), tx to tz) == 1 }
+            !firstClaim && requireAdjacent() -> owned.any { n ->
+                val (nx, nz) = coords(n)
+                abs(nx - tx) + abs(nz - tz) == 1
+            }
             firstClaim -> allowFirstAnywhere()
             else -> true
         }
@@ -149,6 +154,11 @@ abstract class TerritoryService<C, O> {
     protected open fun forbidSpawnRemoval(): Boolean = true
     protected open fun keepConnected(): Boolean = true
 
+    protected open fun interactionOutcomeWrongWorld(): InteractionAllowResult =
+        InteractionAllowResult.Ignore
+    protected abstract fun interactionOutcomeWhenNoOwner(): InteractionAllowResult
+    protected abstract fun isMemberOrTrusted(ownerId: O, playerId: UUID): Boolean
+
     private fun checkFirstClaimClear(cx: Int, cz: Int, r: Int): Boolean {
         for (dx in -r..r) for (dz in -r..r) {
             if (dx == 0 && dz == 0) continue
@@ -176,7 +186,7 @@ abstract class TerritoryService<C, O> {
 
         fun neighbors(a: C, b: C): Boolean {
             val (x1, z1) = coords(a); val (x2, z2) = coords(b)
-            return orthogonalDistance(x1 to z1, x2 to z2) == 1
+            return abs(x1 - x2) + abs(z1 - z2) == 1
         }
 
         val visited = mutableSetOf<C>()
@@ -192,6 +202,11 @@ abstract class TerritoryService<C, O> {
         return visited.size == remaining.size
     }
 
-    private fun orthogonalDistance(a: Pair<Int, Int>, b: Pair<Int, Int>) =
-        abs(a.first - b.first) + abs(a.second - b.second)
+    open fun canInteractInChunk(playerId: UUID, chunk: Chunk): InteractionAllowResult {
+        if (!isCorrectWorld(chunk.world.spawnLocation)) return interactionOutcomeWrongWorld()
+        return ownerOf(chunk.x, chunk.z)?.let { owner ->
+            if (isMemberOrTrusted(owner, playerId)) InteractionAllowResult.Allow
+            else InteractionAllowResult.Deny
+        } ?: interactionOutcomeWhenNoOwner()
+    }
 }

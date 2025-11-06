@@ -17,7 +17,6 @@ import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.*
-import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.slf4j.Logger
@@ -70,6 +69,14 @@ open class CampementService(
 
     override fun isAuthorizedToSetSpawn(ownerId: UUID, requesterId: UUID): Boolean =
         ownerId == requesterId
+
+    override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
+        InteractionAllowResult.Deny
+
+    override fun isMemberOrTrusted(ownerId: UUID, playerId: UUID): Boolean {
+        val camp = repository.getById(ownerId) ?: return false
+        return camp.ownerID == playerId || camp.trustedPlayers.contains(playerId)
+    }
 
     override fun persistAfterClaim(ownerId: UUID, claimed: CampementChunk) {
         val c = camp(ownerId)
@@ -219,19 +226,6 @@ open class CampementService(
             UnclaimResult.IS_SPAWN_CHUNK -> false
         }
 
-    open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
-        val isElysea = worldService.getSrpWorld(chunk.world) == SrpWorld.Elysea
-        val camp = if (isElysea) repository.getCampementByChunk(chunk.x, chunk.z) else null
-
-        val result = when {
-            !isElysea -> InteractionAllowResult.Ignore
-            camp == null -> InteractionAllowResult.Deny
-            camp.ownerID == playerID || camp.trustedPlayers.contains(playerID) -> InteractionAllowResult.Allow
-            else -> InteractionAllowResult.Deny
-        }
-        return result
-    }
-
     @Transactional
     open fun trustPlayer(ownerID: UUID, trustedPlayerID: UUID): Boolean {
         val camp = repository.getById(ownerID) ?: return false
@@ -258,16 +252,7 @@ open class CampementService(
 enum class CampementSetSpawnResult { SUCCESS, INVALID_WORLD, OUTSIDE_TERRITORY, NOT_AUTHORIZED }
 
 data class CampementCreationResult(val campement: Campement?, val reason: List<Reason>) {
-
-    enum class Reason {
-        InvalidWorld,
-        NearSpawn,
-        NearCampement,
-        OnOtherCampement,
-        AlreadyHasCampement,
-        Ignored
-    }
-
+    enum class Reason { InvalidWorld, NearSpawn, NearCampement, OnOtherCampement, AlreadyHasCampement, Ignored }
     companion object {
         fun failed(reasons: List<Reason>) = CampementCreationResult(null, reasons)
         fun success(campement: Campement) = CampementCreationResult(campement, emptyList())

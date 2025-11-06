@@ -31,6 +31,7 @@ private const val SPAWN_PROTECTION_RADIUS = 150
 private const val GUILD_COST = 10_000
 private const val GUILD_PROTECTION_RADIUS = 3
 const val GUILD_BORDER_COMMAND = "/guild border"
+private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 
 @Service
 open class GuildService(
@@ -84,6 +85,14 @@ open class GuildService(
     override fun isAuthorizedToSetSpawn(ownerId: Int, requesterId: UUID) =
         guild(ownerId).getMemberRole(requesterId) == GuildRole.Leader
 
+    override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
+        InteractionAllowResult.Ignore
+
+    override fun isMemberOrTrusted(ownerId: Int, playerId: UUID): Boolean {
+        val playerGuild = guildRepository.findGuildByMember(playerId) ?: return false
+        return playerGuild.id == ownerId
+    }
+
     override fun persistAfterClaim(ownerId: Int, claimed: GuildChunk) {
         val g = guild(ownerId)
         g.addChunk(claimed)
@@ -100,7 +109,7 @@ open class GuildService(
 
     override fun persistSpawn(ownerId: Int, loc: Location): Boolean {
         val g = guild(ownerId)
-        val ok = g.setSpawnpoint(loc) // ou gérer PRIVATE/VISITOR via un param dédié
+        val ok = g.setSpawnpoint(loc)
         if (ok) guildRepository.save(g)
         return ok
     }
@@ -127,7 +136,7 @@ open class GuildService(
     open fun createGuild(playerID: UUID, location: Location, guildName: String): GuildCreationResult {
         val player = playerService.getPlayer(playerID)
         val errors = performCreationChecks(
-            ownerId = -1, // pas encore créé : on passe l’état "déjà a un territoire" via lambda ci-dessous
+            ownerId = -1,
             location = location,
             playerMoney = player.money,
             playerRank = player.rank,
@@ -192,19 +201,6 @@ open class GuildService(
     open fun deleteGuildAsStaff(guildId: Int): Boolean {
         guildRepository.deleteById(guildId)
         return true
-    }
-
-    open fun canInteractInChunk(playerID: UUID, chunk: Chunk): InteractionAllowResult {
-        val isGuildWorld = chunk.world.name == SrpWorld.GuildWorld.bukkitName
-        if (!isGuildWorld) return InteractionAllowResult.Ignore
-        val owner = guildRepository.findGuildByChunk(GuildChunk(chunk.x, chunk.z))
-        val playerGuild = guildRepository.findGuildByMember(playerID)
-        return when {
-            owner == null              -> InteractionAllowResult.Ignore
-            playerGuild == null        -> InteractionAllowResult.Deny
-            playerGuild.id == owner.id -> InteractionAllowResult.Allow
-            else                       -> InteractionAllowResult.Deny
-        }
     }
 
     open fun claimChunk(guildID: Int, requesterID: UUID, chunk: Chunk): GuildClaimResult =
@@ -322,24 +318,6 @@ open class GuildService(
         val removed = guild.removeInvitation(playerID)
         if (removed) guildRepository.save(guild)
         return removed
-    }
-
-    @Transactional
-    open fun join(guildID: Int, playerID: UUID): JoinResult {
-        val guild = getGuild(guildID)
-
-        if (guildRepository.findGuildByMember(playerID) != null)
-            return JoinResult.Failed
-
-        val result = if (guild.invitations.contains(playerID)) {
-            guild.join(playerID)
-            JoinResult.Joined
-        } else {
-            guild.askToJoin(playerID)
-            JoinResult.Requested
-        }
-        guildRepository.save(guild)
-        return result
     }
 
     @Transactional
@@ -576,18 +554,11 @@ open class GuildService(
         g.rank = rank
         guildRepository.save(g)
     }
-
-    companion object {
-        const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
-    }
-
 }
 
 data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
-
     enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, OnOtherGuild,
         NameTaken, PlayerHasGuild, Rank }
-
     companion object {
         fun failed(reasons: List<Reason>) = GuildCreationResult(null, reasons)
         fun success(guild: Guild) = GuildCreationResult(guild, emptyList())
@@ -596,15 +567,9 @@ data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
 
 enum class GuildSetSpawnResult { SUCCESS, NOT_AUTHORIZED, INVALID_WORLD, OUTSIDE_TERRITORY }
 enum class InvitationResult { Invited, Joined, Failed }
-enum class JoinResult { Joined, Requested, Failed }
 enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
 enum class LeaveResult { Success, LeaderMustDelete }
 enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED, TOO_CLOSE }
 enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
 enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
-enum class StaffSetRoleResult {
-    SUCCESS,
-    SAME_ROLE,
-    NEED_NEW_LEADER,
-    NEW_LEADER_SAME_AS_TARGET
-}
+enum class StaffSetRoleResult { SUCCESS, SAME_ROLE, NEED_NEW_LEADER, NEW_LEADER_SAME_AS_TARGET }
