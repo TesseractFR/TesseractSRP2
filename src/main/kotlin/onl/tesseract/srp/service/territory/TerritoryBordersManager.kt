@@ -1,4 +1,4 @@
-package onl.tesseract.srp.util
+package onl.tesseract.srp.service.territory
 
 import onl.tesseract.srp.PLUGIN_INSTANCE
 import org.bukkit.Particle
@@ -50,7 +50,7 @@ object TerritoryBordersManager {
                 }
                 drawBordersOnce(player, chunksProvider(), x, z, config)
             }
-        }.runTaskTimer(plugin, 0L, config.periodTicks)
+        }.runTaskTimerAsynchronously(plugin, 0L, config.periodTicks)
     }
 
     /**

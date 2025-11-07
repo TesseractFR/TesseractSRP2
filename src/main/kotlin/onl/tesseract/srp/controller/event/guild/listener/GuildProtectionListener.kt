@@ -4,7 +4,7 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.event.global.listener.ChunkProtectionListener
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.util.*
 import org.bukkit.Chunk
 import org.bukkit.Material
@@ -23,11 +23,11 @@ class GuildProtectionListener(
     entityUtils: EntityUtils
 ) : ChunkProtectionListener(playerUtils, entityUtils) {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
-        return guildService.getGuildByChunk(chunk.x, chunk.z) != null
+        return guildService.getGuildByChunk(chunk) != null
     }
 
     override fun getProtectionMessage(chunk: Chunk): Component {
-        val guild = guildService.getGuildByChunk(chunk.x, chunk.z)
+        val guild = guildService.getGuildByChunk(chunk)
         require(guild != null) {
         }
         val guildName = guild.name

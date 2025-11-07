@@ -1,6 +1,6 @@
-package onl.tesseract.srp.service.campement
+package onl.tesseract.srp.service.territory.campement
 
-import onl.tesseract.srp.util.TerritoryBordersManager
+import onl.tesseract.srp.service.territory.TerritoryBordersManager
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 import org.springframework.stereotype.Component

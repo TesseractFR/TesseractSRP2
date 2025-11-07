@@ -1,9 +1,9 @@
 package onl.tesseract.srp.controller.event.guild.listener
 
-import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
-import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
-import onl.tesseract.srp.service.guild.GuildBorderRenderer
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.domain.territory.guild.GuildChunkClaimEvent
+import onl.tesseract.srp.domain.territory.guild.GuildChunkUnclaimEvent
+import onl.tesseract.srp.service.territory.guild.GuildBorderRenderer
+import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -33,7 +33,7 @@ class GuildBorderDisplayListener(
         val player = Bukkit.getPlayer(playerId)
         val guild = guildService.getGuildByMember(playerId)
         if (player != null && guild != null && borderRenderer.isShowingBorders(player)) {
-            borderRenderer.showBorders(player, guild.chunks)
+            borderRenderer.showBorders(player, guild.getChunks())
         }
     }
 

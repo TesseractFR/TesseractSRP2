@@ -1,7 +1,7 @@
-package onl.tesseract.srp.service.guild
+package onl.tesseract.srp.service.territory.guild
 
-import onl.tesseract.srp.domain.guild.GuildChunk
-import onl.tesseract.srp.util.TerritoryBordersManager
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
+import onl.tesseract.srp.service.territory.TerritoryBordersManager
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 import org.springframework.stereotype.Component
@@ -17,8 +17,8 @@ open class GuildBorderRenderer {
         activeBorders[player.uniqueId] = TerritoryBordersManager.startBorderTask(
             player = player,
             chunksProvider = { chunks },
-            x = { it.x },
-            z = { it.z }
+            x = { it.chunkCoord.x },
+            z = { it.chunkCoord.z }
         )
     }
 

@@ -3,8 +3,8 @@ package onl.tesseract.srp.controller.command.argument.guild
 import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
 import onl.tesseract.lib.service.ServiceContainer
-import onl.tesseract.srp.domain.guild.Guild
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Bukkit
 
 class GuildMembersArg(name: String) : CommandArgument<String>(name) {

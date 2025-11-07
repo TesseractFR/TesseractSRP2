@@ -7,9 +7,10 @@ import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.service.campement.CampementBorderRenderer
-import onl.tesseract.srp.service.campement.CampementCreationResult
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.domain.commun.enum.CreationResult
+import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementCreationResult
+import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
@@ -34,38 +35,28 @@ class CampStaffCommands(
         val chunk = location.chunk
         val chunkKey = "${chunk.x},${chunk.z}"
         val result = campementService.createCampement(uuid, location)
-
-        result.reason
-            .map { reason ->
-                when (reason) {
-                    CampementCreationResult.Reason.InvalidWorld ->
-                        CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
-                    CampementCreationResult.Reason.NearSpawn ->
-                        CampementChatError + "Trop proche du spawn pour créer un campement."
-                    CampementCreationResult.Reason.NearCampement ->
-                        CampementChatError + "Un autre campement est trop proche d’ici."
-                    CampementCreationResult.Reason.AlreadyHasCampement ->
-                        CampementChatError + "${target.name} possède déjà un campement."
-                    CampementCreationResult.Reason.OnOtherCampement -> {
-                        val other = campementService.getCampementByChunk(chunk.x, chunk.z)
-                        val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
-                        CampementChatError + "Impossible de créer un campement ici, " +
-                                "tu es sur le territoire de $ownerName."
-                    }
-                    CampementCreationResult.Reason.Ignored -> return
-                }
+        sender.sendMessage(
+        when (result) {
+            CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "${target.name} possède déjà un campement."
+            CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
+            CreationResult.NEAR_SPAWN -> CampementChatError + "Trop proche du spawn pour créer un campement."
+            CreationResult.NAME_TAKEN -> TODO()
+            CreationResult.NOT_ENOUGH_MONEY -> TODO()
+            CreationResult.RANK_TOO_LOW -> TODO()
+            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
+            CreationResult.ON_OTHER_TERRITORY -> {
+                val other = campementService.getByChunk(location)
+                val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
+                CampementChatError + "Impossible de créer un campement ici, " +
+                        "tu es sur le territoire de $ownerName."
             }
-            .forEach { sender.sendMessage(it) }
-
-        if (result.campement != null) {
-            sender.sendMessage(
+            CreationResult.SUCCESS ->
                 CampementChatSuccess + "Campement créé pour ${target.name} dans le chunk $chunkKey."
-            )
+        })
+        if (result == CreationResult.SUCCESS) {
             target.sendMessage(
                 CampementChatSuccess + "Un administrateur t'a créé un campement dans le chunk $chunkKey."
             )
-        } else if (result.reason.isEmpty()) {
-            sender.sendMessage(CampementChatError + "Échec de création du campement dans le chunk $chunkKey.")
         }
     }
 

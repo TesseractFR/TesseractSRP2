@@ -2,6 +2,12 @@ package onl.tesseract.srp.repository.hibernate.guild
 
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.guild.*
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildMember
+import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.hibernate.annotations.CacheConcurrencyStrategy
@@ -18,6 +24,7 @@ class GuildEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Int,
+    @Column(unique = true)
     val name: String,
     val leaderId: UUID,
     val money: Int,
@@ -33,7 +40,7 @@ class GuildEntity(
     val visitorSpawn: SpawnLocationEntity? = null,
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    val chunks: MutableSet<GuildCityChunkEntity>,
+    val chunks: MutableSet<GuildChunkEntity>,
     @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection(fetch = FetchType.EAGER)
@@ -62,41 +69,20 @@ class GuildEntity(
     }
 
     fun toDomain(): Guild {
-        return Guild(
+        val guild = Guild(
             id,
             name,
             spawnLocation.toLocation(),
             money,
             ledgerId,
-            chunks.map { it.toDomain() }.toSet(),
             GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests),
             visitorSpawnLocation = visitorSpawn?.toLocation(),
             level = level,
             xp = xp,
             rank = rank
         )
-    }
-}
-
-@Entity
-@Table(name = "t_guild_chunks")
-class GuildCityChunkEntity(
-    @Id
-    val coordinates: String,
-    @ManyToOne(fetch = FetchType.LAZY)
-    val guild: GuildEntity? = null,
-) {
-
-    constructor(x: Int, z: Int): this("$x,$z")
-
-    fun splitCoordinates(): Pair<Int, Int> {
-        val parts = coordinates.split(",")
-        return parts[0].toInt() to parts[1].toInt()
-    }
-
-    fun toDomain(): GuildChunk {
-        val (x, z) = splitCoordinates()
-        return GuildChunk (x, z)
+        guild.addChunks(chunks.map { it.toDomain() }.toSet())
+        return guild
     }
 }
 
@@ -138,7 +124,7 @@ fun Guild.toEntity(): GuildEntity {
         xp = xp,
         rank = rank
     )
-    entity.chunks.addAll(this.chunks.map { c -> GuildCityChunkEntity("${c.x},${c.z}", entity) })
+    entity.chunks.addAll(this.getChunks().map { c -> c.toEntity(entity) })
     entity.members.addAll(this.members.map { m -> GuildMemberEntity(m.playerID, m.role).apply { guild = entity } })
     return entity
 }

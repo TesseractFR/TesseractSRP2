@@ -1,8 +1,9 @@
 package onl.tesseract.srp.repository.hibernate
 
 import jakarta.persistence.*
-import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.campement.CampementChunk
+import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementChunkEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.hibernate.annotations.CacheConcurrencyStrategy
@@ -46,40 +47,28 @@ class CampementEntity(
     val spawnWorld: String
 ) {
     fun toDomain(): Campement {
-        return Campement(
-            ownerID, trustedPlayers, listChunks.map { it.toDomain() }.toSet(), campLevel,
-            Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ)
+        val camp =  Campement(
+            ownerID,  campLevel,
+            Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ),
+            trustedPlayers
         )
+        camp.addChunks(listChunks.map { it.toDomain() }.toSet())
+        return camp
     }
 }
 
 fun Campement.toEntity(): CampementEntity {
-    return CampementEntity(
+     val campementEntity = CampementEntity(
         ownerID,
         trustedPlayers,
-        chunks.map { it.toEntity() }.toMutableSet(),
-        campLevel,
-        spawnLocation.x,
-        spawnLocation.y,
-        spawnLocation.z,
-        spawnLocation.world.name
+        campLevel = campLevel,
+        spawnX = spawnLocation.x,
+        spawnY = spawnLocation.y,
+        spawnZ = spawnLocation.z,
+        spawnWorld = spawnLocation.world.name
     )
+    campementEntity.listChunks.addAll(getChunks().map { it.toEntity(campementEntity) }.toMutableSet())
+    return campementEntity
 }
 
-@Entity
-@Table(name = "t_campement_chunks")
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-data class CampementChunkEntity(
-    @Id
-    val x: Int = 0,
-    @Id
-    val z: Int = 0
-) {
 
-    fun toDomain(): CampementChunk = CampementChunk(x, z)
-}
-
-fun CampementChunk.toEntity(): CampementChunkEntity {
-    return CampementChunkEntity(x, z)
-}

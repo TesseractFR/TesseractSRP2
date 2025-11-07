@@ -1,14 +1,12 @@
-package onl.tesseract.srp.controller.event.campement
+package onl.tesseract.srp.domain.territory.campement
 
-import onl.tesseract.srp.domain.campement.CampementChunk
-import org.bukkit.event.Event
+import onl.tesseract.srp.domain.territory.TerritoryClaimEvent
 import org.bukkit.event.HandlerList
 import java.util.*
 
 class CampementChunkClaimEvent(
-    val playerId: UUID,
-    val chunk: CampementChunk
-) : Event() {
+    playerId: UUID
+) : TerritoryClaimEvent<CampementChunk>(playerId) {
 
     override fun getHandlers(): HandlerList = handlerList
 

@@ -10,7 +10,7 @@ import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.yaml.equipment.AnnexionStickSerializer
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.Listener
 import org.bukkit.plugin.java.JavaPlugin

@@ -1,4 +1,4 @@
-package onl.tesseract.srp.service.guild
+package onl.tesseract.srp.service.territory.guild
 
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
@@ -8,17 +8,23 @@ import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
-import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
-import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
-import onl.tesseract.srp.domain.guild.*
+import onl.tesseract.srp.domain.commun.enum.CreationResult
+import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
+import onl.tesseract.srp.domain.guild.GuildRank
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
 import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
+import onl.tesseract.srp.service.territory.TerritoryService
 import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
@@ -40,8 +46,9 @@ open class GuildService(
     private val eventService: EventService,
     private val ledgerService: MoneyLedgerService,
     private val transferService: TransferService,
-    private val chatEntryService: ChatEntryService
-) : TerritoryService<GuildChunk, Int>() {
+    private val chatEntryService: ChatEntryService,
+    territoryChunkRepository: TerritoryChunkRepository
+) : TerritoryService<GuildChunk, Guild, Int>(guildRepository,territoryChunkRepository,eventService) {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
@@ -56,70 +63,17 @@ open class GuildService(
     override fun isCorrectWorld(loc: Location) =
         loc.world.name == SrpWorld.GuildWorld.bukkitName
 
-    override fun hasTerritory(ownerId: Int) =
-        guildRepository.getById(ownerId) != null
-
-    override fun isChunkTaken(x: Int, z: Int) =
-        guildRepository.findGuildByChunk(GuildChunk(x, z)) != null
-
-    override fun getOwnedChunks(ownerId: Int): MutableSet<GuildChunk> =
-        guild(ownerId).chunks.toMutableSet()
-
-    override fun chunkOf(x: Int, z: Int) = GuildChunk(x, z)
-    override fun chunkOf(loc: Location) = GuildChunk(loc.chunk.x, loc.chunk.z)
-    override fun coords(c: GuildChunk) = c.x to c.z
-    override fun isTakenByOther(ownerId: Int, x: Int, z: Int): Boolean {
-        val g = guildRepository.findGuildByChunk(GuildChunk(x, z)) ?: return false
-        return g.id != ownerId
-    }
-
-    override fun ownerOf(x: Int, z: Int): Int? =
-        guildRepository.findGuildByChunk(GuildChunk(x, z))?.id
-
-    override fun isAuthorizedToClaim(ownerId: Int, requesterId: UUID) =
-        guild(ownerId).getMemberRole(requesterId) == GuildRole.Leader
-
-    override fun isAuthorizedToUnclaim(ownerId: Int, requesterId: UUID) =
-        guild(ownerId).getMemberRole(requesterId) == GuildRole.Leader
-
-    override fun isAuthorizedToSetSpawn(ownerId: Int, requesterId: UUID) =
-        guild(ownerId).getMemberRole(requesterId) == GuildRole.Leader
+    override fun isAuthorizedToSetSpawn(territory: Guild, requesterId: UUID): Boolean =
+        territory.getMemberRole(requesterId) == GuildRole.Leader
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Ignore
 
-    override fun isMemberOrTrusted(ownerId: Int, playerId: UUID): Boolean {
+    override fun isMemberOrTrusted(territory: Guild, playerId: UUID): Boolean {
         val playerGuild = guildRepository.findGuildByMember(playerId) ?: return false
-        return playerGuild.id == ownerId
+        return playerGuild.id == territory.id
     }
 
-    override fun persistAfterClaim(ownerId: Int, claimed: GuildChunk) {
-        val g = guild(ownerId)
-        g.addChunk(claimed)
-        guildRepository.save(g)
-        eventService.callEvent(GuildChunkClaimEvent(g.leaderId, claimed))
-    }
-
-    override fun persistAfterUnclaim(ownerId: Int, unclaimed: GuildChunk) {
-        val g = guild(ownerId)
-        g.removeChunk(unclaimed)
-        guildRepository.save(g)
-        eventService.callEvent(GuildChunkUnclaimEvent(g.leaderId, unclaimed))
-    }
-
-    override fun persistSpawn(ownerId: Int, loc: Location): Boolean {
-        val g = guild(ownerId)
-        val ok = g.setSpawnpoint(loc)
-        if (ok) guildRepository.save(g)
-        return ok
-    }
-
-    override fun isSpawnChunk(ownerId: Int, c: GuildChunk): Boolean {
-        val g = guild(ownerId)
-        val priv = GuildChunk(g.spawnLocation)
-        val visit = g.visitorSpawnLocation?.let(::GuildChunk)
-        return c == priv || (visit != null && c == visit)
-    }
 
     private fun getGuild(guildID: Int): Guild {
         val guild = guildRepository.getById(guildID)
@@ -129,66 +83,60 @@ open class GuildService(
     open fun getAllGuilds(): Collection<Guild> = guildRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = guildRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = guildRepository.findGuildByMember(memberId)
-    open fun getGuildByChunk(chunkX: Int, chunkZ: Int) = guildRepository.findGuildByChunk(GuildChunk(chunkX, chunkZ))
+    open fun getGuildByChunk(chunk: Chunk) = getByChunk(chunk)
     open fun getMemberRole(playerID: UUID): GuildRole? = guildRepository.findMemberRole(playerID)
 
     @Transactional
-    open fun createGuild(playerID: UUID, location: Location, guildName: String): GuildCreationResult {
-        val player = playerService.getPlayer(playerID)
-        val errors = performCreationChecks(
-            ownerId = -1,
-            location = location,
-            playerMoney = player.money,
-            playerRank = player.rank,
-            minMoney = GUILD_COST,
-            minRank = PlayerRank.Baron,
-            alreadyHas = (guildRepository.findGuildByMember(playerID) != null),
-            isNameTaken = (guildRepository.findGuildByName(guildName) != null)
-        )
-        if (errors.isNotEmpty()) {
-            val mapped = errors.map {
-                when (it) {
-                    CreationError.ALREADY_HAS_TERRITORY      -> GuildCreationResult.Reason.PlayerHasGuild
-                    CreationError.INVALID_WORLD              -> GuildCreationResult.Reason.InvalidWorld
-                    CreationError.NEAR_SPAWN                 -> GuildCreationResult.Reason.NearSpawn
-                    CreationError.NAME_TAKEN                 -> GuildCreationResult.Reason.NameTaken
-                    CreationError.NOT_ENOUGH_MONEY           -> GuildCreationResult.Reason.NotEnoughMoney
-                    CreationError.RANK_TOO_LOW               -> GuildCreationResult.Reason.Rank
-                    CreationError.TOO_CLOSE_TO_OTHER_TERRITORY -> GuildCreationResult.Reason.NearGuild
-                    CreationError.ON_OTHER_TERRITORY         -> GuildCreationResult.Reason.OnOtherGuild
-                }
-            }
-            return GuildCreationResult.failed(mapped)
-        }
-
+    open fun createGuild(playerID: UUID, location: Location, guildName: String): CreationResult {
+        val srpPlayer = playerService.getPlayer(playerID)
+        if(srpPlayer.money<GUILD_COST) return CreationResult.NOT_ENOUGH_MONEY
+        if(srpPlayer.rank < PlayerRank.Baron) return CreationResult.RANK_TOO_LOW
+        if(getByName(guildName)!=null) return CreationResult.NAME_TAKEN
+        val result = isCreationAvailable(playerID,location)
+        if(result != CreationResult.SUCCESS) return result
         val guild = Guild(-1, playerID, guildName, location)
         playerService.takeMoney(
             playerID, GUILD_COST, TransactionType.Guild, TransactionSubType.Guild.Creation, guild.id.toString()
         )
         guild.claimInitialChunks()
-        val createdGuild = guildRepository.save(guild)
-        return GuildCreationResult.success(createdGuild)
+        guildRepository.save(guild)
+        return result
     }
 
-    enum class GuildSpawnKind { PRIVATE, VISITOR }
+    private fun getByName(guildName: String): Guild? {
+        return guildRepository.findGuildByName(guildName)
+    }
 
-    open fun setSpawnpoint(
-        guildID: Int,
-        requesterID: UUID,
-        newLocation: Location
-        , kind: GuildSpawnKind
-    ): GuildSetSpawnResult {
-        return when (doSetSpawn(guildID, requesterID, newLocation)) {
-            SetSpawnResult.SUCCESS           -> GuildSetSpawnResult.SUCCESS
-            SetSpawnResult.NOT_AUTHORIZED    -> GuildSetSpawnResult.NOT_AUTHORIZED
-            SetSpawnResult.INVALID_WORLD     -> GuildSetSpawnResult.INVALID_WORLD
-            SetSpawnResult.OUTSIDE_TERRITORY -> GuildSetSpawnResult.OUTSIDE_TERRITORY
+    fun setSpawnpoint(territory: Guild, requesterId: UUID, newLoc: Location, kind: GuildSpawnKind): SetSpawnResult {
+        if(kind == GuildSpawnKind.PRIVATE)return setSpawnpoint(territory,requesterId,newLoc)
+        return setVisitorSpawnpoint(territory,requesterId,newLoc)
+    }
+
+
+    fun setVisitorSpawnpoint(territory: Guild, requesterId: UUID, newLoc: Location): SetSpawnResult {
+        val inside = territory.hasChunk(newLoc)
+
+        val result = when {
+            !isAuthorizedToSetSpawn(territory, requesterId) -> SetSpawnResult.NOT_AUTHORIZED
+            !isCorrectWorld(newLoc) -> SetSpawnResult.INVALID_WORLD
+            !inside -> SetSpawnResult.OUTSIDE_TERRITORY
+            persistVisitorSpawn(territory, newLoc) -> SetSpawnResult.SUCCESS
+            else -> SetSpawnResult.OUTSIDE_TERRITORY
         }
+        return result
     }
+
+    protected fun persistVisitorSpawn(territory: Guild, loc: Location): Boolean{
+        val ok = territory.setVisitorSpawnpoint(loc)
+        if (ok) guildRepository.save(territory)
+        return ok
+    }
+
 
     open fun getPrivateSpawn(guildId: Int): Location? = guild(guildId).spawnLocation
-    open fun getVisitorSpawn(guildId: Int): Location? = guild(guildId).visitorSpawnLocation
 
+
+    open fun getVisitorSpawn(guildId: Int): Location? = guild(guildId).visitorSpawnLocation
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
@@ -202,25 +150,6 @@ open class GuildService(
         guildRepository.deleteById(guildId)
         return true
     }
-
-    open fun claimChunk(guildID: Int, requesterID: UUID, chunk: Chunk): GuildClaimResult =
-        when (doClaim(guildID, requesterID, chunk.x, chunk.z)) {
-            ClaimResult.SUCCESS        -> GuildClaimResult.SUCCESS
-            ClaimResult.ALREADY_OWNED  -> GuildClaimResult.ALREADY_OWNED
-            ClaimResult.ALREADY_TAKEN  -> GuildClaimResult.ALREADY_CLAIMED
-            ClaimResult.NOT_ADJACENT   -> GuildClaimResult.NOT_ADJACENT
-            ClaimResult.NOT_ALLOWED    -> GuildClaimResult.NOT_AUTHORIZED
-            ClaimResult.TOO_CLOSE      -> GuildClaimResult.TOO_CLOSE
-        }
-
-    open fun unclaimChunk(guildID: Int, requesterID: UUID, chunk: Chunk): GuildUnclaimResult =
-        when (doUnclaim(guildID, requesterID, chunk.x, chunk.z)) {
-            UnclaimResult.SUCCESS        -> GuildUnclaimResult.SUCCESS
-            UnclaimResult.NOT_OWNED      -> GuildUnclaimResult.ALREADY_CLAIMED
-            UnclaimResult.NOT_ALLOWED    -> GuildUnclaimResult.NOT_AUTHORIZED
-            UnclaimResult.LAST_CHUNK     -> GuildUnclaimResult.LAST_CHUNK
-            UnclaimResult.IS_SPAWN_CHUNK -> GuildUnclaimResult.SPAWNPOINT_CHUNK
-        }
 
     @Transactional
     open fun invite(guildID: Int, playerID: UUID): InvitationResult {
@@ -239,7 +168,6 @@ open class GuildService(
         guildRepository.save(guild)
         return result
     }
-
     @Transactional
     open fun handleGuildInvitation(sender: Player, target: Player) {
         val role = getMemberRole(sender.uniqueId)
@@ -297,6 +225,7 @@ open class GuildService(
             }
         }
     }
+
     @Transactional
     open fun acceptInvitation(guildID: Int, playerID: UUID): Boolean {
         val guild = getGuild(guildID)
@@ -556,12 +485,10 @@ open class GuildService(
     }
 }
 
-data class GuildCreationResult(val guild: Guild?, val reason: List<Reason>) {
-    enum class Reason { NotEnoughMoney, InvalidWorld, NearSpawn, NearGuild, OnOtherGuild,
-        NameTaken, PlayerHasGuild, Rank }
+data class GuildCreationResult(val guild: Guild?, val reason: CreationResult? = null) {
     companion object {
-        fun failed(reasons: List<Reason>) = GuildCreationResult(null, reasons)
-        fun success(guild: Guild) = GuildCreationResult(guild, emptyList())
+        fun failed(reasons: CreationResult) = GuildCreationResult(null, reasons)
+        fun success(guild: Guild) = GuildCreationResult(guild)
     }
 }
 
@@ -569,7 +496,6 @@ enum class GuildSetSpawnResult { SUCCESS, NOT_AUTHORIZED, INVALID_WORLD, OUTSIDE
 enum class InvitationResult { Invited, Joined, Failed }
 enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
 enum class LeaveResult { Success, LeaderMustDelete }
-enum class GuildClaimResult { SUCCESS, ALREADY_OWNED, ALREADY_CLAIMED, NOT_ADJACENT, NOT_AUTHORIZED, TOO_CLOSE }
 enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
 enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
 enum class StaffSetRoleResult { SUCCESS, SAME_ROLE, NEED_NEW_LEADER, NEW_LEADER_SAME_AS_TARGET }

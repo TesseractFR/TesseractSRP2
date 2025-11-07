@@ -11,9 +11,9 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersRoleArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildRankArg
-import onl.tesseract.srp.service.guild.GuildService
-import onl.tesseract.srp.service.guild.KickResult
-import onl.tesseract.srp.service.guild.StaffSetRoleResult
+import onl.tesseract.srp.service.territory.guild.GuildService
+import onl.tesseract.srp.service.territory.guild.KickResult
+import onl.tesseract.srp.service.territory.guild.StaffSetRoleResult
 import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender

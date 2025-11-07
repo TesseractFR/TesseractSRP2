@@ -14,10 +14,14 @@ import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
-import onl.tesseract.srp.domain.campement.CampementChunk
-import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.domain.commun.enum.ClaimResult
+import onl.tesseract.srp.domain.commun.enum.CreationResult
+import onl.tesseract.srp.domain.commun.enum.UnclaimResult
 import onl.tesseract.srp.service.TeleportationService
-import onl.tesseract.srp.service.campement.*
+import onl.tesseract.srp.service.territory.campement.CAMP_BORDER_COMMAND
+import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementService
+import onl.tesseract.srp.service.territory.campement.CampementSetSpawnResult
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
@@ -44,35 +48,24 @@ class CampementCommands(
     @Command(name = "create", description = "Créer un nouveau campement.")
     fun createCampement(sender: Player) {
         val result = campementService.createCampement(sender.uniqueId, sender.location)
-        result.reason
-            .map { reason ->
-                when (reason) {
-                    CampementCreationResult.Reason.InvalidWorld ->
-                        CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
-                    CampementCreationResult.Reason.NearSpawn ->
-                        CampementChatError + "Tu es trop proche du spawn pour créer un campement."
-                    CampementCreationResult.Reason.NearCampement ->
-                        CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
-                    CampementCreationResult.Reason.AlreadyHasCampement ->
-                        CampementChatError + "Tu possèdes déjà un campement."
-                    CampementCreationResult.Reason.OnOtherCampement -> {
-                        val chunk = sender.location.chunk
-                        val other = campementService.getCampementByChunk(chunk.x, chunk.z)
-                        val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
-                        CampementChatError + "Tu ne peux pas créer un campement ici, " +
-                                "tu es sur le territoire de $ownerName."
-                    }
-                    CampementCreationResult.Reason.Ignored -> return
-                }
+        val msg = when (result) {
+            CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
+            CreationResult.NEAR_SPAWN -> CampementChatError + "Tu es trop proche du spawn pour créer un campement."
+            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
+            CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "Tu possèdes déjà un campement."
+            CreationResult.ON_OTHER_TERRITORY -> {
+                val other = campementService.getByChunk(sender.location)
+                val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
+                CampementChatError + "Tu ne peux pas créer un campement ici, " +
+                        "tu es sur le territoire de $ownerName."
             }
-            .forEach { sender.sendMessage(it) }
-
-        if (result.campement != null) {
-            sender.sendMessage(
-                CampementChatSuccess +
-                        "Campement créé avec succès ! Tu peux désormais t'installer confortablement dans ce chunk ;)"
-            )
+            CreationResult.RANK_TOO_LOW,
+            CreationResult.NAME_TAKEN,
+            CreationResult.NOT_ENOUGH_MONEY -> return
+            CreationResult.SUCCESS -> CampementChatSuccess +
+                    "Campement créé avec succès ! Tu peux désormais t'installer confortablement dans ce chunk ;)"
         }
+        sender.sendMessage(msg)
     }
 
     @Command(name = "delete", description = "Supprimer son campement.")
@@ -147,63 +140,39 @@ class CampementCommands(
 
     @Command(name = "claim", description = "Annexer un chunk libre")
     fun claimChunk(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
-
-        if (sender.chunk.world.name != SrpWorld.Elysea.bukkitName) {
-            sender.sendMessage(CampementChatError + "Tu ne peux pas claim dans ce monde.")
-            return
-        }
-
-        when (campementService.claimChunk(sender.uniqueId, sender.chunk.x, sender.chunk.z)) {
-            CampementService.CampClaimResult.SUCCESS -> sender.sendMessage(
-                CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été annexé avec succès."
-            )
-            CampementService.CampClaimResult.ALREADY_OWNED -> sender.sendMessage(
-                CampementChatFormat + "Tu possèdes déjà ce chunk. " + CAMPEMENT_BORDER_MESSAGE
-            )
-            CampementService.CampClaimResult.ALREADY_CLAIMED -> sender.sendMessage(
-                CampementChatError + "Ce chunk appartient à un autre campement. " + CAMPEMENT_BORDER_MESSAGE
-            )
-            CampementService.CampClaimResult.NOT_ADJACENT -> sender.sendMessage(
-                CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. " + CAMPEMENT_BORDER_MESSAGE
-            )
-            CampementService.CampClaimResult.TOO_CLOSE -> sender.sendMessage(
+        when (campementService.claimChunk(sender.uniqueId, sender.location)) {
+            ClaimResult.SUCCESS -> sender.sendMessage(
+                CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été annexé avec succès.")
+            ClaimResult.ALREADY_OWNED -> sender.sendMessage(
+                CampementChatFormat + "Tu possèdes déjà ce chunk. " + CAMPEMENT_BORDER_MESSAGE)
+            ClaimResult.ALREADY_OTHER -> sender.sendMessage(
+                CampementChatError + "Ce chunk appartient à un autre campement. " + CAMPEMENT_BORDER_MESSAGE)
+            ClaimResult.NOT_ADJACENT -> sender.sendMessage(
+                CampementChatError + "Tu dois sélectionner un chunk collé à ton campement. " + CAMPEMENT_BORDER_MESSAGE)
+            ClaimResult.TOO_CLOSE -> sender.sendMessage(
                 CampementChatError + "Tu ne peux pas annexer ce chunk, il est trop proche d’un autre campement. "
-                        + CAMPEMENT_BORDER_MESSAGE
-            )
-            CampementService.CampClaimResult.NOT_ALLOWED -> sender.sendMessage(
-                CampementChatError + "Tu n'es pas autorisé à annexer ce chunk."
-            )
+                        + CAMPEMENT_BORDER_MESSAGE)
+            ClaimResult.NOT_ALLOWED -> sender.sendMessage(
+                CampementChatError + "Tu n'es pas autorisé à annexer ce chunk.")
+            ClaimResult.NOT_EXIST -> CampementChatError + "Tu n'as pas de campement."
+            ClaimResult.INVALID_WORLD -> sender.sendMessage(CampementChatError + "Tu ne peux pas claim dans ce monde.")
         }
     }
 
     @Command(name = "unclaim", description = "Désannexer un chunk de son campement.")
     fun unclaimChunk(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
-
-        if (sender.chunk.world.name != SrpWorld.Elysea.bukkitName) {
-            sender.sendMessage(CampementChatError + "Tu ne peux pas unclaim dans ce monde.")
-            return
-        }
-        val campement = campementService.getCampementByOwner(sender.uniqueId)!!
-        val campementChunk = CampementChunk(sender.chunk.x, sender.chunk.z)
-
-        if (!campement.chunks.contains(campementChunk)) {
-            sender.sendMessage(
-                CampementChatError + "Ce chunk ne fait pas partie de ton campement. " + CAMPEMENT_BORDER_MESSAGE
-            )
-            return
-        }
-        val ok = campementService.unclaimChunk(sender.uniqueId, sender.chunk.x, sender.chunk.z)
-        if (ok) {
-            sender.sendMessage(
-                CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ton campement."
-            )
-        } else {
-            sender.sendMessage(
-                CampementChatError + "Impossible de désannexer ce chunk (dernier chunk, " +
-                        "chunk de spawn, ou cela diviserait ton campement). " + CAMPEMENT_BORDER_MESSAGE
-            )
+        when(campementService.unclaimChunk(sender.uniqueId,sender.location)){
+            UnclaimResult.SUCCESS -> sender.sendMessage(CampementChatSuccess
+                    + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ton campement.")
+            UnclaimResult.NOT_OWNED -> sender.sendMessage(CampementChatError
+                    + "Ce chunk ne fait pas partie de ton campement. " + CAMPEMENT_BORDER_MESSAGE)
+            UnclaimResult.NOT_ALLOWED -> TODO()
+            UnclaimResult.LAST_CHUNK -> TODO()
+            UnclaimResult.IS_SPAWN_CHUNK -> TODO()
+            UnclaimResult.NOT_EXIST -> TODO()
+            UnclaimResult.SPLIT -> sender.sendMessage(CampementChatError
+                    + "Impossible de désannexer ce chunk (dernier chunk, chunk de spawn, ou cela diviserait ton campement). "
+                    + CAMPEMENT_BORDER_MESSAGE)
         }
     }
 
@@ -268,7 +237,7 @@ class CampementCommands(
             borderRenderer.clearBorders(sender)
             sender.sendMessage(CampementChatFormat + "Les bordures de ton campement ont été masquées.")
         } else {
-            borderRenderer.showBorders(sender, campement.chunks.map { listOf(it.x, it.z) })
+            borderRenderer.showBorders(sender, campement.getChunks().map { listOf(it.chunkCoord.x, it.chunkCoord.z) })
             sender.sendMessage(CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !")
         }
     }

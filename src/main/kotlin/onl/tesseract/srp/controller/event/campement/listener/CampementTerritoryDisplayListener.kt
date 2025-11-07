@@ -2,9 +2,10 @@ package onl.tesseract.srp.controller.event.campement.listener
 
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
-import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.domain.territory.campement.CampementChunkClaimEvent
+import onl.tesseract.srp.domain.territory.campement.CampementChunkUnclaimEvent
+import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.service.territory.campement.CampementService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -25,15 +26,13 @@ open class CampementTerritoryDisplayListener(private val campementService: Campe
         val player = event.player
         if (event.from.chunk == event.to.chunk)
             return
-        updatePlayerCampementCache(player.uniqueId, event.to.chunk.x, event.to.chunk.z, notify = true)
+        updatePlayerCampementCache(player.uniqueId, notify = true)
     }
 
     @EventHandler
     fun onChunkClaim(event: CampementChunkClaimEvent) {
         updatePlayerCampementCache(
             event.playerId,
-            event.chunk.x,
-            event.chunk.z,
             notify = false
         )
     }
@@ -42,8 +41,6 @@ open class CampementTerritoryDisplayListener(private val campementService: Campe
     fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
         updatePlayerCampementCache(
             event.playerId,
-            event.chunk.x,
-            event.chunk.z,
             notify = false
         )
     }
@@ -52,8 +49,8 @@ open class CampementTerritoryDisplayListener(private val campementService: Campe
      * Updates the player's camp cache after a claim/unclaim.
      * @param notify If true, displays the camp notification.
      */
-    open fun updatePlayerCampementCache(playerId: UUID, chunkX: Int, chunkZ: Int, notify: Boolean) {
-        val campement = campementService.getCampementByChunk(chunkX, chunkZ)
+    open fun updatePlayerCampementCache(playerId: UUID, notify: Boolean) {
+        val campement = campementService.getByPlayer(playerId)
         val newOwnerId = campement?.ownerID
         val lastOwnerId = lastCampementMap[playerId]
 

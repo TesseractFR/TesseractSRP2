@@ -3,7 +3,7 @@ package onl.tesseract.srp.controller.command.argument
 import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
 import onl.tesseract.lib.service.ServiceContainer
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.service.territory.campement.CampementService
 import org.bukkit.Bukkit
 
 class TrustedPlayerArg(name: String) : CommandArgument<String>(name) {

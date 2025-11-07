@@ -1,9 +1,9 @@
 package onl.tesseract.srp.controller.event.campement.listener
 
-import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
-import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
-import onl.tesseract.srp.service.campement.CampementBorderRenderer
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.domain.territory.campement.CampementChunkClaimEvent
+import onl.tesseract.srp.domain.territory.campement.CampementChunkUnclaimEvent
+import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -40,7 +40,7 @@ class CampementBorderDisplayListener(
         if (player != null && campement != null && borderRenderer.isShowingBorders(player)) {
             borderRenderer.showBorders(
                 player,
-                campement.chunks.map { listOf(it.x, it.z) }
+                campement.getChunks().map { listOf(it.chunkCoord.x, it.chunkCoord.z) }
             )
         }
     }
