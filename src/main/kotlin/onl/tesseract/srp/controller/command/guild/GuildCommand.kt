@@ -308,12 +308,9 @@ class GuildCommand(
     fun setGuildSpawn(
         sender: Player,
         @Argument("type", optional = true) kindArg: GuildSpawnKindArg?,
-    ) = inGuildWorld(sender) {
-        val guild = guildService.getGuildByMember(sender.uniqueId)
-                ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
-
+    ) {
         val kind = kindArg?.get() ?: GuildSpawnKind.PRIVATE
-        when (guildService.setSpawnpoint(guild, sender.uniqueId, sender.location, kind)) {
+        when (guildService.setSpawnpoint(sender.uniqueId, sender.location, kind)) {
             SetSpawnResult.SUCCESS -> {
                 val label = if (kind == GuildSpawnKind.PRIVATE) "privé" else "visiteurs"
                 sender.sendMessage(GuildChatSuccess + "Le point de spawn $label de la guilde a été défini ici.")
@@ -322,14 +319,14 @@ class GuildCommand(
             SetSpawnResult.NOT_AUTHORIZED ->
                 sender.sendMessage(GuildChatError + "Tu n'as pas l'autorisation de changer le spawn.")
 
-            SetSpawnResult.INVALID_WORLD ->
-                sender.sendMessage(GuildChatError + "Tu ne peux pas définir le spawn dans ce monde.")
-
             SetSpawnResult.OUTSIDE_TERRITORY ->
                 sender.sendMessage(
                     GuildChatError + "Tu dois être dans un chunk de ta guilde pour définir le spawn. "
                             + GUILD_BORDER_MESSAGE
                 )
+
+            SetSpawnResult.NOT_EXIST -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+
         }
     }
 

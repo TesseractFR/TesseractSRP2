@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.campement
+package onl.tesseract.srp.domain.territory.campement
 
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
@@ -12,7 +12,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
-import java.util.*
+import java.util.UUID
 
 class AnnexionStickInvocable(
     playerUUID: UUID,

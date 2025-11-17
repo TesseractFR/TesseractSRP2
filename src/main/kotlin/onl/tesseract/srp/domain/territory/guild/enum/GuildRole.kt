@@ -10,4 +10,5 @@ enum class GuildRole {
 
     fun canWithdrawMoney(): Boolean = this >= Adjoint
     fun canClaim(): Boolean = this >= Adjoint
+    fun canSetSpawn(): Boolean = this>= Adjoint
 }

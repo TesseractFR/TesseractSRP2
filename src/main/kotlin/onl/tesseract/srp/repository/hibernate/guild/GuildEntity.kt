@@ -1,7 +1,6 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
 import jakarta.persistence.*
-import onl.tesseract.srp.domain.guild.*
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildMember
 import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
@@ -53,7 +52,7 @@ class GuildEntity(
     val xp: Int = 0,
     @Enumerated(EnumType.STRING)
     @Column(name = "guild_rank", nullable = false)
-    val rank: GuildRank = GuildRank.HAMEAU,
+    val rank: onl.tesseract.srp.domain.territory.guild.enum.GuildRank = onl.tesseract.srp.domain.territory.guild.enum.GuildRank.HAMEAU,
 ) {
 
     @Embeddable

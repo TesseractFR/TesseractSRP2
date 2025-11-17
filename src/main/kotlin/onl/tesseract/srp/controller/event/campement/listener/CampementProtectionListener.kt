@@ -4,11 +4,10 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.event.global.listener.ChunkProtectionListener
-import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.service.territory.campement.CampementService
-import onl.tesseract.srp.util.InteractionAllowResult
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.EntityUtils
+import onl.tesseract.srp.util.InteractionAllowResult
 import onl.tesseract.srp.util.PlayerUtils
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
@@ -28,11 +27,11 @@ class CampementProtectionListener(
     entityUtils: EntityUtils
 ) : ChunkProtectionListener(playerUtils, entityUtils) {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
-        return campementService.getByChunk(ChunkCoord(chunk.x,chunk.z,chunk.world.name)) != null
+        return campementService.getByChunk(chunk) != null
     }
 
     override fun getProtectionMessage(chunk : Chunk): Component {
-        val camp = campementService.getByChunk(ChunkCoord(chunk.x,chunk.z,chunk.world.name))
+        val camp = campementService.getByChunk(chunk)
         require(camp!=null){
 
         }

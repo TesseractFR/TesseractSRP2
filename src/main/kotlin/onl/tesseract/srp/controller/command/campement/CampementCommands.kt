@@ -13,15 +13,15 @@ import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
+import onl.tesseract.srp.domain.territory.campement.AnnexionStickInvocable
 import onl.tesseract.srp.domain.commun.enum.ClaimResult
 import onl.tesseract.srp.domain.commun.enum.CreationResult
+import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
 import onl.tesseract.srp.domain.commun.enum.UnclaimResult
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.campement.CAMP_BORDER_COMMAND
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.territory.campement.CampementService
-import onl.tesseract.srp.service.territory.campement.CampementSetSpawnResult
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
@@ -119,22 +119,12 @@ class CampementCommands(
         if (!campementService.hasCampement(sender)) return
 
         when (campementService.setSpawnpoint(sender.uniqueId, sender.location)) {
-            CampementSetSpawnResult.SUCCESS -> {
-                sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
-            }
-            CampementSetSpawnResult.INVALID_WORLD -> {
-                sender.sendMessage(CampementChatError +
-                        "Tu ne peux pas définir le spawn de ton campement dans ce monde.")
-            }
-            CampementSetSpawnResult.OUTSIDE_TERRITORY -> {
-                sender.sendMessage(
-                    CampementChatError + "Tu dois être dans un chunk de ton campement pour définir le spawn. "
-                            + CAMPEMENT_BORDER_MESSAGE
-                )
-            }
-            CampementSetSpawnResult.NOT_AUTHORIZED -> {
-                sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
-            }
+            SetSpawnResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
+
+            SetSpawnResult.NOT_AUTHORIZED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
+            SetSpawnResult.OUTSIDE_TERRITORY -> sender.sendMessage(CampementChatError +
+                    "Tu dois être dans un chunk de ton campement pour définir le spawn. " + CAMPEMENT_BORDER_MESSAGE)
+            SetSpawnResult.NOT_EXIST -> TODO()
         }
     }
 

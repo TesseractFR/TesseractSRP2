@@ -9,7 +9,6 @@ import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.commun.enum.CreationResult
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -43,13 +42,7 @@ open class CampementService(
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
     }
 
-    override val spawnProtectionRadius: Int = SPAWN_PROTECTION_RADIUS
-    override val territoryProtectionRadius: Int = CAMP_PROTECTION_RADIUS
-
     override fun isCorrectWorld(loc: Location): Boolean = worldService.getSrpWorld(loc.world) == SrpWorld.Elysea
-
-    override fun isAuthorizedToSetSpawn(territory: Campement, requesterId: UUID): Boolean =
-        territory.ownerID == requesterId
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Deny
@@ -99,18 +92,6 @@ open class CampementService(
         repository.deleteById(id)
     }
 
-    @Transactional
-    open fun setSpawnpoint(ownerID: UUID, newLocation: Location): CampementSetSpawnResult {
-        val camp : Campement = getByOwner(ownerID)?: return CampementSetSpawnResult.NOT_AUTHORIZED
-        return when (setSpawnpoint(camp, ownerID, newLocation)) {
-            SetSpawnResult.SUCCESS -> CampementSetSpawnResult.SUCCESS
-            SetSpawnResult.INVALID_WORLD -> CampementSetSpawnResult.INVALID_WORLD
-            SetSpawnResult.OUTSIDE_TERRITORY -> CampementSetSpawnResult.OUTSIDE_TERRITORY
-            SetSpawnResult.NOT_AUTHORIZED -> CampementSetSpawnResult.NOT_AUTHORIZED
-        }
-    }
-
-
     private fun getByOwner(ownerID: UUID): Campement? {
         return repository.getById(ownerID)
     }
@@ -159,7 +140,7 @@ open class CampementService(
     }
 }
 
-enum class CampementSetSpawnResult { SUCCESS, INVALID_WORLD, OUTSIDE_TERRITORY, NOT_AUTHORIZED }
+enum class CampementSetSpawnResult { SUCCESS, OUTSIDE_TERRITORY, NOT_AUTHORIZED }
 
 data class CampementCreationResult(val campement: Campement?, val reason: CreationResult? = null) {
     companion object {

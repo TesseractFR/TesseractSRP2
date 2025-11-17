@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.guild
+package onl.tesseract.srp.domain.territory.guild.enum
 
 enum class GuildRank(
     val title: String,

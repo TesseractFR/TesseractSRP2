@@ -1,10 +1,10 @@
 package onl.tesseract.srp.domain.territory.guild
 
-import onl.tesseract.srp.domain.guild.GuildRank
+import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
 import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.domain.territory.Territory
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
-import onl.tesseract.srp.domain.world.SrpWorld
 import org.bukkit.Location
 import java.util.*
 
@@ -20,9 +20,6 @@ class Guild(
     var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
 ) : GuildMemberContainer by memberContainer, Territory<GuildChunk>(spawnLocation) {
-    override fun getValidWorld(): String {
-        return SrpWorld.GuildWorld.name
-    }
 
     var money: Int = money
 
@@ -43,10 +40,11 @@ class Guild(
         }
     }
 
-    fun setVisitorSpawnpoint(newLocation: Location): Boolean {
-        if (!_chunks.contains(GuildChunk(ChunkCoord(newLocation), this))) return false
+    fun setVisitorSpawnpoint(newLocation: Location,player: UUID): SetSpawnResult {
+        if(!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
+        if(!hasChunk(newLocation))return SetSpawnResult.OUTSIDE_TERRITORY
         visitorSpawnLocation = newLocation
-        return true
+        return SetSpawnResult.SUCCESS
     }
 
     fun addMoney(amount: Int) {
@@ -80,6 +78,11 @@ class Guild(
     override fun canClaim(player: UUID): Boolean {
         val role = getMemberRole(player)
         return role.canClaim()
+    }
+
+    override fun canSetSpawn(player: UUID): Boolean {
+        val role = getMemberRole(player)
+        return role.canSetSpawn()
     }
 }
 

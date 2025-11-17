@@ -15,14 +15,11 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
 
     fun claimChunk(location: Location,claimer: UUID): ClaimResult {
         if (!canClaim(claimer))return ClaimResult.NOT_ALLOWED
-        if (location.world.name != getValidWorld()) return ClaimResult.INVALID_WORLD
         if (hasChunk(location)) return ClaimResult.ALREADY_OWNED
         if (!hasAdjacent(location)) return ClaimResult.NOT_ADJACENT
         if (addChunk(initChunk(location))) ClaimResult.SUCCESS
         return ClaimResult.ALREADY_OWNED
     }
-
-    abstract fun getValidWorld() : String
 
     fun hasChunk(location: Location): Boolean {
         return _chunks.any {

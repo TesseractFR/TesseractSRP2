@@ -10,7 +10,7 @@ import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.commun.enum.CreationResult
 import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
-import onl.tesseract.srp.domain.guild.GuildRank
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
@@ -33,9 +33,7 @@ import org.bukkit.entity.Player
 import org.springframework.stereotype.Service
 import java.util.*
 
-private const val SPAWN_PROTECTION_RADIUS = 150
 private const val GUILD_COST = 10_000
-private const val GUILD_PROTECTION_RADIUS = 3
 const val GUILD_BORDER_COMMAND = "/guild border"
 private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 
@@ -43,7 +41,7 @@ private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 open class GuildService(
     private val guildRepository: GuildRepository,
     private val playerService: SrpPlayerService,
-    private val eventService: EventService,
+    eventService: EventService,
     private val ledgerService: MoneyLedgerService,
     private val transferService: TransferService,
     private val chatEntryService: ChatEntryService,
@@ -54,17 +52,8 @@ open class GuildService(
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
     }
 
-    override val spawnProtectionRadius: Int = SPAWN_PROTECTION_RADIUS
-    override val territoryProtectionRadius: Int = GUILD_PROTECTION_RADIUS
-
-    private fun guild(id: Int): Guild =
-        guildRepository.getById(id) ?: error("Guild not found: $id")
-
     override fun isCorrectWorld(loc: Location) =
         loc.world.name == SrpWorld.GuildWorld.bukkitName
-
-    override fun isAuthorizedToSetSpawn(territory: Guild, requesterId: UUID): Boolean =
-        territory.getMemberRole(requesterId) == GuildRole.Leader
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Ignore
@@ -107,36 +96,24 @@ open class GuildService(
         return guildRepository.findGuildByName(guildName)
     }
 
-    fun setSpawnpoint(territory: Guild, requesterId: UUID, newLoc: Location, kind: GuildSpawnKind): SetSpawnResult {
-        if(kind == GuildSpawnKind.PRIVATE)return setSpawnpoint(territory,requesterId,newLoc)
-        return setVisitorSpawnpoint(territory,requesterId,newLoc)
+    fun setSpawnpoint(requesterId: UUID, newLoc: Location, kind: GuildSpawnKind): SetSpawnResult {
+        if(kind == GuildSpawnKind.PRIVATE)return setSpawnpoint(requesterId,newLoc)
+        return setVisitorSpawnpoint(requesterId,newLoc)
     }
 
 
-    fun setVisitorSpawnpoint(territory: Guild, requesterId: UUID, newLoc: Location): SetSpawnResult {
-        val inside = territory.hasChunk(newLoc)
-
-        val result = when {
-            !isAuthorizedToSetSpawn(territory, requesterId) -> SetSpawnResult.NOT_AUTHORIZED
-            !isCorrectWorld(newLoc) -> SetSpawnResult.INVALID_WORLD
-            !inside -> SetSpawnResult.OUTSIDE_TERRITORY
-            persistVisitorSpawn(territory, newLoc) -> SetSpawnResult.SUCCESS
-            else -> SetSpawnResult.OUTSIDE_TERRITORY
+    fun setVisitorSpawnpoint(player: UUID, newLoc: Location): SetSpawnResult {
+        val guild = getByPlayer(player) ?: return SetSpawnResult.NOT_EXIST
+        val result = guild.setVisitorSpawnpoint(newLoc,player)
+        if(result == SetSpawnResult.SUCCESS){
+            guildRepository.save(guild)
         }
         return result
     }
 
-    protected fun persistVisitorSpawn(territory: Guild, loc: Location): Boolean{
-        val ok = territory.setVisitorSpawnpoint(loc)
-        if (ok) guildRepository.save(territory)
-        return ok
-    }
+    open fun getPrivateSpawn(guildId: Int): Location? = getById(guildId)?.spawnLocation
 
-
-    open fun getPrivateSpawn(guildId: Int): Location? = guild(guildId).spawnLocation
-
-
-    open fun getVisitorSpawn(guildId: Int): Location? = guild(guildId).visitorSpawnLocation
+    open fun getVisitorSpawn(guildId: Int): Location? = getById(guildId)?.visitorSpawnLocation
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
@@ -492,10 +469,8 @@ data class GuildCreationResult(val guild: Guild?, val reason: CreationResult? = 
     }
 }
 
-enum class GuildSetSpawnResult { SUCCESS, NOT_AUTHORIZED, INVALID_WORLD, OUTSIDE_TERRITORY }
 enum class InvitationResult { Invited, Joined, Failed }
 enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
 enum class LeaveResult { Success, LeaderMustDelete }
-enum class GuildUnclaimResult { SUCCESS, ALREADY_CLAIMED, NOT_AUTHORIZED, LAST_CHUNK, SPAWNPOINT_CHUNK }
 enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
 enum class StaffSetRoleResult { SUCCESS, SAME_ROLE, NEED_NEW_LEADER, NEW_LEADER_SAME_AS_TARGET }

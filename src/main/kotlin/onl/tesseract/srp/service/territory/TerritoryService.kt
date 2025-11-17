@@ -23,44 +23,60 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
     private val eventService: EventService,
     ) {
 
-
-    protected abstract val spawnProtectionRadius: Int
-    protected abstract val territoryProtectionRadius: Int
-
+    /**
+     * Permet de savoir si le monde est correct pour une location donnée.
+     * @param loc La position à valider
+     */
     protected abstract fun isCorrectWorld(loc: Location): Boolean
 
+    /**
+     * Permet de savoir si un chunk est déjà occupé par un territoire.
+     */
     protected fun isChunkTaken(chunkCoord: ChunkCoord): Boolean{
         return territoryChunkRepository.getById(chunkCoord) != null
     }
+
+    /**
+     * Permet de savoir si un chunk est déjà occupé par un autre.
+     */
     protected fun isTakenByOther(territory : T, chunkCoord: ChunkCoord): Boolean{
         val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return false
         return territoryChunk.getOwner() == territory
     }
 
-    open fun getByChunk(location: Location): T? {
+    /**
+     * Retourne le territoire qui possède cette coordonnée.
+     */
+    fun getByChunk(location: Location): T? {
         return getByChunk(ChunkCoord(location))
     }
-    open fun getByChunk(chunk: Chunk): T? {
+    /**
+     * Retourne le territoire qui possède ce chunk.
+     */
+    fun getByChunk(chunk: Chunk): T? {
         return getByChunk(ChunkCoord(chunk))
     }
-     open fun getByChunk(chunkCoord: ChunkCoord): T? {
+
+    /**
+     * Retourne le territoire qui possède ce chunkCoord.
+     */
+     fun getByChunk(chunkCoord: ChunkCoord): T? {
         val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
         return territoryChunk.getOwner() as T?
     }
 
-    open fun getByPlayer(player: UUID) : T?{
+    /**
+     * Retourne le territoire lié au joueur.
+     */
+    fun getByPlayer(player: UUID) : T?{
         return territoryRepository.findnByPlayer(player)
     }
 
-    protected abstract fun isAuthorizedToSetSpawn(territory: T, requesterId: UUID): Boolean
-
-    protected fun persistSpawn(territory: T, loc: Location): Boolean{
-        val ok = territory.setSpawnpoint(loc)
-        if (ok) territoryRepository.save(territory)
-        return ok
-    }
-
+    /**
+     * Permet de claim un chunk
+     */
     fun claimChunk(player: UUID, location: Location): ClaimResult {
+        if(!isCorrectWorld(location)) return ClaimResult.INVALID_WORLD
         val territory = getByPlayer(player) ?: return ClaimResult.NOT_EXIST
         val ownerTerritory = getByChunk(location)
         if(ownerTerritory!=null){
@@ -79,6 +95,9 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
         return result
     }
 
+    /**
+     * Permet de unclaim un chunk
+     */
     fun unclaimChunk(player: UUID, location: Location): UnclaimResult {
         val territory = getByPlayer(player) ?: return UnclaimResult.NOT_EXIST
         val result = territory.unclaimChunk(location,player)
@@ -89,21 +108,18 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
         return result
     }
 
-    fun setSpawnpoint(territory: T, requesterId: UUID, newLoc: Location): SetSpawnResult {
-        val inside = territory.hasChunk(newLoc)
-
-        val result = when {
-            !isAuthorizedToSetSpawn(territory, requesterId) -> SetSpawnResult.NOT_AUTHORIZED
-            !isCorrectWorld(newLoc) -> SetSpawnResult.INVALID_WORLD
-            !inside -> SetSpawnResult.OUTSIDE_TERRITORY
-            persistSpawn(territory, newLoc) -> SetSpawnResult.SUCCESS
-            else -> SetSpawnResult.OUTSIDE_TERRITORY
+    /**
+     * Permet de set le point de spawn
+     */
+    fun setSpawnpoint(player: UUID, newLoc: Location): SetSpawnResult {
+        val territory = getByPlayer(player) ?: return SetSpawnResult.NOT_EXIST
+        val result = territory.setSpawnpoint(newLoc,player)
+        if(result == SetSpawnResult.SUCCESS){
+            territoryRepository.save(territory)
         }
         return result
     }
 
-    protected open fun interactionOutcomeWrongWorld(): InteractionAllowResult =
-        InteractionAllowResult.Ignore
     protected abstract fun interactionOutcomeWhenNoOwner(): InteractionAllowResult
     protected abstract fun isMemberOrTrusted(territory: T, playerId: UUID): Boolean
 
@@ -129,8 +145,8 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
     }
 
     open fun canInteractInChunk(playerId: UUID, chunk: Chunk): InteractionAllowResult {
-        if (!isCorrectWorld(chunk.world.spawnLocation)) return interactionOutcomeWrongWorld()
-        return getByChunk(ChunkCoord(chunk.x, chunk.z,chunk.world.name))?.let { owner ->
+        if (!isCorrectWorld(chunk.world.spawnLocation)) return InteractionAllowResult.Ignore
+        return getByChunk(chunk)?.let { owner ->
             if (isMemberOrTrusted(owner, playerId)) InteractionAllowResult.Allow
             else InteractionAllowResult.Deny
         } ?: interactionOutcomeWhenNoOwner()
@@ -150,5 +166,9 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
                 if (isChunkTaken(ChunkCoord(x + dx, z + dz, world))) return CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY
         }
         return CreationResult.SUCCESS
+    }
+
+    fun getById(id: ID): T?{
+        return territoryRepository.getById(id)
     }
 }

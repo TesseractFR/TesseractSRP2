@@ -3,7 +3,6 @@ package onl.tesseract.srp.domain.territory.campement
 import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk
-import onl.tesseract.srp.domain.world.SrpWorld
 import org.bukkit.Location
 import java.util.*
 
@@ -25,10 +24,6 @@ class Campement(
 
     fun removeTrustedPlayer(playerID: UUID): Boolean {
         return _trustedPlayers.remove(playerID)
-    }
-
-    override fun getValidWorld(): String {
-        return SrpWorld.Elysea.name
     }
 
     override fun initChunk(location: Location): CampementChunk {
@@ -53,6 +48,10 @@ class Campement(
 
     fun claimInitialChunks() {
         _chunks.add(CampementChunk(ChunkCoord(spawnLocation),this))
+    }
+
+    override fun canSetSpawn(player: UUID): Boolean {
+        return player == ownerID
     }
 }
 
