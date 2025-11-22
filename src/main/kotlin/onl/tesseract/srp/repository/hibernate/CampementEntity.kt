@@ -1,7 +1,10 @@
 package onl.tesseract.srp.repository.hibernate
 
 import jakarta.persistence.*
+import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.territory.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementChunkEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
 import org.bukkit.Bukkit
@@ -49,8 +52,8 @@ class CampementEntity(
     fun toDomain(): Campement {
         val camp =  Campement(
             ownerID,  campLevel,
-            Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ),
-            trustedPlayers
+            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.name)),
+            trustedPlayers.toMutableSet()
         )
         camp.addChunks(listChunks.map { it.toDomain() }.toSet())
         return camp
@@ -60,12 +63,12 @@ class CampementEntity(
 fun Campement.toEntity(): CampementEntity {
      val campementEntity = CampementEntity(
         ownerID,
-        trustedPlayers,
+        getTrusted().toSet(),
         campLevel = campLevel,
-        spawnX = spawnLocation.x,
-        spawnY = spawnLocation.y,
-        spawnZ = spawnLocation.z,
-        spawnWorld = spawnLocation.world.name
+        spawnX = getSpawnpoint().x,
+        spawnY = getSpawnpoint().y,
+        spawnZ = getSpawnpoint().z,
+        spawnWorld = getSpawnpoint().chunkCoord.world
     )
     campementEntity.listChunks.addAll(getChunks().map { it.toEntity(campementEntity) }.toMutableSet())
     return campementEntity

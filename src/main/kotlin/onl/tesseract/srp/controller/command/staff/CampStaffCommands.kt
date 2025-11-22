@@ -1,7 +1,9 @@
 package onl.tesseract.srp.controller.command.staff
 
 import net.kyori.adventure.text.format.NamedTextColor
-import onl.tesseract.commandBuilder.annotation.*
+import onl.tesseract.commandBuilder.annotation.Argument
+import onl.tesseract.commandBuilder.annotation.Command
+import onl.tesseract.commandBuilder.annotation.Perm
 import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
@@ -9,7 +11,6 @@ import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.domain.commun.enum.CreationResult
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
-import onl.tesseract.srp.service.territory.campement.CampementCreationResult
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
@@ -99,13 +100,16 @@ class CampStaffCommands(
             return
         }
 
-        val success = campementService.trustPlayer(ownerUUID, targetUUID)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
-            target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
-                    "en tant que joueur de confiance.")
-        } else {
-            sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
+        val success = campementService.trust(ownerUUID, targetUUID)
+        when (success) {
+            TrustResult.NOT_ALLOWED -> TODO()
+            TrustResult.SUCCESS -> {
+                sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
+                target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
+                        "en tant que joueur de confiance.")
+            }
+            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
+            TrustResult.TERRITORY_NOT_FOUND -> TODO()
         }
     }
 
@@ -122,11 +126,12 @@ class CampStaffCommands(
             return
         }
 
-        val success = campementService.untrustPlayer(owner.uniqueId, target.uniqueId)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
-        } else {
-            sender.sendMessage(CampementChatError + "Erreur lors du retrait de ${target.name}.")
+        val success = campementService.untrust(owner.uniqueId, target.uniqueId)
+        when(success){
+            UntrustResult.NOT_ALLOWED -> TODO()
+            UntrustResult.NOT_TRUST -> TODO()
+            UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
+            UntrustResult.TERRITORY_NOT_FOUND -> TODO()
         }
     }
 
@@ -138,7 +143,7 @@ class CampStaffCommands(
             return
         }
 
-        val trusted = campement.trustedPlayers.mapNotNull {
+        val trusted = campement.getTrusted().mapNotNull {
             Bukkit.getOfflinePlayer(it).name
         }
 

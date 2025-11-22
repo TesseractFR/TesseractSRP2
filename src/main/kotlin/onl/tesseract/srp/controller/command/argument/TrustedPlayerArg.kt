@@ -13,7 +13,7 @@ class TrustedPlayerArg(name: String) : CommandArgument<String>(name) {
             val service = ServiceContainer[CampementService::class.java]
             val ownerName = env.get("owner", String::class.java) ?: env.senderAsPlayer.name
             val campement = service.getCampementByOwner(Bukkit.getOfflinePlayer(ownerName).uniqueId) ?: return@tabCompleter listOf()
-            listOf("<Joueur_de_Confiance>") + campement.trustedPlayers.mapNotNull {
+            listOf("<Joueur_de_Confiance>") + campement.getTrusted().mapNotNull {
                 Bukkit.getOfflinePlayer(it).name
             }
         }

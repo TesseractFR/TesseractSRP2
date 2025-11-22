@@ -1,5 +1,5 @@
-package onl.tesseract.srp.domain.commun.enum
+package onl.tesseract.srp.domain.territory.enum
 
 enum class SetSpawnResult { SUCCESS, NOT_AUTHORIZED, OUTSIDE_TERRITORY,
-    NOT_EXIST
+    TERRITORY_NOT_FOUND
 }

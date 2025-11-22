@@ -1,7 +1,7 @@
 package onl.tesseract.srp.controller.event.guild.listener
 
-import onl.tesseract.srp.domain.territory.guild.GuildChunkClaimEvent
-import onl.tesseract.srp.domain.territory.guild.GuildChunkUnclaimEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
 import onl.tesseract.srp.service.territory.guild.GuildBorderRenderer
 import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Bukkit

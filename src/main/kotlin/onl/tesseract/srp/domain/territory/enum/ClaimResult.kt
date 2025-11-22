@@ -1,8 +1,8 @@
-package onl.tesseract.srp.domain.commun.enum
+package onl.tesseract.srp.domain.territory.enum
 
 enum class ClaimResult {
     SUCCESS,
-    NOT_EXIST,
+    TERRITORY_NOT_FOUND,
     ALREADY_OWNED,
     ALREADY_OTHER,
     NOT_ADJACENT,

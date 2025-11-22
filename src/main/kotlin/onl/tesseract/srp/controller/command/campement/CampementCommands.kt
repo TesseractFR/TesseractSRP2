@@ -13,11 +13,16 @@ import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.territory.campement.AnnexionStickInvocable
-import onl.tesseract.srp.domain.commun.enum.ClaimResult
-import onl.tesseract.srp.domain.commun.enum.CreationResult
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
-import onl.tesseract.srp.domain.commun.enum.UnclaimResult
+import onl.tesseract.srp.util.AnnexionStickInvocable
+import onl.tesseract.srp.domain.territory.enum.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.TrustResult
+import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.mapper.toChunkCoord
+import onl.tesseract.srp.mapper.toCoordinate
+import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.campement.CAMP_BORDER_COMMAND
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
@@ -124,7 +129,7 @@ class CampementCommands(
             SetSpawnResult.NOT_AUTHORIZED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
             SetSpawnResult.OUTSIDE_TERRITORY -> sender.sendMessage(CampementChatError +
                     "Tu dois être dans un chunk de ton campement pour définir le spawn. " + CAMPEMENT_BORDER_MESSAGE)
-            SetSpawnResult.NOT_EXIST -> TODO()
+            SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 
@@ -144,7 +149,7 @@ class CampementCommands(
                         + CAMPEMENT_BORDER_MESSAGE)
             ClaimResult.NOT_ALLOWED -> sender.sendMessage(
                 CampementChatError + "Tu n'es pas autorisé à annexer ce chunk.")
-            ClaimResult.NOT_EXIST -> CampementChatError + "Tu n'as pas de campement."
+            ClaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
             ClaimResult.INVALID_WORLD -> sender.sendMessage(CampementChatError + "Tu ne peux pas claim dans ce monde.")
         }
     }
@@ -181,15 +186,18 @@ class CampementCommands(
             return
         }
 
-        val success = campementService.trustPlayer(ownerID, trustedPlayerID)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${targetPlayerArg.get().name} a été ajouté " +
-                    "en tant que joueur de confiance dans ton campement !")
-            targetPlayerArg.get().sendMessage(CampementChatSuccess + "Tu as été ajouté en tant que " +
-                    "joueur de confiance dans le campement de ${sender.name}.")
-        } else {
-            sender.sendMessage(CampementChatError + "Impossible d'ajouter ce joueur. " +
+        val success = campementService.trust(ownerID, trustedPlayerID)
+        when(success){
+            TrustResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Impossible d'ajouter ce joueur. " +
                     "Assure-toi d'être le propriétaire du campement et que le joueur n'est pas déjà ajouté.")
+            TrustResult.SUCCESS -> {
+                sender.sendMessage(CampementChatSuccess + "${targetPlayerArg.get().name} a été ajouté " +
+                        "en tant que joueur de confiance dans ton campement !")
+                targetPlayerArg.get().sendMessage(CampementChatSuccess + "Tu as été ajouté en tant que " +
+                        "joueur de confiance dans le campement de ${sender.name}.")
+            }
+            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "Ce joueur est déjà ajouté à ton campement.")
+            TrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 
@@ -200,21 +208,17 @@ class CampementCommands(
     fun untrustPlayer(sender: Player, @Argument("joueur") targetName: TrustedPlayerArg) {
         if (!campementService.hasCampement(sender)) return
         val ownerID = sender.uniqueId
-        val campement = campementService.getCampementByOwner(ownerID)!!
-
         val target = Bukkit.getOfflinePlayer(targetName.get())
         val trustedPlayerUUID = target.uniqueId
-        if (!campement.trustedPlayers.contains(trustedPlayerUUID)) {
-            sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans ta liste de confiance.")
-            return
-        }
 
-        val success = campementService.untrustPlayer(ownerID, trustedPlayerUUID)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
+        val success = campementService.untrust(ownerID, trustedPlayerUUID)
+
+        when(success){
+            UntrustResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à utiliser cette commande.")
+            UntrustResult.NOT_TRUST -> sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans ta liste de confiance.")
+            UntrustResult.SUCCESS ->             sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
                     "liste des joueurs de confiance de ton campement !")
-        } else {
-            sender.sendMessage(CampementChatError + "Erreur lors du retrait de ${target.name}.")
+            UntrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 

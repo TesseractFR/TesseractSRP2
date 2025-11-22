@@ -2,22 +2,27 @@ package onl.tesseract.srp.service.territory.guild
 
 import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import onl.tesseract.lib.chat.ChatEntryService
-import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.service.ServiceContainer
-import onl.tesseract.lib.util.plus
-import onl.tesseract.srp.domain.commun.enum.CreationResult
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
-import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
+import onl.tesseract.srp.DomainEventPublisher
+import onl.tesseract.srp.domain.commun.enum.*
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
+import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.KickResult
+import onl.tesseract.srp.domain.territory.enum.LeaveResult
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
+import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
+import onl.tesseract.srp.domain.territory.guild.enum.GuildUpgradeResult
+import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildLevelUpEvent
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
@@ -26,10 +31,6 @@ import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.territory.TerritoryService
 import onl.tesseract.srp.util.*
-import org.bukkit.Bukkit
-import org.bukkit.Chunk
-import org.bukkit.Location
-import org.bukkit.entity.Player
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -41,10 +42,9 @@ private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 open class GuildService(
     private val guildRepository: GuildRepository,
     private val playerService: SrpPlayerService,
-    eventService: EventService,
+    eventService: DomainEventPublisher,
     private val ledgerService: MoneyLedgerService,
     private val transferService: TransferService,
-    private val chatEntryService: ChatEntryService,
     territoryChunkRepository: TerritoryChunkRepository
 ) : TerritoryService<GuildChunk, Guild, Int>(guildRepository,territoryChunkRepository,eventService) {
     @PostConstruct
@@ -52,8 +52,8 @@ open class GuildService(
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
     }
 
-    override fun isCorrectWorld(loc: Location) =
-        loc.world.name == SrpWorld.GuildWorld.bukkitName
+    override fun isCorrectWorld(worldName: String) =
+        worldName == SrpWorld.GuildWorld.bukkitName
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Ignore
@@ -72,18 +72,18 @@ open class GuildService(
     open fun getAllGuilds(): Collection<Guild> = guildRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = guildRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = guildRepository.findGuildByMember(memberId)
-    open fun getGuildByChunk(chunk: Chunk) = getByChunk(chunk)
+    open fun getGuildByChunk(chunk: ChunkCoord) = getByChunk(chunk)
     open fun getMemberRole(playerID: UUID): GuildRole? = guildRepository.findMemberRole(playerID)
 
     @Transactional
-    open fun createGuild(playerID: UUID, location: Location, guildName: String): CreationResult {
+    open fun createGuild(playerID: UUID, coordinate: Coordinate, guildName: String): CreationResult {
         val srpPlayer = playerService.getPlayer(playerID)
         if(srpPlayer.money<GUILD_COST) return CreationResult.NOT_ENOUGH_MONEY
         if(srpPlayer.rank < PlayerRank.Baron) return CreationResult.RANK_TOO_LOW
         if(getByName(guildName)!=null) return CreationResult.NAME_TAKEN
-        val result = isCreationAvailable(playerID,location)
+        val result = isCreationAvailable(playerID,coordinate.chunkCoord)
         if(result != CreationResult.SUCCESS) return result
-        val guild = Guild(-1, playerID, guildName, location)
+        val guild = Guild(-1, playerID, guildName, coordinate)
         playerService.takeMoney(
             playerID, GUILD_COST, TransactionType.Guild, TransactionSubType.Guild.Creation, guild.id.toString()
         )
@@ -96,24 +96,24 @@ open class GuildService(
         return guildRepository.findGuildByName(guildName)
     }
 
-    fun setSpawnpoint(requesterId: UUID, newLoc: Location, kind: GuildSpawnKind): SetSpawnResult {
-        if(kind == GuildSpawnKind.PRIVATE)return setSpawnpoint(requesterId,newLoc)
-        return setVisitorSpawnpoint(requesterId,newLoc)
+    fun setSpawnpoint(requesterId: UUID, coordinate: Coordinate, kind: GuildSpawnKind): SetSpawnResult {
+        if(kind == GuildSpawnKind.PRIVATE)return setSpawnpoint(requesterId,coordinate)
+        return setVisitorSpawnpoint(requesterId,coordinate)
     }
 
 
-    fun setVisitorSpawnpoint(player: UUID, newLoc: Location): SetSpawnResult {
-        val guild = getByPlayer(player) ?: return SetSpawnResult.NOT_EXIST
-        val result = guild.setVisitorSpawnpoint(newLoc,player)
+    fun setVisitorSpawnpoint(player: UUID, coordinate: Coordinate): SetSpawnResult {
+        val guild = getByPlayer(player) ?: return SetSpawnResult.TERRITORY_NOT_FOUND
+        val result = guild.setVisitorSpawnpoint(coordinate,player)
         if(result == SetSpawnResult.SUCCESS){
             guildRepository.save(guild)
         }
         return result
     }
 
-    open fun getPrivateSpawn(guildId: Int): Location? = getById(guildId)?.spawnLocation
+    open fun getPrivateSpawn(guildId: Int): Coordinate? = getById(guildId)?.getSpawnpoint()
 
-    open fun getVisitorSpawn(guildId: Int): Location? = getById(guildId)?.visitorSpawnLocation
+    open fun getVisitorSpawn(guildId: Int): Coordinate? = getById(guildId)?.getVisitorSpawnpoint()
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
@@ -129,83 +129,26 @@ open class GuildService(
     }
 
     @Transactional
-    open fun invite(guildID: Int, playerID: UUID): InvitationResult {
-        val guild = getGuild(guildID)
+    open fun invite(sender : UUID, target: UUID): GuildInvitationResult {
+        if(sender == target) return GuildInvitationResult.SAME_PLAYER
+        if(getGuildByMember(target) != null) return GuildInvitationResult.HAS_GUILD
+        val guild = getGuildByMember(sender)?: return GuildInvitationResult.TERRITORY_NOT_FOUND
+        if(!guild.canInvite(sender)) return GuildInvitationResult.NOT_ALLOWED
 
-        if (guildRepository.findGuildByMember(playerID) != null)
-            return InvitationResult.Failed
-
-        val result = if (guild.joinRequests.contains(playerID)) {
-            guild.join(playerID)
-            InvitationResult.Joined
-        } else {
-            guild.invitePlayer(playerID)
-            InvitationResult.Invited
+        if (guild.joinRequests.contains(target)){
+            guild.join(target)
+            guildRepository.save(guild)
+            return GuildInvitationResult.SUCCESS_JOIN
         }
+        guild.invitePlayer(target)
+        eventService.publish(GuildInvitationEvent(guild.name,sender,target))
         guildRepository.save(guild)
-        return result
-    }
-    @Transactional
-    open fun handleGuildInvitation(sender: Player, target: Player) {
-        val role = getMemberRole(sender.uniqueId)
-        val guild = if (role == GuildRole.Leader) getGuildByLeader(sender.uniqueId) else null
+        return GuildInvitationResult.SUCCESS_INVITE
 
-        val error: Component? = when {
-            role == null ->
-                GuildChatError + "Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle."
-            role != GuildRole.Leader ->
-                GuildChatError + "Tu n'es pas le chef de ta guilde."
-            target.uniqueId == sender.uniqueId ->
-                GuildChatError + "Tu ne peux pas t'inviter toi-même."
-            guild == null ->
-                GuildChatError + "Tu n'as pas de guilde."
-            else -> null
-        }
-        if (error != null) {
-            sender.sendMessage(error)
-            return
-        }
-
-        if (guild != null) {
-            when (invite(guild.id, target.uniqueId)) {
-                InvitationResult.Failed -> {
-                    sender.sendMessage(GuildChatError + "${target.name} est déjà dans une guilde.")
-                }
-                InvitationResult.Joined -> {
-                    sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint la guilde !")
-                    target.sendMessage(GuildChatSuccess + "Tu as rejoint la guilde ${guild.name}.")
-                }
-                InvitationResult.Invited -> {
-                    sender.sendMessage(GuildChatFormat + "${target.name} a été invité. En attente d'acceptation.")
-                    target.sendMessage(GuildChatFormat + "${sender.name} t'invite à rejoindre la guilde ${guild.name}.")
-
-                    val acceptButton = Component.text("✔ Accepter")
-                        .color(NamedTextColor.GREEN)
-                        .clickEvent(chatEntryService.clickCommand(target) {
-                            if (acceptInvitation(guild.id, target.uniqueId)) {
-                                target.sendMessage(GuildChatSuccess + "Tu as rejoint la guilde ${guild.name}.")
-                                sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint la guilde.")
-                            }
-                        })
-
-                    val denyButton = Component.text("✖ Refuser")
-                        .color(NamedTextColor.RED)
-                        .clickEvent(chatEntryService.clickCommand(target) {
-                            if (declineInvitation(guild.id, target.uniqueId)) {
-                                target.sendMessage(GuildChatError + "Invitation refusée.")
-                                sender.sendMessage(GuildChatError + "${target.name} a refusé l'invitation.")
-                            }
-                        })
-
-                    target.sendMessage(acceptButton.append(Component.text(" ")).append(denyButton))
-                }
-            }
-        }
     }
 
-    @Transactional
-    open fun acceptInvitation(guildID: Int, playerID: UUID): Boolean {
-        val guild = getGuild(guildID)
+    open fun acceptInvitation(guildName: String, playerID: UUID): Boolean {
+        val guild = getByName(guildName)?: return false
         val accepted = when {
             guild.members.any { it.playerID == playerID } -> false
             playerID !in guild.invitations -> false
@@ -218,15 +161,15 @@ open class GuildService(
         return accepted
     }
 
-    @Transactional
-    open fun declineInvitation(guildID: Int, playerID: UUID): Boolean {
-        val guild = getGuild(guildID)
+
+    open fun declineInvitation(guildName: String, playerID: UUID): Boolean {
+        val guild = getByName(guildName)?: return false
         val removed = guild.removeInvitation(playerID)
         if (removed) guildRepository.save(guild)
         return removed
     }
 
-    @Transactional
+
     open fun addMemberAsStaff(guildID: Int, playerID: UUID) {
         val guild = getGuild(guildID)
         if (guildRepository.findGuildByMember(playerID) != null)
@@ -420,21 +363,8 @@ open class GuildService(
         guild.xp -= need
         guild.level += 1
         guildRepository.save(guild)
-        notifyGuildLevelUp(guild)
+        eventService.publish(GuildLevelUpEvent(guild,guild.level))
         return true
-    }
-
-    private fun notifyGuildLevelUp(guild: Guild) {
-        val server = Bukkit.getServer()
-        val msg: Component =
-            GuildChatSuccess +
-                    "Ta guilde " + Component.text(guild.name, NamedTextColor.GREEN) +
-                    " est passée au niveau " + Component.text(guild.level.toString(), NamedTextColor.GOLD) + " !"
-
-        val recipients = (guild.members.map { it.playerID } + guild.leaderId).distinct()
-        recipients.forEach { uuid ->
-            server.getPlayer(uuid)?.sendMessage(msg)
-        }
     }
 
     open fun upgradeRank(guildId: Int, to: GuildRank): GuildUpgradeResult {
@@ -469,8 +399,4 @@ data class GuildCreationResult(val guild: Guild?, val reason: CreationResult? = 
     }
 }
 
-enum class InvitationResult { Invited, Joined, Failed }
-enum class KickResult { Success, NotMember, NotAuthorized, CannotKickLeader }
-enum class LeaveResult { Success, LeaderMustDelete }
-enum class GuildUpgradeResult { SUCCESS, RANK_LOCKED, NOT_ENOUGH_MONEY, ALREADY_AT_OR_ABOVE }
-enum class StaffSetRoleResult { SUCCESS, SAME_ROLE, NEED_NEW_LEADER, NEW_LEADER_SAME_AS_TARGET }
+

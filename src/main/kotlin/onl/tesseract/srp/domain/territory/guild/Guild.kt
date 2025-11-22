@@ -1,50 +1,53 @@
 package onl.tesseract.srp.domain.territory.guild
 
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
 import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.territory.DefaultVisitorSpawnContainer
 import onl.tesseract.srp.domain.territory.Territory
+import onl.tesseract.srp.domain.territory.VisitorSpawnContainer
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
-import org.bukkit.Location
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
 import java.util.*
 
 class Guild(
     var id: Int,
     val name: String,
-    spawnLocation: Location,
+    spawnLocation: Coordinate,
     money: Int = 0,
     val moneyLedgerID: UUID = UUID.randomUUID(),
-    memberContainer: GuildMemberContainerImpl,
-    var visitorSpawnLocation: Location? = null,
+    memberContainer: GuildMemberContainer,
+    visitorSpawnLocation: Coordinate = spawnLocation,
     var level: Int = 1,
     var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
-) : GuildMemberContainer by memberContainer, Territory<GuildChunk>(spawnLocation) {
+    val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation)
+) : GuildMemberContainer by memberContainer, VisitorSpawnContainer by visitorSpawnContainer, Territory<GuildChunk>(spawnLocation) {
 
     var money: Int = money
 
-    constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Location)
+    constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Coordinate)
             : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
 
     /**
      * @throws IllegalStateException If the guild already has chunks
      */
-    fun claimInitialChunks() {
+    override fun claimInitialChunks() {
         check(_chunks.isEmpty())
 
-        val spawnChunk = spawnLocation.chunk
+        val spawnChunk = getSpawnpoint().chunkCoord
         for (x in -1..1) {
             for (z in -1..1) {
-                _chunks.add(GuildChunk(ChunkCoord(spawnChunk.x + x, spawnChunk.z + z, spawnChunk.world.name), this))
+                _chunks.add(GuildChunk(ChunkCoord(spawnChunk.x + x, spawnChunk.z + z, spawnChunk.world), this))
             }
         }
     }
 
-    fun setVisitorSpawnpoint(newLocation: Location,player: UUID): SetSpawnResult {
-        if(!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
-        if(!hasChunk(newLocation))return SetSpawnResult.OUTSIDE_TERRITORY
-        visitorSpawnLocation = newLocation
-        return SetSpawnResult.SUCCESS
+    override fun setVisitorSpawnpoint(newLocation: Coordinate, player: UUID): SetSpawnResult {
+        if(!hasChunk(newLocation.chunkCoord))return SetSpawnResult.OUTSIDE_TERRITORY
+        return visitorSpawnContainer.setVisitorSpawnpoint(newLocation,player)
     }
 
     fun addMoney(amount: Int) {
@@ -63,8 +66,8 @@ class Guild(
             ?: throw IllegalArgumentException("Player $member is not a member of guild $id")
     }
 
-    override fun initChunk(location: Location): GuildChunk {
-        return GuildChunk(ChunkCoord(location), this)
+    override fun initChunk(chunkCoord: ChunkCoord): GuildChunk {
+        return GuildChunk(chunkCoord, this)
     }
 
     override fun createClaimEvent(player: UUID): GuildChunkClaimEvent {
@@ -83,6 +86,18 @@ class Guild(
     override fun canSetSpawn(player: UUID): Boolean {
         val role = getMemberRole(player)
         return role.canSetSpawn()
+    }
+
+    override fun canBuild(player: UUID): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun canOpenChest(player: UUID): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    fun canInvite(sender: UUID): Boolean {
+        TODO("A FAIRE")
     }
 }
 

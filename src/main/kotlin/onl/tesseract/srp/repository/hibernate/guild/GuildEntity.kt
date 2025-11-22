@@ -1,10 +1,13 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
 import jakarta.persistence.*
+import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.territory.Coordinate
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildMember
 import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
 import org.bukkit.Bukkit
@@ -36,7 +39,7 @@ class GuildEntity(
         AttributeOverride(name = "spawnY",    column = Column(name = "visitor_spawn_y")),
         AttributeOverride(name = "spawnZ",    column = Column(name = "visitor_spawn_z")),
     )
-    val visitorSpawn: SpawnLocationEntity? = null,
+    val visitorSpawn: SpawnLocationEntity,
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildChunkEntity>,
@@ -57,13 +60,13 @@ class GuildEntity(
 
     @Embeddable
     class SpawnLocationEntity(
-        val spawnX: Int,
-        val spawnY: Int,
-        val spawnZ: Int,
+        val spawnX: Double,
+        val spawnY: Double,
+        val spawnZ: Double,
     ) {
 
-        fun toLocation(): Location {
-            return Location(Bukkit.getWorld("guildWorld"), spawnX.toDouble(), spawnY.toDouble(), spawnZ.toDouble())
+        fun toCoordinate(): Coordinate {
+            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.name))
         }
     }
 
@@ -71,11 +74,11 @@ class GuildEntity(
         val guild = Guild(
             id,
             name,
-            spawnLocation.toLocation(),
+            spawnLocation.toCoordinate(),
             money,
             ledgerId,
             GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests),
-            visitorSpawnLocation = visitorSpawn?.toLocation(),
+            visitorSpawnLocation = visitorSpawn.toCoordinate(),
             level = level,
             xp = xp,
             rank = rank
@@ -110,10 +113,10 @@ fun Guild.toEntity(): GuildEntity {
         leaderId = leaderId,
         money = money,
         ledgerId = moneyLedgerID,
-        spawnLocation = GuildEntity.SpawnLocationEntity(
-            spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
-        visitorSpawn = visitorSpawnLocation?.let {
-            GuildEntity.SpawnLocationEntity(it.blockX, it.blockY, it.blockZ)
+        spawnLocation = getSpawnpoint().let { GuildEntity.SpawnLocationEntity(
+            it.x, it.y, it.z)},
+        visitorSpawn = getVisitorSpawnpoint().let {
+            GuildEntity.SpawnLocationEntity(it.x, it.y, it.z)
         },
         chunks = mutableSetOf(),
         members = mutableListOf(),

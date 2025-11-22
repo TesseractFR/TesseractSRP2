@@ -1,8 +1,7 @@
 package onl.tesseract.srp.domain.territory
 
-import onl.tesseract.srp.domain.commun.enum.ClaimResult
-import onl.tesseract.srp.domain.commun.enum.UnclaimResult
-import org.bukkit.Location
+import onl.tesseract.srp.domain.territory.enum.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.UnclaimResult
 import java.util.*
 import kotlin.math.abs
 
@@ -13,25 +12,23 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
         return _chunks.add(chunk)
     }
 
-    fun claimChunk(location: Location,claimer: UUID): ClaimResult {
+    fun claimChunk(chunkCoord: ChunkCoord,claimer: UUID): ClaimResult {
         if (!canClaim(claimer))return ClaimResult.NOT_ALLOWED
-        if (hasChunk(location)) return ClaimResult.ALREADY_OWNED
-        if (!hasAdjacent(location)) return ClaimResult.NOT_ADJACENT
-        if (addChunk(initChunk(location))) ClaimResult.SUCCESS
+        if (hasChunk(chunkCoord)) return ClaimResult.ALREADY_OWNED
+        if (!hasAdjacent(chunkCoord)) return ClaimResult.NOT_ADJACENT
+        if (addChunk(initChunk(chunkCoord))) ClaimResult.SUCCESS
         return ClaimResult.ALREADY_OWNED
     }
 
-    fun hasChunk(location: Location): Boolean {
+    fun hasChunk(chunkCoord: ChunkCoord): Boolean {
         return _chunks.any {
-            it.chunkCoord.world == location.world.name
-                    && it.chunkCoord.z == location.chunk.z
-                    && it.chunkCoord.x == location.chunk.x
+            it.chunkCoord == chunkCoord
         }
     }
 
-    fun hasAdjacent(location: Location): Boolean{
-        val lx = location.chunk.x
-        val lz = location.chunk.z
+    fun hasAdjacent(chunkCoord: ChunkCoord): Boolean{
+        val lx = chunkCoord.x
+        val lz = chunkCoord.z
         return _chunks.any { n ->
             val nx = n.chunkCoord.x
             val nz = n.chunkCoord.z
@@ -43,14 +40,14 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
         return _chunks.remove(chunk)
     }
 
-    abstract fun initChunk(location: Location): TC
+    abstract fun initChunk(chunkCoord: ChunkCoord): TC
 
-    open fun unclaimChunk(location: Location, player : UUID): UnclaimResult {
+    open fun unclaimChunk(chunkCoord: ChunkCoord, player : UUID): UnclaimResult {
         if(!canClaim(player)) return UnclaimResult.NOT_ALLOWED
-        if (!hasChunk(location)) return UnclaimResult.NOT_OWNED
+        if (!hasChunk(chunkCoord)) return UnclaimResult.NOT_OWNED
         if (_chunks.size == 1) return UnclaimResult.LAST_CHUNK
-        if(!isUnclaimStillConnected(initChunk(location))) return UnclaimResult.SPLIT
-        if (removeChunk(initChunk(location))) UnclaimResult.SUCCESS
+        if(!isUnclaimStillConnected(initChunk(chunkCoord))) return UnclaimResult.SPLIT
+        if (removeChunk(initChunk(chunkCoord))) UnclaimResult.SUCCESS
         return UnclaimResult.NOT_OWNED
 
     }

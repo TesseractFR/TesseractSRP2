@@ -15,13 +15,19 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildSpawnKindArg
 import onl.tesseract.srp.controller.menu.guild.GuildMenu
-import onl.tesseract.srp.domain.commun.enum.ClaimResult
-import onl.tesseract.srp.domain.commun.enum.CreationResult
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
-import onl.tesseract.srp.domain.commun.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.KickResult
+import onl.tesseract.srp.domain.territory.enum.LeaveResult
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.UnclaimResult
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
+import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
 import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.mapper.toChunkCoord
+import onl.tesseract.srp.mapper.toCoordinate
+import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.guild.*
@@ -66,7 +72,7 @@ class GuildCommand(
 
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) = inGuildWorld(sender) {
-        val result = guildService.createGuild(sender.uniqueId, sender.location, nameArg.get())
+        val result = guildService.createGuild(sender.uniqueId, sender.location.toCoordinate(), nameArg.get())
         val msg = when (result) {
             CreationResult.NOT_ENOUGH_MONEY ->
                 GuildChatError + "Tu n'as pas assez d'argent pour créer ta guilde."
@@ -138,7 +144,25 @@ class GuildCommand(
     @Command(name = "invite", playerOnly = true, description = "Inviter un joueur dans sa guilde.")
     fun invite(sender: Player, @Argument("joueur") player: PlayerArg) {
         val target = player.get()
-        guildService.handleGuildInvitation(sender, target)
+        when(guildService.invite(sender.uniqueId, target.uniqueId)){
+            GuildInvitationResult.TERRITORY_NOT_FOUND -> sender.sendMessage(Component.text("")
+                    .append(GuildChatError)
+                    .plus("Tu ne possèdes pas de guilde. Réjoins ou crées-en une avec " )
+                    .append("/guild create <nom>", NamedTextColor.GOLD))
+            GuildInvitationResult.SAME_PLAYER -> sender.sendMessage(GuildChatError + "Tu ne peux pas t'inviter toi même.")
+            GuildInvitationResult.HAS_GUILD -> sender.sendMessage(GuildChatError + "Ce joueur est déjà dans une guilde.")
+            GuildInvitationResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à utiliser cette commande.")
+            GuildInvitationResult.SUCCESS_JOIN -> {
+                val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
+                sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint votre guilde.")
+                target.sendMessage(GuildChatSuccess + "Vous avez rejoint la guilde ${senderGuild.name}.")
+            }
+            GuildInvitationResult.SUCCESS_INVITE -> {
+                val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
+                sender.sendMessage(GuildChatSuccess + "Votre invitation a bien été envoyée à ${target.name}")
+                target.sendMessage(GuildChatFormat + "${sender.name} vous invite dans la guilde ${senderGuild.name}.")
+            }
+        }
     }
 
     @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")
@@ -279,8 +303,9 @@ class GuildCommand(
                         "en plusieurs parties. " + GUILD_BORDER_MESSAGE
             )
 
-            UnclaimResult.NOT_ALLOWED -> TODO()
-            UnclaimResult.NOT_EXIST -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            UnclaimResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError +
+                    "Tu n'es pas autorisé(e) à utiliser cette commande.")
+            UnclaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
         }
     }
 
@@ -325,7 +350,7 @@ class GuildCommand(
                             + GUILD_BORDER_MESSAGE
                 )
 
-            SetSpawnResult.NOT_EXIST -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
 
         }
     }

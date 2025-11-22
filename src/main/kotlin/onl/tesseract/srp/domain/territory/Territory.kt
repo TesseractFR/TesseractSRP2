@@ -1,34 +1,34 @@
 package onl.tesseract.srp.domain.territory
 
-import onl.tesseract.srp.domain.commun.enum.ClaimResult
-import onl.tesseract.srp.domain.commun.enum.SetSpawnResult
-import onl.tesseract.srp.domain.commun.enum.UnclaimResult
-import org.bukkit.Location
-import java.util.UUID
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import java.util.*
 
 abstract class Territory<TC : TerritoryChunk>(
-    var spawnLocation: Location,
-)  : ClaimContainer<TC>() ,SpawnableTerritory{
+    spawnLocation: Coordinate,
+    trustedPlayers: MutableSet<UUID> = mutableSetOf(),
+    val spawnContainer: SpawnContainer = DefaultSpawnContainer(spawnLocation),
+    val trustContainer: TrustContainer = DefaultTrustContainer(trustedPlayers)
+)  : ClaimContainer<TC>() ,SpawnContainer by spawnContainer, TrustContainer by trustContainer{
     /**
      * Sets the spawn point of the guild.
      * The new location must be within one of the guild's chunks.
      * @return true if the spawn point was set, false otherwise
      */
-    override fun setSpawnpoint(location: Location,player: UUID): SetSpawnResult {
-        if (!hasChunk(location)) return SetSpawnResult.OUTSIDE_TERRITORY
-        if (!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
-        spawnLocation = location
-        return SetSpawnResult.SUCCESS
+    override fun setSpawnpoint(coordinate: Coordinate,player: UUID): SetSpawnResult {
+        if (!hasChunk(coordinate.chunkCoord)) return SetSpawnResult.OUTSIDE_TERRITORY
+        return spawnContainer.setSpawnpoint(coordinate,player)
     }
 
-    override fun isSpawnChunk(location: Location): Boolean {
-        return location.chunk == spawnLocation.chunk
+    override fun unclaimChunk(chunkCoord: ChunkCoord,player : UUID): UnclaimResult {
+        if(isSpawnChunk(chunkCoord)) return UnclaimResult.IS_SPAWN_CHUNK
+        return super.unclaimChunk(chunkCoord, player)
     }
 
-    override fun unclaimChunk(location: Location,player : UUID): UnclaimResult {
-        if(isSpawnChunk(location)) return UnclaimResult.IS_SPAWN_CHUNK
-        return super.unclaimChunk(location, player)
-    }
+    abstract fun canBuild(player: UUID) : Boolean
 
+    abstract fun canOpenChest(player: UUID) : Boolean
+
+    abstract fun claimInitialChunks()
 
 }

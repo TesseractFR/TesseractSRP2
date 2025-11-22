@@ -1,0 +1,26 @@
+package onl.tesseract.srp.domain.territory
+
+import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import java.util.UUID
+
+interface VisitorSpawnContainer {
+    fun setVisitorSpawnpoint(newLocation: Coordinate,player: UUID): SetSpawnResult
+    fun canSetSpawn(player: UUID): Boolean
+    fun getVisitorSpawnpoint() : Coordinate
+}
+
+class DefaultVisitorSpawnContainer(protected var visitorSpawnPoint: Coordinate) : VisitorSpawnContainer{
+    override fun setVisitorSpawnpoint(newLocation: Coordinate, player: UUID): SetSpawnResult {
+        if(!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
+        visitorSpawnPoint = newLocation
+        return SetSpawnResult.SUCCESS
+    }
+
+    override fun canSetSpawn(player: UUID): Boolean {
+        throw IllegalAccessException("Must be defined")
+    }
+
+    override fun getVisitorSpawnpoint(): Coordinate {
+        return visitorSpawnPoint
+    }
+}

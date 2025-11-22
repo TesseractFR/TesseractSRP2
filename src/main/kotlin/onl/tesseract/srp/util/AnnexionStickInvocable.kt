@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.territory.campement
+package onl.tesseract.srp.util
 
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
