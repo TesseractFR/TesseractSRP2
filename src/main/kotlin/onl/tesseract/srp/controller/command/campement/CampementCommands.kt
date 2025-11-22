@@ -80,10 +80,8 @@ class CampementCommands(
 
     @Command(name = "delete", description = "Supprimer son campement.")
     fun deleteCampement(sender: Player) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
         val playerID = sender.uniqueId
-        val campement = campementService.getCampementByOwner(playerID)!!
-
+        val campement = campementService.getCampementByOwner(playerID) ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         menuService.openConfirmationMenu(
             sender,
             NamedTextColor.RED + "⚠ Es-tu sûr de vouloir supprimer ton campement ?",
@@ -102,7 +100,9 @@ class CampementCommands(
     fun teleportToCampementSpawn(sender: Player, @Argument("joueur", optional = true) ownerName: CampOwnerArg?) {
         val targetName = ownerName?.get()
         if (targetName == null || targetName == sender.name) {
-            if (!campementService.hasCampement(sender.uniqueId)) return
+            if (campementService.getCampementByOwner(sender.uniqueId) == null) {
+                return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
+            }
             val loc = campementService.getCampSpawn(sender.uniqueId)
             if (loc == null) {
                 sender.sendMessage(CampementChatError + "Aucun spawn défini pour ton campement.")
@@ -126,8 +126,6 @@ class CampementCommands(
 
     @Command(name = "setspawn", description = "Placer un nouveau point de spawn de campement.")
     fun setCampementSpawn(sender: Player) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
-
         when (campementService.setSpawnpoint(sender.uniqueId, sender.location.toCoordinate())) {
             SetSpawnResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
 
@@ -184,7 +182,6 @@ class CampementCommands(
         description = "Ajouter un joueur de confiance dans son campement."
     )
     fun trustPlayer(sender: Player, @Argument("joueur") targetPlayerArg: PlayerArg) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
         val ownerID = sender.uniqueId
         val trustedPlayerID = targetPlayerArg.get().uniqueId
 
@@ -214,7 +211,6 @@ class CampementCommands(
         description = "Retirer un joueur de confiance de son campement."
     )
     fun untrustPlayer(sender: Player, @Argument("joueur") targetName: TrustedPlayerArg) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
         val ownerID = sender.uniqueId
         val target = Bukkit.getOfflinePlayer(targetName.get())
         val trustedPlayerUUID = target.uniqueId
@@ -232,8 +228,8 @@ class CampementCommands(
 
     @Command(name = "border", description = "Afficher/Masquer les bordures de son campement.")
     fun toggleBorder(sender: Player) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
-        val campement = campementService.getCampementByOwner(sender.uniqueId)!!
+        val campement = campementService.getCampementByOwner(sender.uniqueId)
+            ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
 
         if (borderRenderer.isShowingBorders(sender)) {
             borderRenderer.clearBorders(sender)
@@ -246,7 +242,6 @@ class CampementCommands(
 
     @Command(name = "stick", description = "Recevoir un Bâton d'annexion.")
     fun giveStick(sender: Player) {
-        if (!campementService.hasCampement(sender.uniqueId)) return
         val equipment = equipmentService.getEquipment(sender.uniqueId)
         val existing = equipment.get(AnnexionStickInvocable::class.java)
 

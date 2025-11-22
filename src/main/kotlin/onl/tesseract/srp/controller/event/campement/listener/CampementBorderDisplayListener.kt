@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerKickEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.springframework.context.event.EventListener
 import java.util.*
 import org.springframework.stereotype.Component
 
@@ -18,12 +19,12 @@ class CampementBorderDisplayListener(
     private val campementService: CampementService
 ) : Listener {
 
-    @EventHandler
+    @EventListener
     fun onChunkClaim(event: CampementChunkClaimEvent) {
         updateBorders(event.playerId)
     }
 
-    @EventHandler
+    @EventListener
     fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
         updateBorders(event.playerId)
     }

@@ -26,7 +26,7 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
 
     /**
      * Permet de savoir si le monde est correct pour une location donnée.
-     * @param loc La position à valider
+     * @param worldName La position à valider
      */
     protected abstract fun isCorrectWorld(worldName : String): Boolean
 

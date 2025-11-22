@@ -2,7 +2,6 @@ package onl.tesseract.srp.controller.event.guild.listener
 
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
@@ -17,8 +16,8 @@ import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
 class GuildListener(
-    val guildService: GuildService,
-    val chatEntryService: ChatEntryService
+    private val guildService: GuildService,
+    private val chatEntryService: ChatEntryService
 ) {
 
     @EventListener

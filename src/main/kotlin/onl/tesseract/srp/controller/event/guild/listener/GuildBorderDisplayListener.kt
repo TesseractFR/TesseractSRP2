@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerKickEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,10 +18,10 @@ class GuildBorderDisplayListener(
     private val guildService: GuildService
 ) : Listener {
 
-    @EventHandler
+    @EventListener
     fun onChunkClaim(event: GuildChunkClaimEvent) = updateBorders(event.playerId)
 
-    @EventHandler
+    @EventListener
     fun onChunkUnclaim(event: GuildChunkUnclaimEvent) = updateBorders(event.playerId)
 
     @EventHandler

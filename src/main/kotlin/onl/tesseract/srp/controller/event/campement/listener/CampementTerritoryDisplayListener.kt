@@ -4,12 +4,12 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.srp.domain.territory.campement.CampementChunkClaimEvent
 import onl.tesseract.srp.domain.territory.campement.CampementChunkUnclaimEvent
-import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.service.territory.campement.CampementService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
+import org.springframework.context.event.EventListener
 import java.util.*
 import org.springframework.stereotype.Component as SpringComponent
 
@@ -29,7 +29,7 @@ open class CampementTerritoryDisplayListener(private val campementService: Campe
         updatePlayerCampementCache(player.uniqueId, notify = true)
     }
 
-    @EventHandler
+    @EventListener
     fun onChunkClaim(event: CampementChunkClaimEvent) {
         updatePlayerCampementCache(
             event.playerId,
@@ -37,7 +37,7 @@ open class CampementTerritoryDisplayListener(private val campementService: Campe
         )
     }
 
-    @EventHandler
+    @EventListener
     fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
         updatePlayerCampementCache(
             event.playerId,

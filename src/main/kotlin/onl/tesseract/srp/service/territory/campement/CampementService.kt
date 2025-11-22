@@ -14,22 +14,18 @@ import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.territory.TerritoryService
-import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.InteractionAllowResult
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
-private const val CAMP_PROTECTION_RADIUS = 2
-private const val SPAWN_PROTECTION_RADIUS = 15
 const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
 open class CampementService(
     private val repository: CampementRepository,
     eventService: DomainEventPublisher,
-    private val worldService: WorldService,
     private val srpPlayerService: SrpPlayerService,
     territoryChunkRepository: TerritoryChunkRepository
 ) : TerritoryService<CampementChunk, Campement, UUID>(repository, territoryChunkRepository, eventService) {
@@ -52,17 +48,6 @@ open class CampementService(
     }
 
     open fun getAllCampements(): List<Campement> = repository.findAll()
-
-    open fun hasCampement(sender: UUID): Boolean {
-        return super.getById(sender) != null
-        //TODO REMOVE ?
-//        val has = getCampementByOwner(sender.uniqueId) != null
-//        if (!has) {
-//            sender.sendMessage(CampementChatError + "Tu ne possèdes pas de campement. Utilise "
-//                    + Component.text("/campement create", NamedTextColor.GOLD)
-//                    + Component.text(" pour en créer un !"))
-//        }
-    }
 
     @Transactional
     open fun createCampement(ownerID: UUID, spawnLocation: Coordinate): CreationResult {
