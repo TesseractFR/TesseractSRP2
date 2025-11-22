@@ -10,6 +10,7 @@ import onl.tesseract.lib.equipment.EquipmentMenu
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
+import onl.tesseract.lib.util.append
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
@@ -36,8 +37,12 @@ import org.springframework.stereotype.Component as SpringComponent
 
 private val CAMPEMENT_BORDER_MESSAGE: Component =
     Component.text("Visualise les bordures avec ")
-        .append(Component.text(CAMP_BORDER_COMMAND, NamedTextColor.GOLD))
-        .append(Component.text("."))
+        .append(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
+        .append(".")
+private val NO_CAMPEMENT_MESSAGE: Component = Component.text("")
+        .append(CampementChatError)
+        .plus("Tu ne possèdes pas de campement. Crées-en un avec " )
+        .append("/campement create", NamedTextColor.GOLD)
 
 @SpringComponent
 @Command(name = "campement", playerOnly = true)
@@ -52,14 +57,14 @@ class CampementCommands(
 
     @Command(name = "create", description = "Créer un nouveau campement.")
     fun createCampement(sender: Player) {
-        val result = campementService.createCampement(sender.uniqueId, sender.location)
+        val result = campementService.createCampement(sender.uniqueId, sender.location.toCoordinate())
         val msg = when (result) {
             CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
             CreationResult.NEAR_SPAWN -> CampementChatError + "Tu es trop proche du spawn pour créer un campement."
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "Tu possèdes déjà un campement."
             CreationResult.ON_OTHER_TERRITORY -> {
-                val other = campementService.getByChunk(sender.location)
+                val other = campementService.getByChunk(sender.location.toChunkCoord())
                 val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
                 CampementChatError + "Tu ne peux pas créer un campement ici, " +
                         "tu es sur le territoire de $ownerName."
@@ -75,7 +80,7 @@ class CampementCommands(
 
     @Command(name = "delete", description = "Supprimer son campement.")
     fun deleteCampement(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
         val playerID = sender.uniqueId
         val campement = campementService.getCampementByOwner(playerID)!!
 
@@ -97,13 +102,13 @@ class CampementCommands(
     fun teleportToCampementSpawn(sender: Player, @Argument("joueur", optional = true) ownerName: CampOwnerArg?) {
         val targetName = ownerName?.get()
         if (targetName == null || targetName == sender.name) {
-            if (!campementService.hasCampement(sender)) return
+            if (!campementService.hasCampement(sender.uniqueId)) return
             val loc = campementService.getCampSpawn(sender.uniqueId)
             if (loc == null) {
                 sender.sendMessage(CampementChatError + "Aucun spawn défini pour ton campement.")
                 return
             }
-            teleportService.teleport(sender, loc) {
+            teleportService.teleport(sender, loc.toLocation()) {
                 sender.sendMessage(CampementChatSuccess + "Tu as été téléporté à ton campement.")
             }
             return
@@ -114,16 +119,16 @@ class CampementCommands(
             sender.sendMessage(CampementChatError + "${target.name} ne possède pas de campement.")
             return
         }
-        teleportService.teleport(sender, loc) {
+        teleportService.teleport(sender, loc.toLocation()) {
             sender.sendMessage(CampementChatSuccess + "Tu as été téléporté au campement de ${target.name}.")
         }
     }
 
     @Command(name = "setspawn", description = "Placer un nouveau point de spawn de campement.")
     fun setCampementSpawn(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
 
-        when (campementService.setSpawnpoint(sender.uniqueId, sender.location)) {
+        when (campementService.setSpawnpoint(sender.uniqueId, sender.location.toCoordinate())) {
             SetSpawnResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
 
             SetSpawnResult.NOT_AUTHORIZED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
@@ -135,7 +140,7 @@ class CampementCommands(
 
     @Command(name = "claim", description = "Annexer un chunk libre")
     fun claimChunk(sender: Player) {
-        when (campementService.claimChunk(sender.uniqueId, sender.location)) {
+        when (campementService.claimChunk(sender.uniqueId, sender.location.toChunkCoord())) {
             ClaimResult.SUCCESS -> sender.sendMessage(
                 CampementChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été annexé avec succès.")
             ClaimResult.ALREADY_OWNED -> sender.sendMessage(
@@ -156,17 +161,20 @@ class CampementCommands(
 
     @Command(name = "unclaim", description = "Désannexer un chunk de son campement.")
     fun unclaimChunk(sender: Player) {
-        when(campementService.unclaimChunk(sender.uniqueId,sender.location)){
+        when(campementService.unclaimChunk(sender.uniqueId,sender.location.toChunkCoord())){
             UnclaimResult.SUCCESS -> sender.sendMessage(CampementChatSuccess
                     + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ton campement.")
             UnclaimResult.NOT_OWNED -> sender.sendMessage(CampementChatError
                     + "Ce chunk ne fait pas partie de ton campement. " + CAMPEMENT_BORDER_MESSAGE)
-            UnclaimResult.NOT_ALLOWED -> TODO()
-            UnclaimResult.LAST_CHUNK -> TODO()
-            UnclaimResult.IS_SPAWN_CHUNK -> TODO()
-            UnclaimResult.NOT_EXIST -> TODO()
+            UnclaimResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError +
+            "Tu n'es pas autorisé(e) à utiliser cette commande.")
+            UnclaimResult.LAST_CHUNK -> sender.sendMessage(CampementChatError +
+                    "Tu ne peux pas désannexer ton dernier chunk de campement.")
+            UnclaimResult.IS_SPAWN_CHUNK -> sender.sendMessage(CampementChatError +
+                    "Tu ne peux pas désannexer ce chunk, il contient ton point de spawn.")
+            UnclaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
             UnclaimResult.SPLIT -> sender.sendMessage(CampementChatError
-                    + "Impossible de désannexer ce chunk (dernier chunk, chunk de spawn, ou cela diviserait ton campement). "
+                    + "Impossible de désannexer ce chunk, cela diviserait ton campement en 2 parties). "
                     + CAMPEMENT_BORDER_MESSAGE)
         }
     }
@@ -176,7 +184,7 @@ class CampementCommands(
         description = "Ajouter un joueur de confiance dans son campement."
     )
     fun trustPlayer(sender: Player, @Argument("joueur") targetPlayerArg: PlayerArg) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
         val ownerID = sender.uniqueId
         val trustedPlayerID = targetPlayerArg.get().uniqueId
 
@@ -206,7 +214,7 @@ class CampementCommands(
         description = "Retirer un joueur de confiance de son campement."
     )
     fun untrustPlayer(sender: Player, @Argument("joueur") targetName: TrustedPlayerArg) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
         val ownerID = sender.uniqueId
         val target = Bukkit.getOfflinePlayer(targetName.get())
         val trustedPlayerUUID = target.uniqueId
@@ -224,7 +232,7 @@ class CampementCommands(
 
     @Command(name = "border", description = "Afficher/Masquer les bordures de son campement.")
     fun toggleBorder(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
         val campement = campementService.getCampementByOwner(sender.uniqueId)!!
 
         if (borderRenderer.isShowingBorders(sender)) {
@@ -238,7 +246,7 @@ class CampementCommands(
 
     @Command(name = "stick", description = "Recevoir un Bâton d'annexion.")
     fun giveStick(sender: Player) {
-        if (!campementService.hasCampement(sender)) return
+        if (!campementService.hasCampement(sender.uniqueId)) return
         val equipment = equipmentService.getEquipment(sender.uniqueId)
         val existing = equipment.get(AnnexionStickInvocable::class.java)
 

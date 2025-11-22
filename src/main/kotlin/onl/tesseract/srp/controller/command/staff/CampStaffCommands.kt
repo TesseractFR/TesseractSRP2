@@ -9,7 +9,11 @@ import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.commun.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.TrustResult
+import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.mapper.toChunkCoord
+import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
@@ -35,7 +39,7 @@ class CampStaffCommands(
         val location = target.location
         val chunk = location.chunk
         val chunkKey = "${chunk.x},${chunk.z}"
-        val result = campementService.createCampement(uuid, location)
+        val result = campementService.createCampement(uuid, location.toCoordinate())
         sender.sendMessage(
         when (result) {
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "${target.name} possède déjà un campement."
@@ -46,7 +50,7 @@ class CampStaffCommands(
             CreationResult.RANK_TOO_LOW -> TODO()
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
             CreationResult.ON_OTHER_TERRITORY -> {
-                val other = campementService.getByChunk(location)
+                val other = campementService.getByChunk(location.toChunkCoord())
                 val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
                 CampementChatError + "Impossible de créer un campement ici, " +
                         "tu es sur le territoire de $ownerName."

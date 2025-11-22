@@ -10,6 +10,7 @@ import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.command.argument.StringArg
 import onl.tesseract.lib.menu.MenuService
+import onl.tesseract.lib.util.append
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
@@ -31,6 +32,8 @@ import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.guild.*
+import onl.tesseract.srp.util.CampementChatError
+import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.GuildChatError
 import onl.tesseract.srp.util.GuildChatFormat
 import onl.tesseract.srp.util.GuildChatSuccess
@@ -97,7 +100,7 @@ class GuildCommand(
 
             CreationResult.ON_OTHER_TERRITORY -> {
                 sender.location.chunk
-                val other = guildService.getGuildByChunk(sender.location.chunk)
+                val other = guildService.getGuildByChunk(sender.location.toChunkCoord())
                 val guildName = other?.name ?: "une autre guilde"
                 GuildChatError + "Tu ne peux pas créer une guilde ici, " +
                         "tu es sur le territoire de la guilde $guildName."
@@ -242,8 +245,9 @@ class GuildCommand(
 
     @Command(name = "claim", playerOnly = true, description = "Annexer un chunk pour la guilde.")
     fun claimChunk(sender: Player) {
-        when (guildService.claimChunk(sender.uniqueId, sender.location)) {
-            ClaimResult.NOT_EXIST -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+        val loc =
+        when (guildService.claimChunk(sender.uniqueId, sender.location.toChunkCoord())) {
+            ClaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
             ClaimResult.SUCCESS -> sender.sendMessage(
                 GuildChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) " +
                         "a été annexé avec succès pour la guilde."
@@ -276,7 +280,7 @@ class GuildCommand(
 
     @Command(name = "unclaim", playerOnly = true, description = "Retirer un chunk de la guilde.")
     fun unclaimChunk(sender: Player) {
-        when (guildService.unclaimChunk(sender.uniqueId, sender.location)) {
+        when (guildService.unclaimChunk(sender.uniqueId, sender.location.toChunkCoord())) {
             UnclaimResult.SUCCESS -> sender.sendMessage(
                 GuildChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) a été retiré de ta guilde."
             )
@@ -335,7 +339,7 @@ class GuildCommand(
         @Argument("type", optional = true) kindArg: GuildSpawnKindArg?,
     ) {
         val kind = kindArg?.get() ?: GuildSpawnKind.PRIVATE
-        when (guildService.setSpawnpoint(sender.uniqueId, sender.location, kind)) {
+        when (guildService.setSpawnpoint(sender.uniqueId, sender.location.toCoordinate(), kind)) {
             SetSpawnResult.SUCCESS -> {
                 val label = if (kind == GuildSpawnKind.PRIVATE) "privé" else "visiteurs"
                 sender.sendMessage(GuildChatSuccess + "Le point de spawn $label de la guilde a été défini ici.")
@@ -380,7 +384,7 @@ class GuildCommand(
             sender.sendMessage(GuildChatError + "Aucun spawn défini pour cette guilde.")
             return
         }
-        teleportService.teleport(sender, destination) {
+        teleportService.teleport(sender, destination.toLocation()) {
             val msg = if (targetName == null)
                 GuildChatSuccess + "Tu as été téléporté au spawn de ta guilde."
             else
