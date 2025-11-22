@@ -2,7 +2,7 @@ package onl.tesseract.srp.controller.command.argument.guild
 
 import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
-import onl.tesseract.srp.domain.guild.GuildRank
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 
 class GuildRankArg(name: String) : CommandArgument<GuildRank>(name) {
     override fun define(builder: CommandArgumentBuilderSteps.Parser<GuildRank>) {

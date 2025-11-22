@@ -1,14 +1,15 @@
 package onl.tesseract.srp.controller.event.guild.listener
 
-import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
-import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
-import onl.tesseract.srp.service.guild.GuildBorderRenderer
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
+import onl.tesseract.srp.service.territory.guild.GuildBorderRenderer
+import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerKickEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,10 +18,10 @@ class GuildBorderDisplayListener(
     private val guildService: GuildService
 ) : Listener {
 
-    @EventHandler
+    @EventListener
     fun onChunkClaim(event: GuildChunkClaimEvent) = updateBorders(event.playerId)
 
-    @EventHandler
+    @EventListener
     fun onChunkUnclaim(event: GuildChunkUnclaimEvent) = updateBorders(event.playerId)
 
     @EventHandler
@@ -33,7 +34,7 @@ class GuildBorderDisplayListener(
         val player = Bukkit.getPlayer(playerId)
         val guild = guildService.getGuildByMember(playerId)
         if (player != null && guild != null && borderRenderer.isShowingBorders(player)) {
-            borderRenderer.showBorders(player, guild.chunks)
+            borderRenderer.showBorders(player, guild.getChunks())
         }
     }
 

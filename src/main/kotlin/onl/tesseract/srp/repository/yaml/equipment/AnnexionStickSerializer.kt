@@ -1,8 +1,8 @@
 package onl.tesseract.srp.repository.yaml.equipment
 
 import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer
-import onl.tesseract.srp.domain.campement.AnnexionStickInvocable
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.util.AnnexionStickInvocable
+import onl.tesseract.srp.service.territory.campement.CampementService
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 

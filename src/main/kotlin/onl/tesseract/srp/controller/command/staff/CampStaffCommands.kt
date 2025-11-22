@@ -1,15 +1,21 @@
 package onl.tesseract.srp.controller.command.staff
 
 import net.kyori.adventure.text.format.NamedTextColor
-import onl.tesseract.commandBuilder.annotation.*
+import onl.tesseract.commandBuilder.annotation.Argument
+import onl.tesseract.commandBuilder.annotation.Command
+import onl.tesseract.commandBuilder.annotation.Perm
 import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.service.campement.CampementBorderRenderer
-import onl.tesseract.srp.service.campement.CampementCreationResult
-import onl.tesseract.srp.service.campement.CampementService
+import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.TrustResult
+import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.mapper.toChunkCoord
+import onl.tesseract.srp.mapper.toCoordinate
+import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
 import onl.tesseract.srp.util.CampementChatSuccess
@@ -33,39 +39,29 @@ class CampStaffCommands(
         val location = target.location
         val chunk = location.chunk
         val chunkKey = "${chunk.x},${chunk.z}"
-        val result = campementService.createCampement(uuid, location)
-
-        result.reason
-            .map { reason ->
-                when (reason) {
-                    CampementCreationResult.Reason.InvalidWorld ->
-                        CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
-                    CampementCreationResult.Reason.NearSpawn ->
-                        CampementChatError + "Trop proche du spawn pour créer un campement."
-                    CampementCreationResult.Reason.NearCampement ->
-                        CampementChatError + "Un autre campement est trop proche d’ici."
-                    CampementCreationResult.Reason.AlreadyHasCampement ->
-                        CampementChatError + "${target.name} possède déjà un campement."
-                    CampementCreationResult.Reason.OnOtherCampement -> {
-                        val other = campementService.getCampementByChunk(chunk.x, chunk.z)
-                        val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
-                        CampementChatError + "Impossible de créer un campement ici, " +
-                                "tu es sur le territoire de $ownerName."
-                    }
-                    CampementCreationResult.Reason.Ignored -> return
-                }
+        val result = campementService.createCampement(uuid, location.toCoordinate())
+        sender.sendMessage(
+        when (result) {
+            CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "${target.name} possède déjà un campement."
+            CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
+            CreationResult.NEAR_SPAWN -> CampementChatError + "Trop proche du spawn pour créer un campement."
+            CreationResult.NAME_TAKEN -> TODO()
+            CreationResult.NOT_ENOUGH_MONEY -> TODO()
+            CreationResult.RANK_TOO_LOW -> TODO()
+            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
+            CreationResult.ON_OTHER_TERRITORY -> {
+                val other = campementService.getByChunk(location.toChunkCoord())
+                val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
+                CampementChatError + "Impossible de créer un campement ici, " +
+                        "tu es sur le territoire de $ownerName."
             }
-            .forEach { sender.sendMessage(it) }
-
-        if (result.campement != null) {
-            sender.sendMessage(
+            CreationResult.SUCCESS ->
                 CampementChatSuccess + "Campement créé pour ${target.name} dans le chunk $chunkKey."
-            )
+        })
+        if (result == CreationResult.SUCCESS) {
             target.sendMessage(
                 CampementChatSuccess + "Un administrateur t'a créé un campement dans le chunk $chunkKey."
             )
-        } else if (result.reason.isEmpty()) {
-            sender.sendMessage(CampementChatError + "Échec de création du campement dans le chunk $chunkKey.")
         }
     }
 
@@ -108,13 +104,16 @@ class CampStaffCommands(
             return
         }
 
-        val success = campementService.trustPlayer(ownerUUID, targetUUID)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
-            target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
-                    "en tant que joueur de confiance.")
-        } else {
-            sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
+        val success = campementService.trust(ownerUUID, targetUUID)
+        when (success) {
+            TrustResult.NOT_ALLOWED -> TODO()
+            TrustResult.SUCCESS -> {
+                sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
+                target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
+                        "en tant que joueur de confiance.")
+            }
+            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
+            TrustResult.TERRITORY_NOT_FOUND -> TODO()
         }
     }
 
@@ -131,11 +130,12 @@ class CampStaffCommands(
             return
         }
 
-        val success = campementService.untrustPlayer(owner.uniqueId, target.uniqueId)
-        if (success) {
-            sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
-        } else {
-            sender.sendMessage(CampementChatError + "Erreur lors du retrait de ${target.name}.")
+        val success = campementService.untrust(owner.uniqueId, target.uniqueId)
+        when(success){
+            UntrustResult.NOT_ALLOWED -> TODO()
+            UntrustResult.NOT_TRUST -> TODO()
+            UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
+            UntrustResult.TERRITORY_NOT_FOUND -> TODO()
         }
     }
 
@@ -147,7 +147,7 @@ class CampStaffCommands(
             return
         }
 
-        val trusted = campement.trustedPlayers.mapNotNull {
+        val trusted = campement.getTrusted().mapNotNull {
             Bukkit.getOfflinePlayer(it).name
         }
 

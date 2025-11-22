@@ -9,9 +9,9 @@ import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.lib.util.plus
 import onl.tesseract.lib.util.toComponent
-import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.ClickType

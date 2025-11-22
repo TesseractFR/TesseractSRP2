@@ -4,7 +4,7 @@ import onl.tesseract.commandBuilder.CommandArgument
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
 import onl.tesseract.commandBuilder.CommandArgumentException
 import onl.tesseract.srp.PLUGIN_INSTANCE
-import onl.tesseract.srp.domain.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 
 class GuildArg(name: String) : CommandArgument<Guild>(name) {
