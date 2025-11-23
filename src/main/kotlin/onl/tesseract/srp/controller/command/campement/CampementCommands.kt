@@ -14,7 +14,6 @@ import onl.tesseract.lib.util.append
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.util.AnnexionStickInvocable
 import onl.tesseract.srp.domain.territory.enum.ClaimResult
 import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
@@ -28,9 +27,7 @@ import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.campement.CAMP_BORDER_COMMAND
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.territory.campement.CampementService
-import onl.tesseract.srp.util.CampementChatError
-import onl.tesseract.srp.util.CampementChatFormat
-import onl.tesseract.srp.util.CampementChatSuccess
+import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
@@ -39,10 +36,13 @@ private val CAMPEMENT_BORDER_MESSAGE: Component =
     Component.text("Visualise les bordures avec ")
         .append(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
         .append(".")
-private val NO_CAMPEMENT_MESSAGE: Component = Component.text("")
-        .append(CampementChatError)
+private val NO_CAMPEMENT_MESSAGE: Component =
+        CampementChatError
         .plus("Tu ne possèdes pas de campement. Crées-en un avec " )
         .append("/campement create", NamedTextColor.GOLD)
+private val NOT_IN_CAMPEMENT_WORLD_MESSAGE =
+    CampementChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des campements."
+
 
 @SpringComponent
 @Command(name = "campement", playerOnly = true)
@@ -59,7 +59,7 @@ class CampementCommands(
     fun createCampement(sender: Player) {
         val result = campementService.createCampement(sender.uniqueId, sender.location.toCoordinate())
         val msg = when (result) {
-            CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
+            CreationResult.INVALID_WORLD -> NOT_IN_CAMPEMENT_WORLD_MESSAGE
             CreationResult.NEAR_SPAWN -> CampementChatError + "Tu es trop proche du spawn pour créer un campement."
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "Tu possèdes déjà un campement."
@@ -224,6 +224,7 @@ class CampementCommands(
         }
     }
 
+    // TODO() Refaire la classe de gestion des bordures avec l'archi (+gestion mauvais monde)
     @Command(name = "border", description = "Afficher/Masquer les bordures de son campement.")
     fun toggleBorder(sender: Player) {
         val campement = campementService.getCampementByOwner(sender.uniqueId)

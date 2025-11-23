@@ -172,6 +172,7 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      */
     fun trust(player: UUID, target: UUID): TrustResult {
         val territory = territoryRepository.findnByPlayer(player) ?: return TrustResult.TERRITORY_NOT_FOUND
+        if(!territory.canTrust(player)) return TrustResult.NOT_ALLOWED
         val result = territory.addTrust(player, target)
         if (result == TrustResult.SUCCESS) {
             territoryRepository.save(territory)
@@ -184,6 +185,7 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      */
     fun untrust(player: UUID, target: UUID): UntrustResult {
         val territory = territoryRepository.findnByPlayer(player) ?: return UntrustResult.TERRITORY_NOT_FOUND
+        if(!territory.canTrust(player)) return UntrustResult.NOT_ALLOWED
         val result = territory.removeTrust(player, target)
         if (result == UntrustResult.SUCCESS) {
             territoryRepository.save(territory)

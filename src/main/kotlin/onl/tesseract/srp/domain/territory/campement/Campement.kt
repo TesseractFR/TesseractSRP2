@@ -21,6 +21,10 @@ class Campement(
         return player==ownerID
     }
 
+    override fun canTrust(player: UUID): Boolean {
+        return player == ownerID
+    }
+
     override fun createClaimEvent(
         player: UUID
     ): CampementChunkClaimEvent {

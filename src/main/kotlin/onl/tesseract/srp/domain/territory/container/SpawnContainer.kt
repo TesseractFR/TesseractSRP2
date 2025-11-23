@@ -17,7 +17,6 @@ open class DefaultSpawnContainer(private var spawnpoint: Coordinate) : SpawnCont
         coordinate: Coordinate,
         player: UUID,
     ): SetSpawnResult {
-        if (!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
         this.spawnpoint = coordinate
         return SetSpawnResult.SUCCESS
     }

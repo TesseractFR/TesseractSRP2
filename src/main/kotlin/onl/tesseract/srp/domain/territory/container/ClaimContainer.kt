@@ -53,7 +53,7 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
         val chunk = _chunks.first { it.chunkCoord == chunkCoord }
         if(!isUnclaimStillConnected(chunk)) return UnclaimResult.SPLIT
         if (removeChunk(chunk)) return UnclaimResult.SUCCESS
-        return UnclaimResult.NOT_OWNED
+        return UnclaimResult.SUCCESS
 
     }
 

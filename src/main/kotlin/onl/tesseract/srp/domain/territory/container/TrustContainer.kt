@@ -18,13 +18,12 @@ open class DefaultTrustContainer(protected val trusted: MutableSet<UUID> = mutab
         player: UUID,
         target: UUID,
     ): TrustResult {
-        if(!canTrust(player)) return TrustResult.NOT_ALLOWED
         if(trusted.add(target))return TrustResult.SUCCESS
         return TrustResult.ALREADY_TRUST
     }
 
     override fun canTrust(player: UUID): Boolean {
-        return false
+        return true
     }
 
     override fun getTrusted(): Collection<UUID> {
@@ -36,7 +35,6 @@ open class DefaultTrustContainer(protected val trusted: MutableSet<UUID> = mutab
         player: UUID,
         target: UUID,
     ): UntrustResult {
-        if(!canTrust(player)) return UntrustResult.NOT_ALLOWED
         if(!isTrusted(target)) return UntrustResult.NOT_TRUST
         if(trusted.remove(target))return UntrustResult.SUCCESS
         return UntrustResult.NOT_TRUST
