@@ -50,10 +50,8 @@ class CampStaffCommands(
             CreationResult.RANK_TOO_LOW -> TODO()
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
             CreationResult.ON_OTHER_TERRITORY -> {
-                val other = campementService.getByChunk(location.toChunkCoord())
-                val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
                 CampementChatError + "Impossible de créer un campement ici, " +
-                        "tu es sur le territoire de $ownerName."
+                        "tu es sur un autre territoire."
             }
             CreationResult.SUCCESS ->
                 CampementChatSuccess + "Campement créé pour ${target.name} dans le chunk $chunkKey."

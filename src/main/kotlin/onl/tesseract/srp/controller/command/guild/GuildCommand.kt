@@ -97,11 +97,8 @@ class GuildCommand(
                 GuildChatError + "Tu n'as pas le grade minimal nécessaire pour créer une guilde (Baron)."
 
             CreationResult.ON_OTHER_TERRITORY -> {
-                sender.location.chunk
-                val other = guildService.getGuildByChunk(sender.location.toChunkCoord())
-                val guildName = other?.name ?: "une autre guilde"
                 GuildChatError + "Tu ne peux pas créer une guilde ici, " +
-                        "tu es sur le territoire de la guilde $guildName."
+                        "tu es sur un autre territoire."
             }
 
             CreationResult.SUCCESS -> GuildChatSuccess + "Nouvelle guilde créée sous le nom de ${nameArg.get()}"

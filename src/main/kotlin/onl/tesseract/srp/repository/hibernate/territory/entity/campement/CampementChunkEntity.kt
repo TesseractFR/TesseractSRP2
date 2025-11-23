@@ -13,7 +13,7 @@ import onl.tesseract.srp.repository.hibernate.territory.entity.toEntity
 @DiscriminatorValue("CAMPEMENT")
 class CampementChunkEntity(
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ownerID", nullable = false)
     var campement: CampementEntity
 

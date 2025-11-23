@@ -8,7 +8,7 @@ import java.util.UUID
 
 interface TerritoryChunkRepository : Repository<TerritoryChunk, ChunkCoord>{
     fun <T : TerritoryChunk> findByIdAndType(id: ChunkCoord, type: Class<T>): T?
-
+    fun findAllByRange(world: String, minX: Int, maxX: Int, minZ: Int, maxZ: Int): Collection<TerritoryChunk>
 }
 
 interface TerritoryRepository<T : Territory<*>,ID> : Repository<T,ID>{

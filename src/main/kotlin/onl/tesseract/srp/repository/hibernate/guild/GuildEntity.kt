@@ -66,7 +66,7 @@ class GuildEntity(
     ) {
 
         fun toCoordinate(): Coordinate {
-            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.name))
+            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.bukkitName))
         }
     }
 

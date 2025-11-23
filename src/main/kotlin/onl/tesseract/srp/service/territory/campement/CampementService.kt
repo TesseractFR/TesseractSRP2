@@ -34,7 +34,7 @@ open class CampementService(
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
     }
 
-    override fun isCorrectWorld(worldName: String): Boolean = SrpWorld.Elysea.name == worldName
+    override fun isCorrectWorld(worldName: String): Boolean = SrpWorld.Elysea.bukkitName == worldName
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Deny

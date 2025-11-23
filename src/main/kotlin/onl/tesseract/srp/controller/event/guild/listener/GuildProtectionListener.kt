@@ -22,7 +22,7 @@ class GuildProtectionListener(
     private val guildService: GuildService
 ) : ChunkProtectionListener() {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
-        return guildService.getGuildByChunk(chunk.toChunkCoord()) != null
+        return guildService.getByChunk(chunk.toChunkCoord()) != null
     }
 
     override fun getProtectionMessage(chunk: Chunk): Component {

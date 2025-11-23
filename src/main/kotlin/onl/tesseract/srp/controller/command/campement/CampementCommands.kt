@@ -64,10 +64,8 @@ class CampementCommands(
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "Tu possèdes déjà un campement."
             CreationResult.ON_OTHER_TERRITORY -> {
-                val other = campementService.getByChunk(sender.location.toChunkCoord())
-                val ownerName = other?.ownerID?.let { Bukkit.getOfflinePlayer(it).name } ?: "un autre joueur"
                 CampementChatError + "Tu ne peux pas créer un campement ici, " +
-                        "tu es sur le territoire de $ownerName."
+                        "tu es sur un autre territoire."
             }
             CreationResult.RANK_TOO_LOW,
             CreationResult.NAME_TAKEN,

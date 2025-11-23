@@ -72,7 +72,13 @@ open class GuildService(
     open fun getAllGuilds(): Collection<Guild> = territoryRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = territoryRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = territoryRepository.findGuildByMember(memberId)
-    open fun getGuildByChunk(chunk: ChunkCoord) = getByChunk(chunk)
+    open fun getGuildByChunk(chunk: ChunkCoord) : Guild? {
+        return try{
+            getByChunk(chunk)
+        }catch (_ : Exception){
+            null
+        }
+    }
     open fun getMemberRole(playerID: UUID): GuildRole? = territoryRepository.findMemberRole(playerID)
 
     @Transactional

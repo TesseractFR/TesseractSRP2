@@ -42,7 +42,7 @@ class Campement(
     }
 
     override fun canBuild(player: UUID): Boolean {
-        TODO("Not yet implemented")
+        return player == ownerID || isTrusted(player)
     }
 
     override fun canOpenChest(player: UUID): Boolean {

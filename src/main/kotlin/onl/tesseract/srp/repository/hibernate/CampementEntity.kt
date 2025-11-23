@@ -4,11 +4,10 @@ import jakarta.persistence.*
 import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.domain.territory.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementChunkEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
-import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.hibernate.annotations.CacheConcurrencyStrategy
 import java.util.*
 
@@ -52,10 +51,10 @@ class CampementEntity(
     fun toDomain(): Campement {
         val camp =  Campement(
             ownerID,  campLevel,
-            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.name)),
+            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.bukkitName)),
             trustedPlayers.toMutableSet()
         )
-        camp.addChunks(listChunks.map { it.toDomain() }.toSet())
+        camp.addChunks(listChunks.map { CampementChunk(it.id.toDomain(),camp) }.toSet())
         return camp
     }
 }
