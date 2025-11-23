@@ -6,7 +6,7 @@ import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.DomainEventPublisher
 import onl.tesseract.srp.domain.territory.enum.CreationResult
-import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -26,9 +26,9 @@ const val CAMP_BORDER_COMMAND = "/campement border"
 open class CampementService(
     override val territoryRepository: CampementRepository,
     override val territoryChunkRepository: TerritoryChunkRepository,
-    eventService: DomainEventPublisher,
+    override val eventService: DomainEventPublisher,
     private val srpPlayerService: SrpPlayerService
-) : TerritoryService<CampementChunk, Campement, UUID>(eventService) {
+) : TerritoryService<CampementChunk, Campement>() {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)

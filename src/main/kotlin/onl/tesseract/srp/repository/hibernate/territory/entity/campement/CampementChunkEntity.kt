@@ -14,7 +14,7 @@ import onl.tesseract.srp.repository.hibernate.territory.entity.toEntity
 class CampementChunkEntity(
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "ownerID", nullable = false)
+    @JoinColumn(name = "campement_id", nullable = false)
     var campement: CampementEntity
 
 ) : TerritoryChunkEntity() {

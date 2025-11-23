@@ -8,8 +8,8 @@ import onl.tesseract.srp.domain.commun.enum.*
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
-import onl.tesseract.srp.domain.territory.ChunkCoord
-import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.territory.enum.KickResult
 import onl.tesseract.srp.domain.territory.enum.LeaveResult
@@ -43,10 +43,10 @@ open class GuildService(
     override val territoryRepository: GuildRepository,
     override val territoryChunkRepository: TerritoryChunkRepository,
     private val playerService: SrpPlayerService,
-    eventService: DomainEventPublisher,
+    override val eventService: DomainEventPublisher,
     private val ledgerService: MoneyLedgerService,
     private val transferService: TransferService
-) : TerritoryService<GuildChunk, Guild, Int>(eventService) {
+) : TerritoryService<GuildChunk, Guild>() {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
@@ -64,7 +64,7 @@ open class GuildService(
     }
 
 
-    private fun getGuild(guildID: Int): Guild {
+    private fun getGuild(guildID: UUID): Guild {
         val guild = territoryRepository.getById(guildID)
             ?: throw IllegalArgumentException("Guild not found with id $guildID")
         return guild
@@ -89,7 +89,7 @@ open class GuildService(
         if(getByName(guildName)!=null) return CreationResult.NAME_TAKEN
         val result = isCreationAvailable(playerID,coordinate.chunkCoord)
         if(result != CreationResult.SUCCESS) return result
-        val guild = Guild(-1, playerID, guildName, coordinate)
+        val guild = Guild(UUID.randomUUID(), playerID, guildName, coordinate)
         playerService.takeMoney(
             playerID, GUILD_COST, TransactionType.Guild, TransactionSubType.Guild.Creation, guild.id.toString()
         )
@@ -117,9 +117,9 @@ open class GuildService(
         return result
     }
 
-    open fun getPrivateSpawn(guildId: Int): Coordinate? = getById(guildId)?.getSpawnpoint()
+    open fun getPrivateSpawn(guildId: UUID): Coordinate? = getById(guildId)?.getSpawnpoint()
 
-    open fun getVisitorSpawn(guildId: Int): Coordinate? = getById(guildId)?.getVisitorSpawnpoint()
+    open fun getVisitorSpawn(guildId: UUID): Coordinate? = getById(guildId)?.getVisitorSpawnpoint()
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
@@ -129,7 +129,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun deleteGuildAsStaff(guildId: Int): Boolean {
+    open fun deleteGuildAsStaff(guildId: UUID): Boolean {
         territoryRepository.deleteById(guildId)
         return true
     }
@@ -176,7 +176,7 @@ open class GuildService(
     }
 
 
-    open fun addMemberAsStaff(guildID: Int, playerID: UUID) {
+    open fun addMemberAsStaff(guildID: UUID, playerID: UUID) {
         val guild = getGuild(guildID)
         if (territoryRepository.findGuildByMember(playerID) != null)
             return
@@ -186,7 +186,7 @@ open class GuildService(
 
     @Transactional
     open fun setMemberRoleAsStaff(
-        guildID: Int,
+        guildID: UUID,
         targetID: UUID,
         newRole: GuildRole,
         replacementLeaderID: UUID? = null
@@ -227,7 +227,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun kickMember(guildID: Int, requesterID: UUID, targetID: UUID): KickResult {
+    open fun kickMember(guildID: UUID, requesterID: UUID, targetID: UUID): KickResult {
         val guild = getGuild(guildID)
         return when {
             guild.leaderId != requesterID -> KickResult.NotAuthorized
@@ -242,7 +242,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun kickMemberAsStaff(guildID: Int, targetID: UUID): KickResult {
+    open fun kickMemberAsStaff(guildID: UUID, targetID: UUID): KickResult {
         val guild = getGuild(guildID)
         return when {
             guild.members.none { it.playerID == targetID } -> KickResult.NotMember
@@ -267,7 +267,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun depositMoney(guildID: Int, playerID: UUID, amount: UInt): Boolean {
+    open fun depositMoney(guildID: UUID, playerID: UUID, amount: UInt): Boolean {
         val guild = getGuild(guildID)
 
         if (playerService.getPlayer(playerID).money < amount) {
@@ -289,7 +289,7 @@ open class GuildService(
     }
 
     @Transactional
-    open fun withdrawMoney(guildID: Int, playerID: UUID, amount: UInt): Boolean {
+    open fun withdrawMoney(guildID: UUID, playerID: UUID, amount: UInt): Boolean {
         val guild = getGuild(guildID)
         require(guild.getMemberRole(playerID).canWithdrawMoney())
 
@@ -307,7 +307,7 @@ open class GuildService(
     }
 
     open fun moneyTransaction(
-        guildID: Int,
+        guildID: UUID,
         amount: Int,
         transactionBuilder: TransferService.TransferTransactionBuilder
     ) {
@@ -323,7 +323,7 @@ open class GuildService(
         territoryRepository.save(guild)
     }
 
-    open fun giveMoneyAsStaff(guildID: Int, amount: Int) {
+    open fun giveMoneyAsStaff(guildID: UUID, amount: Int) {
         val guild = getGuild(guildID)
         guild.addMoney(amount)
         ledgerService.recordTransaction(
@@ -339,7 +339,7 @@ open class GuildService(
     private fun xpToNextLevel(level: Int): Int = XP_PER_LVL_MULTIPLICATOR * level
 
     @Transactional
-    open fun addGuildXp(guildId: Int, amount: Int) {
+    open fun addGuildXp(guildId: UUID, amount: Int) {
         val guild = getGuild(guildId)
         guild.addXp(amount.coerceAtLeast(0))
         territoryRepository.save(guild)
@@ -347,21 +347,21 @@ open class GuildService(
     }
 
     @Transactional
-    open fun addLevel(guildId: Int, amount: Int) {
+    open fun addLevel(guildId: UUID, amount: Int) {
         val guild = getGuild(guildId)
         guild.level += amount.coerceAtLeast(0)
         guild.xp = 0
         territoryRepository.save(guild)
     }
 
-    open fun setLevel(guildId: Int, level: Int) {
+    open fun setLevel(guildId: UUID, level: Int) {
         val guild = getGuild(guildId)
         guild.level = level.coerceAtLeast(1)
         guild.xp = 0
         territoryRepository.save(guild)
     }
 
-    open fun upgradeGuildLevel(guildId: Int): Boolean {
+    open fun upgradeGuildLevel(guildId: UUID): Boolean {
         val guild = getGuild(guildId)
         val need = xpToNextLevel(guild.level)
         if (guild.xp < need) return false
@@ -373,7 +373,7 @@ open class GuildService(
         return true
     }
 
-    open fun upgradeRank(guildId: Int, to: GuildRank): GuildUpgradeResult {
+    open fun upgradeRank(guildId: UUID, to: GuildRank): GuildUpgradeResult {
         val g = getGuild(guildId)
         return when {
             to <= g.rank ->
@@ -391,7 +391,7 @@ open class GuildService(
         }
     }
 
-    open fun setRank(guildId: Int, rank: GuildRank) {
+    open fun setRank(guildId: UUID, rank: GuildRank) {
         val g = getGuild(guildId)
         g.rank = rank
         territoryRepository.save(g)

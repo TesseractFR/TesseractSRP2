@@ -1,9 +1,8 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
 import jakarta.persistence.*
-import onl.tesseract.srp.domain.territory.ChunkCoord
-import onl.tesseract.srp.domain.territory.Coordinate
-import onl.tesseract.srp.domain.territory.campement.CampementChunk
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.GuildMember
@@ -12,9 +11,9 @@ import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
-import org.bukkit.Bukkit
-import org.bukkit.Location
 import org.hibernate.annotations.CacheConcurrencyStrategy
+import org.hibernate.annotations.JdbcTypeCode
+import java.sql.Types
 import java.util.*
 
 @Entity
@@ -26,8 +25,9 @@ import java.util.*
 @Suppress("LongParameterList")
 class GuildEntity(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int,
+    @Column(name = "id", length = 36, columnDefinition = "VARCHAR(36)")
+    @JdbcTypeCode(Types.VARCHAR)
+    val id: UUID,
     @Column(unique = true)
     val name: String,
     val leaderId: UUID,

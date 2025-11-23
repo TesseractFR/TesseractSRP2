@@ -5,7 +5,7 @@ import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.player.SrpPlayer
-import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
@@ -29,9 +29,9 @@ class SrpPlayerInMemoryRepository : SrpPlayerRepository, InMemoryRepository<SrpP
     override fun idOf(entity: SrpPlayer): UUID = entity.uniqueId
 }
 
-class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>() {
+class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, UUID>() {
 
-    override fun idOf(entity: Guild): Int = entity.id
+    override fun idOf(entity: Guild): UUID = entity.id
 
     override fun findGuildByChunk(chunk: GuildChunk): Guild? {
         return elements.values.find { chunk in it.getChunks() }
@@ -66,13 +66,12 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
         return elements.values
     }
 
-    override fun deleteById(id: Int) {
+    override fun deleteById(id: UUID) {
         elements.remove(id)
     }
 
     override fun save(entity: Guild): Guild {
-        val newId = if (entity.id == -1) (elements.keys.maxOrNull() ?: 0) + 1 else entity.id
-        entity.id = newId
+        val newId = UUID.randomUUID()
         elements[newId] = entity
         return entity
     }

@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.territory
+package onl.tesseract.srp.domain.commun
 
 data class Coordinate(
     val x : Double,

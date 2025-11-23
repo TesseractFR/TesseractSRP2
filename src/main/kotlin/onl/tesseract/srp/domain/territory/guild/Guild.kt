@@ -1,11 +1,11 @@
 package onl.tesseract.srp.domain.territory.guild
 
 import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
-import onl.tesseract.srp.domain.territory.ChunkCoord
-import onl.tesseract.srp.domain.territory.Coordinate
-import onl.tesseract.srp.domain.territory.DefaultVisitorSpawnContainer
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
+import onl.tesseract.srp.domain.territory.container.DefaultVisitorSpawnContainer
 import onl.tesseract.srp.domain.territory.Territory
-import onl.tesseract.srp.domain.territory.VisitorSpawnContainer
+import onl.tesseract.srp.domain.territory.container.VisitorSpawnContainer
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
@@ -13,7 +13,7 @@ import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
 import java.util.*
 
 class Guild(
-    var id: Int,
+    id: UUID = UUID.randomUUID(),
     val name: String,
     spawnLocation: Coordinate,
     money: Int = 0,
@@ -24,11 +24,11 @@ class Guild(
     var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
     val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation)
-) : GuildMemberContainer by memberContainer, VisitorSpawnContainer by visitorSpawnContainer, Territory<GuildChunk>(spawnLocation) {
+) : GuildMemberContainer by memberContainer, VisitorSpawnContainer by visitorSpawnContainer, Territory<GuildChunk>(id,spawnLocation) {
 
     var money: Int = money
 
-    constructor(id: Int, leaderId: UUID, name: String, spawnLocation: Coordinate)
+    constructor(id: UUID, leaderId: UUID, name: String, spawnLocation: Coordinate)
             : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
 
     /**

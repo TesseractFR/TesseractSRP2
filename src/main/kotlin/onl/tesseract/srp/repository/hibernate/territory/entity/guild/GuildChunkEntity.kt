@@ -13,7 +13,7 @@ import onl.tesseract.srp.repository.hibernate.territory.entity.toEntity
 @DiscriminatorValue("GUILD")
 class GuildChunkEntity(
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "guild_id", nullable = false)
     var guild: GuildEntity
 

@@ -2,7 +2,7 @@ package onl.tesseract.srp.repository.hibernate.territory.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Embeddable
-import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import java.io.Serializable
 
 @Embeddable

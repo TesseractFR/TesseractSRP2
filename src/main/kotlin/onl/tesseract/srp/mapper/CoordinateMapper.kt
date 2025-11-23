@@ -1,6 +1,6 @@
 package onl.tesseract.srp.mapper
 
-import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.commun.Coordinate
 import org.bukkit.Bukkit
 import org.bukkit.Location
 

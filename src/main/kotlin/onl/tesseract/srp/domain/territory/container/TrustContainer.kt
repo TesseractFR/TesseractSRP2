@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.territory
+package onl.tesseract.srp.domain.territory.container
 
 import onl.tesseract.srp.domain.territory.enum.TrustResult
 import onl.tesseract.srp.domain.territory.enum.UntrustResult

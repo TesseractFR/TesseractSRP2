@@ -2,7 +2,7 @@ package onl.tesseract.srp.repository.hibernate
 
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
-import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import org.springframework.data.jpa.repository.JpaRepository
@@ -58,6 +58,5 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository,
 
 @org.springframework.stereotype.Repository
 interface CampementJpaRepository : JpaRepository<CampementEntity, UUID> {
-    fun findByOwnerID(ownerID: UUID): MutableList<CampementEntity>
 }
 

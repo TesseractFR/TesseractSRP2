@@ -1,26 +1,24 @@
 package onl.tesseract.srp.service.territory
 
 import onl.tesseract.srp.DomainEventPublisher
-import onl.tesseract.srp.domain.territory.ChunkCoord
-import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk
 import onl.tesseract.srp.domain.territory.enum.*
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import onl.tesseract.srp.util.InteractionAllowResult
-import java.lang.ClassCastException
 import java.util.*
 
 const val TERRITORY_PROXIMITY_CLAIM_LIMIT = 3
 const val TERRITORY_PROXIMITY_CREATE_LIMIT = 50
 
-abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>, ID>(
-
-    protected val eventService: DomainEventPublisher,
+abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
 ) {
+    protected abstract val eventService: DomainEventPublisher
     protected abstract val territoryChunkRepository: TerritoryChunkRepository
-    protected abstract val territoryRepository: TerritoryRepository<T, ID>
+    protected abstract val territoryRepository: TerritoryRepository<T, UUID>
     /**
      * Permet de savoir si le monde est correct pour une location donnée.
      * @param worldName La position à valider
@@ -165,7 +163,7 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>, ID>(
         return CreationResult.SUCCESS
     }
 
-    fun getById(id: ID): T? {
+    fun getById(id: UUID): T? {
         return territoryRepository.getById(id)
     }
 

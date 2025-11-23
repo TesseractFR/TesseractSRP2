@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.territory.campement
 
-import onl.tesseract.srp.domain.territory.ChunkCoord
-import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.Territory
 import java.util.*
 
@@ -10,7 +10,7 @@ class Campement(
     var campLevel: Int,
     spawnLocation: Coordinate,
     trustedPlayers: MutableSet<UUID> = mutableSetOf(),
-) : Territory<CampementChunk>(spawnLocation,trustedPlayers)
+) : Territory<CampementChunk>(ownerID,spawnLocation,trustedPlayers)
 
 {
     override fun initChunk(chunkCoord: ChunkCoord): CampementChunk {

@@ -1,7 +1,11 @@
-package onl.tesseract.srp.domain.territory
+package onl.tesseract.srp.domain.territory.container
 
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.territory.TerritoryChunk
 import onl.tesseract.srp.domain.territory.enum.ClaimResult
 import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.event.TerritoryClaimEvent
+import onl.tesseract.srp.domain.territory.event.TerritoryUnclaimEvent
 import java.util.*
 import kotlin.math.abs
 
@@ -12,11 +16,11 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
         return _chunks.add(chunk)
     }
 
-    fun claimChunk(chunkCoord: ChunkCoord,claimer: UUID): ClaimResult {
+    fun claimChunk(chunkCoord: ChunkCoord, claimer: UUID): ClaimResult {
         if (!canClaim(claimer))return ClaimResult.NOT_ALLOWED
         if (hasChunk(chunkCoord)) return ClaimResult.ALREADY_OWNED
         if (!hasAdjacent(chunkCoord)) return ClaimResult.NOT_ADJACENT
-        if (addChunk(initChunk(chunkCoord))) ClaimResult.SUCCESS
+        if (addChunk(initChunk(chunkCoord))) return ClaimResult.SUCCESS
         return ClaimResult.ALREADY_OWNED
     }
 

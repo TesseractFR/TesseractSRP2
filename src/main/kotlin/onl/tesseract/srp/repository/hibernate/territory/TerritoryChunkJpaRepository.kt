@@ -1,9 +1,8 @@
 package onl.tesseract.srp.repository.hibernate.territory
 
-import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.TerritoryChunk
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
-import onl.tesseract.srp.repository.hibernate.guild.GuildEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.TerritoryChunkEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.TerritoryChunkId
 import onl.tesseract.srp.repository.hibernate.territory.entity.toEntity
@@ -12,7 +11,6 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import java.util.UUID
 
 @Repository
 interface TerritoryChunkJpaRepository : JpaRepository<TerritoryChunkEntity, TerritoryChunkId>{

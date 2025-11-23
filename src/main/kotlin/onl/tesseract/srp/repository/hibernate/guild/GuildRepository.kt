@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
-interface GuildRepository : TerritoryRepository<Guild, Int> {
+interface GuildRepository : TerritoryRepository<Guild, UUID> {
     fun findGuildByChunk(chunk: GuildChunk): Guild?
     fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean
     fun findGuildByName(name: String): Guild?
@@ -20,13 +20,13 @@ interface GuildRepository : TerritoryRepository<Guild, Int> {
     fun findGuildByMember(memberID: UUID): Guild?
     fun findMemberRole(playerID: UUID): GuildRole?
     fun findAll(): Collection<Guild>
-    fun deleteById(id: Int)
+    fun deleteById(id: UUID)
 }
 
 @Component
 class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository,
                                 private val territoryChunkRepository: TerritoryChunkRepository) : GuildRepository {
-    override fun getById(id: Int): Guild? {
+    override fun getById(id: UUID): Guild? {
         return jpaRepository.findById(id)
             .map { it.toDomain() }
             .getOrNull()
@@ -68,7 +68,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository,
         return jpaRepository.findAll().map { it.toDomain() }
     }
 
-    override fun deleteById(id: Int) {
+    override fun deleteById(id: UUID) {
         jpaRepository.deleteById(id)
     }
 
@@ -78,7 +78,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository,
 }
 
 @org.springframework.stereotype.Repository
-interface GuildJpaRepository : JpaRepository<GuildEntity, Int> {
+interface GuildJpaRepository : JpaRepository<GuildEntity, UUID> {
 
     fun findByName(name: String): GuildEntity?
 

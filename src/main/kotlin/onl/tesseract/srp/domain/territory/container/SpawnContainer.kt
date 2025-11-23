@@ -1,10 +1,12 @@
-package onl.tesseract.srp.domain.territory
+package onl.tesseract.srp.domain.territory.container
 
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
 import java.util.UUID
 
 interface SpawnContainer {
-    fun setSpawnpoint(coordinate: Coordinate,player: UUID): SetSpawnResult
+    fun setSpawnpoint(coordinate: Coordinate, player: UUID): SetSpawnResult
     fun isSpawnChunk(chunkCoord: ChunkCoord): Boolean
     fun canSetSpawn(player: UUID): Boolean
     fun getSpawnpoint() : Coordinate

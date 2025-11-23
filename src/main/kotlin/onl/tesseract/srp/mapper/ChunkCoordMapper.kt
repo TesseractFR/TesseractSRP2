@@ -1,6 +1,6 @@
 package onl.tesseract.srp.mapper
 
-import onl.tesseract.srp.domain.territory.ChunkCoord
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import org.bukkit.Chunk
 import org.bukkit.Location
 

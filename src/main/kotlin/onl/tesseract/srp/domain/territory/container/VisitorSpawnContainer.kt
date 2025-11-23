@@ -1,10 +1,11 @@
-package onl.tesseract.srp.domain.territory
+package onl.tesseract.srp.domain.territory.container
 
+import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
 import java.util.UUID
 
 interface VisitorSpawnContainer {
-    fun setVisitorSpawnpoint(newLocation: Coordinate,player: UUID): SetSpawnResult
+    fun setVisitorSpawnpoint(newLocation: Coordinate, player: UUID): SetSpawnResult
     fun canSetSpawn(player: UUID): Boolean
     fun getVisitorSpawnpoint() : Coordinate
 }

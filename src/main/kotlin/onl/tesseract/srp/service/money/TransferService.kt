@@ -70,11 +70,11 @@ open class TransferService(private val moneyLedgerService: MoneyLedgerService) {
             moneyTransaction(playerID, amount, this@TransferTransactionBuilder)
         }
 
-        fun GuildService.fromGuild(guildID: Int) {
+        fun GuildService.fromGuild(guildID: UUID) {
             moneyTransaction(guildID, -amount, this@TransferTransactionBuilder)
         }
 
-        fun GuildService.toGuild(guildID: Int) {
+        fun GuildService.toGuild(guildID: UUID) {
             moneyTransaction(guildID, amount, this@TransferTransactionBuilder)
         }
 
