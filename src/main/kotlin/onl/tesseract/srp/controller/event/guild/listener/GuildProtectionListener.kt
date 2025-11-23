@@ -19,10 +19,8 @@ import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
 class GuildProtectionListener(
-    private val guildService: GuildService,
-    playerUtils: PlayerUtils,
-    entityUtils: EntityUtils
-) : ChunkProtectionListener(playerUtils, entityUtils) {
+    private val guildService: GuildService
+) : ChunkProtectionListener() {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
         return guildService.getGuildByChunk(chunk.toChunkCoord()) != null
     }

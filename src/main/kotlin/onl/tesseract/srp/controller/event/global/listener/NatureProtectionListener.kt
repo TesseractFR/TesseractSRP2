@@ -8,9 +8,7 @@ import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.service.world.WorldService
 import onl.tesseract.srp.util.CampementChatError
-import onl.tesseract.srp.util.EntityUtils
 import onl.tesseract.srp.util.GuildChatError
-import onl.tesseract.srp.util.PlayerUtils
 import org.bukkit.Chunk
 import org.bukkit.block.Block
 import org.bukkit.block.Container
@@ -25,9 +23,7 @@ class NatureProtectionListener(
     private val campementService: CampementService,
     private val guildService: GuildService,
     private val worldService: WorldService,
-    playerUtils: PlayerUtils,
-    entityUtils: EntityUtils
-) : ChunkProtectionListener(playerUtils, entityUtils) {
+) : ChunkProtectionListener() {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
         val noCamp = campementService.getByChunk(chunk.toChunkCoord()) == null
         val noGuild = guildService.getGuildByChunk(chunk.toChunkCoord()) == null

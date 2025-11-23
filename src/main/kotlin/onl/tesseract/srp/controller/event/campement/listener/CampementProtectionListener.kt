@@ -7,9 +7,7 @@ import onl.tesseract.srp.controller.event.global.listener.ChunkProtectionListene
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
-import onl.tesseract.srp.util.EntityUtils
 import onl.tesseract.srp.util.InteractionAllowResult
-import onl.tesseract.srp.util.PlayerUtils
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Material
@@ -23,10 +21,8 @@ import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
 class CampementProtectionListener(
-    val campementService: CampementService,
-    playerUtils: PlayerUtils,
-    entityUtils: EntityUtils
-) : ChunkProtectionListener(playerUtils, entityUtils) {
+    val campementService: CampementService
+) : ChunkProtectionListener() {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
         return campementService.getByChunk(chunk.toChunkCoord()) != null
     }
