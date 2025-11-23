@@ -51,7 +51,7 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
         if (!hasChunk(chunkCoord)) return UnclaimResult.NOT_OWNED
         if (_chunks.size == 1) return UnclaimResult.LAST_CHUNK
         if(!isUnclaimStillConnected(initChunk(chunkCoord))) return UnclaimResult.SPLIT
-        if (removeChunk(initChunk(chunkCoord))) UnclaimResult.SUCCESS
+        if (removeChunk(initChunk(chunkCoord))) return UnclaimResult.SUCCESS
         return UnclaimResult.NOT_OWNED
 
     }
