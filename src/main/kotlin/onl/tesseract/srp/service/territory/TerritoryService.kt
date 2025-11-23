@@ -19,11 +19,10 @@ import java.util.*
 const val TERRITORY_PROXIMITY_CLAIM_LIMIT = 3
 const val TERRITORY_PROXIMITY_CREATE_LIMIT = 50
 abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
-    protected val territoryRepository: TerritoryRepository<T,ID>,
-    protected val territoryChunkRepository: TerritoryChunkRepository,
     protected val eventService: DomainEventPublisher,
     ) {
-
+    protected abstract val territoryChunkRepository: TerritoryChunkRepository
+    protected abstract val territoryRepository: TerritoryRepository<T, ID>
     /**
      * Permet de savoir si le monde est correct pour une location donnée.
      * @param worldName La position à valider
@@ -136,7 +135,7 @@ abstract class TerritoryService<TC : TerritoryChunk,T : Territory<TC>, ID>(
      */
     protected fun isCreationAvailable(playerID: UUID, chunkCoord: ChunkCoord): CreationResult{
         if(getByPlayer(playerID) != null) return CreationResult.ALREADY_HAS_TERRITORY
-        if(isCorrectWorld(chunkCoord.world)) return CreationResult.INVALID_WORLD
+        if(!isCorrectWorld(chunkCoord.world)) return CreationResult.INVALID_WORLD
         if(isChunkTaken(chunkCoord)) return CreationResult.ON_OTHER_TERRITORY
         val x = chunkCoord.x
         val z = chunkCoord.z

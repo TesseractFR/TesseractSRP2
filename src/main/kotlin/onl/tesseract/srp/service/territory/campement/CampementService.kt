@@ -24,11 +24,11 @@ const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
 open class CampementService(
-    private val repository: CampementRepository,
+    override val territoryRepository: CampementRepository,
+    override val territoryChunkRepository: TerritoryChunkRepository,
     eventService: DomainEventPublisher,
-    private val srpPlayerService: SrpPlayerService,
-    territoryChunkRepository: TerritoryChunkRepository
-) : TerritoryService<CampementChunk, Campement, UUID>(repository, territoryChunkRepository, eventService) {
+    private val srpPlayerService: SrpPlayerService
+) : TerritoryService<CampementChunk, Campement, UUID>(eventService) {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
@@ -44,10 +44,10 @@ open class CampementService(
     }
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
-        return repository.getById(ownerID)
+        return territoryRepository.getById(ownerID)
     }
 
-    open fun getAllCampements(): List<Campement> = repository.findAll()
+    open fun getAllCampements(): List<Campement> = territoryRepository.findAll()
 
     @Transactional
     open fun createCampement(ownerID: UUID, spawnLocation: Coordinate): CreationResult {
@@ -64,21 +64,21 @@ open class CampementService(
         )
         campement.claimInitialChunks()
         logger.info("New campement (level $campLevel) created for owner $ownerID")
-        repository.save(campement)
+        territoryRepository.save(campement)
         return result
     }
 
     @Transactional
     open fun deleteCampement(id: UUID) {
         logger.info("Deleting campement $id")
-        repository.deleteById(id)
+        territoryRepository.deleteById(id)
     }
 
     private fun getByOwner(ownerID: UUID): Campement? {
-        return repository.getById(ownerID)
+        return territoryRepository.getById(ownerID)
     }
 
-    open fun getCampSpawn(ownerID: UUID): Coordinate? = repository.getById(ownerID)?.getSpawnpoint()
+    open fun getCampSpawn(ownerID: UUID): Coordinate? = territoryRepository.getById(ownerID)?.getSpawnpoint()
 
     /**
      * Increments the level of the player's camp.
@@ -87,13 +87,13 @@ open class CampementService(
      */
     @Transactional
     open fun setCampLevel(ownerID: UUID, level: Int): Boolean {
-        val campement = repository.getById(ownerID)
+        val campement = territoryRepository.getById(ownerID)
             ?: throw IllegalArgumentException("Campement from $ownerID does not exist")
 
         if (campement.campLevel != level) {
             campement.campLevel = level
             logger.info("Campement level from $ownerID set to $level")
-            repository.save(campement)
+            territoryRepository.save(campement)
             return true
         }
         return false

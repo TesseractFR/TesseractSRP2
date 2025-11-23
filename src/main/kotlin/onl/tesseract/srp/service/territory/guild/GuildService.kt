@@ -40,13 +40,13 @@ private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 
 @Service
 open class GuildService(
-    private val guildRepository: GuildRepository,
+    override val territoryRepository: GuildRepository,
+    override val territoryChunkRepository: TerritoryChunkRepository,
     private val playerService: SrpPlayerService,
     eventService: DomainEventPublisher,
     private val ledgerService: MoneyLedgerService,
-    private val transferService: TransferService,
-    territoryChunkRepository: TerritoryChunkRepository
-) : TerritoryService<GuildChunk, Guild, Int>(guildRepository,territoryChunkRepository,eventService) {
+    private val transferService: TransferService
+) : TerritoryService<GuildChunk, Guild, Int>(eventService) {
     @PostConstruct
     fun registerInServiceContainer() {
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
@@ -59,21 +59,21 @@ open class GuildService(
         InteractionAllowResult.Ignore
 
     override fun isMemberOrTrusted(territory: Guild, playerId: UUID): Boolean {
-        val playerGuild = guildRepository.findGuildByMember(playerId) ?: return false
+        val playerGuild = territoryRepository.findGuildByMember(playerId) ?: return false
         return playerGuild.id == territory.id
     }
 
 
     private fun getGuild(guildID: Int): Guild {
-        val guild = guildRepository.getById(guildID)
+        val guild = territoryRepository.getById(guildID)
             ?: throw IllegalArgumentException("Guild not found with id $guildID")
         return guild
     }
-    open fun getAllGuilds(): Collection<Guild> = guildRepository.findAll()
-    open fun getGuildByLeader(leaderId: UUID) = guildRepository.findGuildByLeader(leaderId)
-    open fun getGuildByMember(memberId: UUID) = guildRepository.findGuildByMember(memberId)
+    open fun getAllGuilds(): Collection<Guild> = territoryRepository.findAll()
+    open fun getGuildByLeader(leaderId: UUID) = territoryRepository.findGuildByLeader(leaderId)
+    open fun getGuildByMember(memberId: UUID) = territoryRepository.findGuildByMember(memberId)
     open fun getGuildByChunk(chunk: ChunkCoord) = getByChunk(chunk)
-    open fun getMemberRole(playerID: UUID): GuildRole? = guildRepository.findMemberRole(playerID)
+    open fun getMemberRole(playerID: UUID): GuildRole? = territoryRepository.findMemberRole(playerID)
 
     @Transactional
     open fun createGuild(playerID: UUID, coordinate: Coordinate, guildName: String): CreationResult {
@@ -88,12 +88,12 @@ open class GuildService(
             playerID, GUILD_COST, TransactionType.Guild, TransactionSubType.Guild.Creation, guild.id.toString()
         )
         guild.claimInitialChunks()
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
         return result
     }
 
     private fun getByName(guildName: String): Guild? {
-        return guildRepository.findGuildByName(guildName)
+        return territoryRepository.findGuildByName(guildName)
     }
 
     fun setSpawnpoint(requesterId: UUID, coordinate: Coordinate, kind: GuildSpawnKind): SetSpawnResult {
@@ -106,7 +106,7 @@ open class GuildService(
         val guild = getByPlayer(player) ?: return SetSpawnResult.TERRITORY_NOT_FOUND
         val result = guild.setVisitorSpawnpoint(coordinate,player)
         if(result == SetSpawnResult.SUCCESS){
-            guildRepository.save(guild)
+            territoryRepository.save(guild)
         }
         return result
     }
@@ -117,14 +117,14 @@ open class GuildService(
 
     @Transactional
     open fun deleteGuildAsLeader(leaderId: UUID): Boolean {
-        val guild = guildRepository.findGuildByLeader(leaderId) ?: return false
-        guildRepository.deleteById(guild.id)
+        val guild = territoryRepository.findGuildByLeader(leaderId) ?: return false
+        territoryRepository.deleteById(guild.id)
         return true
     }
 
     @Transactional
     open fun deleteGuildAsStaff(guildId: Int): Boolean {
-        guildRepository.deleteById(guildId)
+        territoryRepository.deleteById(guildId)
         return true
     }
 
@@ -137,12 +137,12 @@ open class GuildService(
 
         if (guild.joinRequests.contains(target)){
             guild.join(target)
-            guildRepository.save(guild)
+            territoryRepository.save(guild)
             return GuildInvitationResult.SUCCESS_JOIN
         }
         guild.invitePlayer(target)
         eventService.publish(GuildInvitationEvent(guild.name,sender,target))
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
         return GuildInvitationResult.SUCCESS_INVITE
 
     }
@@ -154,7 +154,7 @@ open class GuildService(
             playerID !in guild.invitations -> false
             else -> {
                 guild.join(playerID)
-                guildRepository.save(guild)
+                territoryRepository.save(guild)
                 true
             }
         }
@@ -165,17 +165,17 @@ open class GuildService(
     open fun declineInvitation(guildName: String, playerID: UUID): Boolean {
         val guild = getByName(guildName)?: return false
         val removed = guild.removeInvitation(playerID)
-        if (removed) guildRepository.save(guild)
+        if (removed) territoryRepository.save(guild)
         return removed
     }
 
 
     open fun addMemberAsStaff(guildID: Int, playerID: UUID) {
         val guild = getGuild(guildID)
-        if (guildRepository.findGuildByMember(playerID) != null)
+        if (territoryRepository.findGuildByMember(playerID) != null)
             return
         guild.join(playerID)
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
     }
 
     @Transactional
@@ -215,7 +215,7 @@ open class GuildService(
             }
         }
         if (outcome == StaffSetRoleResult.SUCCESS) {
-            guildRepository.save(guild)
+            territoryRepository.save(guild)
         }
         return outcome
     }
@@ -229,7 +229,7 @@ open class GuildService(
             guild.leaderId == targetID -> KickResult.CannotKickLeader
             else -> {
                 guild.removeMember(targetID)
-                guildRepository.save(guild)
+                territoryRepository.save(guild)
                 KickResult.Success
             }
         }
@@ -243,7 +243,7 @@ open class GuildService(
             guild.leaderId == targetID -> KickResult.CannotKickLeader
             else -> {
                 guild.removeMember(targetID)
-                guildRepository.save(guild)
+                territoryRepository.save(guild)
                 KickResult.Success
             }
         }
@@ -251,12 +251,12 @@ open class GuildService(
 
     @Transactional
     open fun leaveGuild(playerID: UUID): LeaveResult {
-        val guild = checkNotNull(guildRepository.findGuildByMember(playerID)) {
+        val guild = checkNotNull(territoryRepository.findGuildByMember(playerID)) {
             "Player $playerID is not in a guild"
         }
         if (guild.leaderId == playerID) return LeaveResult.LeaderMustDelete
         guild.removeMember(playerID)
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
         return LeaveResult.Success
     }
 
@@ -314,7 +314,7 @@ open class GuildService(
         else
             transactionBuilder.to = ledgerService.getGuildLedger(guild.moneyLedgerID)
         guild.addMoney(amount)
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
     }
 
     open fun giveMoneyAsStaff(guildID: Int, amount: Int) {
@@ -327,7 +327,7 @@ open class GuildService(
             type = TransactionType.Staff,
             subType = TransactionSubType.Staff.Give,
         )
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
     }
 
     private fun xpToNextLevel(level: Int): Int = XP_PER_LVL_MULTIPLICATOR * level
@@ -336,7 +336,7 @@ open class GuildService(
     open fun addGuildXp(guildId: Int, amount: Int) {
         val guild = getGuild(guildId)
         guild.addXp(amount.coerceAtLeast(0))
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
         upgradeGuildLevel(guildId)
     }
 
@@ -345,14 +345,14 @@ open class GuildService(
         val guild = getGuild(guildId)
         guild.level += amount.coerceAtLeast(0)
         guild.xp = 0
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
     }
 
     open fun setLevel(guildId: Int, level: Int) {
         val guild = getGuild(guildId)
         guild.level = level.coerceAtLeast(1)
         guild.xp = 0
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
     }
 
     open fun upgradeGuildLevel(guildId: Int): Boolean {
@@ -362,7 +362,7 @@ open class GuildService(
 
         guild.xp -= need
         guild.level += 1
-        guildRepository.save(guild)
+        territoryRepository.save(guild)
         eventService.publish(GuildLevelUpEvent(guild,guild.level))
         return true
     }
@@ -379,7 +379,7 @@ open class GuildService(
             else -> {
                 g.money -= to.cost
                 g.rank = to
-                guildRepository.save(g)
+                territoryRepository.save(g)
                 GuildUpgradeResult.SUCCESS
             }
         }
@@ -388,7 +388,7 @@ open class GuildService(
     open fun setRank(guildId: Int, rank: GuildRank) {
         val g = getGuild(guildId)
         g.rank = rank
-        guildRepository.save(g)
+        territoryRepository.save(g)
     }
 }
 
