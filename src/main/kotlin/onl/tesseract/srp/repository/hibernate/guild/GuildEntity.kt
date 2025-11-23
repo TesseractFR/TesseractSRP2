@@ -3,7 +3,9 @@ package onl.tesseract.srp.repository.hibernate.guild
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.territory.ChunkCoord
 import onl.tesseract.srp.domain.territory.Coordinate
+import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.GuildMember
 import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
@@ -83,7 +85,7 @@ class GuildEntity(
             xp = xp,
             rank = rank
         )
-        guild.addChunks(chunks.map { it.toDomain() }.toSet())
+        guild.addChunks(chunks.map { GuildChunk(it.id.toDomain(),guild) }.toSet())
         return guild
     }
 }
