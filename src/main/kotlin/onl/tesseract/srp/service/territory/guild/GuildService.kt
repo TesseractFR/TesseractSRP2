@@ -52,8 +52,8 @@ open class GuildService(
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
     }
 
-    override fun isCorrectWorld(worldName: String) =
-        worldName == SrpWorld.GuildWorld.bukkitName
+    override fun isCorrectWorld(worldName: String): Boolean =
+        SrpWorld.GuildWorld.bukkitName == worldName
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Ignore
@@ -84,8 +84,8 @@ open class GuildService(
     @Transactional
     open fun createGuild(playerID: UUID, coordinate: Coordinate, guildName: String): CreationResult {
         val srpPlayer = playerService.getPlayer(playerID)
-        if(srpPlayer.money<GUILD_COST) return CreationResult.NOT_ENOUGH_MONEY
         if(srpPlayer.rank < PlayerRank.Baron) return CreationResult.RANK_TOO_LOW
+        if(srpPlayer.money<GUILD_COST) return CreationResult.NOT_ENOUGH_MONEY
         if(getByName(guildName)!=null) return CreationResult.NAME_TAKEN
         val result = isCreationAvailable(playerID,coordinate.chunkCoord)
         if(result != CreationResult.SUCCESS) return result
@@ -136,10 +136,10 @@ open class GuildService(
 
     @Transactional
     open fun invite(sender : UUID, target: UUID): GuildInvitationResult {
-        if(sender == target) return GuildInvitationResult.SAME_PLAYER
-        if(getGuildByMember(target) != null) return GuildInvitationResult.HAS_GUILD
         val guild = getGuildByMember(sender)?: return GuildInvitationResult.TERRITORY_NOT_FOUND
         if(!guild.canInvite(sender)) return GuildInvitationResult.NOT_ALLOWED
+        if(sender == target) return GuildInvitationResult.SAME_PLAYER
+        if(getGuildByMember(target) != null) return GuildInvitationResult.HAS_GUILD
 
         if (guild.joinRequests.contains(target)){
             guild.join(target)
@@ -227,32 +227,14 @@ open class GuildService(
     }
 
     @Transactional
-    open fun kickMember(guildID: UUID, requesterID: UUID, targetID: UUID): KickResult {
-        val guild = getGuild(guildID)
-        return when {
-            guild.leaderId != requesterID -> KickResult.NotAuthorized
-            guild.members.none { it.playerID == targetID } -> KickResult.NotMember
-            guild.leaderId == targetID -> KickResult.CannotKickLeader
-            else -> {
-                guild.removeMember(targetID)
-                territoryRepository.save(guild)
-                KickResult.Success
-            }
-        }
-    }
-
-    @Transactional
-    open fun kickMemberAsStaff(guildID: UUID, targetID: UUID): KickResult {
-        val guild = getGuild(guildID)
-        return when {
-            guild.members.none { it.playerID == targetID } -> KickResult.NotMember
-            guild.leaderId == targetID -> KickResult.CannotKickLeader
-            else -> {
-                guild.removeMember(targetID)
-                territoryRepository.save(guild)
-                KickResult.Success
-            }
-        }
+    open fun kickMember(sender: UUID, target: UUID): KickResult {
+        val guild = getGuildByMember(sender)?: return KickResult.TERRITORY_NOT_FOUND
+        if(!guild.canKick(sender)) return KickResult.NOT_ALLOWED
+        if (guild.members.none { it.playerID == target }) return KickResult.NOT_MEMBER
+        if (guild.leaderId == target) return KickResult.CANNOT_KICK_LEADER
+        guild.removeMember(target)
+        territoryRepository.save(guild)
+        return KickResult.SUCCESS
     }
 
     @Transactional

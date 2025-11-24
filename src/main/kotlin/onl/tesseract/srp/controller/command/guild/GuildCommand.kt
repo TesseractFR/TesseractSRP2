@@ -39,17 +39,16 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
 
-val NO_GUILD_MESSAGE: Component =
-    Component.text("Tu n'as pas de guilde. Rejoins-en une existante ou crées-en une nouvelle avec ") +
-            Component.text("/guild create <nom>", NamedTextColor.GOLD) +
-            Component.text(".")
+val NO_GUILD_MESSAGE: Component = GuildChatError
+        .plus("Tu ne possèdes pas de guilde. Rejoins ou crées-en une avec " )
+        .append("/guild create <nom>", NamedTextColor.GOLD)
 private val GUILD_BORDER_MESSAGE: Component =
     Component.text("Visualise les bordures avec ")
             .append(GUILD_BORDER_COMMAND, NamedTextColor.GOLD)
             .append(".")
 private val GUILD_WORLD = SrpWorld.GuildWorld.bukkitName
 private val NOT_IN_GUILD_WORLD_MESSAGE =
-    GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
+    GuildChatError + "Tu ne peux pas créer de guilde dans ce monde."
 
 @Command(name = "guild")
 @SpringComponent
@@ -63,6 +62,7 @@ class GuildCommand(
     private val teleportService: TeleportationService,
 ) : CommandContext(provider) {
 
+    // TODO() A enlever après gestion des borders
     private inline fun inGuildWorld(sender: Player, block: () -> Unit) {
         if (sender.world.name != GUILD_WORLD) {
             sender.sendMessage(NOT_IN_GUILD_WORLD_MESSAGE)
@@ -72,20 +72,19 @@ class GuildCommand(
     }
 
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
-    fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) = inGuildWorld(sender) {
+    fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
         val result = guildService.createGuild(sender.uniqueId, sender.location.toCoordinate(), nameArg.get())
         val msg = when (result) {
             CreationResult.NOT_ENOUGH_MONEY ->
                 GuildChatError + "Tu n'as pas assez d'argent pour créer ta guilde."
 
-            CreationResult.INVALID_WORLD ->
-                GuildChatError + "Tu ne peux pas créer de guilde dans ce monde."
+            CreationResult.INVALID_WORLD -> NOT_IN_GUILD_WORLD_MESSAGE
 
             CreationResult.NEAR_SPAWN ->
                 GuildChatError + "Tu es trop proche du spawn pour créer ta guilde."
 
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY ->
-                GuildChatError + "Tu es trop proche d'une autre guilde."
+                GuildChatError + "Impossible de créer ta guilde ici, tu es trop proche d'une autre guilde."
 
             CreationResult.NAME_TAKEN ->
                 GuildChatError + "Ce nom de guilde est déjà pris, choisis-en un autre."
@@ -110,7 +109,7 @@ class GuildCommand(
     @Command(name = "delete", playerOnly = true, description = "Supprimer sa guilde.")
     fun deleteGuild(sender: Player) {
         val role = guildService.getMemberRole(sender.uniqueId)
-                ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+                ?: return sender.sendMessage(NO_GUILD_MESSAGE)
 
         if (role != GuildRole.Leader)
             return sender.sendMessage(GuildChatError + "Tu n'as pas l'autorisation pour supprimer ta guilde.")
@@ -143,13 +142,10 @@ class GuildCommand(
     fun invite(sender: Player, @Argument("joueur") player: PlayerArg) {
         val target = player.get()
         when(guildService.invite(sender.uniqueId, target.uniqueId)){
-            GuildInvitationResult.TERRITORY_NOT_FOUND -> sender.sendMessage(Component.text("")
-                    .append(GuildChatError)
-                    .plus("Tu ne possèdes pas de guilde. Réjoins ou crées-en une avec " )
-                    .append("/guild create <nom>", NamedTextColor.GOLD))
+            GuildInvitationResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
+            GuildInvitationResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à utiliser cette commande.")
             GuildInvitationResult.SAME_PLAYER -> sender.sendMessage(GuildChatError + "Tu ne peux pas t'inviter toi même.")
             GuildInvitationResult.HAS_GUILD -> sender.sendMessage(GuildChatError + "Ce joueur est déjà dans une guilde.")
-            GuildInvitationResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à utiliser cette commande.")
             GuildInvitationResult.SUCCESS_JOIN -> {
                 val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
                 sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint votre guilde.")
@@ -157,7 +153,7 @@ class GuildCommand(
             }
             GuildInvitationResult.SUCCESS_INVITE -> {
                 val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
-                sender.sendMessage(GuildChatSuccess + "Votre invitation a bien été envoyée à ${target.name}")
+                sender.sendMessage(GuildChatFormat + "Votre invitation a bien été envoyée à ${target.name}")
                 target.sendMessage(GuildChatFormat + "${sender.name} vous invite dans la guilde ${senderGuild.name}.")
             }
         }
@@ -165,55 +161,30 @@ class GuildCommand(
 
     @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")
     fun kick(sender: Player, @Argument("joueur") targetName: GuildMembersArg) {
-        val role = guildService.getMemberRole(sender.uniqueId)
-        if (role == null) {
-            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
-            return
-        }
-        if (role != GuildRole.Leader) {
-            sender.sendMessage(GuildChatError + "Tu n'as pas la permission pour exclure quelqu'un de ta guilde.")
-            return
-        }
-        val guild = guildService.getGuildByLeader(sender.uniqueId)!!
         val target = Bukkit.getOfflinePlayer(targetName.get())
-        when {
-            target.uniqueId == sender.uniqueId -> {
-                sender.sendMessage(GuildChatError + "Tu ne peux pas t’exclure toi-même.")
-            }
-
-            guild.members.none { it.playerID == target.uniqueId } -> {
+        when (guildService.kickMember(sender.uniqueId, target.uniqueId)) {
+            KickResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
+            KickResult.NOT_MEMBER ->
                 sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
-            }
-
-            else -> {
-                menuService.openConfirmationMenu(
-                    sender,
-                    NamedTextColor.RED + "⚠ Es-tu sûr de vouloir exclure ${target.name} de la guilde ?",
-                    null
-                ) {
-                    when (guildService.kickMember(guild.id, sender.uniqueId, target.uniqueId)) {
-                        KickResult.Success -> {
-                            sender.sendMessage(GuildChatSuccess + "${target.name} a été exclu(e) de la guilde.")
-                        }
-
-                        KickResult.NotMember ->
-                            sender.sendMessage(GuildChatError + "${target.name} n'est pas membre de ta guilde.")
-
-                        KickResult.NotAuthorized ->
-                            sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à exclure des membres.")
-
-                        KickResult.CannotKickLeader ->
-                            sender.sendMessage(GuildChatError + "Tu ne peux pas exclure le chef de la guilde.")
-                    }
-                }
+            KickResult.NOT_ALLOWED ->
+                sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à exclure des membres.")
+            KickResult.CANNOT_KICK_LEADER ->
+                sender.sendMessage(GuildChatError + "Tu ne peux pas exclure le chef de la guilde.")
+            KickResult.SUCCESS -> menuService.openConfirmationMenu(
+                sender,
+                NamedTextColor.RED + "⚠ Es-tu sûr de vouloir exclure ${target.name} de la guilde ?",
+                null
+            ) {
+                sender.sendMessage(GuildChatSuccess + "${target.name} a été exclu(e) de la guilde.")
             }
         }
     }
 
+
     @Command(name = "leave", playerOnly = true, description = "Quitter sa guilde.")
     fun leave(sender: Player) {
         val guild = guildService.getGuildByMember(sender.uniqueId)
-                ?: return sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+                ?: return sender.sendMessage(NO_GUILD_MESSAGE)
 
         if (guild.leaderId == sender.uniqueId) {
             sender.sendMessage(
@@ -241,7 +212,7 @@ class GuildCommand(
     @Command(name = "claim", playerOnly = true, description = "Annexer un chunk pour la guilde.")
     fun claimChunk(sender: Player) {
         when (guildService.claimChunk(sender.uniqueId, sender.location.toChunkCoord())) {
-            ClaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            ClaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
             ClaimResult.SUCCESS -> sender.sendMessage(
                 GuildChatSuccess + "Le chunk (${sender.chunk.x}, ${sender.chunk.z}) " +
                         "a été annexé avec succès pour la guilde."
@@ -348,7 +319,7 @@ class GuildCommand(
                             + GUILD_BORDER_MESSAGE
                 )
 
-            SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
 
         }
     }
@@ -361,7 +332,7 @@ class GuildCommand(
     fun teleportToGuildSpawn(sender: Player, @Argument("guilde", optional = true) nameArg: GuildArg?) {
         val targetName = nameArg?.get()?.name
         val (guild, errorMsg) = if (targetName == null) {
-            guildService.getGuildByMember(sender.uniqueId) to (GuildChatError + NO_GUILD_MESSAGE)
+            guildService.getGuildByMember(sender.uniqueId) to (NO_GUILD_MESSAGE)
         } else {
             guildRepository.findGuildByName(targetName) to (GuildChatError + "La guilde \"$targetName\" n’existe pas.")
         }

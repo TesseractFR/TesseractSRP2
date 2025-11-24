@@ -97,8 +97,16 @@ class Guild(
     }
 
     fun canInvite(sender: UUID): Boolean {
-        TODO("A FAIRE")
+        val role = getMemberRole(sender)
+        return role.canInvite()
     }
+
+    fun canKick(sender: UUID): Boolean {
+        val role = getMemberRole(sender)
+        return role.canKick()
+    }
+
+
 }
 
 

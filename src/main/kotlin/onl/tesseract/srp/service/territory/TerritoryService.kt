@@ -12,7 +12,7 @@ import onl.tesseract.srp.util.InteractionAllowResult
 import java.util.*
 
 const val TERRITORY_PROXIMITY_CLAIM_LIMIT = 3
-const val TERRITORY_PROXIMITY_CREATE_LIMIT = 50
+const val TERRITORY_PROXIMITY_CREATE_LIMIT = 5
 
 abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
 ) {

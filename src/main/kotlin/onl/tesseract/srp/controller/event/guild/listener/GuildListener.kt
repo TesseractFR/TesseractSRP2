@@ -8,7 +8,6 @@ import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
 import onl.tesseract.srp.domain.territory.guild.event.GuildLevelUpEvent
 import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.util.GuildChatError
-import onl.tesseract.srp.util.GuildChatFormat
 import onl.tesseract.srp.util.GuildChatSuccess
 import org.bukkit.Bukkit
 import org.springframework.context.event.EventListener
@@ -37,8 +36,6 @@ class GuildListener(
     fun onInvitation(event: GuildInvitationEvent){
         val sender = Bukkit.getPlayer(event.sender)?:return
         val target = Bukkit.getPlayer(event.target)?:return
-        sender.sendMessage(GuildChatFormat + "${target.name} a été invité. En attente d'acceptation.")
-        target.sendMessage(GuildChatFormat + "${sender.name} t'invite à rejoindre la guilde ${event.guild}.")
 
         val acceptButton = Component.text("✔ Accepter")
                 .color(NamedTextColor.GREEN)
