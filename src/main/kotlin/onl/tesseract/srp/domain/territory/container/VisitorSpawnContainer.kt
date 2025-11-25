@@ -12,7 +12,6 @@ interface VisitorSpawnContainer {
 
 class DefaultVisitorSpawnContainer(protected var visitorSpawnPoint: Coordinate) : VisitorSpawnContainer{
     override fun setVisitorSpawnpoint(newLocation: Coordinate, player: UUID): SetSpawnResult {
-        if(!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
         visitorSpawnPoint = newLocation
         return SetSpawnResult.SUCCESS
     }

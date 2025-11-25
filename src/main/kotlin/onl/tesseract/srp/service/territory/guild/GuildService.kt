@@ -108,7 +108,7 @@ open class GuildService(
     }
 
 
-    fun setVisitorSpawnpoint(player: UUID, coordinate: Coordinate): SetSpawnResult {
+    private fun setVisitorSpawnpoint(player: UUID, coordinate: Coordinate): SetSpawnResult {
         val guild = getByPlayer(player) ?: return SetSpawnResult.TERRITORY_NOT_FOUND
         val result = guild.setVisitorSpawnpoint(coordinate,player)
         if(result == SetSpawnResult.SUCCESS){
@@ -229,7 +229,7 @@ open class GuildService(
     @Transactional
     open fun kickMember(sender: UUID, target: UUID): KickResult {
         val guild = getGuildByMember(sender)?: return KickResult.TERRITORY_NOT_FOUND
-        if(!guild.canKick(sender)) return KickResult.NOT_ALLOWED
+        if(!guild.canInvite(sender)) return KickResult.NOT_ALLOWED
         if (guild.members.none { it.playerID == target }) return KickResult.NOT_MEMBER
         if (guild.leaderId == target) return KickResult.CANNOT_KICK_LEADER
         guild.removeMember(target)
@@ -238,14 +238,12 @@ open class GuildService(
     }
 
     @Transactional
-    open fun leaveGuild(playerID: UUID): LeaveResult {
-        val guild = checkNotNull(territoryRepository.findGuildByMember(playerID)) {
-            "Player $playerID is not in a guild"
-        }
-        if (guild.leaderId == playerID) return LeaveResult.LeaderMustDelete
-        guild.removeMember(playerID)
+    open fun leaveGuild(player: UUID): LeaveResult {
+        val guild = getGuildByMember(player)?: return LeaveResult.TERRITORY_NOT_FOUND
+        if (guild.leaderId == player) return LeaveResult.LEADER_MUST_DELETE
+        guild.removeMember(player)
         territoryRepository.save(guild)
-        return LeaveResult.Success
+        return LeaveResult.SUCCESS
     }
 
     @Transactional

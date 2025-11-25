@@ -1,5 +1,6 @@
 package onl.tesseract.srp.controller.command.staff
 
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.commandBuilder.annotation.Argument
 import onl.tesseract.commandBuilder.annotation.Command
@@ -12,7 +13,6 @@ import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
 import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.territory.enum.TrustResult
 import onl.tesseract.srp.domain.territory.enum.UntrustResult
-import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
 import onl.tesseract.srp.service.territory.campement.CampementService
@@ -22,9 +22,11 @@ import onl.tesseract.srp.util.CampementChatSuccess
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Component as SpringComponent
 
-@Component
+private val NO_CAMPEMENT_MESSAGE: Component = CampementChatError +"Ce joueur ne possède pas de campement."
+
+@SpringComponent
 @Command(name = "camp", permission = Perm("staff"), playerOnly = true)
 class CampStaffCommands(
     private val campementService: CampementService,
@@ -45,9 +47,9 @@ class CampStaffCommands(
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "${target.name} possède déjà un campement."
             CreationResult.INVALID_WORLD -> CampementChatError + "Tu ne peux pas créer de campement dans ce monde."
             CreationResult.NEAR_SPAWN -> CampementChatError + "Trop proche du spawn pour créer un campement."
-            CreationResult.NAME_TAKEN -> TODO()
-            CreationResult.NOT_ENOUGH_MONEY -> TODO()
-            CreationResult.RANK_TOO_LOW -> TODO()
+            CreationResult.NAME_TAKEN,
+            CreationResult.NOT_ENOUGH_MONEY,
+            CreationResult.RANK_TOO_LOW -> return
             CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
             CreationResult.ON_OTHER_TERRITORY -> {
                 CampementChatError + "Impossible de créer un campement ici, " +
@@ -66,12 +68,8 @@ class CampStaffCommands(
     @Command(name = "delete", description = "Supprimer le campement d'un joueur")
     fun deleteCamp(sender: Player, @Argument("joueur") ownerName: CampOwnerArg) {
         val owner = Bukkit.getOfflinePlayer(ownerName.get())
-        val campement = campementService.getCampementByOwner(owner.uniqueId)
-
-        if (campement == null) {
-            sender.sendMessage(CampementChatError + "${owner.name} ne possède pas de campement.")
-            return
-        }
+        val campement = campementService.getCampementByOwner(sender.uniqueId)
+            ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
 
         menuService.openConfirmationMenu(
             sender,
@@ -93,25 +91,22 @@ class CampStaffCommands(
         val owner = Bukkit.getOfflinePlayer(ownerName.get())
         val target = targetName.get()
 
-        val ownerUUID = owner.uniqueId
-        val targetUUID = target.uniqueId
-
-        if (ownerUUID == targetUUID) {
+        if (owner.uniqueId == target.uniqueId) {
             sender.sendMessage(CampementChatFormat +
                     "Impossible d'ajouter le propriétaire lui-même en tant que joueur de confiance.")
             return
         }
 
-        val success = campementService.trust(ownerUUID, targetUUID)
+        val success = campementService.trust(owner.uniqueId, target.uniqueId)
         when (success) {
-            TrustResult.NOT_ALLOWED -> TODO()
+            TrustResult.NOT_ALLOWED -> return
             TrustResult.SUCCESS -> {
                 sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
                 target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
                         "en tant que joueur de confiance.")
             }
             TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
-            TrustResult.TERRITORY_NOT_FOUND -> TODO()
+            TrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 
@@ -130,10 +125,10 @@ class CampStaffCommands(
 
         val success = campementService.untrust(owner.uniqueId, target.uniqueId)
         when(success){
-            UntrustResult.NOT_ALLOWED -> TODO()
-            UntrustResult.NOT_TRUST -> TODO()
+            UntrustResult.NOT_ALLOWED -> return
+            UntrustResult.NOT_TRUST -> sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans la liste de confiance de ce campement.")
             UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
-            UntrustResult.TERRITORY_NOT_FOUND -> TODO()
+            UntrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 

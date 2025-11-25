@@ -152,9 +152,7 @@ class GuildCommand(
                 target.sendMessage(GuildChatSuccess + "Vous avez rejoint la guilde ${senderGuild.name}.")
             }
             GuildInvitationResult.SUCCESS_INVITE -> {
-                val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
                 sender.sendMessage(GuildChatFormat + "Votre invitation a bien été envoyée à ${target.name}")
-                target.sendMessage(GuildChatFormat + "${sender.name} vous invite dans la guilde ${senderGuild.name}.")
             }
         }
     }
@@ -183,27 +181,18 @@ class GuildCommand(
 
     @Command(name = "leave", playerOnly = true, description = "Quitter sa guilde.")
     fun leave(sender: Player) {
-        val guild = guildService.getGuildByMember(sender.uniqueId)
-                ?: return sender.sendMessage(NO_GUILD_MESSAGE)
-
-        if (guild.leaderId == sender.uniqueId) {
-            sender.sendMessage(
-                GuildChatError + "Tu es le chef de ta guilde. Supprime-la ou transfère le leadership pour partir.")
-            return
-        }
-        menuService.openConfirmationMenu(
-            sender,
-            NamedTextColor.RED + "⚠ Es-tu sûr de vouloir quitter la guilde ?",
-            null
-        ) {
-            when (guildService.leaveGuild(sender.uniqueId)) {
-                LeaveResult.Success -> {
-                    sender.sendMessage(GuildChatSuccess + "Tu as quitté la guilde ${guild.name}.")
-                }
-
-                LeaveResult.LeaderMustDelete -> {
-                    sender.sendMessage(
-                        GuildChatError + "Tu es le chef de la guilde. Supprime-la ou transfère le leadership.")
+        when (guildService.leaveGuild(sender.uniqueId)) {
+            LeaveResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
+            LeaveResult.LEADER_MUST_DELETE -> {
+                sender.sendMessage(GuildChatError + "Tu es le/la chef(fe) de la guilde. Supprime-la ou transfère le leadership.")
+            }
+            LeaveResult.SUCCESS -> {
+                menuService.openConfirmationMenu(
+                    sender,
+                    NamedTextColor.RED + "⚠ Es-tu sûr de vouloir quitter la guilde ?",
+                    null
+                ) {
+                    sender.sendMessage(GuildChatSuccess + "Tu as quitté ta guilde.")
                 }
             }
         }
@@ -232,7 +221,7 @@ class GuildCommand(
             )
 
             ClaimResult.NOT_ALLOWED -> sender.sendMessage(
-                GuildChatError + "Tu n'es pas autorisé à annexer un chunk pour la guilde."
+                GuildChatError + "Tu n'es pas autorisé(e) à utiliser cette commande."
             )
 
             ClaimResult.TOO_CLOSE -> sender.sendMessage(
@@ -251,7 +240,7 @@ class GuildCommand(
             )
 
             UnclaimResult.NOT_OWNED -> sender.sendMessage(
-                GuildChatError + "Ce chunk ne fait pas partie du territoire de ta guilde. " + GUILD_BORDER_MESSAGE
+                GuildChatError + "Ce chunk ne fait pas partie du territoire de ta guilde. "
             )
 
             UnclaimResult.LAST_CHUNK -> sender.sendMessage(
@@ -310,7 +299,7 @@ class GuildCommand(
                 sender.sendMessage(GuildChatSuccess + "Le point de spawn $label de la guilde a été défini ici.")
             }
 
-            SetSpawnResult.NOT_AUTHORIZED ->
+            SetSpawnResult.NOT_ALLOWED ->
                 sender.sendMessage(GuildChatError + "Tu n'as pas l'autorisation de changer le spawn.")
 
             SetSpawnResult.OUTSIDE_TERRITORY ->

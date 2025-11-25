@@ -12,5 +12,4 @@ enum class GuildRole {
     fun canClaim(): Boolean = this >= Adjoint
     fun canSetSpawn(): Boolean = this>= Adjoint
     fun canInvite(): Boolean = this >= Adjoint
-    fun canKick(): Boolean = this >= Adjoint
 }

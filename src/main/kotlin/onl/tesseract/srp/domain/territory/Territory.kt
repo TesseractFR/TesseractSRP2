@@ -24,7 +24,7 @@ abstract class Territory<TC : TerritoryChunk>(
      * @return true if the spawn point was set, false otherwise
      */
     override fun setSpawnpoint(coordinate: Coordinate, player: UUID): SetSpawnResult {
-        if (!canSetSpawn(player)) return SetSpawnResult.NOT_AUTHORIZED
+        if (!canSetSpawn(player)) return SetSpawnResult.NOT_ALLOWED
         if (!hasChunk(coordinate.chunkCoord)) return SetSpawnResult.OUTSIDE_TERRITORY
         return spawnContainer.setSpawnpoint(coordinate,player)
     }

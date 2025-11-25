@@ -127,7 +127,7 @@ class CampementCommands(
         when (campementService.setSpawnpoint(sender.uniqueId, sender.location.toCoordinate())) {
             SetSpawnResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
 
-            SetSpawnResult.NOT_AUTHORIZED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
+            SetSpawnResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
             SetSpawnResult.OUTSIDE_TERRITORY -> sender.sendMessage(CampementChatError +
                     "Tu dois être dans un chunk de ton campement pour définir le spawn. " + CAMPEMENT_BORDER_MESSAGE)
             SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)

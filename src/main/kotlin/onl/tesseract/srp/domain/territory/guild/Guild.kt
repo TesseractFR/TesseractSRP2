@@ -47,6 +47,7 @@ class Guild(
 
     override fun setVisitorSpawnpoint(newLocation: Coordinate, player: UUID): SetSpawnResult {
         if(!hasChunk(newLocation.chunkCoord))return SetSpawnResult.OUTSIDE_TERRITORY
+        if(!canSetSpawn(player)) return SetSpawnResult.NOT_ALLOWED
         return visitorSpawnContainer.setVisitorSpawnpoint(newLocation,player)
     }
 
@@ -100,12 +101,6 @@ class Guild(
         val role = getMemberRole(sender)
         return role.canInvite()
     }
-
-    fun canKick(sender: UUID): Boolean {
-        val role = getMemberRole(sender)
-        return role.canKick()
-    }
-
 
 }
 
