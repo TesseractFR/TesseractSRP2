@@ -77,7 +77,7 @@ class CampStaffCommands(
             null
         ) {
             campementService.deleteCampement(campement.ownerID)
-            owner.player?.let { borderRenderer.clearBorders(it) }
+            owner.player?.let { borderRenderer.clearBorders(it.uniqueId) }
 
             sender.sendMessage(CampementChatSuccess + "Le campement de ${owner.name} a été supprimé avec succès.")
             owner.player?.sendMessage(CampementChatError + "Ton campement a été supprimé par un administrateur.")

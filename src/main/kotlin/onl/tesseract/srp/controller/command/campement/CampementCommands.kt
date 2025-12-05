@@ -86,7 +86,7 @@ class CampementCommands(
             null
         ) {
             campementService.deleteCampement(campement.ownerID)
-            borderRenderer.clearBorders(sender)
+            borderRenderer.clearBorders(sender.uniqueId)
             sender.sendMessage(CampementChatSuccess + "Ton campement a été supprimé avec succès.")
         }
     }
@@ -227,14 +227,11 @@ class CampementCommands(
     // TODO() Refaire la classe de gestion des bordures avec l'archi (+gestion mauvais monde)
     @Command(name = "border", description = "Afficher/Masquer les bordures de son campement.")
     fun toggleBorder(sender: Player) {
-        val campement = campementService.getCampementByOwner(sender.uniqueId)
-            ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
-
-        if (borderRenderer.isShowingBorders(sender)) {
-            borderRenderer.clearBorders(sender)
+        if (borderRenderer.isShowingBorders(sender.uniqueId)) {
+            borderRenderer.clearBorders(sender.uniqueId)
             sender.sendMessage(CampementChatFormat + "Les bordures de ton campement ont été masquées.")
         } else {
-            borderRenderer.showBorders(sender, campement.getChunks().map { listOf(it.chunkCoord.x, it.chunkCoord.z) })
+            borderRenderer.showBorders(sender.uniqueId)
             sender.sendMessage(CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !")
         }
     }

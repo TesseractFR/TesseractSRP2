@@ -30,18 +30,17 @@ class CampementBorderDisplayListener(
     }
 
     @EventHandler
-    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player)
+    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player.uniqueId)
 
     @EventHandler
-    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
+    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player.uniqueId)
 
     private fun updateBorders(playerId: UUID) {
         val player = Bukkit.getPlayer(playerId)
         val campement = campementService.getCampementByOwner(playerId)
-        if (player != null && campement != null && borderRenderer.isShowingBorders(player)) {
+        if (player != null && campement != null && borderRenderer.isShowingBorders(player.uniqueId)) {
             borderRenderer.showBorders(
-                player,
-                campement.getChunks().map { listOf(it.chunkCoord.x, it.chunkCoord.z) }
+                player.uniqueId
             )
         }
     }

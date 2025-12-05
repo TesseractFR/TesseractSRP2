@@ -25,16 +25,16 @@ class GuildBorderDisplayListener(
     fun onChunkUnclaim(event: GuildChunkUnclaimEvent) = updateBorders(event.playerId)
 
     @EventHandler
-    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player)
+    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player.uniqueId)
 
     @EventHandler
-    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
+    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player.uniqueId)
 
     private fun updateBorders(playerId: java.util.UUID) {
         val player = Bukkit.getPlayer(playerId)
         val guild = guildService.getGuildByMember(playerId)
-        if (player != null && guild != null && borderRenderer.isShowingBorders(player)) {
-            borderRenderer.showBorders(player, guild.getChunks())
+        if (player != null && guild != null && borderRenderer.isShowingBorders(player.uniqueId)) {
+            borderRenderer.showBorders(player.uniqueId)
         }
     }
 

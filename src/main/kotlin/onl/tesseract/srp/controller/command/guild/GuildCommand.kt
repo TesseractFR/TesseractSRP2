@@ -274,11 +274,11 @@ class GuildCommand(
             sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
             return
         }
-        if (guildBorderRenderer.isShowingBorders(sender)) {
-            guildBorderRenderer.clearBorders(sender)
+        if (guildBorderRenderer.isShowingBorders(sender.uniqueId)) {
+            guildBorderRenderer.clearBorders(sender.uniqueId)
             sender.sendMessage(GuildChatFormat + "Les bordures de ta guilde ont été masquées.")
         } else {
-            guildBorderRenderer.showBorders(sender, guild.getChunks())
+            guildBorderRenderer.showBorders(sender.uniqueId)
             sender.sendMessage(GuildChatSuccess + "Les bordures de ta guilde sont maintenant visibles !")
         }
     }
