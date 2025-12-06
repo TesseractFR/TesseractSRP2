@@ -30,7 +30,7 @@ private val NO_CAMPEMENT_MESSAGE: Component = CampementChatError +"Ce joueur ne 
 @Command(name = "camp", permission = Perm("staff"), playerOnly = true)
 class CampStaffCommands(
     private val campementService: CampementService,
-    private val borderRenderer: CampementBorderService,
+    private val campementBorderService: CampementBorderService,
     private var menuService: MenuService,
 ) {
 
@@ -77,7 +77,7 @@ class CampStaffCommands(
             null
         ) {
             campementService.deleteCampement(campement.ownerID)
-            owner.player?.let { borderRenderer.clearBorders(it.uniqueId) }
+            owner.player?.let { campementBorderService.clearBorders(it.uniqueId) }
 
             sender.sendMessage(CampementChatSuccess + "Le campement de ${owner.name} a été supprimé avec succès.")
             owner.player?.sendMessage(CampementChatError + "Ton campement a été supprimé par un administrateur.")

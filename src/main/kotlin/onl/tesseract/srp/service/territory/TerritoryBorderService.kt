@@ -23,7 +23,7 @@ abstract class TerritoryBorderService<TC : TerritoryChunk, T : Territory<TC>>{
         if (currentWorld != worldName) { return BorderResult.INVALID_WORLD }
         territoryService.getByPlayer(playerId)
             ?: return BorderResult.TERRITORY_NOT_FOUND
-        return if (scheduler.isActive(playerId)) {
+        return if (isShowingBorders(playerId)) {
             clearBorders(playerId)
             BorderResult.CLEAR_BORDERS
         } else {
