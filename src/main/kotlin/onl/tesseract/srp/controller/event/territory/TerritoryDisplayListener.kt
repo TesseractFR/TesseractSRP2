@@ -4,8 +4,8 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.campement.Campement
-import onl.tesseract.srp.domain.territory.campement.CampementChunkUnclaimEvent
 import onl.tesseract.srp.domain.territory.event.TerritoryClaimEvent
+import onl.tesseract.srp.domain.territory.event.TerritoryUnclaimEvent
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.service.territory.campement.CampementService
@@ -43,38 +43,33 @@ open class TerritoryDisplayListener(private val campementService: CampementServi
     }
 
     @EventListener
-    fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
+    fun onChunkUnclaim(event: TerritoryUnclaimEvent<*>) {
         val p = Bukkit.getPlayer(event.playerId)?:return
         updatePlayerDisplay(p,p.chunk.toChunkCoord())
-
     }
 
-    /**
-     * Updates the player's camp cache after a claim/unclaim.
-     * @param notify If true, displays the camp notification.
-     */
     open fun updatePlayerDisplay(player: Player, toChunkCoord: ChunkCoord) {
-        val territory = campementService.getByChunk(toChunkCoord)?:
-                        guildService.getByChunk(toChunkCoord)
+        val campement: Campement? = campementService.getCampementByChunk(toChunkCoord)
+        val guild: Guild? = guildService.getGuildByChunk(toChunkCoord)
+        val territory: UUID? = campement?.id ?: guild?.id
         if (territory == null) {
-            return if (lastTerritory.keys.contains(player.uniqueId)) {
+            if (lastTerritory.keys.contains(player.uniqueId)) {
                 lastTerritory.remove(player.uniqueId)
                 player.sendActionBar(Component.text("[Nature]", NamedTextColor.GREEN))
-            }else{
-                return
             }
+            return
         }
-        if(!lastTerritory.keys.contains(player.uniqueId) || lastTerritory[player.uniqueId] != territory.id){
-            lastTerritory[player.uniqueId] = territory.id
-
-            if(territory is Campement){
-                val ownerName = Bukkit.getOfflinePlayer(territory.id).name ?: "Inconnu"
-                player.sendActionBar(Component.text("[Campement de $ownerName]", NamedTextColor.GOLD))
+        if(!lastTerritory.keys.contains(player.uniqueId) || lastTerritory[player.uniqueId] != territory){
+            lastTerritory[player.uniqueId] = territory
+            when {
+                campement != null -> {
+                    val ownerName = Bukkit.getOfflinePlayer(campement.ownerID).name ?: "Inconnu"
+                    player.sendActionBar(Component.text("[Campement de $ownerName]", NamedTextColor.GOLD))
+                }
+                guild != null -> {
+                    player.sendActionBar(Component.text("[${guild.name}]", NamedTextColor.GOLD))
+                }
             }
-            else if(territory is Guild){
-                player.sendActionBar(Component.text("[Guilde de ${territory.name}]", NamedTextColor.GOLD))
-            }
-
         }
     }
 }

@@ -35,7 +35,6 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 private const val GUILD_COST = 10_000
-const val GUILD_BORDER_COMMAND = "/guild border"
 private const val XP_PER_LVL_MULTIPLICATOR: Int = 1000
 
 @Service
@@ -377,12 +376,3 @@ open class GuildService(
         territoryRepository.save(g)
     }
 }
-
-data class GuildCreationResult(val guild: Guild?, val reason: CreationResult? = null) {
-    companion object {
-        fun failed(reasons: CreationResult) = GuildCreationResult(null, reasons)
-        fun success(guild: Guild) = GuildCreationResult(guild)
-    }
-}
-
-

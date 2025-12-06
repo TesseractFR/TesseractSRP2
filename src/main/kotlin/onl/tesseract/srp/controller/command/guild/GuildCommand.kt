@@ -16,25 +16,17 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildSpawnKindArg
 import onl.tesseract.srp.controller.menu.guild.GuildMenu
-import onl.tesseract.srp.domain.territory.enum.ClaimResult
-import onl.tesseract.srp.domain.territory.enum.CreationResult
-import onl.tesseract.srp.domain.territory.enum.KickResult
-import onl.tesseract.srp.domain.territory.enum.LeaveResult
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
-import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.*
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
 import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
-import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.territory.guild.*
-import onl.tesseract.srp.util.GuildChatError
-import onl.tesseract.srp.util.GuildChatFormat
-import onl.tesseract.srp.util.GuildChatSuccess
+import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
@@ -42,13 +34,13 @@ import org.springframework.stereotype.Component as SpringComponent
 val NO_GUILD_MESSAGE: Component = GuildChatError
         .plus("Tu ne possèdes pas de guilde. Rejoins ou crées-en une avec " )
         .append("/guild create <nom>", NamedTextColor.GOLD)
+private const val GUILD_BORDER_COMMAND = "/guild border"
 private val GUILD_BORDER_MESSAGE: Component =
     Component.text("Visualise les bordures avec ")
             .append(GUILD_BORDER_COMMAND, NamedTextColor.GOLD)
             .append(".")
-private val GUILD_WORLD = SrpWorld.GuildWorld.bukkitName
 private val NOT_IN_GUILD_WORLD_MESSAGE =
-    GuildChatError + "Tu ne peux pas créer de guilde dans ce monde."
+    GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
 
 @Command(name = "guild")
 @SpringComponent
@@ -56,21 +48,11 @@ class GuildCommand(
     provider: CommandInstanceProvider,
     private val guildService: GuildService,
     private val guildRepository: GuildRepository,
-    private val guildBorderRenderer: GuildBorderRenderer,
+    private val guildBorderService: GuildBorderService,
     private val chatEntryService: ChatEntryService,
     private val menuService: MenuService,
     private val teleportService: TeleportationService,
 ) : CommandContext(provider) {
-
-    // TODO() A enlever après gestion des borders
-    private inline fun inGuildWorld(sender: Player, block: () -> Unit) {
-        if (sender.world.name != GUILD_WORLD) {
-            sender.sendMessage(NOT_IN_GUILD_WORLD_MESSAGE)
-            return
-        }
-        block()
-    }
-
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
         val result = guildService.createGuild(sender.uniqueId, sender.location.toCoordinate(), nameArg.get())
@@ -131,7 +113,7 @@ class GuildCommand(
     fun openMenu(sender: Player) {
         val guild = guildService.getGuildByLeader(sender.uniqueId)
         if (guild == null) {
-            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            sender.sendMessage(NO_GUILD_MESSAGE)
             return
         }
         GuildMenu(sender.uniqueId, guildService, guildRepository, chatEntryService)
@@ -268,19 +250,15 @@ class GuildCommand(
     }
 
     @Command(name = "border", playerOnly = true, description = "Afficher/Masquer les bordures de ta guilde.")
-    fun toggleGuildBorder(sender: Player) = inGuildWorld(sender) {
-        val guild = guildService.getGuildByMember(sender.uniqueId)
-        if (guild == null) {
-            sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
-            return
+    fun toggleGuildBorder(sender: Player) {
+        val result = guildBorderService.toggleBorders(sender.uniqueId, sender.world.name)
+        val msg = when (result) {
+            BorderResult.SHOW_BORDERS -> CampementChatSuccess + "Les bordures de ta guilde sont maintenant visibles !"
+            BorderResult.CLEAR_BORDERS -> CampementChatFormat + "Les bordures de ta guilde ont été masquées."
+            BorderResult.TERRITORY_NOT_FOUND -> NO_GUILD_MESSAGE
+            BorderResult.INVALID_WORLD -> NOT_IN_GUILD_WORLD_MESSAGE
         }
-        if (guildBorderRenderer.isShowingBorders(sender.uniqueId)) {
-            guildBorderRenderer.clearBorders(sender.uniqueId)
-            sender.sendMessage(GuildChatFormat + "Les bordures de ta guilde ont été masquées.")
-        } else {
-            guildBorderRenderer.showBorders(sender.uniqueId)
-            sender.sendMessage(GuildChatSuccess + "Les bordures de ta guilde sont maintenant visibles !")
-        }
+        sender.sendMessage(msg)
     }
 
     @Command(

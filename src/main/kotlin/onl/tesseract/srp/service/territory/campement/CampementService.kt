@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional
 import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.DomainEventPublisher
+import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
-const val CAMP_BORDER_COMMAND = "/campement border"
 
 @Service
 open class CampementService(
@@ -45,6 +45,14 @@ open class CampementService(
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
         return territoryRepository.getById(ownerID)
+    }
+
+    open fun getCampementByChunk(chunk: ChunkCoord) : Campement? {
+        return try{
+            getByChunk(chunk)
+        }catch (_ : Exception){
+            null
+        }
     }
 
     open fun getAllCampements(): List<Campement> = territoryRepository.findAll()

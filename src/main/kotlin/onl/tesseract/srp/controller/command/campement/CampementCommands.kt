@@ -14,24 +14,19 @@ import onl.tesseract.lib.util.append
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.territory.enum.ClaimResult
-import onl.tesseract.srp.domain.territory.enum.CreationResult
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
-import onl.tesseract.srp.domain.territory.enum.UnclaimResult
-import onl.tesseract.srp.domain.territory.enum.TrustResult
-import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.domain.territory.enum.*
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.service.TeleportationService
-import onl.tesseract.srp.service.territory.campement.CAMP_BORDER_COMMAND
-import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
 
+private const val CAMP_BORDER_COMMAND = "/campement border"
 private val CAMPEMENT_BORDER_MESSAGE: Component =
     Component.text("Visualise les bordures avec ")
         .append(CAMP_BORDER_COMMAND, NamedTextColor.GOLD)
@@ -48,7 +43,7 @@ private val NOT_IN_CAMPEMENT_WORLD_MESSAGE =
 @Command(name = "campement", playerOnly = true)
 class CampementCommands(
     private var campementService: CampementService,
-    private var borderRenderer: CampementBorderRenderer,
+    private var campementBorderService: CampementBorderService,
     private var equipmentService: EquipmentService,
     private var menuService: MenuService,
     private var teleportService: TeleportationService,
@@ -86,7 +81,7 @@ class CampementCommands(
             null
         ) {
             campementService.deleteCampement(campement.ownerID)
-            borderRenderer.clearBorders(sender.uniqueId)
+            campementBorderService.clearBorders(sender.uniqueId)
             sender.sendMessage(CampementChatSuccess + "Ton campement a été supprimé avec succès.")
         }
     }
@@ -218,22 +213,22 @@ class CampementCommands(
         when(success){
             UntrustResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à utiliser cette commande.")
             UntrustResult.NOT_TRUST -> sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans ta liste de confiance.")
-            UntrustResult.SUCCESS ->             sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
+            UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
                     "liste des joueurs de confiance de ton campement !")
             UntrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
 
-    // TODO() Refaire la classe de gestion des bordures avec l'archi (+gestion mauvais monde)
     @Command(name = "border", description = "Afficher/Masquer les bordures de son campement.")
     fun toggleBorder(sender: Player) {
-        if (borderRenderer.isShowingBorders(sender.uniqueId)) {
-            borderRenderer.clearBorders(sender.uniqueId)
-            sender.sendMessage(CampementChatFormat + "Les bordures de ton campement ont été masquées.")
-        } else {
-            borderRenderer.showBorders(sender.uniqueId)
-            sender.sendMessage(CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !")
+        val result = campementBorderService.toggleBorders(sender.uniqueId, sender.world.name)
+        val msg = when (result) {
+            BorderResult.SHOW_BORDERS -> CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !"
+            BorderResult.CLEAR_BORDERS -> CampementChatFormat + "Les bordures de ton campement ont été masquées."
+            BorderResult.TERRITORY_NOT_FOUND -> NO_CAMPEMENT_MESSAGE
+            BorderResult.INVALID_WORLD -> NOT_IN_CAMPEMENT_WORLD_MESSAGE
         }
+        sender.sendMessage(msg)
     }
 
     @Command(name = "stick", description = "Recevoir un Bâton d'annexion.")

@@ -14,7 +14,7 @@ import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.territory.enum.TrustResult
 import onl.tesseract.srp.domain.territory.enum.UntrustResult
 import onl.tesseract.srp.mapper.toCoordinate
-import onl.tesseract.srp.service.territory.campement.CampementBorderRenderer
+import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.CampementChatError
 import onl.tesseract.srp.util.CampementChatFormat
@@ -30,7 +30,7 @@ private val NO_CAMPEMENT_MESSAGE: Component = CampementChatError +"Ce joueur ne 
 @Command(name = "camp", permission = Perm("staff"), playerOnly = true)
 class CampStaffCommands(
     private val campementService: CampementService,
-    private val borderRenderer: CampementBorderRenderer,
+    private val borderRenderer: CampementBorderService,
     private var menuService: MenuService,
 ) {
 
