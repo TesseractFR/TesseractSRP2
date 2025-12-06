@@ -25,8 +25,11 @@ import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
+import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.guild.*
 import onl.tesseract.srp.util.*
+import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickGiveResult
+import onl.tesseract.srp.util.equipment.annexionStick.GuildAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
@@ -52,6 +55,7 @@ class GuildCommand(
     private val chatEntryService: ChatEntryService,
     private val menuService: MenuService,
     private val teleportService: TeleportationService,
+    private val annexionStickService: AnnexionStickService,
 ) : CommandContext(provider) {
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
     fun createGuild(sender: Player, @Argument("nom") nameArg: StringArg) {
@@ -245,7 +249,7 @@ class GuildCommand(
 
             UnclaimResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError +
                     "Tu n'es pas autorisé(e) à utiliser cette commande.")
-            UnclaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(GuildChatError + NO_GUILD_MESSAGE)
+            UnclaimResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
         }
     }
 
@@ -325,4 +329,19 @@ class GuildCommand(
         }
     }
 
+    @Command(name = "stick", description = "Recevoir un Bâton d'annexion de guilde.")
+    fun giveGuildStick(sender: Player) {
+        val result = annexionStickService.giveStick(
+            sender,
+            GuildAnnexionStickInvocable::class,
+            factory = { uuid -> GuildAnnexionStickInvocable(uuid) }
+        )
+        when (result) {
+            AnnexionStickGiveResult.SUCCESS ->
+                sender.sendMessage(GuildChatFormat + "Tu as reçu un Bâton d'Annexion de guilde.")
+
+            AnnexionStickGiveResult.OPENED_MENU ->
+                sender.sendMessage(GuildChatFormat + "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
+        }
+    }
 }

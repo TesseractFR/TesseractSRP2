@@ -30,6 +30,7 @@ abstract class Territory<TC : TerritoryChunk>(
     }
 
     override fun unclaimChunk(chunkCoord: ChunkCoord, player : UUID): UnclaimResult {
+        if (!hasChunk(chunkCoord)) return UnclaimResult.NOT_OWNED
         if(isSpawnChunk(chunkCoord)) return UnclaimResult.IS_SPAWN_CHUNK
         return super.unclaimChunk(chunkCoord, player)
     }

@@ -1,4 +1,4 @@
-package onl.tesseract.srp.util
+package onl.tesseract.srp.util.equipment.annexionStick
 
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
@@ -14,14 +14,18 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import java.util.UUID
 
-class AnnexionStickInvocable(
+abstract class AnnexionStickInvocable(
     playerUUID: UUID,
     isInvoked: Boolean = false,
     handSlot: Int = 0
 ) : Invocable(playerUUID, isInvoked, handSlot) {
 
+    abstract val baseCommand: String
+    abstract val displayName: String
+    abstract val material: Material
+
     override val slotType: EquipmentSlot = EquipmentSlot.HAND
-    override val uniqueName: String = this::class.simpleName!!
+    override val uniqueName: String get() = this::class.simpleName!!
 
     override fun onUninvoke(player: Player, manuelRemoval: Boolean) {/* Rien */}
 
@@ -41,8 +45,8 @@ class AnnexionStickInvocable(
             .append("Shift + clic pour le retirer", NamedTextColor.YELLOW)
             .get()
 
-        return ItemBuilder(Material.STICK)
-            .name("Bâton d'Annexion", NamedTextColor.GOLD, TextDecoration.BOLD)
+        return ItemBuilder(material)
+            .name(displayName, NamedTextColor.GOLD, TextDecoration.BOLD)
             .enchanted(true)
             .lore(lore)
             .build()
@@ -55,7 +59,7 @@ class AnnexionStickInvocable(
             else -> return
         }
 
-        val cmd = if (isClaim) "campement claim" else "campement unclaim"
+        val cmd = if (isClaim) "$baseCommand claim" else "$baseCommand unclaim"
         event.player.performCommand(cmd)
         event.isCancelled = true
     }

@@ -48,7 +48,6 @@ abstract class ClaimContainer<TC : TerritoryChunk>{
 
     open fun unclaimChunk(chunkCoord: ChunkCoord, player : UUID): UnclaimResult {
         if(!canClaim(player)) return UnclaimResult.NOT_ALLOWED
-        if (!hasChunk(chunkCoord)) return UnclaimResult.NOT_OWNED
         if (_chunks.size == 1) return UnclaimResult.LAST_CHUNK
         val chunk = _chunks.first { it.chunkCoord == chunkCoord }
         if(!isUnclaimStillConnected(chunk)) return UnclaimResult.SPLIT

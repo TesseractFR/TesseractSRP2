@@ -6,8 +6,6 @@ import onl.tesseract.commandBuilder.CommandContext
 import onl.tesseract.commandBuilder.annotation.Argument
 import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.lib.command.argument.PlayerArg
-import onl.tesseract.lib.equipment.EquipmentMenu
-import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.lib.util.append
@@ -19,9 +17,12 @@ import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.service.TeleportationService
+import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.*
+import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickGiveResult
+import onl.tesseract.srp.util.equipment.annexionStick.CampementAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component as SpringComponent
@@ -42,11 +43,11 @@ private val NOT_IN_CAMPEMENT_WORLD_MESSAGE =
 @SpringComponent
 @Command(name = "campement", playerOnly = true)
 class CampementCommands(
-    private var campementService: CampementService,
-    private var campementBorderService: CampementBorderService,
-    private var equipmentService: EquipmentService,
-    private var menuService: MenuService,
-    private var teleportService: TeleportationService,
+    private val campementService: CampementService,
+    private val campementBorderService: CampementBorderService,
+    private val annexionStickService: AnnexionStickService,
+    private val menuService: MenuService,
+    private val teleportService: TeleportationService,
     commandInstanceProvider: SrpCommandInstanceProvider
 ) : CommandContext(commandInstanceProvider) {
 
@@ -231,24 +232,19 @@ class CampementCommands(
         sender.sendMessage(msg)
     }
 
-    @Command(name = "stick", description = "Recevoir un Bâton d'annexion.")
+    @Command(name = "stick", description = "Recevoir un Bâton d'annexion de campement.")
     fun giveStick(sender: Player) {
-        val equipment = equipmentService.getEquipment(sender.uniqueId)
-        val existing = equipment.get(AnnexionStickInvocable::class.java)
+        val result = annexionStickService.giveStick(
+            sender,
+            CampementAnnexionStickInvocable::class,
+            factory = { uuid -> CampementAnnexionStickInvocable(uuid) }
+        )
+        when (result) {
+            AnnexionStickGiveResult.SUCCESS ->
+                sender.sendMessage(CampementChatFormat + "Tu as reçu un Bâton d'Annexion de campement.")
 
-        val invocable = existing ?: AnnexionStickInvocable(sender.uniqueId).also {
-            equipmentService.add(sender.uniqueId, it)
-        }
-
-        val inv = sender.inventory
-        val hasFreeSlotInHotbar = (0..8).any { inv.getItem(it) == null }
-
-        if (hasFreeSlotInHotbar) {
-            equipmentService.invoke(sender, AnnexionStickInvocable::class.java)
-            sender.sendMessage(CampementChatFormat + "Tu as reçu un Bâton d'Annexion.")
-        } else {
-            val menu = EquipmentMenu(sender, equipmentService)
-            menu.mainHandInvocationMenu(invocable, sender)
+            AnnexionStickGiveResult.OPENED_MENU ->
+                sender.sendMessage(CampementChatFormat + "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
         }
     }
 }

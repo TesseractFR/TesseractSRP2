@@ -11,6 +11,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
 import java.util.*
+import kotlin.math.floor
 
 @Entity
 @Table(name = "t_campements")
@@ -54,7 +55,7 @@ class CampementEntity(
     fun toDomain(): Campement {
         val camp =  Campement(
             id,  campLevel,
-            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), spawnWorld)),
+            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord(floor(spawnX/16).toInt(),floor(spawnZ/16).toInt(), spawnWorld)),
             trustedPlayers.toMutableSet()
         )
         camp.addChunks(listChunks.map { CampementChunk(it.id.toDomain(),camp) }.toSet())

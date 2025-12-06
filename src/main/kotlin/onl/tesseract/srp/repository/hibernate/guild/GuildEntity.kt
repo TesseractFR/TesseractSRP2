@@ -15,6 +15,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
 import java.util.*
+import kotlin.math.floor
 
 @Entity
 @Table(
@@ -68,7 +69,7 @@ class GuildEntity(
     ) {
 
         fun toCoordinate(): Coordinate {
-            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord((spawnX/16).toInt(),(spawnZ/16).toInt(), SrpWorld.GuildWorld.bukkitName))
+            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord(floor(spawnX/16).toInt(),floor(spawnZ/16).toInt(), SrpWorld.GuildWorld.bukkitName))
         }
     }
 
