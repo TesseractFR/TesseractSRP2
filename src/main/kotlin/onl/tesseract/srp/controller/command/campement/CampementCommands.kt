@@ -21,7 +21,6 @@ import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService
 import onl.tesseract.srp.util.*
-import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickGiveResult
 import onl.tesseract.srp.util.equipment.annexionStick.CampementAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -45,9 +44,9 @@ private val NOT_IN_CAMPEMENT_WORLD_MESSAGE =
 class CampementCommands(
     private val campementService: CampementService,
     private val campementBorderService: CampementBorderService,
-    private val annexionStickService: AnnexionStickService,
     private val menuService: MenuService,
     private val teleportService: TeleportationService,
+    private val annexionStickService: AnnexionStickService,
     commandInstanceProvider: SrpCommandInstanceProvider
 ) : CommandContext(commandInstanceProvider) {
 
@@ -233,18 +232,12 @@ class CampementCommands(
     }
 
     @Command(name = "stick", description = "Recevoir un Bâton d'annexion de campement.")
-    fun giveStick(sender: Player) {
-        val result = annexionStickService.giveStick(
-            sender,
+    fun giveCampementStick(sender: Player) {
+        annexionStickService.giveStick(
+            sender.uniqueId,
             CampementAnnexionStickInvocable::class,
-            factory = { uuid -> CampementAnnexionStickInvocable(uuid) }
+            ::CampementAnnexionStickInvocable
         )
-        when (result) {
-            AnnexionStickGiveResult.SUCCESS ->
-                sender.sendMessage(CampementChatFormat + "Tu as reçu un Bâton d'Annexion de campement.")
-
-            AnnexionStickGiveResult.OPENED_MENU ->
-                sender.sendMessage(CampementChatFormat + "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
-        }
     }
+
 }

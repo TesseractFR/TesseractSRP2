@@ -1,35 +1,27 @@
 package onl.tesseract.srp.service.equipment.annexionStick
 
-import onl.tesseract.lib.equipment.EquipmentMenu
 import onl.tesseract.lib.equipment.EquipmentService
-import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickGiveResult
+import onl.tesseract.srp.DomainEventPublisher
+import onl.tesseract.srp.domain.equipment.annexionStick.event.AnnexionStickGivenEvent
 import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickInvocable
-import org.bukkit.entity.Player
 import org.springframework.stereotype.Service
 import kotlin.reflect.KClass
+import java.util.UUID
 
 @Service
 class AnnexionStickService(
-    private val equipmentService: EquipmentService
+    private val equipmentService: EquipmentService,
+    private val eventPublisher: DomainEventPublisher
 ) {
-
     fun <T : AnnexionStickInvocable> giveStick(
-        player: Player,
+        playerId: UUID,
         invocableType: KClass<T>,
-        factory: (playerId: java.util.UUID) -> T
-    ): AnnexionStickGiveResult {
-        val equipment = equipmentService.getEquipment(player.uniqueId)
-        val invocable = equipment.get(invocableType.java) ?: factory(player.uniqueId).also {
-            equipmentService.add(player.uniqueId, it)
+        factory: (UUID) -> T
+    ) {
+        val equipment = equipmentService.getEquipment(playerId)
+        equipment.get(invocableType.java) ?: factory(playerId).also {
+            equipmentService.add(playerId, it)
         }
-        val hasFreeSlotInHotbar = (0..8).any { player.inventory.getItem(it) == null }
-        return if (hasFreeSlotInHotbar) {
-            equipmentService.invoke(player, invocableType.java)
-            AnnexionStickGiveResult.SUCCESS
-        } else {
-            val menu = EquipmentMenu(player, equipmentService)
-            menu.mainHandInvocationMenu(invocable, player)
-            AnnexionStickGiveResult.OPENED_MENU
-        }
+        eventPublisher.publish(AnnexionStickGivenEvent(playerId,invocableType.java))
     }
 }

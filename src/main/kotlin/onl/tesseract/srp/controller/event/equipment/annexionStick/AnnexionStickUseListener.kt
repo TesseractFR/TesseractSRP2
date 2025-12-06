@@ -9,7 +9,7 @@ import org.bukkit.inventory.EquipmentSlot
 import org.springframework.stereotype.Component as SpringComponent
 
 @SpringComponent
-class AnnexionStickListener(
+class AnnexionStickUseListener(
     private val equipmentService: EquipmentService
 ) : Listener {
 

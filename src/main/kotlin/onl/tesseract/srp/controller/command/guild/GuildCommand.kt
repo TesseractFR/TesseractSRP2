@@ -28,7 +28,6 @@ import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.guild.*
 import onl.tesseract.srp.util.*
-import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickGiveResult
 import onl.tesseract.srp.util.equipment.annexionStick.GuildAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -331,17 +330,11 @@ class GuildCommand(
 
     @Command(name = "stick", description = "Recevoir un Bâton d'annexion de guilde.")
     fun giveGuildStick(sender: Player) {
-        val result = annexionStickService.giveStick(
-            sender,
+        annexionStickService.giveStick(
+            sender.uniqueId,
             GuildAnnexionStickInvocable::class,
-            factory = { uuid -> GuildAnnexionStickInvocable(uuid) }
+            ::GuildAnnexionStickInvocable
         )
-        when (result) {
-            AnnexionStickGiveResult.SUCCESS ->
-                sender.sendMessage(GuildChatFormat + "Tu as reçu un Bâton d'Annexion de guilde.")
-
-            AnnexionStickGiveResult.OPENED_MENU ->
-                sender.sendMessage(GuildChatFormat + "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
-        }
     }
+
 }
