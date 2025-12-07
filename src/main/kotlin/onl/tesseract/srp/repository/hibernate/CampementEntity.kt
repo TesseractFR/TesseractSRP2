@@ -1,32 +1,39 @@
 package onl.tesseract.srp.repository.hibernate
 
 import jakarta.persistence.*
-import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.campement.CampementChunk
-import org.bukkit.Bukkit
-import org.bukkit.Location
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
+import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.territory.campement.CampementChunk
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementChunkEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
 import org.hibernate.annotations.CacheConcurrencyStrategy
+import org.hibernate.annotations.JdbcTypeCode
+import java.sql.Types
 import java.util.*
+import kotlin.math.floor
 
 @Entity
 @Table(name = "t_campements")
 @Cacheable
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class CampementEntity(
+
     @Id
-    val ownerID: UUID,
+    @Column(name = "id", length = 36, columnDefinition = "VARCHAR(36)")
+    @JdbcTypeCode(Types.VARCHAR)
+    val id: UUID,
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "t_campements_trusted_players",
-        joinColumns = [JoinColumn(name = "ownerID")]
+        joinColumns = [JoinColumn(name = "id")]
     )
     @Column(name = "trusted_player")
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val trustedPlayers: Set<UUID>,
 
-    @OneToMany(cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumn(name = "owner_id", referencedColumnName = "ownerID")
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "campement", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val listChunks: MutableSet<CampementChunkEntity> = mutableSetOf(),
 
@@ -46,40 +53,28 @@ class CampementEntity(
     val spawnWorld: String
 ) {
     fun toDomain(): Campement {
-        return Campement(
-            ownerID, trustedPlayers, listChunks.map { it.toDomain() }.toSet(), campLevel,
-            Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ)
+        val camp =  Campement(
+            id,  campLevel,
+            Coordinate( spawnX, spawnY, spawnZ, ChunkCoord(floor(spawnX/16).toInt(),floor(spawnZ/16).toInt(), spawnWorld)),
+            trustedPlayers.toMutableSet()
         )
+        camp.addChunks(listChunks.map { CampementChunk(it.id.toDomain(),camp) }.toSet())
+        return camp
     }
 }
 
 fun Campement.toEntity(): CampementEntity {
-    return CampementEntity(
+     val campementEntity = CampementEntity(
         ownerID,
-        trustedPlayers,
-        chunks.map { it.toEntity() }.toMutableSet(),
-        campLevel,
-        spawnLocation.x,
-        spawnLocation.y,
-        spawnLocation.z,
-        spawnLocation.world.name
+        getTrusted().toSet(),
+        campLevel = campLevel,
+        spawnX = getSpawnpoint().x,
+        spawnY = getSpawnpoint().y,
+        spawnZ = getSpawnpoint().z,
+        spawnWorld = getSpawnpoint().chunkCoord.world
     )
+    campementEntity.listChunks.addAll(getChunks().map { it.toEntity(campementEntity) }.toMutableSet())
+    return campementEntity
 }
 
-@Entity
-@Table(name = "t_campement_chunks")
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-data class CampementChunkEntity(
-    @Id
-    val x: Int = 0,
-    @Id
-    val z: Int = 0
-) {
 
-    fun toDomain(): CampementChunk = CampementChunk(x, z)
-}
-
-fun CampementChunk.toEntity(): CampementChunkEntity {
-    return CampementChunkEntity(x, z)
-}

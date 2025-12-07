@@ -11,9 +11,9 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersRoleArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildRankArg
-import onl.tesseract.srp.service.guild.GuildService
-import onl.tesseract.srp.service.guild.KickResult
-import onl.tesseract.srp.service.guild.StaffSetRoleResult
+import onl.tesseract.srp.domain.commun.enum.StaffSetRoleResult
+import onl.tesseract.srp.domain.territory.enum.result.KickResult
+import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.util.*
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
@@ -85,18 +85,21 @@ class GuildStaffCommand(
             @Argument("playerName") playerArg: GuildMembersArg,
             sender: CommandSender
         ) {
+            val guild = guildArg.get()
             val player = Bukkit.getOfflinePlayer(playerArg.get())
-            val res = guildService.kickMemberAsStaff(guildArg.get().id, player.uniqueId)
-            if (KickResult.NotMember == res) {
-                sender.sendMessage(StaffChatError + "Le joueur ${player.name} ne fait pas partie de la guilde.")
-                return
+            val result = guildService.kickMember(guild.leaderId, player.uniqueId)
+            when (result) {
+                KickResult.TERRITORY_NOT_FOUND ->
+                    sender.sendMessage(StaffChatError + "Le joueur ${player.name} ne fait partie d'aucune guilde.")
+                KickResult.NOT_MEMBER ->
+                    sender.sendMessage(StaffChatError + "Le joueur ${player.name} ne fait pas partie de la guilde.")
+                KickResult.CANNOT_KICK_LEADER ->
+                    sender.sendMessage(StaffChatError + "Impossible d'expulser le leader de la guilde. Change son rôle.")
+                KickResult.NOT_ALLOWED ->
+                    sender.sendMessage(StaffChatError + "Tu n'es pas autorisé à expulser ce joueur.")
+                KickResult.SUCCESS ->
+                    sender.sendMessage(StaffChatSuccess + "Opération effectuée - ${player.name} expulsé de la guilde ${guild.name}")
             }
-            else if (KickResult.CannotKickLeader == res) {
-                sender.sendMessage(StaffChatError + "Impossible d'expulser le leader de la guilde. Change son rôle.")
-                return
-            }
-            sender.sendMessage(
-                StaffChatSuccess + "Opération effectuée - ${player.name} expulsé de la guilde ${guildArg.get().name}")
         }
 
         @Command(

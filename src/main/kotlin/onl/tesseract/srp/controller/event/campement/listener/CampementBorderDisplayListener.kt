@@ -1,49 +1,24 @@
 package onl.tesseract.srp.controller.event.campement.listener
 
-import onl.tesseract.srp.controller.event.campement.CampementChunkClaimEvent
-import onl.tesseract.srp.controller.event.campement.CampementChunkUnclaimEvent
-import onl.tesseract.srp.service.campement.CampementBorderRenderer
-import onl.tesseract.srp.service.campement.CampementService
-import org.bukkit.Bukkit
-import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerKickEvent
-import org.bukkit.event.player.PlayerQuitEvent
-import java.util.*
+import onl.tesseract.srp.controller.event.territory.listener.TerritoryBorderDisplayListener
+import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.territory.campement.CampementChunk
+import onl.tesseract.srp.domain.territory.campement.CampementChunkClaimEvent
+import onl.tesseract.srp.domain.territory.campement.CampementChunkUnclaimEvent
+import onl.tesseract.srp.service.territory.campement.CampementBorderService
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
 class CampementBorderDisplayListener(
-    private val borderRenderer: CampementBorderRenderer,
-    private val campementService: CampementService
-) : Listener {
+    campementBorderService: CampementBorderService
+) : TerritoryBorderDisplayListener<CampementChunk, Campement>(campementBorderService) {
 
-    @EventHandler
-    fun onChunkClaim(event: CampementChunkClaimEvent) {
+    @EventListener
+    fun onChunkClaim(event: CampementChunkClaimEvent) =
         updateBorders(event.playerId)
-    }
 
-    @EventHandler
-    fun onChunkUnclaim(event: CampementChunkUnclaimEvent) {
+    @EventListener
+    fun onChunkUnclaim(event: CampementChunkUnclaimEvent) =
         updateBorders(event.playerId)
-    }
-
-    @EventHandler
-    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player)
-
-    @EventHandler
-    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
-
-    private fun updateBorders(playerId: UUID) {
-        val player = Bukkit.getPlayer(playerId)
-        val campement = campementService.getCampementByOwner(playerId)
-        if (player != null && campement != null && borderRenderer.isShowingBorders(player)) {
-            borderRenderer.showBorders(
-                player,
-                campement.chunks.map { listOf(it.x, it.z) }
-            )
-        }
-    }
-
 }
-

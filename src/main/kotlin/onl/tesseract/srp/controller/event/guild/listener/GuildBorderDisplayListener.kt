@@ -1,40 +1,24 @@
 package onl.tesseract.srp.controller.event.guild.listener
 
-import onl.tesseract.srp.controller.event.guild.GuildChunkClaimEvent
-import onl.tesseract.srp.controller.event.guild.GuildChunkUnclaimEvent
-import onl.tesseract.srp.service.guild.GuildBorderRenderer
-import onl.tesseract.srp.service.guild.GuildService
-import org.bukkit.Bukkit
-import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerKickEvent
-import org.bukkit.event.player.PlayerQuitEvent
+import onl.tesseract.srp.controller.event.territory.listener.TerritoryBorderDisplayListener
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
+import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
+import onl.tesseract.srp.service.territory.guild.GuildBorderService
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
 class GuildBorderDisplayListener(
-    private val borderRenderer: GuildBorderRenderer,
-    private val guildService: GuildService
-) : Listener {
+    guildBorderService: GuildBorderService
+) : TerritoryBorderDisplayListener<GuildChunk, Guild>(guildBorderService) {
 
-    @EventHandler
-    fun onChunkClaim(event: GuildChunkClaimEvent) = updateBorders(event.playerId)
+    @EventListener
+    fun onChunkClaim(event: GuildChunkClaimEvent) =
+        updateBorders(event.playerId)
 
-    @EventHandler
-    fun onChunkUnclaim(event: GuildChunkUnclaimEvent) = updateBorders(event.playerId)
-
-    @EventHandler
-    fun onQuit(event: PlayerQuitEvent) = borderRenderer.clearBorders(event.player)
-
-    @EventHandler
-    fun onKick(event: PlayerKickEvent) = borderRenderer.clearBorders(event.player)
-
-    private fun updateBorders(playerId: java.util.UUID) {
-        val player = Bukkit.getPlayer(playerId)
-        val guild = guildService.getGuildByMember(playerId)
-        if (player != null && guild != null && borderRenderer.isShowingBorders(player)) {
-            borderRenderer.showBorders(player, guild.chunks)
-        }
-    }
-
+    @EventListener
+    fun onChunkUnclaim(event: GuildChunkUnclaimEvent) =
+        updateBorders(event.playerId)
 }

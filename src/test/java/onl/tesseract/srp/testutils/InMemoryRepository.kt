@@ -1,11 +1,12 @@
 package onl.tesseract.srp.testutils
 
 import onl.tesseract.lib.repository.Repository
-import onl.tesseract.srp.domain.campement.Campement
-import onl.tesseract.srp.domain.guild.Guild
-import onl.tesseract.srp.domain.guild.GuildChunk
-import onl.tesseract.srp.domain.guild.GuildRole
+import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.player.SrpPlayer
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
@@ -28,12 +29,12 @@ class SrpPlayerInMemoryRepository : SrpPlayerRepository, InMemoryRepository<SrpP
     override fun idOf(entity: SrpPlayer): UUID = entity.uniqueId
 }
 
-class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>() {
+class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, UUID>() {
 
-    override fun idOf(entity: Guild): Int = entity.id
+    override fun idOf(entity: Guild): UUID = entity.id
 
     override fun findGuildByChunk(chunk: GuildChunk): Guild? {
-        return elements.values.find { chunk in it.chunks }
+        return elements.values.find { chunk in it.getChunks() }
     }
 
     override fun findGuildByName(name: String): Guild? {
@@ -57,7 +58,7 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
 
     override fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean {
         return elements.values.any { guild ->
-            chunks.any { guild.chunks.contains(it) }
+            chunks.any { guild.getChunks().contains(it) }
         }
     }
 
@@ -65,32 +66,18 @@ class GuildInMemoryRepository : GuildRepository, InMemoryRepository<Guild, Int>(
         return elements.values
     }
 
-    override fun deleteById(id: Int) {
+    override fun deleteById(id: UUID) {
         elements.remove(id)
     }
 
     override fun save(entity: Guild): Guild {
-        val newId = if (entity.id == -1) (elements.keys.maxOrNull() ?: 0) + 1 else entity.id
-        val saved = Guild(
-            id = newId,
-            name = entity.name,
-            spawnLocation = entity.spawnLocation,
-            money = entity.money,
-            moneyLedgerID = entity.moneyLedgerID,
-            chunks = entity.chunks,
-            memberContainer = onl.tesseract.srp.domain.guild.GuildMemberContainerImpl(
-                entity.leaderId,
-                entity.members,
-                entity.invitations,
-                entity.joinRequests
-            ),
-            visitorSpawnLocation = entity.visitorSpawnLocation,
-            level = entity.level,
-            xp = entity.xp,
-            rank = entity.rank
-        )
-        elements[newId] = saved
-        return saved
+        val newId = UUID.randomUUID()
+        elements[newId] = entity
+        return entity
+    }
+
+    override fun findnByPlayer(player: UUID): Guild? {
+        return elements.values.find { g -> g.members.any { it.playerID == player } }
     }
 }
 
@@ -102,11 +89,17 @@ class CampementInMemoryRepository : CampementRepository, InMemoryRepository<Camp
         elements.remove(id)
     }
 
-    override fun isChunkClaimed(x: Int, z: Int): Boolean =
-        elements.values.any { camp -> camp.chunks.any { it.x == x && it.z == z } }
+    override fun isChunkClaimed(chunkCoord: ChunkCoord): Boolean {
+        return elements.values.any { camp -> camp.getChunks().any { it.chunkCoord == chunkCoord } }
+    }
 
-    override fun getCampementByChunk(x: Int, z: Int): Campement? =
-        elements.values.firstOrNull { camp -> camp.chunks.any { it.x == x && it.z == z } }
+    override fun getCampementByChunk(chunkCoord: ChunkCoord): Campement? {
+        return elements.values.firstOrNull { camp -> camp.getChunks().any { it.chunkCoord == chunkCoord } }
+    }
+
 
     override fun findAll(): List<Campement> = elements.values.toList()
+    override fun findnByPlayer(player: UUID): Campement? {
+        return elements[player]
+    }
 }
