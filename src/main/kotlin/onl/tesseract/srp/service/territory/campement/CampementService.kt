@@ -35,6 +35,12 @@ open class CampementService(
     }
 
     override fun isCorrectWorld(worldName: String): Boolean = SrpWorld.Elysea.bukkitName == worldName
+    override fun getByChunk(chunkCoord: ChunkCoord): Campement? {
+        val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
+        val owner = territoryChunk.getOwner()
+        if(owner !is Campement) return null
+        return owner as? Campement?
+    }
 
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Deny
@@ -45,14 +51,6 @@ open class CampementService(
 
     open fun getCampementByOwner(ownerID: UUID): Campement? {
         return territoryRepository.getById(ownerID)
-    }
-
-    open fun getCampementByChunk(chunk: ChunkCoord) : Campement? {
-        return try{
-            getByChunk(chunk)
-        }catch (_ : Exception){
-            null
-        }
     }
 
     open fun getAllCampements(): List<Campement> = territoryRepository.findAll()

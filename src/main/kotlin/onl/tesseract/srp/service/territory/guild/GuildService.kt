@@ -4,23 +4,19 @@ import jakarta.annotation.PostConstruct
 import jakarta.transaction.Transactional
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.DomainEventPublisher
-import onl.tesseract.srp.domain.commun.enum.*
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
+import onl.tesseract.srp.domain.commun.enum.StaffSetRoleResult
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
-import onl.tesseract.srp.domain.commun.ChunkCoord
-import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.enum.CreationResult
 import onl.tesseract.srp.domain.territory.enum.KickResult
 import onl.tesseract.srp.domain.territory.enum.LeaveResult
 import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
-import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
-import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
-import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
-import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
-import onl.tesseract.srp.domain.territory.guild.enum.GuildUpgradeResult
+import onl.tesseract.srp.domain.territory.guild.enum.*
 import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
 import onl.tesseract.srp.domain.territory.guild.event.GuildLevelUpEvent
 import onl.tesseract.srp.domain.world.SrpWorld
@@ -30,7 +26,8 @@ import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.territory.TerritoryService
-import onl.tesseract.srp.util.*
+import onl.tesseract.srp.util.InteractionAllowResult
+import onl.tesseract.srp.util.compareTo
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -54,6 +51,13 @@ open class GuildService(
     override fun isCorrectWorld(worldName: String): Boolean =
         SrpWorld.GuildWorld.bukkitName == worldName
 
+    override fun getByChunk(chunkCoord: ChunkCoord): Guild? {
+        val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
+        val owner = territoryChunk.getOwner()
+        if(owner !is Guild) return null
+        return owner
+    }
+
     override fun interactionOutcomeWhenNoOwner(): InteractionAllowResult =
         InteractionAllowResult.Ignore
 
@@ -71,13 +75,6 @@ open class GuildService(
     open fun getAllGuilds(): Collection<Guild> = territoryRepository.findAll()
     open fun getGuildByLeader(leaderId: UUID) = territoryRepository.findGuildByLeader(leaderId)
     open fun getGuildByMember(memberId: UUID) = territoryRepository.findGuildByMember(memberId)
-    open fun getGuildByChunk(chunk: ChunkCoord) : Guild? {
-        return try{
-            getByChunk(chunk)
-        }catch (_ : Exception){
-            null
-        }
-    }
     open fun getMemberRole(playerID: UUID): GuildRole? = territoryRepository.findMemberRole(playerID)
 
     @Transactional

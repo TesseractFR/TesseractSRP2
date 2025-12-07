@@ -26,7 +26,7 @@ class GuildProtectionListener(
     }
 
     override fun getProtectionMessage(chunk: Chunk): Component {
-        val guild = guildService.getGuildByChunk(chunk.toChunkCoord())
+        val guild = guildService.getByChunk(chunk.toChunkCoord())
         require(guild != null) {
         }
         val guildName = guild.name

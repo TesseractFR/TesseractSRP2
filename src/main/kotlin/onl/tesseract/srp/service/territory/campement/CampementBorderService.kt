@@ -11,7 +11,5 @@ import org.springframework.stereotype.Component
 open class CampementBorderService(
     override val scheduler: TerritoryBorderTaskScheduler,
     override val territoryService: CampementService,
-) : TerritoryBorderService<CampementChunk, Campement>() {
-    override val worldName: String = SrpWorld.Elysea.bukkitName
-}
+) : TerritoryBorderService<CampementChunk, Campement>()
 

@@ -11,7 +11,6 @@ abstract class TerritoryBorderService<TC : TerritoryChunk, T : Territory<TC>>{
 
     protected abstract val scheduler: TerritoryBorderTaskScheduler
     protected abstract val territoryService: TerritoryService<TC,T>
-    protected abstract val worldName: String
 
     /**
      * Toggles the display of camp borders for a player.
@@ -20,7 +19,7 @@ abstract class TerritoryBorderService<TC : TerritoryChunk, T : Territory<TC>>{
      * @param currentWorld The name of the world the player is currently in.
      */
     fun toggleBorders(playerId: UUID, currentWorld: String): BorderResult {
-        if (currentWorld != worldName) { return BorderResult.INVALID_WORLD }
+        if (!territoryService.isCorrectWorld(currentWorld)) { return BorderResult.INVALID_WORLD }
         territoryService.getByPlayer(playerId)
             ?: return BorderResult.TERRITORY_NOT_FOUND
         return if (isShowingBorders(playerId)) {

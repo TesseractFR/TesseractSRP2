@@ -49,8 +49,8 @@ open class TerritoryDisplayListener(private val campementService: CampementServi
     }
 
     open fun updatePlayerDisplay(player: Player, toChunkCoord: ChunkCoord) {
-        val campement: Campement? = campementService.getCampementByChunk(toChunkCoord)
-        val guild: Guild? = guildService.getGuildByChunk(toChunkCoord)
+        val campement: Campement? = campementService.getByChunk(toChunkCoord)
+        val guild: Guild? = guildService.getByChunk(toChunkCoord)
         val territory: UUID? = campement?.id ?: guild?.id
         if (territory == null) {
             if (lastTerritory.keys.contains(player.uniqueId)) {

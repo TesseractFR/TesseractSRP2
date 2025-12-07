@@ -23,7 +23,7 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      * Permet de savoir si le monde est correct pour une location donnée.
      * @param worldName La position à valider
      */
-    protected abstract fun isCorrectWorld(worldName: String): Boolean
+    abstract fun isCorrectWorld(worldName: String): Boolean
 
     /**
      * Permet de savoir si un chunk est déjà occupé par un territoire.
@@ -43,18 +43,7 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
     /**
      * Retourne le territoire qui possède ce chunkCoord.
      */
-     fun getByChunk(chunkCoord: ChunkCoord): T? {
-        val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
-        val owner = territoryChunk.getOwner()
-        return try {
-            @Suppress("UNCHECKED_CAST")
-            owner as T
-        } catch (_: Exception) {
-            null
-        }catch (_ : java.lang.Exception){
-            null
-        }
-    }
+    abstract fun getByChunk(chunkCoord: ChunkCoord): T?
 
     /**
      * Retourne le territoire qui possède ce chunkCoord.

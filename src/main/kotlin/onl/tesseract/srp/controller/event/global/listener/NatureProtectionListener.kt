@@ -26,7 +26,7 @@ class NatureProtectionListener(
 ) : ChunkProtectionListener() {
     override fun hasProcessingResponsibility(chunk: Chunk): Boolean {
         val noCamp = campementService.getByChunk(chunk.toChunkCoord()) == null
-        val noGuild = guildService.getGuildByChunk(chunk.toChunkCoord()) == null
+        val noGuild = guildService.getByChunk(chunk.toChunkCoord()) == null
         return (noCamp && noGuild)
     }
 
