@@ -37,10 +37,7 @@ private val NEUTRAL_INTERACTABLES = setOf(
     Material.ENCHANTING_TABLE
 )
 
-abstract class ChunkProtectionListener(
-    private val playerUtils: PlayerUtils,
-    private val entityUtils: EntityUtils
-) : Listener {
+abstract class ChunkProtectionListener : Listener {
     protected abstract fun hasProcessingResponsibility(chunk: Chunk) : Boolean
     protected abstract fun getProtectionMessage(chunk: Chunk): Component
     protected abstract fun canPlaceBlock(player: Player,block: Block) : Boolean
@@ -120,7 +117,7 @@ abstract class ChunkProtectionListener(
         val victim = event.entity
         if (victim !is LivingEntity || victim is Player || victim is Monster) return
         if (!hasProcessingResponsibility(victim.chunk)) return
-        val player = playerUtils.asPlayer(event.damager)
+        val player = PlayerUtils.asPlayer(event.damager)
         if (player != null && !canDamagePassiveEntity(player, victim)) {
             deny(player, victim.chunk, event)
         }
@@ -175,7 +172,7 @@ abstract class ChunkProtectionListener(
     fun onIgnite(event: BlockIgniteEvent) {
         val chunk = event.block.chunk
         if (!hasProcessingResponsibility(chunk)) return
-        val player = playerUtils.asPlayer(event.ignitingEntity)
+        val player = PlayerUtils.asPlayer(event.ignitingEntity)
         val allowed = handleIgnitionDecision(
             block = event.block,
             player = player,
@@ -192,7 +189,7 @@ abstract class ChunkProtectionListener(
         val chunk = block.chunk
         if (!hasProcessingResponsibility(chunk)) return
 
-        val player = playerUtils.asPlayer(event.primingEntity)
+        val player = PlayerUtils.asPlayer(event.primingEntity)
         val cause = when (event.cause) {
             TNTPrimeEvent.PrimeCause.FIRE        -> BlockIgniteEvent.IgniteCause.SPREAD
             TNTPrimeEvent.PrimeCause.REDSTONE    -> BlockIgniteEvent.IgniteCause.SPREAD
@@ -204,7 +201,7 @@ abstract class ChunkProtectionListener(
         }
         val allowed = handleIgnitionDecision(
             block = block,
-            player = playerUtils.asPlayer(event.primingEntity),
+            player = PlayerUtils.asPlayer(event.primingEntity),
             naturalCause = cause
         )
         if (!allowed) {
@@ -275,7 +272,7 @@ abstract class ChunkProtectionListener(
     @EventHandler(ignoreCancelled = true)
     fun onPlayerSaddleEntity(event: PlayerInteractEntityEvent) {
         val entity = event.rightClicked
-        if (!hasProcessingResponsibility(entity.location.chunk) || !entityUtils.isSaddlable(entity)) return
+        if (!hasProcessingResponsibility(entity.location.chunk) || !EntityUtils.isSaddlable(entity)) return
 
         val itemMain = event.player.inventory.itemInMainHand
         val itemOff  = event.player.inventory.itemInOffHand
@@ -292,7 +289,7 @@ abstract class ChunkProtectionListener(
         val passenger = event.entity
         val mount = event.mount
         if (passenger !is Player || !hasProcessingResponsibility(mount.location.chunk)
-            || !entityUtils.isLivingMount(mount)) return
+            || !EntityUtils.isLivingMount(mount)) return
         if (!canMountEntity(passenger, mount)) {
             deny(passenger, mount.location.chunk, event)
         }
@@ -310,7 +307,7 @@ abstract class ChunkProtectionListener(
     }
 
     private fun handleVehicleBreak(attacker: Entity?, vehicle: Vehicle, event: Cancellable) {
-        val player = playerUtils.asPlayer(attacker) ?: return
+        val player = PlayerUtils.asPlayer(attacker) ?: return
         if (!hasProcessingResponsibility(vehicle.location.chunk)) return
         if (!canBreakVehicle(player, vehicle)) {
             deny(player, vehicle.location.chunk, event)
@@ -333,7 +330,7 @@ abstract class ChunkProtectionListener(
         val chunk = hanging.location.chunk
         if (!hasProcessingResponsibility(chunk)) return
         val byEntity = event as? HangingBreakByEntityEvent
-        val player = playerUtils.asPlayer(byEntity?.remover)
+        val player = PlayerUtils.asPlayer(byEntity?.remover)
         if (byEntity == null || player == null) return
         if (!canBreakHanging(player, hanging)) {
             deny(player, chunk, event)
@@ -344,7 +341,7 @@ abstract class ChunkProtectionListener(
     fun onHitItemFrame(event: EntityDamageByEntityEvent) {
         val frame = event.entity as? ItemFrame ?: return
         val chunk = frame.location.chunk
-        val player = playerUtils.asPlayer(event.damager)
+        val player = PlayerUtils.asPlayer(event.damager)
         if (player == null || !hasProcessingResponsibility(chunk)) {
             return
         }
@@ -482,7 +479,7 @@ abstract class ChunkProtectionListener(
         val stand = event.entity as? ArmorStand ?: return
         val chunk = stand.location.chunk
         if (!hasProcessingResponsibility(chunk)) return
-        val player = playerUtils.asPlayer(event.damager)
+        val player = PlayerUtils.asPlayer(event.damager)
         if (player == null || !canBreakArmorStand(player, stand)) {
             deny(player, chunk, event)
         }

@@ -23,4 +23,7 @@ commands:
   missions:
     description: Ouvre le menu des job missions
   guild:
+    permission: guild
     description: Gestion de guilde
+    aliases:
+      - g

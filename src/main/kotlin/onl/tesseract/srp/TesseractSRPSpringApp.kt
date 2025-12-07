@@ -60,6 +60,7 @@ open class TesseractSRPSpringApp {
         jpaProperties.setProperty("hibernate.generate_statistics", "false")
         jpaProperties.setProperty("hibernate.cache.use_second_level_cache", "true")
         jpaProperties.setProperty("hibernate.cache.use_query_cache", "true")
+        jpaProperties.setProperty("hibernate.javax.cache.missing_cache_strategy", "create")
         build.setJpaProperties(jpaProperties)
         return build
     }

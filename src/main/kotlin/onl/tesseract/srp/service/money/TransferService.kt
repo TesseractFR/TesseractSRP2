@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional
 import onl.tesseract.srp.domain.money.ledger.Ledger
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
-import onl.tesseract.srp.service.guild.GuildService
+import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.service.player.SrpPlayerService
 import org.springframework.stereotype.Service
 import java.util.*
@@ -70,11 +70,11 @@ open class TransferService(private val moneyLedgerService: MoneyLedgerService) {
             moneyTransaction(playerID, amount, this@TransferTransactionBuilder)
         }
 
-        fun GuildService.fromGuild(guildID: Int) {
+        fun GuildService.fromGuild(guildID: UUID) {
             moneyTransaction(guildID, -amount, this@TransferTransactionBuilder)
         }
 
-        fun GuildService.toGuild(guildID: Int) {
+        fun GuildService.toGuild(guildID: UUID) {
             moneyTransaction(guildID, amount, this@TransferTransactionBuilder)
         }
 

@@ -1,27 +1,40 @@
 package onl.tesseract.srp.repository.hibernate.guild
 
+import jakarta.persistence.AttributeOverride
+import jakarta.persistence.AttributeOverrides
 import jakarta.persistence.CascadeType
+import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Embeddable
 import jakarta.persistence.Embedded
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
+import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
-import onl.tesseract.srp.domain.campement.CampementChunk
-import onl.tesseract.srp.domain.guild.Guild
-import onl.tesseract.srp.domain.guild.GuildMember
-import onl.tesseract.srp.domain.guild.GuildMemberContainerImpl
-import onl.tesseract.srp.domain.guild.GuildRole
-import org.bukkit.Bukkit
-import org.bukkit.Location
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.domain.commun.Coordinate
+import onl.tesseract.srp.domain.territory.guild.Guild
+import onl.tesseract.srp.domain.territory.guild.GuildChunk
+import onl.tesseract.srp.domain.territory.guild.GuildMember
+import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
 import org.hibernate.annotations.CacheConcurrencyStrategy
+import org.hibernate.annotations.JdbcTypeCode
+import java.sql.Types
 import java.util.*
+import kotlin.math.floor
+
+private const val CHUNK_SIZE = 16
 
 @Entity
 @Table(
@@ -32,69 +45,74 @@ import java.util.*
 @Suppress("LongParameterList")
 class GuildEntity(
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int,
+    @Column(name = "id", length = 36, columnDefinition = "VARCHAR(36)")
+    @JdbcTypeCode(Types.VARCHAR)
+    val id: UUID,
+    @Column(unique = true)
     val name: String,
     val leaderId: UUID,
     val money: Int,
     val ledgerId: UUID,
     @Embedded
     val spawnLocation: SpawnLocationEntity,
-    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", fetch = FetchType.EAGER)
+    @Embedded
+    @AttributeOverrides(
+        AttributeOverride(name = "spawnX",    column = Column(name = "visitor_spawn_x")),
+        AttributeOverride(name = "spawnY",    column = Column(name = "visitor_spawn_y")),
+        AttributeOverride(name = "spawnZ",    column = Column(name = "visitor_spawn_z")),
+    )
+    val visitorSpawn: SpawnLocationEntity,
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    val chunks: MutableSet<GuildCityChunkEntity>,
-    @OneToMany(mappedBy = "guildID", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
+    val chunks: MutableSet<GuildChunkEntity>,
+    @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection(fetch = FetchType.EAGER)
     val invitations: Set<UUID>,
     @ElementCollection(fetch = FetchType.EAGER)
     val joinRequests: Set<UUID>,
+    @Column(nullable = false)
+    val level: Int = 1,
+    @Column(nullable = false)
+    val xp: Int = 0,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "guild_rank", nullable = false)
+    val rank: GuildRank = GuildRank.HAMEAU,
 ) {
 
     @Embeddable
     class SpawnLocationEntity(
-        val spawnX: Int,
-        val spawnY: Int,
-        val spawnZ: Int,
+        val spawnX: Double,
+        val spawnY: Double,
+        val spawnZ: Double,
     ) {
 
-        fun toLocation(): Location {
-            return Location(Bukkit.getWorld("guildWorld"), spawnX.toDouble(), spawnY.toDouble(), spawnZ.toDouble())
+        fun toCoordinate(): Coordinate {
+            return Coordinate(spawnX,spawnY,spawnZ,
+                ChunkCoord(
+                    floor(spawnX/CHUNK_SIZE).toInt(),
+                    floor(spawnZ/CHUNK_SIZE).toInt(),
+                    SrpWorld.GuildWorld.bukkitName
+                )
+            )
         }
     }
 
     fun toDomain(): Guild {
-        return Guild(
+        val guild = Guild(
             id,
             name,
-            spawnLocation.toLocation(),
+            spawnLocation.toCoordinate(),
             money,
             ledgerId,
-            chunks.map { it.toDomain() }.toSet(),
-            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests)
+            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests),
+            visitorSpawnLocation = visitorSpawn.toCoordinate(),
+            level = level,
+            xp = xp,
+            rank = rank
         )
-    }
-}
-
-@Entity
-@Table(name = "t_city_chunks")
-class GuildCityChunkEntity(
-    @Id
-    val coordinates: String,
-    @ManyToOne(fetch = FetchType.LAZY)
-    val guild: GuildEntity? = null,
-) {
-
-    constructor(x: Int, z: Int): this("$x,$z")
-
-    fun splitCoordinates(): Pair<Int, Int> {
-        val parts = coordinates.split(",")
-        return parts[0].toInt() to parts[1].toInt()
-    }
-
-    fun toDomain(): CampementChunk {
-        val (x, z) = splitCoordinates()
-        return CampementChunk(x, z)
+        guild.addChunks(chunks.map { GuildChunk(it.id.toDomain(),guild) }.toSet())
+        return guild
     }
 }
 
@@ -107,26 +125,37 @@ class GuildCityChunkEntity(
 class GuildMemberEntity(
     @Id
     val playerID: UUID,
-    val guildID: Int,
     val role: GuildRole,
 ) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guildID")
+    lateinit var guild: GuildEntity
 
     fun toDomain(): GuildMember = GuildMember(playerID, role)
 }
 
 fun Guild.toEntity(): GuildEntity {
-    return GuildEntity(
-        id,
-        name,
-        leaderId,
-        money,
-        moneyLedgerID,
-        GuildEntity.SpawnLocationEntity(spawnLocation.blockX, spawnLocation.blockY, spawnLocation.blockZ),
-        chunks.map { GuildCityChunkEntity(it.x, it.z) }.toMutableSet(),
-        members = members.map { it.toEntity(id) }.toMutableList(),
-        invitations = this.invitations,
-        joinRequests = this.joinRequests,
+    val entity = GuildEntity(
+        id = id,
+        name = name,
+        leaderId = leaderId,
+        money = money,
+        ledgerId = moneyLedgerID,
+        spawnLocation = getSpawnpoint().let { GuildEntity.SpawnLocationEntity(
+            it.x, it.y, it.z)},
+        visitorSpawn = getVisitorSpawnpoint().let {
+            GuildEntity.SpawnLocationEntity(it.x, it.y, it.z)
+        },
+        chunks = mutableSetOf(),
+        members = mutableListOf(),
+        invitations = invitations,
+        joinRequests = joinRequests,
+        level = level,
+        xp = xp,
+        rank = rank
     )
+    entity.chunks.addAll(this.getChunks().map { c -> c.toEntity(entity) })
+    entity.members.addAll(this.members.map { m -> GuildMemberEntity(m.playerID, m.role).apply { guild = entity } })
+    return entity
 }
 
-fun GuildMember.toEntity(guildId: Int): GuildMemberEntity = GuildMemberEntity(playerID, guildId, role)

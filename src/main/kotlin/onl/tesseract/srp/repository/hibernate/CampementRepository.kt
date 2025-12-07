@@ -1,24 +1,24 @@
 package onl.tesseract.srp.repository.hibernate
 
-import jakarta.persistence.QueryHint
-import onl.tesseract.lib.repository.Repository
-import onl.tesseract.srp.domain.campement.Campement
-import org.hibernate.jpa.HibernateHints
+import onl.tesseract.srp.domain.territory.campement.Campement
+import onl.tesseract.srp.domain.territory.campement.CampementChunk
+import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
+import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
-import org.springframework.data.jpa.repository.QueryHints
 import org.springframework.stereotype.Component
 import java.util.*
 
-interface CampementRepository : Repository<Campement, UUID> {
+interface CampementRepository : TerritoryRepository<Campement, UUID> {
     fun deleteById(id: UUID)
-    fun isChunkClaimed(x: Int, z: Int): Boolean
-    fun getCampementByChunk(x: Int, z: Int): Campement?
+    fun isChunkClaimed(chunkCoord: ChunkCoord): Boolean
+    fun getCampementByChunk(chunkCoord: ChunkCoord): Campement?
     fun findAll(): List<Campement>
 }
 
 @Component
-class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository) : CampementRepository {
+class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository,
+    private val territoryChunkRepository: TerritoryChunkRepository) : CampementRepository {
 
     override fun getById(id: UUID): Campement? {
         return jpaRepo.findById(id)
@@ -38,26 +38,24 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository)
         jpaRepo.deleteById(id)
     }
 
-    override fun isChunkClaimed(x: Int, z: Int): Boolean {
-        return jpaRepo.isChunkClaimed(x, z)
+    override fun isChunkClaimed(chunkCoord: ChunkCoord): Boolean {
+        return territoryChunkRepository.getById(chunkCoord)!=null
     }
 
-    override fun getCampementByChunk(x: Int, z: Int): Campement? {
-        return jpaRepo.findByListChunksContains(CampementChunkEntity(x, z))?.toDomain()
+    override fun getCampementByChunk(chunkCoord: ChunkCoord): Campement? {
+        return territoryChunkRepository.findByIdAndType(chunkCoord, CampementChunk::class.java)?.campement
     }
 
     override fun findAll(): List<Campement> {
         return jpaRepo.findAll().map { it.toDomain() }
     }
 
+    override fun findnByPlayer(player: UUID): Campement? {
+        return getById(player)
+    }
+
 }
 
 @org.springframework.stereotype.Repository
-interface CampementJpaRepository : JpaRepository<CampementEntity, UUID> {
-    @QueryHints(QueryHint(name = HibernateHints.HINT_CACHEABLE, value = "true"))
-    fun findByListChunksContains(chunk: CampementChunkEntity): CampementEntity?
-
-    @Query("SELECT exists(FROM CampementChunkEntity c WHERE c.x = :x AND c.z = :z)")
-    fun isChunkClaimed(x: Int, z: Int): Boolean
-}
+interface CampementJpaRepository : JpaRepository<CampementEntity, UUID>
 

@@ -26,3 +26,23 @@ val CampementChatFormat: Component = empty().color(NamedTextColor.GRAY)
     )
 val CampementChatError: Component = CampementChatFormat.color(NamedTextColor.RED)
 val CampementChatSuccess: Component = CampementChatFormat.color(NamedTextColor.GREEN)
+
+val GuildChatFormat: Component = empty().color(NamedTextColor.GRAY)
+    .append(
+        empty()
+            .append("[", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+            .append("Guilde", NamedTextColor.LIGHT_PURPLE)
+            .append("] ", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+    )
+val GuildChatError: Component = GuildChatFormat.color(NamedTextColor.RED)
+val GuildChatSuccess: Component = GuildChatFormat.color(NamedTextColor.GREEN)
+
+val StaffChatFormat: Component = empty().color(NamedTextColor.GRAY)
+    .append(
+        empty()
+            .append("[", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+            .append("Staff", NamedTextColor.RED)
+            .append("] ", NamedTextColor.DARK_RED, TextDecoration.BOLD)
+    )
+val StaffChatError: Component = StaffChatFormat.color(NamedTextColor.RED)
+val StaffChatSuccess: Component = StaffChatFormat.color(NamedTextColor.GREEN)
