@@ -15,15 +15,13 @@ class AnnexionStickUseListener(
 
     @EventHandler(ignoreCancelled = true)
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        val hand = event.hand ?: return
-        if (hand != EquipmentSlot.HAND) return
-        val item = event.item ?: return
+        if (event.hand != EquipmentSlot.HAND || event.item == null) return
         val equipment = equipmentService.getEquipment(event.player.uniqueId)
         val invocable = equipment.invocables
             .filterIsInstance<AnnexionStickInvocable>()
             .firstOrNull { invocable ->
                 invocable.isInvoked &&
-                        invocable.material == item.type &&
+                        invocable.material == event.item!!.type &&
                         event.player.inventory.heldItemSlot == invocable.handSlot
             }
         invocable?.use(event)

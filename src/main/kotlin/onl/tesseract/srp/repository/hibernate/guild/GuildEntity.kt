@@ -7,6 +7,7 @@ import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.GuildMember
 import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
@@ -16,6 +17,8 @@ import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
 import java.util.*
 import kotlin.math.floor
+
+private const val CHUNK_SIZE = 16
 
 @Entity
 @Table(
@@ -58,7 +61,7 @@ class GuildEntity(
     val xp: Int = 0,
     @Enumerated(EnumType.STRING)
     @Column(name = "guild_rank", nullable = false)
-    val rank: onl.tesseract.srp.domain.territory.guild.enum.GuildRank = onl.tesseract.srp.domain.territory.guild.enum.GuildRank.HAMEAU,
+    val rank: GuildRank = GuildRank.HAMEAU,
 ) {
 
     @Embeddable
@@ -69,7 +72,13 @@ class GuildEntity(
     ) {
 
         fun toCoordinate(): Coordinate {
-            return Coordinate(spawnX,spawnY,spawnZ, ChunkCoord(floor(spawnX/16).toInt(),floor(spawnZ/16).toInt(), SrpWorld.GuildWorld.bukkitName))
+            return Coordinate(spawnX,spawnY,spawnZ,
+                ChunkCoord(
+                    floor(spawnX/CHUNK_SIZE).toInt(),
+                    floor(spawnZ/CHUNK_SIZE).toInt(),
+                    SrpWorld.GuildWorld.bukkitName
+                )
+            )
         }
     }
 

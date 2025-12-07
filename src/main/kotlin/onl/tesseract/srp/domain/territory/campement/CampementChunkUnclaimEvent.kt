@@ -5,5 +5,4 @@ import java.util.*
 
 class CampementChunkUnclaimEvent(
     playerId: UUID
-) : TerritoryUnclaimEvent<CampementChunk>(playerId) {
-}
+) : TerritoryUnclaimEvent<CampementChunk>(playerId)

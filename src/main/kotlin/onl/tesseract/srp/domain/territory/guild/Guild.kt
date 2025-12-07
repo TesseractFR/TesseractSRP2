@@ -24,7 +24,9 @@ class Guild(
     var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
     val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation)
-) : GuildMemberContainer by memberContainer, VisitorSpawnContainer by visitorSpawnContainer, Territory<GuildChunk>(id,spawnLocation) {
+) : GuildMemberContainer by memberContainer,
+    VisitorSpawnContainer by visitorSpawnContainer,
+    Territory<GuildChunk>(id,spawnLocation) {
 
     var money: Int = money
 

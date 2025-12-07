@@ -14,6 +14,8 @@ import org.bukkit.Bukkit
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component as SpringComponent
 
+private const val MAX_SLOT_NUMBER = 8
+
 @SpringComponent
 class AnnexionStickGivenListener(
     private val equipmentService: EquipmentService
@@ -21,11 +23,13 @@ class AnnexionStickGivenListener(
 
     @EventListener
     fun onAnnexionStickGiven(event: AnnexionStickGivenEvent) {
-        val player = Bukkit.getPlayer(event.playerId) ?: return
+        val player = Bukkit.getPlayer(event.playerId)
         val equipment = equipmentService.getEquipment(event.playerId)
-        val invocable = equipment.get(event.invocableType) ?: return
-        val (chatPrefix, stickLabel) = resolveContext(invocable) ?: return
-        val hasFreeSlotInHotbar = (0..8).any { slot ->
+        val invocable = equipment.get(event.invocableType)
+        val context = invocable?.let { resolveContext(it) }
+        if (player == null || invocable == null || context == null) return
+        val (chatPrefix, stickLabel) = context
+        val hasFreeSlotInHotbar = (0..MAX_SLOT_NUMBER).any { slot ->
             player.inventory.getItem(slot) == null
         }
         if (hasFreeSlotInHotbar) {
@@ -34,7 +38,8 @@ class AnnexionStickGivenListener(
         } else {
             val menu = EquipmentMenu(player, equipmentService)
             menu.mainHandInvocationMenu(invocable, player)
-            player.sendMessage(chatPrefix + "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
+            player.sendMessage(chatPrefix +
+                    "Ton inventaire est plein, choisis un emplacement dans le menu d'équipement.")
         }
     }
 

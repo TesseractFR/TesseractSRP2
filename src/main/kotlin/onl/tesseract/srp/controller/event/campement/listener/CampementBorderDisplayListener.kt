@@ -1,6 +1,6 @@
 package onl.tesseract.srp.controller.event.campement.listener
 
-import onl.tesseract.srp.controller.event.territory.listener.TerritoryBorderDisplayListener
+import onl.tesseract.srp.controller.event.territory.TerritoryBorderDisplayListener
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.territory.campement.CampementChunkClaimEvent

@@ -39,15 +39,18 @@ class CampementProtectionListener(
     }
 
     override fun canPlaceBlock(player: Player, block: Block): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
     }
 
     override fun canBreakBlock(player: Player, block: Block): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
     }
 
     override fun canDamagePassiveEntity(player: Player, entity: LivingEntity): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,entity.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,entity.chunk.toChunkCoord()))
     }
 
     override fun canHostileDamagePlayer(player: Player, attacker: Entity): Boolean {
@@ -55,11 +58,13 @@ class CampementProtectionListener(
     }
 
     override fun canUseBucket(player: Player, block: Block): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
     }
 
     override fun canPlayerIgnite(player: Player, block: Block): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
     }
 
     override fun canNaturallyIgnite(block: Block, cause: BlockIgniteEvent.IgniteCause): Boolean {
@@ -67,22 +72,23 @@ class CampementProtectionListener(
     }
 
     override fun canUseRedstone(player: Player, block: Block): Boolean {
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,block.chunk.toChunkCoord()))
     }
 
     override fun canFishEntity(player: Player, entity: Entity): Boolean {
-        return (InteractionAllowResult.Deny !=
-                campementService.canInteractInChunk(player.uniqueId,entity.location.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,entity.location.chunk.toChunkCoord()))
     }
 
     override fun canSaddleEntity(player: Player, entity: LivingEntity): Boolean {
-        return (InteractionAllowResult.Deny !=
-                campementService.canInteractInChunk(player.uniqueId,entity.location.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,entity.location.chunk.toChunkCoord()))
     }
 
     override fun canMountEntity(player: Player, mount: Entity): Boolean {
-        return (InteractionAllowResult.Deny !=
-                campementService.canInteractInChunk(player.uniqueId,mount.location.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,mount.location.chunk.toChunkCoord()))
     }
 
     override fun canEnterVehicle(player: Player, vehicle: Vehicle): Boolean {
@@ -151,6 +157,7 @@ class CampementProtectionListener(
         container: Container,
     ): Boolean {
         if(Material.ENDER_CHEST == container.type) return true
-        return (InteractionAllowResult.Deny != campementService.canInteractInChunk(player.uniqueId,container.chunk.toChunkCoord()))
+        return (InteractionAllowResult.Deny
+                != campementService.canInteractInChunk(player.uniqueId,container.chunk.toChunkCoord()))
     }
 }

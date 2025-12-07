@@ -37,7 +37,7 @@ private val NEUTRAL_INTERACTABLES = setOf(
     Material.ENCHANTING_TABLE
 )
 
-abstract class ChunkProtectionListener() : Listener {
+abstract class ChunkProtectionListener : Listener {
     protected abstract fun hasProcessingResponsibility(chunk: Chunk) : Boolean
     protected abstract fun getProtectionMessage(chunk: Chunk): Component
     protected abstract fun canPlaceBlock(player: Player,block: Block) : Boolean

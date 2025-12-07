@@ -5,5 +5,4 @@ enum class UntrustResult {
     NOT_TRUST,
     SUCCESS,
     TERRITORY_NOT_FOUND
-
 }

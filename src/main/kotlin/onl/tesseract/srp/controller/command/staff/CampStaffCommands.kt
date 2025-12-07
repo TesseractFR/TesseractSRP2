@@ -50,7 +50,8 @@ class CampStaffCommands(
             CreationResult.NAME_TAKEN,
             CreationResult.NOT_ENOUGH_MONEY,
             CreationResult.RANK_TOO_LOW -> return
-            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Un autre territoire est trop proche d’ici."
+            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY ->
+                CampementChatError + "Un autre territoire est trop proche d’ici."
             CreationResult.ON_OTHER_TERRITORY -> {
                 CampementChatError + "Impossible de créer un campement ici, " +
                         "tu es sur un autre territoire."
@@ -101,11 +102,13 @@ class CampStaffCommands(
         when (success) {
             TrustResult.NOT_ALLOWED -> return
             TrustResult.SUCCESS -> {
-                sender.sendMessage(CampementChatSuccess + "${target.name} a été ajouté dans le campement de ${owner.name}.")
+                sender.sendMessage(CampementChatSuccess
+                        + "${target.name} a été ajouté dans le campement de ${owner.name}.")
                 target.sendMessage(CampementChatSuccess + "Tu as été ajouté au campement de ${owner.name} " +
                         "en tant que joueur de confiance.")
             }
-            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
+            TrustResult.ALREADY_TRUST ->
+                sender.sendMessage(CampementChatFormat + "${target.name} est déjà dans la liste de confiance.")
             TrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
@@ -126,8 +129,10 @@ class CampStaffCommands(
         val success = campementService.untrust(owner.uniqueId, target.uniqueId)
         when(success){
             UntrustResult.NOT_ALLOWED -> return
-            UntrustResult.NOT_TRUST -> sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans la liste de confiance de ce campement.")
-            UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
+            UntrustResult.NOT_TRUST -> sender.sendMessage(
+                CampementChatError + "Ce joueur n'est pas dans la liste de confiance de ce campement.")
+            UntrustResult.SUCCESS -> sender.sendMessage(
+                CampementChatSuccess + "${target.name} a été retiré du campement de ${owner.name}.")
             UntrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }

@@ -42,7 +42,8 @@ private val NO_CAMPEMENT_MESSAGE: Component =
         .plus("Tu ne possèdes pas de campement. Crées-en un avec " )
         .append("/campement create", NamedTextColor.GOLD)
 private val NOT_IN_CAMPEMENT_WORLD_MESSAGE =
-    CampementChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des campements."
+    CampementChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable " +
+            "que dans le monde des campements."
 
 
 @SpringComponent
@@ -62,7 +63,8 @@ class CampementCommands(
         val msg = when (result) {
             CreationResult.INVALID_WORLD -> NOT_IN_CAMPEMENT_WORLD_MESSAGE
             CreationResult.NEAR_SPAWN -> CampementChatError + "Tu es trop proche du spawn pour créer un campement."
-            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre campement, tu ne peux pas en créer un ici."
+            CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY -> CampementChatError + "Tu es trop proche d'un autre " +
+                    "campement, tu ne peux pas en créer un ici."
             CreationResult.ALREADY_HAS_TERRITORY -> CampementChatError + "Tu possèdes déjà un campement."
             CreationResult.ON_OTHER_TERRITORY -> {
                 CampementChatError + "Tu ne peux pas créer un campement ici, " +
@@ -80,7 +82,8 @@ class CampementCommands(
     @Command(name = "delete", description = "Supprimer son campement.")
     fun deleteCampement(sender: Player) {
         val playerID = sender.uniqueId
-        val campement = campementService.getCampementByOwner(playerID) ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
+        val campement = campementService.getCampementByOwner(playerID)
+            ?: return sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         menuService.openConfirmationMenu(
             sender,
             NamedTextColor.RED + "⚠ Es-tu sûr de vouloir supprimer ton campement ?",
@@ -128,7 +131,8 @@ class CampementCommands(
         when (campementService.setSpawnpoint(sender.uniqueId, sender.location.toCoordinate())) {
             SetSpawnResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "Nouveau point de spawn défini ici !")
 
-            SetSpawnResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer le point de spawn.")
+            SetSpawnResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à changer " +
+                    "le point de spawn.")
             SetSpawnResult.OUTSIDE_TERRITORY -> sender.sendMessage(CampementChatError +
                     "Tu dois être dans un chunk de ton campement pour définir le spawn. " + CAMPEMENT_BORDER_MESSAGE)
             SetSpawnResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
@@ -200,7 +204,8 @@ class CampementCommands(
                 targetPlayerArg.get().sendMessage(CampementChatSuccess + "Tu as été ajouté en tant que " +
                         "joueur de confiance dans le campement de ${sender.name}.")
             }
-            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "Ce joueur est déjà ajouté à ton campement.")
+            TrustResult.ALREADY_TRUST -> sender.sendMessage(CampementChatFormat + "Ce joueur est déjà ajouté " +
+                    "à ton campement.")
             TrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
         }
     }
@@ -217,8 +222,10 @@ class CampementCommands(
         val success = campementService.untrust(ownerID, trustedPlayerUUID)
 
         when(success){
-            UntrustResult.NOT_ALLOWED -> sender.sendMessage(CampementChatError + "Tu n'es pas autorisé à utiliser cette commande.")
-            UntrustResult.NOT_TRUST -> sender.sendMessage(CampementChatError + "Ce joueur n'est pas dans ta liste de confiance.")
+            UntrustResult.NOT_ALLOWED -> sender.sendMessage(
+                CampementChatError + "Tu n'es pas autorisé à utiliser cette commande.")
+            UntrustResult.NOT_TRUST -> sender.sendMessage(
+                CampementChatError + "Ce joueur n'est pas dans ta liste de confiance.")
             UntrustResult.SUCCESS -> sender.sendMessage(CampementChatSuccess + "${target.name} a été retiré de la " +
                     "liste des joueurs de confiance de ton campement !")
             UntrustResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_CAMPEMENT_MESSAGE)
@@ -229,7 +236,8 @@ class CampementCommands(
     fun toggleBorder(sender: Player) {
         val result = campementBorderService.toggleBorders(sender.uniqueId, sender.world.name)
         val msg = when (result) {
-            BorderResult.SHOW_BORDERS -> CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !"
+            BorderResult.SHOW_BORDERS ->
+                CampementChatSuccess + "Les bordures de ton campement sont maintenant visibles !"
             BorderResult.CLEAR_BORDERS -> CampementChatFormat + "Les bordures de ton campement ont été masquées."
             BorderResult.TERRITORY_NOT_FOUND -> NO_CAMPEMENT_MESSAGE
             BorderResult.INVALID_WORLD -> NOT_IN_CAMPEMENT_WORLD_MESSAGE

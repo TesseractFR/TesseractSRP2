@@ -1,4 +1,4 @@
-package onl.tesseract.srp.controller.event.territory.listener
+package onl.tesseract.srp.controller.event.territory
 
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk

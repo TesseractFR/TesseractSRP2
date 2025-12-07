@@ -7,5 +7,4 @@ class CampementChunk(chunkCoord: ChunkCoord, val campement: Campement) : Territo
     override fun getOwner(): Campement {
         return campement
     }
-
 }

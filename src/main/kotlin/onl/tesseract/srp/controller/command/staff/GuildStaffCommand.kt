@@ -94,11 +94,13 @@ class GuildStaffCommand(
                 KickResult.NOT_MEMBER ->
                     sender.sendMessage(StaffChatError + "Le joueur ${player.name} ne fait pas partie de la guilde.")
                 KickResult.CANNOT_KICK_LEADER ->
-                    sender.sendMessage(StaffChatError + "Impossible d'expulser le leader de la guilde. Change son rôle.")
+                    sender.sendMessage(StaffChatError +
+                            "Impossible d'expulser le leader de la guilde. Change son rôle.")
                 KickResult.NOT_ALLOWED ->
                     sender.sendMessage(StaffChatError + "Tu n'es pas autorisé à expulser ce joueur.")
                 KickResult.SUCCESS ->
-                    sender.sendMessage(StaffChatSuccess + "Opération effectuée - ${player.name} expulsé de la guilde ${guild.name}")
+                    sender.sendMessage(StaffChatSuccess +
+                            "Opération effectuée - ${player.name} expulsé de la guilde ${guild.name}")
             }
         }
 

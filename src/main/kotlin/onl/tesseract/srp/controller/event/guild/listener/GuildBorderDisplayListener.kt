@@ -1,6 +1,6 @@
 package onl.tesseract.srp.controller.event.guild.listener
 
-import onl.tesseract.srp.controller.event.territory.listener.TerritoryBorderDisplayListener
+import onl.tesseract.srp.controller.event.territory.TerritoryBorderDisplayListener
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent

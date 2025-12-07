@@ -17,8 +17,7 @@ import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import onl.tesseract.srp.util.InteractionAllowResult
 import java.util.*
 
-abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
-) {
+abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>> {
     protected abstract val eventService: DomainEventPublisher
     protected abstract val territoryChunkRepository: TerritoryChunkRepository
     protected abstract val territoryRepository: TerritoryRepository<T, UUID>

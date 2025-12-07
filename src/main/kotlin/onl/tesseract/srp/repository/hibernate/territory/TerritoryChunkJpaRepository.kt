@@ -31,7 +31,9 @@ interface TerritoryChunkJpaRepository : JpaRepository<TerritoryChunkEntity, Terr
 }
 
 @Component
-class TerritoryJpaRepositoryAdapter(private val territoryChunkJpaRepository: TerritoryChunkJpaRepository) : TerritoryChunkRepository {
+class TerritoryJpaRepositoryAdapter(
+    private val territoryChunkJpaRepository: TerritoryChunkJpaRepository
+) : TerritoryChunkRepository {
     override fun save(entity: TerritoryChunk): TerritoryChunk {
         return territoryChunkJpaRepository.save(entity.toEntity()).toDomain()
     }

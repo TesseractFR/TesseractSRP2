@@ -57,6 +57,5 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository,
 }
 
 @org.springframework.stereotype.Repository
-interface CampementJpaRepository : JpaRepository<CampementEntity, UUID> {
-}
+interface CampementJpaRepository : JpaRepository<CampementEntity, UUID>
 

@@ -50,6 +50,7 @@ private val GUILD_BORDER_MESSAGE: Component =
 private val NOT_IN_GUILD_WORLD_MESSAGE =
     GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
 
+@Suppress("TooManyFunctions")
 @Command(name = "guild")
 @SpringComponent
 class GuildCommand(
@@ -134,9 +135,12 @@ class GuildCommand(
         val target = player.get()
         when(guildService.invite(sender.uniqueId, target.uniqueId)){
             GuildInvitationResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
-            GuildInvitationResult.NOT_ALLOWED -> sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à utiliser cette commande.")
-            GuildInvitationResult.SAME_PLAYER -> sender.sendMessage(GuildChatError + "Tu ne peux pas t'inviter toi même.")
-            GuildInvitationResult.HAS_GUILD -> sender.sendMessage(GuildChatError + "Ce joueur est déjà dans une guilde.")
+            GuildInvitationResult.NOT_ALLOWED ->
+                sender.sendMessage(GuildChatError + "Tu n'es pas autorisé à utiliser cette commande.")
+            GuildInvitationResult.SAME_PLAYER ->
+                sender.sendMessage(GuildChatError + "Tu ne peux pas t'inviter toi même.")
+            GuildInvitationResult.HAS_GUILD ->
+                sender.sendMessage(GuildChatError + "Ce joueur est déjà dans une guilde.")
             GuildInvitationResult.SUCCESS_JOIN -> {
                 val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
                 sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint votre guilde.")
@@ -175,7 +179,8 @@ class GuildCommand(
         when (guildService.leaveGuild(sender.uniqueId)) {
             LeaveResult.TERRITORY_NOT_FOUND -> sender.sendMessage(NO_GUILD_MESSAGE)
             LeaveResult.LEADER_MUST_DELETE -> {
-                sender.sendMessage(GuildChatError + "Tu es le/la chef(fe) de la guilde. Supprime-la ou transfère le leadership.")
+                sender.sendMessage(GuildChatError + "Tu es le/la chef(fe) de la guilde. " +
+                        "Supprime-la ou transfère le leadership.")
             }
             LeaveResult.SUCCESS -> {
                 menuService.openConfirmationMenu(
