@@ -5,6 +5,8 @@ style:
       - 'java.util.*'
       - 'org.mockito.Mockito.*'
       - 'org.junit.jupiter.api.Assertions.*'
+  ReturnCount:
+    active: false
 complexity:
   TooManyFunctions:
     active: false
