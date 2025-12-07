@@ -2,8 +2,8 @@ package onl.tesseract.srp.domain.territory.container
 
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.TerritoryChunk
-import onl.tesseract.srp.domain.territory.enum.ClaimResult
-import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
 import onl.tesseract.srp.domain.territory.event.TerritoryClaimEvent
 import onl.tesseract.srp.domain.territory.event.TerritoryUnclaimEvent
 import java.util.*

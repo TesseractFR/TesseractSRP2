@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.territory.container
 
 import onl.tesseract.srp.domain.commun.Coordinate
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
 import java.util.UUID
 
 interface VisitorSpawnContainer {

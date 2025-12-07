@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.territory.enum
+package onl.tesseract.srp.domain.territory.enum.result
 
 enum class CreationResult {
     ALREADY_HAS_TERRITORY, INVALID_WORLD, NEAR_SPAWN, NAME_TAKEN,

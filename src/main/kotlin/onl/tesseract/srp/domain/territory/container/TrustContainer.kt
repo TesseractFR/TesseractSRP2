@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.territory.container
 
-import onl.tesseract.srp.domain.territory.enum.TrustResult
-import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.domain.territory.enum.result.TrustResult
+import onl.tesseract.srp.domain.territory.enum.result.UntrustResult
 import java.util.*
 
 interface TrustContainer{

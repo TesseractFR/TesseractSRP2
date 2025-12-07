@@ -2,7 +2,7 @@ package onl.tesseract.srp.service.territory
 
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk
-import onl.tesseract.srp.domain.territory.enum.BorderResult
+import onl.tesseract.srp.domain.territory.enum.result.BorderResult
 import onl.tesseract.srp.infrastructure.scheduler.territory.TerritoryBorderTaskScheduler
 import java.util.*
 

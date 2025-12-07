@@ -16,7 +16,13 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildSpawnKindArg
 import onl.tesseract.srp.controller.menu.guild.GuildMenu
-import onl.tesseract.srp.domain.territory.enum.*
+import onl.tesseract.srp.domain.territory.enum.result.BorderResult
+import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.KickResult
+import onl.tesseract.srp.domain.territory.enum.result.LeaveResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
 import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult

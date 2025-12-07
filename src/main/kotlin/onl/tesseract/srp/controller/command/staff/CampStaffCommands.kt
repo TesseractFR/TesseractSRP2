@@ -10,9 +10,9 @@ import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.territory.enum.CreationResult
-import onl.tesseract.srp.domain.territory.enum.TrustResult
-import onl.tesseract.srp.domain.territory.enum.UntrustResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.TrustResult
+import onl.tesseract.srp.domain.territory.enum.result.UntrustResult
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService

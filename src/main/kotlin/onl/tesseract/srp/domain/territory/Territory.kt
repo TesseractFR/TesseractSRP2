@@ -7,8 +7,8 @@ import onl.tesseract.srp.domain.territory.container.DefaultSpawnContainer
 import onl.tesseract.srp.domain.territory.container.DefaultTrustContainer
 import onl.tesseract.srp.domain.territory.container.SpawnContainer
 import onl.tesseract.srp.domain.territory.container.TrustContainer
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
-import onl.tesseract.srp.domain.territory.enum.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
 import java.util.*
 
 abstract class Territory<TC : TerritoryChunk>(

@@ -12,7 +12,13 @@ import onl.tesseract.lib.util.append
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
-import onl.tesseract.srp.domain.territory.enum.*
+import onl.tesseract.srp.domain.territory.enum.result.BorderResult
+import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.TrustResult
+import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.result.UntrustResult
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation

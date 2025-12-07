@@ -5,7 +5,12 @@ import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk
-import onl.tesseract.srp.domain.territory.enum.*
+import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.TrustResult
+import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
+import onl.tesseract.srp.domain.territory.enum.result.UntrustResult
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import onl.tesseract.srp.util.InteractionAllowResult

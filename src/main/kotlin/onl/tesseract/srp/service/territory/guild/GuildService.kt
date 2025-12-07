@@ -10,10 +10,10 @@ import onl.tesseract.srp.domain.commun.enum.StaffSetRoleResult
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
-import onl.tesseract.srp.domain.territory.enum.CreationResult
-import onl.tesseract.srp.domain.territory.enum.KickResult
-import onl.tesseract.srp.domain.territory.enum.LeaveResult
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.KickResult
+import onl.tesseract.srp.domain.territory.enum.result.LeaveResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.enum.*

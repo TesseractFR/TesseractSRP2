@@ -6,7 +6,7 @@ import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.DomainEventPublisher
 import onl.tesseract.srp.domain.commun.ChunkCoord
-import onl.tesseract.srp.domain.territory.enum.CreationResult
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk

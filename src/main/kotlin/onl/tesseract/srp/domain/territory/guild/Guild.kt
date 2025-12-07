@@ -1,6 +1,6 @@
 package onl.tesseract.srp.domain.territory.guild
 
-import onl.tesseract.srp.domain.territory.enum.SetSpawnResult
+import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.container.DefaultVisitorSpawnContainer
