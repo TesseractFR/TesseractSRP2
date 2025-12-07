@@ -26,7 +26,9 @@ import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.campement.CampementBorderService
 import onl.tesseract.srp.service.territory.campement.CampementService
-import onl.tesseract.srp.util.*
+import onl.tesseract.srp.util.CampementChatError
+import onl.tesseract.srp.util.CampementChatFormat
+import onl.tesseract.srp.util.CampementChatSuccess
 import onl.tesseract.srp.util.equipment.annexionStick.CampementAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player

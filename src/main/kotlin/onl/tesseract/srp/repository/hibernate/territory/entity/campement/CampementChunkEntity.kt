@@ -1,6 +1,12 @@
 package onl.tesseract.srp.repository.hibernate.territory.entity.campement
 
-import jakarta.persistence.*
+import jakarta.persistence.Cacheable
+import jakarta.persistence.DiscriminatorValue
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.repository.hibernate.CampementEntity
 import onl.tesseract.srp.repository.hibernate.territory.entity.TerritoryChunkEntity

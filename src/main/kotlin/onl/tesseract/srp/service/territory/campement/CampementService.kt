@@ -18,7 +18,7 @@ import onl.tesseract.srp.service.territory.TerritoryService
 import onl.tesseract.srp.util.InteractionAllowResult
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
-import java.util.*
+import java.util.UUID
 
 private val logger: Logger = LoggerFactory.getLogger(CampementService::class.java)
 

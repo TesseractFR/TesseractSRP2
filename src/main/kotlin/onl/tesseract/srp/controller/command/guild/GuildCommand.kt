@@ -32,8 +32,11 @@ import onl.tesseract.srp.mapper.toLocation
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
-import onl.tesseract.srp.service.territory.guild.*
-import onl.tesseract.srp.util.*
+import onl.tesseract.srp.service.territory.guild.GuildBorderService
+import onl.tesseract.srp.service.territory.guild.GuildService
+import onl.tesseract.srp.util.GuildChatError
+import onl.tesseract.srp.util.GuildChatFormat
+import onl.tesseract.srp.util.GuildChatSuccess
 import onl.tesseract.srp.util.equipment.annexionStick.GuildAnnexionStickInvocable
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -50,7 +53,6 @@ private val GUILD_BORDER_MESSAGE: Component =
 private val NOT_IN_GUILD_WORLD_MESSAGE =
     GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
 
-@Suppress("TooManyFunctions")
 @Command(name = "guild")
 @SpringComponent
 class GuildCommand(
@@ -267,8 +269,8 @@ class GuildCommand(
     fun toggleGuildBorder(sender: Player) {
         val result = guildBorderService.toggleBorders(sender.uniqueId, sender.world.name)
         val msg = when (result) {
-            BorderResult.SHOW_BORDERS -> CampementChatSuccess + "Les bordures de ta guilde sont maintenant visibles !"
-            BorderResult.CLEAR_BORDERS -> CampementChatFormat + "Les bordures de ta guilde ont été masquées."
+            BorderResult.SHOW_BORDERS -> GuildChatSuccess + "Les bordures de ta guilde sont maintenant visibles !"
+            BorderResult.CLEAR_BORDERS -> GuildChatFormat + "Les bordures de ta guilde ont été masquées."
             BorderResult.TERRITORY_NOT_FOUND -> NO_GUILD_MESSAGE
             BorderResult.INVALID_WORLD -> NOT_IN_GUILD_WORLD_MESSAGE
         }
