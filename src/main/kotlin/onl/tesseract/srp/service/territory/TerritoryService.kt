@@ -5,6 +5,7 @@ import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.Territory
 import onl.tesseract.srp.domain.territory.TerritoryChunk
+import onl.tesseract.srp.domain.territory.enum.TerritoryWorld
 import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
 import onl.tesseract.srp.domain.territory.enum.result.CreationResult
 import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
@@ -16,9 +17,6 @@ import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
 import onl.tesseract.srp.util.InteractionAllowResult
 import java.util.*
 
-const val TERRITORY_PROXIMITY_CLAIM_LIMIT = 3
-const val TERRITORY_PROXIMITY_CREATE_LIMIT = 5
-
 abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
 ) {
     protected abstract val eventService: DomainEventPublisher
@@ -28,8 +26,15 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      * Permet de savoir si le monde est correct pour une location donnée.
      * @param worldName La position à valider
      */
-    abstract fun isCorrectWorld(worldName: String): Boolean
+    fun isCorrectWorld(worldName: String): Boolean {
+        return isCorrectWorld(getTerritoryWorld(worldName)?:return false)
+    }
 
+    abstract fun isCorrectWorld(world: TerritoryWorld): Boolean
+
+    private fun getTerritoryWorld(world: String): TerritoryWorld? {
+        return TerritoryWorld.entries.firstOrNull { it.srpWorld.bukkitName == world }
+    }
     /**
      * Permet de savoir si un chunk est déjà occupé par un territoire.
      */
@@ -69,14 +74,15 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      * Permet de claim un chunk
      */
     fun claimChunk(player: UUID, chunkCoord: ChunkCoord): ClaimResult {
-        if (!isCorrectWorld(chunkCoord.world)) return ClaimResult.INVALID_WORLD
+        val world = getTerritoryWorld(chunkCoord.world)
+        if (world == null || !isCorrectWorld(world)) return ClaimResult.INVALID_WORLD
         val territory = getByPlayer(player) ?: return ClaimResult.TERRITORY_NOT_FOUND
         val ownerTerritory = getAnyByChunk(chunkCoord)
         if (ownerTerritory != null) {
             if (ownerTerritory != territory) return ClaimResult.ALREADY_OTHER
             return ClaimResult.ALREADY_OWNED
         }
-        val tooClose = isTooCloseToOthers(chunkCoord.world, chunkCoord.x, chunkCoord.z, territory)
+        val tooClose = isTooCloseToOthers(world, chunkCoord.x, chunkCoord.z, territory)
         if (tooClose) return ClaimResult.TOO_CLOSE
         val result = territory.claimChunk(chunkCoord, player)
         if (result == ClaimResult.SUCCESS) {
@@ -115,19 +121,20 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
     protected abstract fun isMemberOrTrusted(territory: T, playerId: UUID): Boolean
 
     private fun isTooCloseToOthers(
-        world: String,
+        world: TerritoryWorld,
         x0: Int,
         z0: Int,
         territory: T,
     ): Boolean {
         val alreadyClaimed = territoryChunkRepository.findAllByRange(
-            world,
-            x0 - TERRITORY_PROXIMITY_CLAIM_LIMIT,
-            x0 + TERRITORY_PROXIMITY_CLAIM_LIMIT,
-            z0 - TERRITORY_PROXIMITY_CLAIM_LIMIT,
-            z0 + TERRITORY_PROXIMITY_CLAIM_LIMIT)
+            world.srpWorld.bukkitName,
+            x0 - world.claimDistance,
+            x0 + world.claimDistance,
+            z0 - world.claimDistance,
+            z0 + world.claimDistance)
         return alreadyClaimed.any { it.getOwner() != territory }
     }
+
 
     open fun canInteractInChunk(playerId: UUID, chunk: ChunkCoord): InteractionAllowResult {
         if (!isCorrectWorld(chunk.world)) return InteractionAllowResult.Ignore
@@ -142,17 +149,17 @@ abstract class TerritoryService<TC : TerritoryChunk, T : Territory<TC>>(
      */
     protected fun isCreationAvailable(playerID: UUID, chunkCoord: ChunkCoord): CreationResult {
         if (getByPlayer(playerID) != null) return CreationResult.ALREADY_HAS_TERRITORY
-        if (!isCorrectWorld(chunkCoord.world)) return CreationResult.INVALID_WORLD
+        val world = getTerritoryWorld(chunkCoord.world)
+        if (world== null || !isCorrectWorld(chunkCoord.world)) return CreationResult.INVALID_WORLD
         if (isChunkTaken(chunkCoord)) return CreationResult.ON_OTHER_TERRITORY
         val x = chunkCoord.x
         val z = chunkCoord.z
-        val world = chunkCoord.world
         val alreadyClaimed = territoryChunkRepository.findAllByRange(
-            world,
-            x - TERRITORY_PROXIMITY_CREATE_LIMIT,
-            x + TERRITORY_PROXIMITY_CREATE_LIMIT,
-            z - TERRITORY_PROXIMITY_CREATE_LIMIT,
-            z + TERRITORY_PROXIMITY_CREATE_LIMIT)
+            chunkCoord.world,
+            x - world.creationDistance,
+            x + world.creationDistance,
+            z - world.creationDistance,
+            z + world.creationDistance)
         if (alreadyClaimed.isNotEmpty()) return CreationResult.TOO_CLOSE_TO_OTHER_TERRITORY
         return CreationResult.SUCCESS
     }

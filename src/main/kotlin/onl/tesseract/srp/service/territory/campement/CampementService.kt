@@ -6,11 +6,11 @@ import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.srp.DomainEventPublisher
 import onl.tesseract.srp.domain.commun.ChunkCoord
-import onl.tesseract.srp.domain.territory.enum.result.CreationResult
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
-import onl.tesseract.srp.domain.world.SrpWorld
+import onl.tesseract.srp.domain.territory.enum.TerritoryWorld
+import onl.tesseract.srp.domain.territory.enum.result.CreationResult
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -34,7 +34,10 @@ open class CampementService(
         ServiceContainer.getInstance().registerService(CampementService::class.java, this)
     }
 
-    override fun isCorrectWorld(worldName: String): Boolean = SrpWorld.Elysea.bukkitName == worldName
+    override fun isCorrectWorld(world: TerritoryWorld): Boolean {
+        return world == TerritoryWorld.ELYSEA
+    }
+
     override fun getByChunk(chunkCoord: ChunkCoord): Campement? {
         val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
         val owner = territoryChunk.getOwner()

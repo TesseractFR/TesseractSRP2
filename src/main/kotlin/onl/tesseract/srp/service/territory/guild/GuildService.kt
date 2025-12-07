@@ -10,6 +10,7 @@ import onl.tesseract.srp.domain.commun.enum.StaffSetRoleResult
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
+import onl.tesseract.srp.domain.territory.enum.TerritoryWorld
 import onl.tesseract.srp.domain.territory.enum.result.CreationResult
 import onl.tesseract.srp.domain.territory.enum.result.KickResult
 import onl.tesseract.srp.domain.territory.enum.result.LeaveResult
@@ -19,7 +20,6 @@ import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.enum.*
 import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
 import onl.tesseract.srp.domain.territory.guild.event.GuildLevelUpEvent
-import onl.tesseract.srp.domain.world.SrpWorld
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
@@ -48,8 +48,9 @@ open class GuildService(
         ServiceContainer.getInstance().registerService(GuildService::class.java, this)
     }
 
-    override fun isCorrectWorld(worldName: String): Boolean =
-        SrpWorld.GuildWorld.bukkitName == worldName
+    override fun isCorrectWorld(world: TerritoryWorld): Boolean {
+        return world == TerritoryWorld.GUILDWORLD
+    }
 
     override fun getByChunk(chunkCoord: ChunkCoord): Guild? {
         val territoryChunk = territoryChunkRepository.getById(chunkCoord) ?:return null
