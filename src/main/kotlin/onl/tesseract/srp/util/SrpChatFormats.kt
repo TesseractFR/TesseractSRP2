@@ -30,12 +30,22 @@ val CampementChatSuccess: Component = CampementChatFormat.color(NamedTextColor.G
 val GuildChatFormat: Component = empty().color(NamedTextColor.GRAY)
     .append(
         empty()
-            .append("[", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
-            .append("Guilde", NamedTextColor.LIGHT_PURPLE)
-            .append("] ", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+            .append("[", NamedTextColor.DARK_GREEN, TextDecoration.BOLD)
+            .append("Guilde", NamedTextColor.GREEN)
+            .append("] ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD)
     )
 val GuildChatError: Component = GuildChatFormat.color(NamedTextColor.RED)
 val GuildChatSuccess: Component = GuildChatFormat.color(NamedTextColor.GREEN)
+
+val ElytraChatFormat: Component = empty().color(NamedTextColor.GRAY)
+    .append(
+        empty()
+            .append("[", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+            .append("Elytra", NamedTextColor.LIGHT_PURPLE)
+            .append("] ", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD)
+    )
+val ElytraChatError: Component = ElytraChatFormat.color(NamedTextColor.RED)
+val ElytraChatSuccess: Component = ElytraChatFormat.color(NamedTextColor.GREEN)
 
 val StaffChatFormat: Component = empty().color(NamedTextColor.GRAY)
     .append(

@@ -5,7 +5,7 @@ import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.lib.command.argument.IntegerCommandArgument
 import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.srp.controller.command.argument.ElytraUpgradeArg
-import onl.tesseract.srp.service.elytra.ElytraService
+import onl.tesseract.srp.service.equipment.elytra.ElytraService
 import org.bukkit.command.CommandSender
 import org.springframework.stereotype.Component
 
