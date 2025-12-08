@@ -22,7 +22,8 @@ class ElytraGivenListener(
         val chestFree = player.inventory.chestplate == null
         if (chestFree) {
             equipmentService.invoke(player, Elytra::class.java)
-            player.sendMessage(ElytraChatFormat + Component.text("Tu as reçu tes Ailes Célestes !", NamedTextColor.AQUA))
+            player.sendMessage(
+                ElytraChatFormat + Component.text("Tu as reçu tes Ailes Célestes !", NamedTextColor.AQUA))
         } else {
             val menu = EquipmentMenu(player, equipmentService)
             menu.open(player)

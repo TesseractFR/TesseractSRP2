@@ -37,7 +37,11 @@ class ElytraUpgradeMenu(
     private val playerProfileService: PlayerProfileService,
     private val elytraService: ElytraService,
     previous: Menu?
-) : ElytraBaseMenu(MenuSize.Five, Component.text("Améliorations Ailes Célestes", NamedTextColor.DARK_PURPLE), previous) {
+) : ElytraBaseMenu(
+    MenuSize.Five,
+    Component.text("Améliorations Ailes Célestes", NamedTextColor.DARK_PURPLE),
+    previous
+) {
 
     override fun placeButtons(viewer: Player) {
         val state = elytraService.getUpgradeMenuState(playerID)
@@ -54,7 +58,12 @@ class ElytraUpgradeMenu(
     }
 
     private fun placeUpgradeButtons(viewer: Player, state: ElytraUpgradeMenuState) {
-        val slots = listOf(SLOT_UPGRADE_SPEED, SLOT_UPGRADE_PROTECTION, SLOT_UPGRADE_BOOST_NUMBER, SLOT_UPGRADE_RECOVERY)
+        val slots = listOf(
+            SLOT_UPGRADE_SPEED,
+            SLOT_UPGRADE_PROTECTION,
+            SLOT_UPGRADE_BOOST_NUMBER,
+            SLOT_UPGRADE_RECOVERY
+        )
         state.entries.forEachIndexed { index, entry ->
             val slot = slots.getOrNull(index) ?: return@forEachIndexed
             val item = buildUpgradeItem(entry)
@@ -100,7 +109,8 @@ class ElytraUpgradeMenu(
                 .append(getUpgradeStatLine(entry.upgrade, entry.nextLevel), NamedTextColor.YELLOW)
                 .newline().newline()
                 .append("Coût : ", NamedTextColor.GOLD)
-                .append(Component.text("${entry.price} points d'illumination", if (entry.canAfford) NamedTextColor.GREEN else NamedTextColor.RED))
+                .append(Component.text("${entry.price} points d'illumination",
+                    if (entry.canAfford) NamedTextColor.GREEN else NamedTextColor.RED))
                 .append(Component.text(" (Cliquez pour acheter)", NamedTextColor.GRAY, TextDecoration.ITALIC))
         } else {
             builder.append("Amélioration maximale atteinte", NamedTextColor.DARK_GREEN)
