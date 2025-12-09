@@ -5,9 +5,9 @@ import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.equipment.EquipmentMenu
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
+import onl.tesseract.lib.util.ChatFormats.ELYTRA
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.equipment.elytra.event.ElytraGivenEvent
-import onl.tesseract.srp.util.ElytraChatFormat
 import org.bukkit.Bukkit
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component as SpringComponent
@@ -23,12 +23,12 @@ class ElytraGivenListener(
         if (chestFree) {
             equipmentService.invoke(player, Elytra::class.java)
             player.sendMessage(
-                ElytraChatFormat + Component.text("Tu as reçu tes Ailes Célestes !", NamedTextColor.AQUA))
+                ELYTRA + Component.text("Tu as reçu tes Ailes Célestes !", NamedTextColor.AQUA))
         } else {
             val menu = EquipmentMenu(player, equipmentService)
             menu.open(player)
             player.sendMessage(
-                ElytraChatFormat + Component.text(
+                ELYTRA + Component.text(
                     "Ton plastron est occupé, choisis un emplacement dans le menu d'équipement.",
                     NamedTextColor.YELLOW
                 )

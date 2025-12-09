@@ -7,13 +7,13 @@ import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
+import onl.tesseract.lib.util.ChatFormats.ELYTRA
+import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.equipment.elytra.ElytraService
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeEntry
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeMenuState
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeResult
-import onl.tesseract.srp.util.ElytraChatError
-import onl.tesseract.srp.util.ElytraChatFormat
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -40,7 +40,7 @@ class ElytraUpgradeMenu(
         val state = elytraService.getUpgradeMenuState(playerID)
         if (!state.hasElytra) {
             viewer.closeInventory()
-            viewer.sendMessage(ElytraChatError + "Tu ne possèdes pas d'élytra personnalisée.")
+            viewer.sendMessage(ELYTRA_ERROR + "Tu ne possèdes pas d'élytra personnalisée.")
             return
         }
         placeDecorations()
@@ -68,13 +68,13 @@ class ElytraUpgradeMenu(
                         open(viewer)
                     }
                     ElytraUpgradeResult.NOT_ENOUGH_POINTS -> {
-                        viewer.sendMessage(ElytraChatError + "Tu n'as pas assez de points d'illumination.")
+                        viewer.sendMessage(ELYTRA_ERROR + "Tu n'as pas assez de points d'illumination.")
                     }
                     ElytraUpgradeResult.MAX_LEVEL_REACHED -> {
-                        viewer.sendMessage(ElytraChatFormat + "Cette amélioration est déjà au niveau maximal.")
+                        viewer.sendMessage(ELYTRA + "Cette amélioration est déjà au niveau maximal.")
                     }
                     ElytraUpgradeResult.NO_ELYTRA -> {
-                        viewer.sendMessage(ElytraChatError +"Tu ne possèdes plus d'élytra personnalisée.")
+                        viewer.sendMessage(ELYTRA_ERROR +"Tu ne possèdes plus d'élytra personnalisée.")
                         viewer.closeInventory()
                     }
                 }
@@ -86,7 +86,7 @@ class ElytraUpgradeMenu(
         entry: ElytraUpgradeEntry
     ): ItemStack {
         val builder = ItemBuilder(entry.upgrade.material)
-            .name(Component.text(entry.upgrade.displayName, NamedTextColor.AQUA))
+            .name(entry.upgrade.displayName, NamedTextColor.AQUA)
             .lore()
             .append(entry.upgrade.description, NamedTextColor.GRAY, TextDecoration.ITALIC)
             .newline().newline()
@@ -102,9 +102,9 @@ class ElytraUpgradeMenu(
                 .append(elytraService.getUpgradeStatLine(entry.upgrade, entry.nextLevel), NamedTextColor.YELLOW)
                 .newline().newline()
                 .append("Coût : ", NamedTextColor.GOLD)
-                .append(Component.text("${entry.price} points d'illumination",
-                    if (entry.canAfford) NamedTextColor.GREEN else NamedTextColor.RED))
-                .append(Component.text(" (Cliquez pour acheter)", NamedTextColor.GRAY, TextDecoration.ITALIC))
+                .append("${entry.price} points d'illumination",
+                    if (entry.canAfford) NamedTextColor.GREEN else NamedTextColor.RED)
+                .append(" (Cliquez pour acheter)", NamedTextColor.GRAY, TextDecoration.ITALIC)
         } else {
             builder.append("Amélioration maximale atteinte", NamedTextColor.DARK_GREEN)
         }
@@ -115,12 +115,13 @@ class ElytraUpgradeMenu(
         addButton(
             PLAYER_INFO_SLOT,
             ItemBuilder(playerProfileService.getPlayerHead(playerID))
-                .name(Component.text("Mes informations", NamedTextColor.GREEN))
+                .name("Mes informations", NamedTextColor.GREEN)
                 .lore()
                 .newline()
-                .addField("Argent", Component.text("${state.money} Lys", NamedTextColor.GOLD))
-                .addField("Points d'illumination", Component.text("${state.illuminationPoints}", NamedTextColor.GOLD))
-                .addField("Grade", Component.text(state.rankLabel, NamedTextColor.GOLD))
+                .addField("Argent", "${state.money} Lys", NamedTextColor.GOLD)
+                .addField("Points d'illumination",
+                    "${state.illuminationPoints}", NamedTextColor.GOLD)
+                .addField("Grade", state.rankLabel, NamedTextColor.GOLD)
                 .buildLore()
                 .build()
         )

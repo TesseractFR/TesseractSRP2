@@ -6,6 +6,8 @@ import onl.tesseract.core.cosmetics.menu.ElytraTrailSelectionMenu
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
+import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
+import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.equipment.elytra.ElytraService
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -25,7 +27,7 @@ class ElytraMenu(
     override fun placeButtons(viewer: Player) {
         val state = elytraService.getMenuState(player.uniqueId)
         if (!state.hasElytra) {
-            viewer.sendMessage(Component.text("Tu ne possèdes pas d'élytra personnalisée.", NamedTextColor.RED))
+            viewer.sendMessage(ELYTRA_ERROR + "Tu ne possèdes pas d'ailes célestes.")
             viewer.closeInventory()
             return
         }
@@ -43,9 +45,9 @@ class ElytraMenu(
     private fun placeElytraInvokeButton(viewer: Player) {
         addButton(
             SLOT_FLANC_ETHERE, ItemBuilder(Material.ELYTRA)
-                .name(Component.text("Flanc éthéré", NamedTextColor.LIGHT_PURPLE))
+                .name("Flanc éthéré", NamedTextColor.LIGHT_PURPLE)
                 .lore()
-                .append(Component.text("Invoque ou désinvoque vos ailes divines.", NamedTextColor.GRAY))
+                .append("Invoque ou désinvoque vos ailes divines.", NamedTextColor.GRAY)
                 .buildLore()
                 .build()
         ) {
@@ -59,13 +61,13 @@ class ElytraMenu(
         val autoGlideMaterial = if (autoGlide) Material.LIME_DYE else Material.GRAY_DYE
         addButton(
             SLOT_AUTO_GLIDE, ItemBuilder(autoGlideMaterial)
-                .name(Component.text("Vol automatique", NamedTextColor.AQUA))
+                .name("Vol automatique", NamedTextColor.AQUA)
                 .lore()
-                .append(Component.text("Tombez dans le vide pour voler automatiquement", NamedTextColor.GRAY))
+                .append("Tombez dans le vide pour voler automatiquement", NamedTextColor.GRAY)
                 .newline()
                 .newline()
-                .append(Component.text("Statut: ", NamedTextColor.GRAY))
-                .append(Component.text(if (autoGlide) "Activé" else "Désactivé", autoGlideColor))
+                .append("Statut: ", NamedTextColor.GRAY)
+                .append(if (autoGlide) "Activé" else "Désactivé", autoGlideColor)
                 .buildLore()
                 .build()
         ) {
@@ -77,9 +79,9 @@ class ElytraMenu(
     private fun placePropulsionButton(viewer: Player) {
         addButton(
             SLOT_PROPULSION, ItemBuilder(Material.FIREWORK_ROCKET)
-                .name(Component.text("Propulsion synergique", NamedTextColor.GOLD))
+                .name("Propulsion synergique", NamedTextColor.GOLD)
                 .lore()
-                .append(Component.text("Vous concentrez l'énergie pour vous propulser.", NamedTextColor.BLUE))
+                .append("Vous concentrez l'énergie pour vous propulser.", NamedTextColor.BLUE)
                 .buildLore()
                 .build()
         ) {
@@ -91,9 +93,9 @@ class ElytraMenu(
     private fun placeUpgradeButton(viewer: Player) {
         addButton(
             SLOT_AMELIORATIONS, ItemBuilder(Material.PRISMARINE_CRYSTALS)
-                .name(Component.text("Améliorations", NamedTextColor.GOLD))
+                .name("Améliorations", NamedTextColor.GOLD)
                 .lore()
-                .append(Component.text("Affiche les améliorations disponibles.", NamedTextColor.GRAY))
+                .append("Affiche les améliorations disponibles.", NamedTextColor.GRAY)
                 .buildLore()
                 .build()
         ) {
@@ -106,9 +108,9 @@ class ElytraMenu(
     private fun placeSillageButton(viewer: Player) {
         addButton(
             SLOT_SILLAGE, ItemBuilder(Material.NETHER_STAR)
-                .name(Component.text("Sillage des ailes", NamedTextColor.DARK_AQUA))
+                .name("Sillage des ailes", NamedTextColor.DARK_AQUA)
                 .lore()
-                .append(Component.text("Affiche des particules pendant le vol.", NamedTextColor.GRAY))
+                .append("Affiche des particules pendant le vol.", NamedTextColor.GRAY)
                 .buildLore()
                 .build()
         ) {

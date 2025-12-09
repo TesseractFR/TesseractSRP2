@@ -1,9 +1,9 @@
 package onl.tesseract.srp.controller.event.equipment.elytra
 
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
+import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
+import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.domain.equipment.elytra.event.ElytraPropulsionRequestedEvent
 import org.bukkit.Bukkit
 import org.bukkit.event.Listener
@@ -21,12 +21,7 @@ class ElytraPropulsionListener(
         val equipment = equipmentService.getEquipment(event.playerId)
         val elytra = equipment.get(Elytra::class.java) ?: return
         if (!elytra.isInvoked) {
-            player.sendMessage(
-                Component.text(
-                    "Vous devez invoquer vos ailes pour utiliser cette fonction.",
-                    NamedTextColor.RED
-                )
-            )
+            player.sendMessage(ELYTRA_ERROR + "Vous devez invoquer vos ailes pour utiliser cette fonction.")
             return
         }
         elytra.synergicPropulsion(player)
