@@ -12,19 +12,13 @@ import org.springframework.stereotype.Component
 
 @Component
 @Command(name = "elytrasUpgrade", description = "Ouvre le menu des améliorations des ailes", playerOnly = true)
-class ElytraUpgradeCommand(
+class ElytraUpgradeMenuCommand(
     private val playerProfileService: PlayerProfileService,
     private val elytraService: ElytraService,
     provider: CommandInstanceProvider
 ) : CommandContext(provider) {
     @CommandBody
     fun execute(player: Player) {
-        elytraService.giveElytraIfMissing(player.uniqueId)
-        ElytraUpgradeMenu(
-            player.uniqueId,
-            playerProfileService,
-            elytraService,
-            null
-        ).open(player)
+        ElytraUpgradeMenu(player.uniqueId, playerProfileService, elytraService, null).open(player)
     }
 }

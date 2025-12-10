@@ -6,8 +6,6 @@ import onl.tesseract.core.cosmetics.menu.ElytraTrailSelectionMenu
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
-import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
-import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.equipment.elytra.ElytraService
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -26,11 +24,6 @@ class ElytraMenu(
 
     override fun placeButtons(viewer: Player) {
         val state = elytraService.getMenuState(player.uniqueId)
-        if (!state.hasElytra) {
-            viewer.sendMessage(ELYTRA_ERROR + "Tu ne possèdes pas d'ailes célestes.")
-            viewer.closeInventory()
-            return
-        }
         placeDecorations()
         placeElytraInvokeButton(viewer)
         placeAutoGlideButton(state.autoGlide, viewer)

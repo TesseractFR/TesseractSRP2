@@ -5,7 +5,6 @@ import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.lib.event.equipment.invocable.ElytraUpgrade
 import onl.tesseract.srp.DomainEventPublisher
 import onl.tesseract.srp.domain.equipment.elytra.event.ElytraAutoGlideToggleRequestedEvent
-import onl.tesseract.srp.domain.equipment.elytra.event.ElytraGivenEvent
 import onl.tesseract.srp.domain.equipment.elytra.event.ElytraPropulsionRequestedEvent
 import onl.tesseract.srp.domain.equipment.elytra.event.ElytraToggleRequestedEvent
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -29,17 +28,34 @@ open class ElytraService(
 ) {
 
     @Transactional
-    open fun giveElytraIfMissing(playerId: UUID) {
+    open fun createElytra(playerId: UUID) {
         val equipment = equipmentService.getEquipment(playerId)
-        if (equipment.get(Elytra::class.java) != null) return
-        val elytra = Elytra(playerId, false, 0)
+        val existing = equipment.get(Elytra::class.java)
+        if (existing != null) {
+            return
+        }
+        val elytra = Elytra(
+            playerUUID = playerId,
+            invoked = false,
+            handSlot = -1,
+        )
         equipmentService.add(playerId, elytra)
-        eventPublisher.publish(ElytraGivenEvent(playerId))
     }
 
     @Transactional
     open fun toggleInvocation(playerId: UUID) {
         eventPublisher.publish(ElytraToggleRequestedEvent(playerId))
+    }
+
+    @Transactional
+    open fun getInvocationResult(playerId: UUID): ElytraInvocationResult {
+        val equipment = equipmentService.getEquipment(playerId)
+        val elytra = equipment.get(Elytra::class.java) ?: return ElytraInvocationResult.NO_ELYTRA
+        return if (elytra.isInvoked) {
+            ElytraInvocationResult.ALREADY_INVOKED
+        } else {
+            ElytraInvocationResult.READY_TO_INVOKE
+        }
     }
 
     @Transactional
@@ -68,17 +84,8 @@ open class ElytraService(
         val equipment = equipmentService.getEquipment(playerId)
         val elytra = equipment.get(Elytra::class.java)
         val player = srpPlayerService.getPlayer(playerId)
-        if (elytra == null) {
-            return ElytraUpgradeMenuState(
-                hasElytra = false,
-                money = player.money,
-                illuminationPoints = player.illuminationPoints,
-                rankLabel = player.rank.toString(),
-                entries = emptyList()
-            )
-        }
         val entries = ElytraUpgrade.entries.map { upgrade ->
-            val currentLevel = elytra.getLevel(upgrade)
+            val currentLevel = elytra?.getLevel(upgrade) ?: 0
             val nextLevel = if (currentLevel < MAX_LEVEL) currentLevel + 1 else null
             val price = if (currentLevel < MAX_LEVEL) getPriceForLevel(currentLevel) else null
             val canAfford = price != null && player.illuminationPoints >= price
@@ -133,22 +140,27 @@ open class ElytraService(
         return true
     }
 
-    fun getUpgradeStatLine(upgrade: ElytraUpgrade, level: Int): String {
+    fun getUpgradeStats(upgrade: ElytraUpgrade, level: Int): ElytraUpgradeStats {
         return when (upgrade) {
             ElytraUpgrade.SPEED -> {
-                val bonus = (SPEED_MULTIPLIER * (level + 1) * PERCENT_CONVERSION).toInt()
-                "→ Vitesse : +$bonus%"
+                val current = SPEED_MULTIPLIER * (level + 1) * PERCENT_CONVERSION
+                val next = SPEED_MULTIPLIER * (level + 2) * PERCENT_CONVERSION
+                ElytraUpgradeStats(current, next, "%", upgrade)
             }
             ElytraUpgrade.PROTECTION -> {
-                "→ Armure : ${PROTECTION_MULTIPLIER * level} points"
+                val current = PROTECTION_MULTIPLIER * level
+                val next = PROTECTION_MULTIPLIER * (level + 1)
+                ElytraUpgradeStats(current, next, "points", upgrade)
             }
             ElytraUpgrade.BOOST_NUMBER -> {
-                val count = Elytra.getBoostCount(level)
-                "→ Boosts max : $count"
+                val current = Elytra.getBoostCount(level).toDouble()
+                val next = Elytra.getBoostCount(level + 1).toDouble()
+                ElytraUpgradeStats(current, next, "boosts", upgrade)
             }
             ElytraUpgrade.RECOVERY -> {
-                val seconds = Elytra.getBaseRecoveryTime(level) / MS_TO_SECONDS
-                "→ Recharge : 1 boost / ${seconds}s"
+                val current = Elytra.getBaseRecoveryTime(level) / MS_TO_SECONDS
+                val next = Elytra.getBaseRecoveryTime(level + 1) / MS_TO_SECONDS
+                ElytraUpgradeStats(current.toDouble(), next.toDouble(), "s", upgrade)
             }
         }
     }

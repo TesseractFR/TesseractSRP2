@@ -3,6 +3,7 @@ package onl.tesseract.srp.controller.menu.elytra
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.format.TextDecoration
+import onl.tesseract.lib.event.equipment.invocable.ElytraUpgrade
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
@@ -14,6 +15,7 @@ import onl.tesseract.srp.service.equipment.elytra.ElytraService
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeEntry
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeMenuState
 import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeResult
+import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeStats
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -38,11 +40,6 @@ class ElytraUpgradeMenu(
 
     override fun placeButtons(viewer: Player) {
         val state = elytraService.getUpgradeMenuState(playerID)
-        if (!state.hasElytra) {
-            viewer.closeInventory()
-            viewer.sendMessage(ELYTRA_ERROR + "Tu ne possèdes pas d'élytra personnalisée.")
-            return
-        }
         placeDecorations()
         placeUpgradeButtons(viewer, state)
         placePlayerInfo(state)
@@ -74,8 +71,7 @@ class ElytraUpgradeMenu(
                         viewer.sendMessage(ELYTRA + "Cette amélioration est déjà au niveau maximal.")
                     }
                     ElytraUpgradeResult.NO_ELYTRA -> {
-                        viewer.sendMessage(ELYTRA_ERROR +"Tu ne possèdes plus d'élytra personnalisée.")
-                        viewer.closeInventory()
+                        viewer.sendMessage(ELYTRA_ERROR +"Tu ne possèdes pas d'ailes célestes.")
                     }
                 }
             }
@@ -85,6 +81,8 @@ class ElytraUpgradeMenu(
     private fun buildUpgradeItem(
         entry: ElytraUpgradeEntry
     ): ItemStack {
+        val stats = elytraService.getUpgradeStats(entry.upgrade, entry.currentLevel)
+        val nextStats = stats.nextValue?.let { stats.copy(currentValue = it) }
         val builder = ItemBuilder(entry.upgrade.material)
             .name(entry.upgrade.displayName, NamedTextColor.AQUA)
             .lore()
@@ -93,13 +91,13 @@ class ElytraUpgradeMenu(
             .append("Niveau actuel : ", NamedTextColor.GREEN)
             .append("${entry.currentLevel + 1}", NamedTextColor.YELLOW)
             .newline()
-            .append(elytraService.getUpgradeStatLine(entry.upgrade, entry.currentLevel), NamedTextColor.WHITE)
+            .append(formatStat(stats), NamedTextColor.WHITE)
             .newline().newline()
 
         if (entry.nextLevel != null && entry.price != null && entry.currentLevel < entry.maxLevel) {
             builder.append("Prochaine amélioration :", NamedTextColor.BLUE, TextDecoration.BOLD)
                 .newline()
-                .append(elytraService.getUpgradeStatLine(entry.upgrade, entry.nextLevel), NamedTextColor.YELLOW)
+                .append(nextStats?.let { formatStat(it) }, NamedTextColor.YELLOW)
                 .newline().newline()
                 .append("Coût : ", NamedTextColor.GOLD)
                 .append("${entry.price} points d'illumination",
@@ -126,4 +124,12 @@ class ElytraUpgradeMenu(
                 .build()
         )
     }
+
+    private fun formatStat(stats: ElytraUpgradeStats): String = when (stats.type) {
+        ElytraUpgrade.SPEED       -> "→ Vitesse : +${stats.currentValue.toInt()}${stats.unit}"
+        ElytraUpgrade.PROTECTION  -> "→ Armure : ${stats.currentValue} ${stats.unit}"
+        ElytraUpgrade.BOOST_NUMBER-> "→ Boosts max : ${stats.currentValue.toInt()}"
+        ElytraUpgrade.RECOVERY    -> "→ Recharge : 1 boost / ${stats.currentValue.toInt()}${stats.unit}"
+    }
+
 }

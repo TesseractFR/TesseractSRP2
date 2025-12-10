@@ -19,8 +19,6 @@ class ElytraMenuCommand(
 ) : CommandContext(commandInstanceProvider) {
     @CommandBody
     fun onCommand(sender: Player) {
-        elytraService.giveElytraIfMissing(sender.uniqueId)
-        ElytraMenu(sender, elytraService, playerProfileService)
-            .open(sender)
+        ElytraMenu(sender, elytraService, playerProfileService).open(sender)
     }
 }
