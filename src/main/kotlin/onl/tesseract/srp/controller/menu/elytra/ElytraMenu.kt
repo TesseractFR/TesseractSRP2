@@ -3,10 +3,18 @@ package onl.tesseract.srp.controller.menu.elytra
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.core.cosmetics.menu.ElytraTrailSelectionMenu
+import onl.tesseract.lib.equipment.EquipmentService
+import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.profile.PlayerProfileService
+import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
+import onl.tesseract.lib.util.ChatFormats.ELYTRA_SUCCESS
+import onl.tesseract.lib.util.plus
+import onl.tesseract.srp.domain.equipment.elytra.ElytraInvocationResult
 import onl.tesseract.srp.service.equipment.elytra.ElytraService
+import onl.tesseract.srp.service.player.SrpPlayerService
+import onl.tesseract.srp.util.PlayerUtils.tryFreeChestplateSlot
 import org.bukkit.Material
 import org.bukkit.entity.Player
 
@@ -20,13 +28,16 @@ class ElytraMenu(
     private val player: Player,
     private val elytraService: ElytraService,
     private val playerProfileService: PlayerProfileService,
+    private val equipmentService: EquipmentService,
+    private val srpPlayerService: SrpPlayerService
 ) : ElytraBaseMenu(MenuSize.Five, Component.text("Ailes Célestes", NamedTextColor.DARK_PURPLE)) {
 
     override fun placeButtons(viewer: Player) {
-        val state = elytraService.getMenuState(player.uniqueId)
+        val elytra = getElytra(player)
+        val autoGlide = elytra?.autoGlide ?: false
         placeDecorations()
         placeElytraInvokeButton(viewer)
-        placeAutoGlideButton(state.autoGlide, viewer)
+        placeAutoGlideButton(autoGlide, viewer)
         placePropulsionButton(viewer)
         placeUpgradeButton(viewer)
         placeSillageButton(viewer)
@@ -44,10 +55,42 @@ class ElytraMenu(
                 .buildLore()
                 .build()
         ) {
+            val result = elytraService.getInvocationResult(viewer.uniqueId)
+            when (result) {
+                ElytraInvocationResult.NO_ELYTRA -> {
+                    if (!canEquipElytra(viewer)) return@addButton
+                    elytraService.createElytra(viewer.uniqueId)
+                    invokeElytra(viewer)
+                }
+                ElytraInvocationResult.ALREADY_INVOKED -> {
+                    val elytra = getElytra(viewer, true) ?: return@addButton
+                    equipmentService.uninvoke(viewer, elytra)
+                }
+                ElytraInvocationResult.READY_TO_INVOKE -> {
+                    if (!canEquipElytra(viewer)) return@addButton
+                    invokeElytra(viewer)
+                }
+            }
             close()
-            elytraService.toggleInvocation(viewer.uniqueId)
         }
     }
+
+    private fun canEquipElytra(viewer: Player): Boolean {
+        if (!tryFreeChestplateSlot(viewer)) {
+            viewer.closeInventory()
+            viewer.sendMessage(
+                ELYTRA_ERROR + "Ton inventaire est plein, impossible d'invoquer tes Ailes Célestes."
+            )
+            return false
+        }
+        return true
+    }
+
+    private fun invokeElytra(viewer: Player) {
+        equipmentService.invoke(viewer, Elytra::class.java, null, true)
+        viewer.sendMessage(ELYTRA_SUCCESS + "Tu as invoqué tes Ailes Célestes !")
+    }
+
 
     private fun placeAutoGlideButton(autoGlide: Boolean, viewer: Player) {
         val autoGlideColor = if (autoGlide) NamedTextColor.GREEN else NamedTextColor.RED
@@ -78,7 +121,13 @@ class ElytraMenu(
                 .buildLore()
                 .build()
         ) {
-            elytraService.requestPropulsion(viewer.uniqueId)
+            val canPropulse = elytraService.requestPropulsion(viewer.uniqueId)
+            if (!canPropulse) {
+                viewer.sendMessage(ELYTRA_ERROR + "Vous devez invoquer vos ailes pour utiliser cette fonction.")
+            } else {
+                val elytra = getElytra(viewer, true) ?: return@addButton
+                elytra.synergicPropulsion(viewer)
+            }
             close()
         }
     }
@@ -93,7 +142,7 @@ class ElytraMenu(
                 .build()
         ) {
             ElytraUpgradeMenu(
-                player.uniqueId, playerProfileService, elytraService, this)
+                player.uniqueId, playerProfileService, elytraService, srpPlayerService, this)
                 .open(viewer)
         }
     }
@@ -110,4 +159,11 @@ class ElytraMenu(
             ElytraTrailSelectionMenu(viewer.uniqueId, this).open(viewer)
         }
     }
+
+    private fun getElytra(viewer: Player, invokedOnly: Boolean = false): Elytra? {
+        val equipment = equipmentService.getEquipment(viewer.uniqueId)
+        val elytra = equipment.get(Elytra::class.java) ?: return null
+        return if (!invokedOnly || elytra.isInvoked) elytra else null
+    }
+
 }

@@ -3,17 +3,18 @@ package onl.tesseract.srp.service.equipment.elytra
 import onl.tesseract.lib.equipment.EquipmentService
 import onl.tesseract.lib.event.equipment.invocable.Elytra
 import onl.tesseract.lib.event.equipment.invocable.ElytraUpgrade
-import onl.tesseract.srp.DomainEventPublisher
-import onl.tesseract.srp.domain.equipment.elytra.event.ElytraAutoGlideToggleRequestedEvent
-import onl.tesseract.srp.domain.equipment.elytra.event.ElytraPropulsionRequestedEvent
-import onl.tesseract.srp.domain.equipment.elytra.event.ElytraToggleRequestedEvent
+import onl.tesseract.srp.domain.equipment.elytra.ElytraInvocationResult
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeEntry
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeResult
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeStats
 import onl.tesseract.srp.service.player.SrpPlayerService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 private const val BASE_PRICE = 100
-private const val MAX_LEVEL = 9 // (ingame lvl 10)
+const val MIN_UPGRADE_LEVEL = 0
+const val MAX_UPGRADE_LEVEL = 9 // (ingame lvl 10)
 
 private const val SPEED_MULTIPLIER = 0.10
 private const val PROTECTION_MULTIPLIER = 0.5
@@ -23,7 +24,6 @@ private const val MS_TO_SECONDS = 1000
 @Service
 open class ElytraService(
     private val srpPlayerService: SrpPlayerService,
-    private val eventPublisher: DomainEventPublisher,
     private val equipmentService: EquipmentService
 ) {
 
@@ -43,11 +43,6 @@ open class ElytraService(
     }
 
     @Transactional
-    open fun toggleInvocation(playerId: UUID) {
-        eventPublisher.publish(ElytraToggleRequestedEvent(playerId))
-    }
-
-    @Transactional
     open fun getInvocationResult(playerId: UUID): ElytraInvocationResult {
         val equipment = equipmentService.getEquipment(playerId)
         val elytra = equipment.get(Elytra::class.java) ?: return ElytraInvocationResult.NO_ELYTRA
@@ -60,51 +55,39 @@ open class ElytraService(
 
     @Transactional
     open fun toggleAutoGlide(playerId: UUID) {
-        eventPublisher.publish(ElytraAutoGlideToggleRequestedEvent(playerId))
-    }
-
-    @Transactional
-    open fun requestPropulsion(playerId: UUID) {
-        eventPublisher.publish(ElytraPropulsionRequestedEvent(playerId))
-    }
-
-    @Transactional
-    open fun getMenuState(playerId: UUID): ElytraMenuState {
         val equipment = equipmentService.getEquipment(playerId)
-        val elytra = equipment.get(Elytra::class.java) ?: return ElytraMenuState(hasElytra = false)
-        return ElytraMenuState(
-            hasElytra = true,
-            isInvoked = elytra.isInvoked,
-            autoGlide = elytra.autoGlide
-        )
+        val elytra = equipment.get(Elytra::class.java) ?: return
+        elytra.toggleAutoGlideEnabled(!elytra.autoGlide)
     }
 
     @Transactional
-    open fun getUpgradeMenuState(playerId: UUID): ElytraUpgradeMenuState {
+    open fun requestPropulsion(playerId: UUID): Boolean {
         val equipment = equipmentService.getEquipment(playerId)
-        val elytra = equipment.get(Elytra::class.java)
+        val elytra = equipment.get(Elytra::class.java) ?: return false
+        return elytra.isInvoked
+    }
+
+    @Transactional
+    open fun getUpgradeEntries(playerId: UUID): List<ElytraUpgradeEntry> {
+        val equipment = equipmentService.getEquipment(playerId)
+        val elytra = equipment.get(Elytra::class.java) ?: return emptyList()
+
         val player = srpPlayerService.getPlayer(playerId)
-        val entries = ElytraUpgrade.entries.map { upgrade ->
-            val currentLevel = elytra?.getLevel(upgrade) ?: 0
-            val nextLevel = if (currentLevel < MAX_LEVEL) currentLevel + 1 else null
-            val price = if (currentLevel < MAX_LEVEL) getPriceForLevel(currentLevel) else null
+
+        return ElytraUpgrade.entries.map { upgrade ->
+            val currentLevel = elytra.getLevel(upgrade)
+            val nextLevel = if (currentLevel < MAX_UPGRADE_LEVEL) currentLevel + 1 else null
+            val price = if (currentLevel < MAX_UPGRADE_LEVEL) getPriceForLevel(currentLevel) else null
             val canAfford = price != null && player.illuminationPoints >= price
             ElytraUpgradeEntry(
                 upgrade = upgrade,
                 currentLevel = currentLevel,
                 nextLevel = nextLevel,
-                maxLevel = MAX_LEVEL,
+                maxLevel = MAX_UPGRADE_LEVEL,
                 price = price,
                 canAfford = canAfford
             )
         }
-        return ElytraUpgradeMenuState(
-            hasElytra = true,
-            money = player.money,
-            illuminationPoints = player.illuminationPoints,
-            rankLabel = player.rank.toString(),
-            entries = entries
-        )
     }
 
     @Transactional
@@ -115,7 +98,7 @@ open class ElytraService(
         val equipment = equipmentService.getEquipment(playerId)
         val elytra = equipment.get(Elytra::class.java) ?: return ElytraUpgradeResult.NO_ELYTRA
         val currentLevel = elytra.getLevel(upgrade)
-        if (currentLevel >= MAX_LEVEL) {
+        if (currentLevel >= MAX_UPGRADE_LEVEL) {
             return ElytraUpgradeResult.MAX_LEVEL_REACHED
         }
         val price = getPriceForLevel(currentLevel) ?: return ElytraUpgradeResult.MAX_LEVEL_REACHED
@@ -145,27 +128,27 @@ open class ElytraService(
             ElytraUpgrade.SPEED -> {
                 val current = SPEED_MULTIPLIER * (level + 1) * PERCENT_CONVERSION
                 val next = SPEED_MULTIPLIER * (level + 2) * PERCENT_CONVERSION
-                ElytraUpgradeStats(current, next, "%", upgrade)
+                ElytraUpgradeStats(current, next, upgrade)
             }
             ElytraUpgrade.PROTECTION -> {
                 val current = PROTECTION_MULTIPLIER * level
                 val next = PROTECTION_MULTIPLIER * (level + 1)
-                ElytraUpgradeStats(current, next, "points", upgrade)
+                ElytraUpgradeStats(current, next, upgrade)
             }
             ElytraUpgrade.BOOST_NUMBER -> {
                 val current = Elytra.getBoostCount(level).toDouble()
                 val next = Elytra.getBoostCount(level + 1).toDouble()
-                ElytraUpgradeStats(current, next, "boosts", upgrade)
+                ElytraUpgradeStats(current, next, upgrade)
             }
             ElytraUpgrade.RECOVERY -> {
                 val current = Elytra.getBaseRecoveryTime(level) / MS_TO_SECONDS
                 val next = Elytra.getBaseRecoveryTime(level + 1) / MS_TO_SECONDS
-                ElytraUpgradeStats(current.toDouble(), next.toDouble(), "s", upgrade)
+                ElytraUpgradeStats(current.toDouble(), next.toDouble(), upgrade)
             }
         }
     }
 
     private fun getPriceForLevel(level: Int): Int? =
-        if (level in 0 until MAX_LEVEL) BASE_PRICE * (level + 1) else null
+        if (level in 0 until MAX_UPGRADE_LEVEL) BASE_PRICE * (level + 1) else null
 
 }

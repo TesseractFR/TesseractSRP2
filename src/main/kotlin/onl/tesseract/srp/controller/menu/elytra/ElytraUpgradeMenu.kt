@@ -12,10 +12,10 @@ import onl.tesseract.lib.util.ChatFormats.ELYTRA
 import onl.tesseract.lib.util.ChatFormats.ELYTRA_ERROR
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.service.equipment.elytra.ElytraService
-import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeEntry
-import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeMenuState
-import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeResult
-import onl.tesseract.srp.service.equipment.elytra.ElytraUpgradeStats
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeEntry
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeResult
+import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeStats
+import onl.tesseract.srp.service.player.SrpPlayerService
 import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -31,6 +31,7 @@ class ElytraUpgradeMenu(
     private val playerID: UUID,
     private val playerProfileService: PlayerProfileService,
     private val elytraService: ElytraService,
+    private val srpPlayerService: SrpPlayerService,
     previous: Menu?
 ) : ElytraBaseMenu(
     MenuSize.Five,
@@ -39,22 +40,28 @@ class ElytraUpgradeMenu(
 ) {
 
     override fun placeButtons(viewer: Player) {
-        val state = elytraService.getUpgradeMenuState(playerID)
+        val entries = elytraService.getUpgradeEntries(playerID)
+        val player = srpPlayerService.getPlayer(playerID)
         placeDecorations()
-        placeUpgradeButtons(viewer, state)
-        placePlayerInfo(state)
+        placeUpgradeButtons(viewer, entries)
+        placePlayerInfo(
+            money = player.money,
+            illuminationPoints = player.illuminationPoints,
+            rankLabel = player.rank.toString()
+        )
         addBackButton()
         addCloseButton()
     }
 
-    private fun placeUpgradeButtons(viewer: Player, state: ElytraUpgradeMenuState) {
+
+    private fun placeUpgradeButtons(viewer: Player, entries: List<ElytraUpgradeEntry>) {
         val slots = listOf(
             SLOT_UPGRADE_SPEED,
             SLOT_UPGRADE_PROTECTION,
             SLOT_UPGRADE_BOOST_NUMBER,
             SLOT_UPGRADE_RECOVERY
         )
-        state.entries.forEachIndexed { index, entry ->
+        entries.forEachIndexed { index, entry ->
             val slot = slots.getOrNull(index) ?: return@forEachIndexed
             val item = buildUpgradeItem(entry)
             addButton(slot, item) {
@@ -109,27 +116,25 @@ class ElytraUpgradeMenu(
         return builder.buildLore().build()
     }
 
-    private fun placePlayerInfo(state: ElytraUpgradeMenuState) {
+    private fun placePlayerInfo(money: Int, illuminationPoints: Int, rankLabel: String) {
         addButton(
             PLAYER_INFO_SLOT,
             ItemBuilder(playerProfileService.getPlayerHead(playerID))
                 .name("Mes informations", NamedTextColor.GREEN)
                 .lore()
                 .newline()
-                .addField("Argent", "${state.money} Lys", NamedTextColor.GOLD)
-                .addField("Points d'illumination",
-                    "${state.illuminationPoints}", NamedTextColor.GOLD)
-                .addField("Grade", state.rankLabel, NamedTextColor.GOLD)
+                .addField("Argent", "$money Lys", NamedTextColor.GOLD)
+                .addField("Points d'illumination", "$illuminationPoints", NamedTextColor.GOLD)
+                .addField("Grade", rankLabel, NamedTextColor.GOLD)
                 .buildLore()
                 .build()
         )
     }
 
     private fun formatStat(stats: ElytraUpgradeStats): String = when (stats.type) {
-        ElytraUpgrade.SPEED       -> "→ Vitesse : +${stats.currentValue.toInt()}${stats.unit}"
-        ElytraUpgrade.PROTECTION  -> "→ Armure : ${stats.currentValue} ${stats.unit}"
-        ElytraUpgrade.BOOST_NUMBER-> "→ Boosts max : ${stats.currentValue.toInt()}"
-        ElytraUpgrade.RECOVERY    -> "→ Recharge : 1 boost / ${stats.currentValue.toInt()}${stats.unit}"
+        ElytraUpgrade.SPEED -> "→ Vitesse : +${stats.currentValue.toInt()}%"
+        ElytraUpgrade.PROTECTION -> "→ Armure : ${stats.currentValue} points"
+        ElytraUpgrade.BOOST_NUMBER -> "→ Boosts max : ${stats.currentValue.toInt()}"
+        ElytraUpgrade.RECOVERY -> "→ Recharge : 1 boost / ${stats.currentValue.toInt()}s"
     }
-
 }

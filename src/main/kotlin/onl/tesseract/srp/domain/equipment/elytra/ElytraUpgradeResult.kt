@@ -1,4 +1,4 @@
-package onl.tesseract.srp.service.equipment.elytra
+package onl.tesseract.srp.domain.equipment.elytra
 
 enum class ElytraUpgradeResult {
     SUCCESS,
