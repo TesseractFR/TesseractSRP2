@@ -11,4 +11,16 @@ object PlayerUtils {
         is Entity -> null
         else -> null
     }
+
+    fun tryFreeChestplateSlot(player: Player): Boolean {
+        val chestplate = player.inventory.chestplate ?: return true
+        val leftovers = player.inventory.addItem(chestplate)
+        return if (leftovers.isEmpty()) {
+            player.inventory.chestplate = null
+            true
+        } else {
+            false
+        }
+    }
+
 }

@@ -27,3 +27,7 @@ commands:
     description: Gestion de guilde
     aliases:
       - g
+  elytras:
+    description: Ouvre le menu des ailes
+  elytrasUpgrade:
+    description: Ouvre le menu d'amélioration des ailes
