@@ -1,12 +1,11 @@
-package onl.tesseract.srp.repository.hibernate
+package onl.tesseract.srp.repository.hibernate.territory.entity.campement
 
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
-import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementChunkEntity
-import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
+import org.hibernate.annotations.Cache
 import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
@@ -18,7 +17,7 @@ private const val CHUNK_SIZE = 16
 @Entity
 @Table(name = "t_campements")
 @Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class CampementEntity(
 
     @Id
@@ -32,11 +31,11 @@ class CampementEntity(
         joinColumns = [JoinColumn(name = "id")]
     )
     @Column(name = "trusted_player")
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val trustedPlayers: Set<UUID>,
 
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "campement", orphanRemoval = true, fetch = FetchType.EAGER)
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val listChunks: MutableSet<CampementChunkEntity> = mutableSetOf(),
 
     @Column(nullable = false)

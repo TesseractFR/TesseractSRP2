@@ -2,7 +2,7 @@ package onl.tesseract.srp.testutils.fixture
 
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
-import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository
 import java.util.*
 
 interface SrpPlayerDomainTest {

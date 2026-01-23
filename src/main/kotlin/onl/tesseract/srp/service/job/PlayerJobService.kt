@@ -6,7 +6,7 @@ import onl.tesseract.lib.logger.LoggerFactory
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobSkill
 import onl.tesseract.srp.domain.job.PlayerJobProgression
-import onl.tesseract.srp.repository.hibernate.job.PlayerJobProgressionRepository
+import onl.tesseract.srp.repository.generic.job.PlayerJobProgressionRepository
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*

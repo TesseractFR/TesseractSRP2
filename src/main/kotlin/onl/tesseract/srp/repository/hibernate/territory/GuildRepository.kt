@@ -1,27 +1,20 @@
-package onl.tesseract.srp.repository.hibernate.guild
+package onl.tesseract.srp.repository.hibernate.territory
 
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
-import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
+import onl.tesseract.srp.repository.generic.territory.GuildRepository
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
-interface GuildRepository : TerritoryRepository<Guild, UUID> {
-    fun findGuildByChunk(chunk: GuildChunk): Guild?
-    fun areChunksClaimed(chunks: Collection<GuildChunk>): Boolean
-    fun findGuildByName(name: String): Guild?
-    fun findGuildByLeader(leaderID: UUID): Guild?
-    fun findGuildByMember(memberID: UUID): Guild?
-    fun findMemberRole(playerID: UUID): GuildRole?
-    fun findAll(): Collection<Guild>
-    fun deleteById(id: UUID)
-}
 
 @Component
 class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository,
@@ -77,7 +70,7 @@ class GuildRepositoryJpaAdapter(private val jpaRepository: GuildJpaRepository,
     }
 }
 
-@org.springframework.stereotype.Repository
+@Repository
 interface GuildJpaRepository : JpaRepository<GuildEntity, UUID> {
 
     fun findByName(name: String): GuildEntity?

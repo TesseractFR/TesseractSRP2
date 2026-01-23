@@ -11,8 +11,8 @@ import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.territory.enum.TerritoryWorld
 import onl.tesseract.srp.domain.territory.enum.result.CreationResult
+import onl.tesseract.srp.repository.generic.territory.CampementRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
-import onl.tesseract.srp.repository.hibernate.CampementRepository
 import onl.tesseract.srp.service.player.SrpPlayerService
 import onl.tesseract.srp.service.territory.TerritoryService
 import onl.tesseract.srp.util.InteractionAllowResult

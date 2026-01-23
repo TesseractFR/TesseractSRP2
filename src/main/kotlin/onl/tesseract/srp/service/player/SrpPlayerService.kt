@@ -6,7 +6,7 @@ import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
-import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import org.springframework.stereotype.Service

@@ -1,17 +1,14 @@
 package onl.tesseract.srp.repository.hibernate
 
-import onl.tesseract.lib.repository.Repository
 import onl.tesseract.srp.domain.money.ledger.Ledger
 import onl.tesseract.srp.domain.money.ledger.MoneyTransaction
+import onl.tesseract.srp.repository.generic.MoneyLedgerRepository
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.util.*
 
-interface MoneyLedgerRepository : Repository<Ledger, UUID> {
 
-    fun recordNewTransaction(transaction: MoneyTransaction)
-}
 
 @Component
 class MoneyLedgerJpaAdapter(

@@ -7,9 +7,9 @@ import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.player.SrpPlayer
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
-import onl.tesseract.srp.repository.hibernate.CampementRepository
-import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
-import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository
+import onl.tesseract.srp.repository.generic.territory.CampementRepository
+import onl.tesseract.srp.repository.generic.territory.GuildRepository
 import java.util.*
 
 abstract class InMemoryRepository<T, ID> : Repository<T, ID> {

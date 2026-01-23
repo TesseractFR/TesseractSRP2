@@ -5,7 +5,7 @@ import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.exception.PlayerNotConnectedException
-import onl.tesseract.srp.repository.hibernate.job.mission.JobMissionRepository
+import onl.tesseract.srp.repository.generic.job.JobMissionRepository
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.job.JobService
 import onl.tesseract.srp.service.job.PlayerJobService

@@ -1,15 +1,11 @@
 package onl.tesseract.srp.repository.hibernate.job.mission
 
-import onl.tesseract.lib.repository.Repository
 import onl.tesseract.srp.domain.job.mission.JobMission
+import onl.tesseract.srp.repository.generic.job.JobMissionRepository
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Component
 import java.util.*
 
-interface JobMissionRepository : Repository<JobMission, Long> {
-    fun deleteById(id: Long)
-    fun findAllByPlayerId(playerId: UUID): List<JobMission>
-}
 
 @Component
 class JobMissionRepositoryJpaAdapter(
