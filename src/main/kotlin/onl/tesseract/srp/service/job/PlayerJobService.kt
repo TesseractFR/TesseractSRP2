@@ -61,13 +61,15 @@ open class PlayerJobService(
 
     fun addXp(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
-        progression.addXp(amount)
+        val passedLevel = progression.addXp(amount)
+        if (passedLevel > 0) eventService.callEvent(PlayerLevelUpEvent(playerID, progression.level, passedLevel))
         savePlayerProgression(progression)
     }
 
     fun addLevel(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addLevel(amount)
+        if (amount > 0) eventService.callEvent(PlayerLevelUpEvent(playerID, progression.level, amount))
         savePlayerProgression(progression)
     }
 
@@ -76,10 +78,6 @@ open class PlayerJobService(
      */
     private fun savePlayerProgression(playerJobProgression: PlayerJobProgression) {
         repository.save(playerJobProgression)
-        playerJobProgression.consumeEvents {
-            logger.info(it.toString())
-            eventService.callEvent(it)
-        }
     }
 
     fun clearXp(playerID: UUID) {

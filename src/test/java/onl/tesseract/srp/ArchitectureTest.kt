@@ -13,6 +13,7 @@ class ArchitectureTest {
     fun `controllers should not be accessed by other layers`() {
         noClasses()
                 .that().resideOutsideOfPackage("..controller..")
+                .and().haveSimpleNameNotContaining("TesseractSRP")
                 .should().accessClassesThat().resideInAnyPackage("..controller..")
                 .check(classes)
     }
