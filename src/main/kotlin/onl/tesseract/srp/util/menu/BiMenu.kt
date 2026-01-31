@@ -10,7 +10,7 @@ import onl.tesseract.lib.service.PluginService
 import onl.tesseract.lib.service.ServiceContainer
 import onl.tesseract.lib.task.TaskScheduler
 import onl.tesseract.srp.PLUGIN_INSTANCE
-import onl.tesseract.srp.controller.menu.job.CustomInventoryView
+import onl.tesseract.srp.infrastructure.CustomInventoryView
 import org.bukkit.Bukkit
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player

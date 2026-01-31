@@ -5,7 +5,7 @@ import onl.tesseract.srp.domain.money.ledger.LedgerType
 import onl.tesseract.srp.domain.money.ledger.MoneyTransaction
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
-import onl.tesseract.srp.repository.hibernate.MoneyLedgerRepository
+import onl.tesseract.srp.repository.generic.MoneyLedgerRepository
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.*

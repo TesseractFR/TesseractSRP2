@@ -5,17 +5,17 @@ import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps
 import onl.tesseract.commandBuilder.CommandArgumentException
 import onl.tesseract.srp.PLUGIN_INSTANCE
 import onl.tesseract.srp.domain.territory.guild.Guild
-import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
+import onl.tesseract.srp.service.territory.guild.GuildService
 
 class GuildArg(name: String) : CommandArgument<Guild>(name) {
 
     override fun define(builder: CommandArgumentBuilderSteps.Parser<Guild>) {
         builder.parser { input, _ ->
-            guildRepository().findGuildByName(input) ?: throw CommandArgumentException("Guilde $input introuvable")
+            guildService().getByName(input) ?: throw CommandArgumentException("Guilde $input introuvable")
         }
-            .tabCompleter { _, _ -> guildRepository().findAll().map { it.name } }
+            .tabCompleter { _, _ -> guildService().getAllGuilds().map { it.name } }
     }
 
-    private fun guildRepository(): GuildRepository =
-        PLUGIN_INSTANCE.springContext.getBean(GuildRepository::class.java)
+    private fun guildService(): GuildService =
+        PLUGIN_INSTANCE.springContext.getBean(GuildService::class.java)
 }

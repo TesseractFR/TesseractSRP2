@@ -25,7 +25,7 @@ import onl.tesseract.srp.domain.territory.guild.enum.GuildUpgradeResult
 import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
 import onl.tesseract.srp.domain.territory.guild.event.GuildLevelUpEvent
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
-import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
+import onl.tesseract.srp.repository.generic.territory.GuildRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import onl.tesseract.srp.service.player.SrpPlayerService
@@ -99,7 +99,7 @@ open class GuildService(
         return result
     }
 
-    private fun getByName(guildName: String): Guild? {
+    fun getByName(guildName: String): Guild? {
         return territoryRepository.findGuildByName(guildName)
     }
 

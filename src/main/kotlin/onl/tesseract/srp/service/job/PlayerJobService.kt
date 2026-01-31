@@ -1,12 +1,12 @@
 package onl.tesseract.srp.service.job
 
 import jakarta.transaction.Transactional
-import onl.tesseract.lib.event.EventService
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.srp.DomainEventPublisher
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobSkill
 import onl.tesseract.srp.domain.job.PlayerJobProgression
-import onl.tesseract.srp.repository.hibernate.job.PlayerJobProgressionRepository
+import onl.tesseract.srp.repository.generic.job.PlayerJobProgressionRepository
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
@@ -16,7 +16,7 @@ val logger: Logger = LoggerFactory.getLogger(PlayerJobService::class.java)
 @Service
 open class PlayerJobService(
     private val repository: PlayerJobProgressionRepository,
-    private val eventService: EventService
+    private val eventService: DomainEventPublisher
 ) {
 
     private val lootBatches: MutableMap<UUID, Int> = mutableMapOf()
@@ -35,7 +35,7 @@ open class PlayerJobService(
         if (added) {
             repository.save(progression)
             logger.info("Player $playerID has unlocked skill $skill")
-            eventService.callEvent(PlayerJobSkillUnlockedEvent(playerID, skill))
+            eventService.publish(PlayerJobSkillUnlockedEvent(playerID, skill))
         }
         return added
     }
@@ -61,13 +61,15 @@ open class PlayerJobService(
 
     fun addXp(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
-        progression.addXp(amount)
+        val passedLevel = progression.addXp(amount)
+        if (passedLevel > 0) eventService.publish(PlayerLevelUpEvent(playerID, progression.level, passedLevel))
         savePlayerProgression(progression)
     }
 
     fun addLevel(playerID: UUID, amount: Int) {
         val progression = getPlayerJobProgression(playerID)
         progression.addLevel(amount)
+        if (amount > 0) eventService.publish(PlayerLevelUpEvent(playerID, progression.level, amount))
         savePlayerProgression(progression)
     }
 
@@ -76,10 +78,6 @@ open class PlayerJobService(
      */
     private fun savePlayerProgression(playerJobProgression: PlayerJobProgression) {
         repository.save(playerJobProgression)
-        playerJobProgression.consumeEvents {
-            logger.info(it.toString())
-            eventService.callEvent(it)
-        }
     }
 
     fun clearXp(playerID: UUID) {

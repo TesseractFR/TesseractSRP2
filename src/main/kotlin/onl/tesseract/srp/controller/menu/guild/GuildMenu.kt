@@ -10,7 +10,6 @@ import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.lib.util.plus
 import onl.tesseract.lib.util.toComponent
 import onl.tesseract.srp.domain.territory.guild.Guild
-import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.territory.guild.GuildService
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -22,13 +21,12 @@ private const val BANK_BUTTON_INDEX = 4
 class GuildMenu(
     val playerID: UUID,
     private val guildService: GuildService,
-    private val guildRepository: GuildRepository,
     private val chatService: ChatEntryService,
     previous: Menu? = null
 ) : Menu(MenuSize.Five, "Guilde".toComponent(), previous) {
 
     override fun placeButtons(viewer: Player) {
-        val guild = guildRepository.findGuildByMember(playerID) ?: return close()
+        val guild = guildService.getGuildByMember(viewer.uniqueId) ?: return close()
 
         addBankButton(guild, viewer)
 

@@ -1,20 +1,17 @@
-package onl.tesseract.srp.repository.hibernate
+package onl.tesseract.srp.repository.hibernate.territory
 
 import onl.tesseract.srp.domain.territory.campement.Campement
 import onl.tesseract.srp.domain.territory.campement.CampementChunk
 import onl.tesseract.srp.domain.commun.ChunkCoord
+import onl.tesseract.srp.repository.generic.territory.CampementRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryChunkRepository
 import onl.tesseract.srp.repository.generic.territory.TerritoryRepository
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.CampementEntity
+import onl.tesseract.srp.repository.hibernate.territory.entity.campement.toEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
 import java.util.*
-
-interface CampementRepository : TerritoryRepository<Campement, UUID> {
-    fun deleteById(id: UUID)
-    fun isChunkClaimed(chunkCoord: ChunkCoord): Boolean
-    fun getCampementByChunk(chunkCoord: ChunkCoord): Campement?
-    fun findAll(): List<Campement>
-}
 
 @Component
 class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository,
@@ -56,6 +53,6 @@ class CampementRepositoryJpaAdapter(private var jpaRepo: CampementJpaRepository,
 
 }
 
-@org.springframework.stereotype.Repository
+@Repository
 interface CampementJpaRepository : JpaRepository<CampementEntity, UUID>
 

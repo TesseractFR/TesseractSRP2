@@ -29,7 +29,6 @@ import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
-import onl.tesseract.srp.repository.hibernate.guild.GuildRepository
 import onl.tesseract.srp.service.TeleportationService
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService
 import onl.tesseract.srp.service.territory.guild.GuildBorderService
@@ -58,7 +57,6 @@ private val NOT_IN_GUILD_WORLD_MESSAGE =
 class GuildCommand(
     provider: CommandInstanceProvider,
     private val guildService: GuildService,
-    private val guildRepository: GuildRepository,
     private val guildBorderService: GuildBorderService,
     private val chatEntryService: ChatEntryService,
     private val menuService: MenuService,
@@ -128,7 +126,7 @@ class GuildCommand(
             sender.sendMessage(NO_GUILD_MESSAGE)
             return
         }
-        GuildMenu(sender.uniqueId, guildService, guildRepository, chatEntryService)
+        GuildMenu(sender.uniqueId, guildService, chatEntryService)
                 .open(sender)
     }
 
@@ -317,7 +315,7 @@ class GuildCommand(
         val (guild, errorMsg) = if (targetName == null) {
             guildService.getGuildByMember(sender.uniqueId) to (NO_GUILD_MESSAGE)
         } else {
-            guildRepository.findGuildByName(targetName) to (GuildChatError + "La guilde \"$targetName\" n’existe pas.")
+            guildService.getByName(targetName) to (GuildChatError + "La guilde \"$targetName\" n’existe pas.")
         }
         val targetGuild = guild ?: run {
             sender.sendMessage(errorMsg); return

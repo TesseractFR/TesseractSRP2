@@ -1,12 +1,12 @@
 package onl.tesseract.srp.service.player
 
-import onl.tesseract.lib.event.EventService
-import onl.tesseract.srp.controller.event.player.PlayerRankUpEvent
+import onl.tesseract.srp.DomainEventPublisher
+import onl.tesseract.srp.domain.player.event.PlayerRankUpEvent
 import onl.tesseract.srp.domain.money.ledger.TransactionSubType
 import onl.tesseract.srp.domain.money.ledger.TransactionType
 import onl.tesseract.srp.domain.player.PlayerRank
 import onl.tesseract.srp.domain.player.SrpPlayer
-import onl.tesseract.srp.repository.hibernate.player.SrpPlayerRepository
+import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository
 import onl.tesseract.srp.service.money.MoneyLedgerService
 import onl.tesseract.srp.service.money.TransferService
 import org.springframework.stereotype.Service
@@ -17,7 +17,7 @@ import java.util.*
 open class SrpPlayerService(
     private val repository: SrpPlayerRepository,
     private val ledgerService: MoneyLedgerService,
-    private val eventService: EventService
+    private val eventService: DomainEventPublisher
 ) {
 
     open fun getPlayer(id: UUID): SrpPlayer {
@@ -34,7 +34,7 @@ open class SrpPlayerService(
         player.rank = rank
         player.titleID = rank.title.id
         savePlayer(player)
-        eventService.callEvent(PlayerRankUpEvent(playerID, rank))
+        eventService.publish(PlayerRankUpEvent(playerID, rank))
         return true
     }
 
@@ -57,7 +57,7 @@ open class SrpPlayerService(
                 player.rank.name
             )
             savePlayer(player)
-            eventService.callEvent(PlayerRankUpEvent(playerID, player.rank))
+            eventService.publish(PlayerRankUpEvent(playerID, player.rank))
         }
         return result
     }

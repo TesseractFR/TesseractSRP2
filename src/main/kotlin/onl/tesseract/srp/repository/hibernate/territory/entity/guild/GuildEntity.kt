@@ -1,4 +1,4 @@
-package onl.tesseract.srp.repository.hibernate.guild
+package onl.tesseract.srp.repository.hibernate.territory.entity.guild
 
 import jakarta.persistence.AttributeOverride
 import jakarta.persistence.AttributeOverrides
@@ -26,8 +26,7 @@ import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.world.SrpWorld
-import onl.tesseract.srp.repository.hibernate.territory.entity.guild.GuildChunkEntity
-import onl.tesseract.srp.repository.hibernate.territory.entity.guild.toEntity
+import org.hibernate.annotations.Cache
 import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
@@ -63,7 +62,7 @@ class GuildEntity(
     )
     val visitorSpawn: SpawnLocationEntity,
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "guild", orphanRemoval = true, fetch = FetchType.EAGER)
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     val chunks: MutableSet<GuildChunkEntity>,
     @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
     val members: MutableList<GuildMemberEntity>,

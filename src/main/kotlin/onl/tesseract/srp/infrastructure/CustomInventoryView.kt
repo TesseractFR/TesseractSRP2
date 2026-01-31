@@ -1,4 +1,4 @@
-package onl.tesseract.srp.controller.menu.job
+package onl.tesseract.srp.infrastructure
 
 import org.bukkit.entity.HumanEntity
 import org.bukkit.event.inventory.InventoryType
