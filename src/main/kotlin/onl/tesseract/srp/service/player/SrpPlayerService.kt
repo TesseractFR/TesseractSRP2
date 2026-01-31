@@ -124,6 +124,16 @@ open class SrpPlayerService(
         savePlayer(player)
     }
 
+    @Transactional
+    open fun giveIlluminationPoints(playerID: UUID, amount: Int): Boolean {
+        val player = getPlayer(playerID)
+        if (player.illuminationPoints + amount < 0)
+            return false
+        player.addIlluminationPoints(amount)
+        savePlayer(player)
+        return true
+    }
+
     protected open fun savePlayer(player: SrpPlayer) {
         repository.save(player)
     }
