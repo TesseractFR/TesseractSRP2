@@ -20,6 +20,7 @@ import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import onl.tesseract.srp.domain.territory.guild.enum.GuildRoleChange
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
 import onl.tesseract.srp.domain.territory.guild.enum.GuildUpgradeResult
 import onl.tesseract.srp.domain.territory.guild.event.GuildInvitationEvent
@@ -237,6 +238,48 @@ open class GuildService(
         territoryRepository.save(guild)
         return KickResult.SUCCESS
     }
+
+    @Transactional
+    open fun changeMemberRole(
+        sender: UUID,
+        target: UUID,
+        change: GuildRoleChange
+    ): Boolean {
+        val guild = getGuildByMember(sender) ?: return false
+        if (!guild.canInvite(sender)) return false
+        if (guild.members.none { it.playerID == target }) return false
+        if (target == guild.leaderId) return false
+
+        val member = guild.members.first { it.playerID == target }
+
+        if (change == GuildRoleChange.PROMOTE && member.role == GuildRole.Adjoint) {
+            if (sender != guild.leaderId) return false
+            val oldLeader = guild.members.first { it.playerID == guild.leaderId }
+            oldLeader.role = GuildRole.Adjoint
+            member.role = GuildRole.Leader
+            guild.leaderId = member.playerID
+            territoryRepository.save(guild)
+            return true
+        }
+        val newRole = when (change) {
+            GuildRoleChange.PROMOTE -> when (member.role) {
+                GuildRole.Citoyen   -> GuildRole.Batisseur
+                GuildRole.Batisseur -> GuildRole.Adjoint
+                GuildRole.Adjoint,
+                GuildRole.Leader    -> return false
+            }
+            GuildRoleChange.DEMOTE -> when (member.role) {
+                GuildRole.Adjoint   -> GuildRole.Batisseur
+                GuildRole.Batisseur -> GuildRole.Citoyen
+                GuildRole.Citoyen,
+                GuildRole.Leader    -> return false
+            }
+        }
+        member.role = newRole
+        territoryRepository.save(guild)
+        return true
+    }
+
 
     @Transactional
     open fun leaveGuild(player: UUID): LeaveResult {

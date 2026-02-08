@@ -4,6 +4,7 @@ import net.kyori.adventure.text.format.NamedTextColor
 import onl.tesseract.lib.chat.ChatEntryService
 import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
+import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.lib.util.ItemLoreBuilder
@@ -21,6 +22,7 @@ private const val BANK_BUTTON_INDEX = 4
 class GuildMenu(
     val playerID: UUID,
     private val guildService: GuildService,
+    private val menuService: MenuService,
     private val chatService: ChatEntryService,
     previous: Menu? = null
 ) : Menu(MenuSize.Five, "Guilde".toComponent(), previous) {
@@ -29,7 +31,7 @@ class GuildMenu(
         val guild = guildService.getGuildByMember(viewer.uniqueId) ?: return close()
 
         addBankButton(guild, viewer)
-
+        addMembersListButton(viewer)
         addBackButton()
         addCloseButton()
     }
@@ -62,6 +64,20 @@ class GuildMenu(
                 }
                 else -> { /* No action */ }
             }
+        }
+    }
+
+    private fun addMembersListButton(viewer: Player) {
+        val lore = ItemLoreBuilder()
+            .append("Voir la liste des membres de la guilde", NamedTextColor.GRAY)
+        addButton(
+            10,
+            ItemBuilder(Material.PLAYER_HEAD)
+                .name("Membres", NamedTextColor.GOLD)
+                .lore(lore.get())
+                .build()
+        ) {
+            GuildMembersMenu(playerID, guildService, menuService, 0, this).open(viewer)
         }
     }
 
