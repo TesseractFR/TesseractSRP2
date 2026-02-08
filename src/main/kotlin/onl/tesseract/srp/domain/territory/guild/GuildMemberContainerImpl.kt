@@ -1,6 +1,7 @@
 package onl.tesseract.srp.domain.territory.guild
 
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
+import java.time.Instant
 import java.util.UUID
 
 class GuildMemberContainerImpl(
@@ -20,7 +21,7 @@ class GuildMemberContainerImpl(
 
     init {
         if (members.none { it.playerID == leaderId })
-            _members.add(GuildMember(leaderId, GuildRole.Leader))
+            _members.add(GuildMember(leaderId, GuildRole.Leader, Instant.now()))
     }
 
     override fun invitePlayer(playerID: UUID) {
@@ -37,7 +38,7 @@ class GuildMemberContainerImpl(
         require(members.none { it.playerID == playerID })
         _invitations.remove(playerID)
         _joinRequests.remove(playerID)
-        _members.add(GuildMember(playerID, GuildRole.Citoyen))
+        _members.add(GuildMember(playerID, GuildRole.Citoyen, Instant.now()))
     }
 
     override fun removeInvitation(playerID: UUID): Boolean = _invitations.remove(playerID)

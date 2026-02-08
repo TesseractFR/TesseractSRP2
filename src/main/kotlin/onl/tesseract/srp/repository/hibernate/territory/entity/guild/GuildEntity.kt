@@ -30,6 +30,7 @@ import org.hibernate.annotations.Cache
 import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
+import java.time.Instant
 import java.util.*
 import kotlin.math.floor
 
@@ -125,12 +126,14 @@ class GuildMemberEntity(
     @Id
     val playerID: UUID,
     val role: GuildRole,
+    @Column(nullable = false)
+    val joinedDate: Instant,
 ) {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guildID")
     lateinit var guild: GuildEntity
 
-    fun toDomain(): GuildMember = GuildMember(playerID, role)
+    fun toDomain(): GuildMember = GuildMember(playerID, role, joinedDate)
 }
 
 fun Guild.toEntity(): GuildEntity {
@@ -154,7 +157,9 @@ fun Guild.toEntity(): GuildEntity {
         rank = rank
     )
     entity.chunks.addAll(this.getChunks().map { c -> c.toEntity(entity) })
-    entity.members.addAll(this.members.map { m -> GuildMemberEntity(m.playerID, m.role).apply { guild = entity } })
+    entity.members.addAll(this.members.map { m ->
+        GuildMemberEntity(m.playerID, m.role, m.joinedDate).apply { guild = entity }
+    })
     return entity
 }
 

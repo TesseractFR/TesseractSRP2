@@ -119,14 +119,14 @@ class GuildCommand(
         }
     }
 
-    @Command(name = "menu", playerOnly = true, description = "Ouvrir le menu des guildes.")
+    @Command(name = "menu", playerOnly = true, description = "Ouvrir le menu de sa guilde.")
     fun openMenu(sender: Player) {
-        val guild = guildService.getGuildByLeader(sender.uniqueId)
+        val guild = guildService.getGuildByMember(sender.uniqueId)
         if (guild == null) {
             sender.sendMessage(NO_GUILD_MESSAGE)
             return
         }
-        GuildMenu(sender.uniqueId, guildService, chatEntryService)
+        GuildMenu(sender.uniqueId, guildService, menuService, chatEntryService)
                 .open(sender)
     }
 
