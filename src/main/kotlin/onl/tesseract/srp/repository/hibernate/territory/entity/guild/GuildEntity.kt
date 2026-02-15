@@ -78,6 +78,8 @@ class GuildEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "guild_rank", nullable = false)
     val rank: GuildRank = GuildRank.HAMEAU,
+    @Column(nullable = false)
+    val creationDate: Instant
 ) {
 
     @Embeddable
@@ -154,7 +156,8 @@ fun Guild.toEntity(): GuildEntity {
         joinRequests = joinRequests,
         level = level,
         xp = xp,
-        rank = rank
+        rank = rank,
+        creationDate = creationDate
     )
     entity.chunks.addAll(this.getChunks().map { c -> c.toEntity(entity) })
     entity.members.addAll(this.members.map { m ->

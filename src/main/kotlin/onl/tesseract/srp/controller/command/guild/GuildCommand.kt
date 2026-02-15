@@ -126,7 +126,7 @@ class GuildCommand(
             sender.sendMessage(NO_GUILD_MESSAGE)
             return
         }
-        GuildMenu(sender.uniqueId, guildService, menuService, chatEntryService)
+        GuildMenu(sender.uniqueId, guildService, menuService, teleportService, chatEntryService)
                 .open(sender)
     }
 

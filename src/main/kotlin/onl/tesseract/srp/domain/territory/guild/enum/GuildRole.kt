@@ -12,4 +12,5 @@ enum class GuildRole(val displayName: String, val color: NamedTextColor) {
     fun canClaim(): Boolean = this >= Adjoint
     fun canSetSpawn(): Boolean = this >= Adjoint
     fun canInvite(): Boolean = this >= Adjoint
+    fun canBuild(): Boolean = this >= Batisseur
 }
