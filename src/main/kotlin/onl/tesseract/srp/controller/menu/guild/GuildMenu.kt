@@ -52,7 +52,7 @@ class GuildMenu(
         addGuildPermissionsButton()
         addTeleportationButton(viewer, guild)
         addUpgradeGuildButton(viewer, guild)
-        addPendingRequestsButton()
+        addPendingRequestsButton(viewer)
         addGeneralInformationButton(guild)
         addBackButton()
         addCloseButton()
@@ -244,16 +244,17 @@ class GuildMenu(
         }
     }
 
-    private fun addPendingRequestsButton() {
+    private fun addPendingRequestsButton(viewer: Player) {
         val lore = ItemLoreBuilder()
             .append("Voir les invitations de joueurs en attente", NamedTextColor.GRAY)
         addButton(
             17,
             ItemBuilder(Material.CLOCK)
-                .name("Invitations en attente", NamedTextColor.GOLD)
+                .name("Demandes pour rejoindre en attente", NamedTextColor.GOLD)
                 .lore(lore.get())
                 .build()
-        ) { //TODO Faire le menu des invitations en attente
+        ) {
+            GuildJoinRequestsMenu(playerID, guildService, menuService, 0, this).open(viewer)
         }
     }
 

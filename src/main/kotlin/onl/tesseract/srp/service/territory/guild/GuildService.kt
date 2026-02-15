@@ -18,6 +18,7 @@ import onl.tesseract.srp.domain.territory.enum.result.SetSpawnResult
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
 import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
+import onl.tesseract.srp.domain.territory.guild.enum.GuildJoinRequestResult
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRoleChange
@@ -71,7 +72,6 @@ open class GuildService(
         val playerGuild = territoryRepository.findGuildByMember(playerId) ?: return false
         return playerGuild.id == territory.id
     }
-
 
     private fun getGuild(guildID: UUID): Guild {
         val guild = territoryRepository.getById(guildID)
@@ -142,8 +142,9 @@ open class GuildService(
         if(!guild.canInvite(sender)) return GuildInvitationResult.NOT_ALLOWED
         if(sender == target) return GuildInvitationResult.SAME_PLAYER
         if(getGuildByMember(target) != null) return GuildInvitationResult.HAS_GUILD
+        if(guild.members.size >= guild.rank.maxMembersNumber) return GuildInvitationResult.FULL_MEMBERS
 
-        if (guild.joinRequests.contains(target)){
+        if (guild.joinRequests.any { it.playerID == target }) {
             guild.join(target)
             territoryRepository.save(guild)
             return GuildInvitationResult.SUCCESS_JOIN
@@ -169,14 +170,42 @@ open class GuildService(
         return accepted
     }
 
-
-    open fun declineInvitation(guildName: String, playerID: UUID): Boolean {
+    open fun removeInvitation(guildName: String, playerID: UUID): Boolean {
         val guild = getByName(guildName)?: return false
         val removed = guild.removeInvitation(playerID)
         if (removed) territoryRepository.save(guild)
         return removed
     }
 
+    @Transactional
+    open fun requestJoin(guildName: String, playerId: UUID, message: String): GuildJoinRequestResult {
+        val guild = getByName(guildName) ?: return GuildJoinRequestResult.GUILD_NOT_FOUND
+        if (guild.members.any { it.playerID == playerId }) return GuildJoinRequestResult.ALREADY_MEMBER
+        if (getGuildByMember(playerId) != null) return GuildJoinRequestResult.ALREADY_IN_GUILD
+        if(guild.members.size >= guild.rank.maxMembersNumber) return GuildJoinRequestResult.FULL_MEMBERS
+        if (guild.joinRequests.any { it.playerID == playerId }) return GuildJoinRequestResult.ALREADY_REQUESTED
+        guild.askToJoin(playerId, message)
+        territoryRepository.save(guild)
+        return GuildJoinRequestResult.SUCCESS
+    }
+
+    @Transactional
+    open fun acceptJoinRequest(sender: UUID, target: UUID): Boolean {
+        val guild = getGuildByMember(sender) ?: return false
+        if (!guild.canInvite(sender)) return false
+        if (getGuildByMember(target) != null) return false
+        if (guild.joinRequests.none { it.playerID == target }) return false
+        guild.join(target)
+        territoryRepository.save(guild)
+        return true
+    }
+
+    open fun declineJoinRequest(guildName: String, playerID: UUID): Boolean {
+        val guild = getByName(guildName) ?: return false
+        val removed = guild.removeJoinRequest(playerID)
+        if (removed) territoryRepository.save(guild)
+        return removed
+    }
 
     open fun addMemberAsStaff(guildID: UUID, playerID: UUID) {
         val guild = getGuild(guildID)

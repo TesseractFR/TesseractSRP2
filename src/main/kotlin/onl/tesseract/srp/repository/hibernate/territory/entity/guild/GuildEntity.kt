@@ -13,18 +13,15 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.guild.Guild
 import onl.tesseract.srp.domain.territory.guild.GuildChunk
-import onl.tesseract.srp.domain.territory.guild.GuildMember
+import onl.tesseract.srp.domain.territory.guild.GuildJoinRequest
 import onl.tesseract.srp.domain.territory.guild.GuildMemberContainerImpl
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
-import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.world.SrpWorld
 import org.hibernate.annotations.Cache
 import org.hibernate.annotations.CacheConcurrencyStrategy
@@ -69,8 +66,8 @@ class GuildEntity(
     val members: MutableList<GuildMemberEntity>,
     @ElementCollection(fetch = FetchType.EAGER)
     val invitations: Set<UUID>,
-    @ElementCollection(fetch = FetchType.EAGER)
-    val joinRequests: Set<UUID>,
+    @OneToMany(mappedBy = "guild", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
+    val joinRequests: MutableList<GuildJoinRequestEntity>,
     @Column(nullable = false)
     val level: Int = 1,
     @Column(nullable = false)
@@ -107,7 +104,13 @@ class GuildEntity(
             spawnLocation.toCoordinate(),
             money,
             ledgerId,
-            GuildMemberContainerImpl(leaderId, members.map { it.toDomain() }, invitations, joinRequests),
+            GuildMemberContainerImpl(
+                leaderId,
+                members.map { it.toDomain() },
+                invitations,
+                joinRequests.map { jr ->
+                    GuildJoinRequest(jr.id, jr.playerId, jr.message, jr.requestedDate)
+                }),
             visitorSpawnLocation = visitorSpawn.toCoordinate(),
             level = level,
             xp = xp,
@@ -116,26 +119,6 @@ class GuildEntity(
         guild.addChunks(chunks.map { GuildChunk(it.id.toDomain(),guild) }.toSet())
         return guild
     }
-}
-
-@Entity
-@Table(
-    name = "t_guild_members", indexes = [
-        Index(columnList = "playerID", unique = true)
-    ]
-)
-class GuildMemberEntity(
-    @Id
-    val playerID: UUID,
-    val role: GuildRole,
-    @Column(nullable = false)
-    val joinedDate: Instant,
-) {
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guildID")
-    lateinit var guild: GuildEntity
-
-    fun toDomain(): GuildMember = GuildMember(playerID, role, joinedDate)
 }
 
 fun Guild.toEntity(): GuildEntity {
@@ -153,7 +136,7 @@ fun Guild.toEntity(): GuildEntity {
         chunks = mutableSetOf(),
         members = mutableListOf(),
         invitations = invitations,
-        joinRequests = joinRequests,
+        joinRequests = mutableListOf(),
         level = level,
         xp = xp,
         rank = rank,
@@ -163,6 +146,15 @@ fun Guild.toEntity(): GuildEntity {
     entity.members.addAll(this.members.map { m ->
         GuildMemberEntity(m.playerID, m.role, m.joinedDate).apply { guild = entity }
     })
+    entity.joinRequests.addAll(this.joinRequests.map { jr ->
+            GuildJoinRequestEntity(
+                id = jr.id,
+                playerId = jr.playerID,
+                message = jr.message,
+                requestedDate = jr.requestedDate
+            ).apply { guild = entity }
+        }
+    )
     return entity
 }
 

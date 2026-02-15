@@ -8,7 +8,7 @@ class GuildMemberContainerImpl(
     override var leaderId: UUID,
     members: List<GuildMember> = listOf(),
     invitations: Set<UUID> = setOf(),
-    joinRequests: Set<UUID> = setOf(),
+    joinRequests: List<GuildJoinRequest> = listOf(),
 ) : GuildMemberContainer {
     private val _members = members.toMutableList()
     override val members: List<GuildMember> get() = _members
@@ -16,8 +16,8 @@ class GuildMemberContainerImpl(
     private val _invitations = invitations.toMutableSet()
     override val invitations: Set<UUID> get() = _invitations
 
-    private val _joinRequests = joinRequests.toMutableSet()
-    override val joinRequests: Set<UUID> get() = _joinRequests
+    private val _joinRequests = joinRequests.toMutableList()
+    override val joinRequests: List<GuildJoinRequest> get() = _joinRequests
 
     init {
         if (members.none { it.playerID == leaderId })
@@ -29,23 +29,27 @@ class GuildMemberContainerImpl(
         _invitations.add(playerID)
     }
 
-    override fun askToJoin(playerID: UUID) {
+    override fun askToJoin(playerID: UUID, message: String) {
         require(members.none { it.playerID == playerID })
-        _joinRequests.add(playerID)
+        if (_joinRequests.any { it.playerID == playerID }) return
+        _joinRequests.add(GuildJoinRequest(UUID.randomUUID(), playerID, message, Instant.now()))
     }
 
     override fun join(playerID: UUID) {
         require(members.none { it.playerID == playerID })
         _invitations.remove(playerID)
-        _joinRequests.remove(playerID)
+        _joinRequests.removeIf { it.playerID == playerID }
         _members.add(GuildMember(playerID, GuildRole.Citoyen, Instant.now()))
     }
 
     override fun removeInvitation(playerID: UUID): Boolean = _invitations.remove(playerID)
+    override fun removeJoinRequest(playerID: UUID): Boolean =
+        _joinRequests.removeIf { it.playerID == playerID }
+
     override fun removeMember(playerID: UUID): Boolean {
         if (playerID == leaderId) return false
         _invitations.remove(playerID)
-        _joinRequests.remove(playerID)
+        _joinRequests.removeIf { it.playerID == playerID }
         return _members.removeIf { it.playerID == playerID }
     }
 }
