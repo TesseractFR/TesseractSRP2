@@ -5,6 +5,7 @@ enum class GuildInvitationResult {
     SAME_PLAYER,
     HAS_GUILD,
     NOT_ALLOWED,
+    FULL_MEMBERS,
     SUCCESS_JOIN,
     SUCCESS_INVITE
 }

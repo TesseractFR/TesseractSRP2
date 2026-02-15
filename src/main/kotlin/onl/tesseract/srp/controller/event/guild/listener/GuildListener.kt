@@ -51,7 +51,7 @@ class GuildListener(
         val denyButton = Component.text("✖ Refuser")
                 .color(NamedTextColor.RED)
                 .clickEvent(chatEntryService.clickCommand(target) {
-                    if (guildService.declineInvitation(event.guild, target.uniqueId)) {
+                    if (guildService.removeInvitation(event.guild, target.uniqueId)) {
                         target.sendMessage(GuildChatError + "Invitation refusée.")
                         sender.sendMessage(GuildChatError + "${target.name} a refusé l'invitation.")
                     }

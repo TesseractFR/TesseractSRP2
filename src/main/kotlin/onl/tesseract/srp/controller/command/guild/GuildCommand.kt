@@ -11,6 +11,7 @@ import onl.tesseract.lib.command.argument.PlayerArg
 import onl.tesseract.lib.command.argument.StringArg
 import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.util.append
+import onl.tesseract.lib.util.appendNewLine
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.command.argument.guild.GuildArg
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg
@@ -26,6 +27,7 @@ import onl.tesseract.srp.domain.territory.enum.result.UnclaimResult
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.enum.GuildSpawnKind
 import onl.tesseract.srp.domain.territory.guild.enum.GuildInvitationResult
+import onl.tesseract.srp.domain.territory.guild.enum.GuildJoinRequestResult
 import onl.tesseract.srp.mapper.toChunkCoord
 import onl.tesseract.srp.mapper.toCoordinate
 import onl.tesseract.srp.mapper.toLocation
@@ -51,6 +53,7 @@ private val GUILD_BORDER_MESSAGE: Component =
             .append(".")
 private val NOT_IN_GUILD_WORLD_MESSAGE =
     GuildChatError + "Tu n'es pas dans le bon monde, cette commande n’est utilisable que dans le monde des guildes."
+private const val DEFAULT_JOIN_REQUEST_MESSAGE = "Bonjour, je souhaite rejoindre votre guilde."
 
 @Command(name = "guild")
 @SpringComponent
@@ -141,6 +144,8 @@ class GuildCommand(
                 sender.sendMessage(GuildChatError + "Tu ne peux pas t'inviter toi même.")
             GuildInvitationResult.HAS_GUILD ->
                 sender.sendMessage(GuildChatError + "Ce joueur est déjà dans une guilde.")
+            GuildInvitationResult.FULL_MEMBERS ->
+                sender.sendMessage(GuildChatError + "Ta guilde a déjà le nombre maximum de membres.")
             GuildInvitationResult.SUCCESS_JOIN -> {
                 val senderGuild = guildService.getGuildByMember(sender.uniqueId)!!
                 sender.sendMessage(GuildChatSuccess + "${target.name} a rejoint votre guilde.")
@@ -148,6 +153,43 @@ class GuildCommand(
             }
             GuildInvitationResult.SUCCESS_INVITE -> {
                 sender.sendMessage(GuildChatFormat + "Votre invitation a bien été envoyée à ${target.name}")
+            }
+        }
+    }
+
+    @Command(name = "join", playerOnly = true, description = "Demander à rejoindre une guilde.")
+    fun requestJoin(sender: Player, @Argument("guilde") guildArg: GuildArg) {
+        val guildName = guildArg.get().name
+        chatEntryService.getChatEntry(
+            sender,
+            Component.text("Ecris un message personnalisé, ou << - >> pour envoyer ta demande avec un " +
+                    "message par défaut.")
+                .appendNewLine() + ("Ecris << non >> pour annuler la demande")
+        ) { input ->
+            val trimmed = input.trim()
+            if (trimmed.equals("non", ignoreCase = true)) {
+                sender.sendMessage(GuildChatFormat + "Demande annulée.")
+                return@getChatEntry
+            }
+            val message = when {
+                trimmed.isEmpty() -> DEFAULT_JOIN_REQUEST_MESSAGE
+                trimmed.equals("-", ignoreCase = true) -> DEFAULT_JOIN_REQUEST_MESSAGE
+                else -> trimmed
+            }
+            when (guildService.requestJoin(guildName, sender.uniqueId, message)) {
+                GuildJoinRequestResult.GUILD_NOT_FOUND ->
+                    sender.sendMessage(GuildChatError + "Cette guilde n'existe pas.")
+                GuildJoinRequestResult.ALREADY_IN_GUILD ->
+                    sender.sendMessage(GuildChatError + "Tu es déjà dans une guilde. " +
+                            "Quitte la pour en rejoindre une autre.")
+                GuildJoinRequestResult.FULL_MEMBERS ->
+                    sender.sendMessage(GuildChatError + "Cette guilde a déjà le nombre maximum de membres.")
+                GuildJoinRequestResult.ALREADY_MEMBER ->
+                    sender.sendMessage(GuildChatError + "Tu es déjà membre de cette guilde.")
+                GuildJoinRequestResult.ALREADY_REQUESTED ->
+                    sender.sendMessage(GuildChatFormat + "Tu as déjà une demande en attente pour cette guilde.")
+                GuildJoinRequestResult.SUCCESS ->
+                    sender.sendMessage(GuildChatSuccess + "Ta demande a bien été envoyée à la guilde $guildName.")
             }
         }
     }
