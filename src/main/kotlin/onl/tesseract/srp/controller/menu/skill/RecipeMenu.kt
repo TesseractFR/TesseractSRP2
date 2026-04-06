@@ -2,12 +2,16 @@ package onl.tesseract.srp.controller.menu.skill
 
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
-import onl.tesseract.srp.controller.menu.ItemAdderMenu
+import onl.tesseract.srp.controller.menu.ItemAdderBiMenu
 import onl.tesseract.srp.domain.item.CustomItemIds
 import onl.tesseract.srp.domain.port.PlayerInventoryPort
+import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
+import org.bukkit.Material
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import kotlin.collections.iterator
 
 class RecipeMenu(
     val skill: Skill,
@@ -15,10 +19,10 @@ class RecipeMenu(
     val playerInventoryPort: PlayerInventoryPort,
     previous: Menu? = null
 ) :
-        ItemAdderMenu(MenuSize.Six,"tesseract:skill_recipe","Recettes "+skill.name, previous){
+        ItemAdderBiMenu(MenuSize.Six,"tesseract:recipe_book","Recettes "+skill.name, previous,100){
 
-    val tier = 1
-
+    var tier = 1
+    var startingRecipe = 0
 
     override fun placeButtons(viewer: Player) {
         addButton(0,customItemService.getCustomItem(CustomItemIds.MENU_RETURN_BUTTOM)){
@@ -28,25 +32,63 @@ class RecipeMenu(
             }
             previous?.open(viewer)
         }
-        addButton(8,customItemService.getCustomItem(CustomItemIds.MENU_UP_ARROW_BUTTOM))
-        addButton(53,customItemService.getCustomItem(CustomItemIds.MENU_DOWN_ARROW_BUTTOM))
-        addButton(51,customItemService.getCustomItem(CustomItemIds.MENU_RIGHT_ARROW_BUTTOM))
-        addButton(45,customItemService.getCustomItem(CustomItemIds.MENU_LEFT_ARROW_BUTTOM))
-
-        for (rec in this.skill.recipe[tier]?.recipes?.entries!!){
-            val lign = rec.key
-            val comps = rec.value.components
-            for (com in comps){
-                val col = com.key
-                val item = com.value.item
-                item.amount = com.value.quantity
-                addButton(9*(lign)+(col-1),item)
-            }
-            val item = rec.value.result.item
-            item.amount = rec.value.result.quantity
-            addButton(9*(lign)+(8),item){
-                CraftingMenu(skill,customItemService, playerInventoryPort,rec.value,this).open(viewer)
-            }
+        placeRecipes(viewer)
+        //addButton(51,customItemService.getCustomItem(CustomItemIds.MENU_RIGHT_ARROW_BUTTOM))
+        //addButton(45,customItemService.getCustomItem(CustomItemIds.MENU_LEFT_ARROW_BUTTOM))
+        addBottomCloseButton()
+    }
+    private fun placeRecipes(viewer: Player){
+        val recipes = skill.recipe[tier]?.recipes
+        if(recipes == null){
+            tier = 1
+            placeRecipes(viewer)
+            return
         }
+        for( i in 1..7){
+            val recipe = recipes[i+startingRecipe]
+            if(recipe == null){
+                clearLigne(i)
+                return
+            }
+            placeRecipe(i,recipe,viewer)
+        }
+
+        addButton(8,customItemService
+                .getCustomItem(CustomItemIds.MENU_UP_ARROW_BUTTOM)
+                .asQuantity(if(startingRecipe>0)1 else 0)){
+            startingRecipe--
+            placeRecipes(viewer)
+        }
+        addBottomButton(35,customItemService
+                .getCustomItem(CustomItemIds.MENU_DOWN_ARROW_BUTTOM)
+                .asQuantity(if(recipes.size > startingRecipe+7)1 else 0)){
+            startingRecipe++
+            placeRecipes(viewer)
+        }
+
+    }
+
+    private fun clearLigne(lign: Int) {
+        for(i in 0..8){
+            addButton(lign*9+i, ItemStack(Material.STONE).asQuantity(0)){}
+        }
+    }
+
+    private fun placeRecipe(ligne: Int, recipe: Recipe, viewer: Player){
+        val comps = recipe.components
+        for (com in comps){
+            val col = com.key
+            val item = com.value.item
+            item.amount = com.value.quantity
+            addButton(9*(ligne)+(col-1),item)
+
+
+        }
+        val item = recipe.result.item
+        item.amount = recipe.result.quantity
+        addButton(9*(ligne)+(8),item){
+            CraftingMenu(skill,customItemService, playerInventoryPort,recipe,this).open(viewer)
+        }
+
     }
 }

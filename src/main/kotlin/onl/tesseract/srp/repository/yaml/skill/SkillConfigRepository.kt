@@ -2,8 +2,8 @@ package onl.tesseract.srp.repository.yaml.skill
 
 import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
-import onl.tesseract.srp.domain.skill.RecipeComponent
-import onl.tesseract.srp.domain.skill.Recipe
+import onl.tesseract.srp.domain.skill.recipe.RecipeComponent
+import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.domain.skill.SkillTier
 import onl.tesseract.srp.service.item.CustomItemService

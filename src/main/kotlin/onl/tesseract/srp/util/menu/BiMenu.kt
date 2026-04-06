@@ -30,6 +30,14 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
 
     private val bottomButtons: MutableMap<Int, AButton> = mutableMapOf()
 
+    override fun addButton(index: Int, button: AButton) {
+        if( (index) >= size.size){
+            addBottomButton(9+(index-size.size), button)
+            return
+        }
+        super.addButton(index, button)
+    }
+
     override fun open(viewer: Player) {
         val serializedTitle = LegacyComponentSerializer.legacySection().serialize(title)
         val topInventory = Bukkit.createInventory(null, size.size, title)
@@ -43,12 +51,14 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
 
     protected fun addBottomButton(index: Int, item: ItemStack, function: Consumer<InventoryClickEvent>? = null) {
         val button = Button(item, function)
-        bottomButtons[index] = button
-        button.draw(this, index, AButton.Side.Bottom)
+        addBottomButton(index, button)
     }
 
     protected fun addBottomButton(index: Int, async: () -> ItemStack, function: Consumer<InventoryClickEvent>? = null) {
         val button = AsyncButton(async, PLUGIN_INSTANCE, function)
+        addBottomButton(index, button)
+    }
+    protected fun addBottomButton(index: Int, button: AButton) {
         bottomButtons[index] = button
         button.draw(this, index, AButton.Side.Bottom)
     }
