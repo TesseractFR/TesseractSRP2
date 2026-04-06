@@ -7,7 +7,7 @@ import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.srp.controller.menu.ItemAdderMenu
 import onl.tesseract.srp.domain.item.CustomItemIds
 import onl.tesseract.srp.domain.port.PlayerInventoryPort
-import onl.tesseract.srp.domain.skill.Recipe
+import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.Material
@@ -19,7 +19,7 @@ class CraftingMenu(val skill : Skill,
                    val customItemService: CustomItemService,
                    val playerInventoryPort: PlayerInventoryPort,
                    val activeRecipe: Recipe? = null ,previous : Menu? = null) : ItemAdderMenu(
-    MenuSize.Six,"tesseract:test","testMenu",
+    MenuSize.Six,"tesseract:recipe_launch","testMenu",
     previous){
 
     private val FIRST_OFFSET = 1
@@ -68,7 +68,6 @@ class CraftingMenu(val skill : Skill,
     private fun addActiveRecipe() {
         if(activeRecipe == null)return
         activeRecipe.components.forEach { (i, component) ->
-            val item = component.item
             addButton(17+i,component.item.asQuantity(component.quantity*quantityToCraft))
         }
         addButton(26,activeRecipe.result.item.asQuantity(activeRecipe.result.quantity*quantityToCraft))

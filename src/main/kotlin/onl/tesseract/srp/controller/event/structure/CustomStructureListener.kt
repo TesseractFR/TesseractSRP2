@@ -2,6 +2,7 @@ package onl.tesseract.srp.controller.event.structure
 
 import dev.lone.itemsadder.api.CustomFurniture
 import onl.tesseract.srp.controller.menu.skill.CraftingMenu
+import onl.tesseract.srp.controller.menu.skill.SkillMainMenu
 import onl.tesseract.srp.domain.port.PlayerInventoryPort
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.skill.SkillService
@@ -22,7 +23,7 @@ class CustomStructureListener(val skillService: SkillService,
     private fun onClick(player: Player, furniture: CustomFurniture) : Boolean{
         val skill = skillService.getSkillFromStructureID(furniture.namespacedID)?:return false
 
-        CraftingMenu(skill,customItemService,playerInventoryPort).open(player)
+        SkillMainMenu(skill,customItemService,playerInventoryPort).open(player)
 
         return true
     }
