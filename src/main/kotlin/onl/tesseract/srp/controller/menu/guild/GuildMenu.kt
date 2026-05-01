@@ -10,6 +10,7 @@ import onl.tesseract.lib.menu.MenuService
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.ChatFormats
 import onl.tesseract.lib.util.ItemLoreBuilder
+import onl.tesseract.lib.util.Util
 import onl.tesseract.lib.util.plus
 import onl.tesseract.lib.util.toComponent
 import onl.tesseract.srp.domain.territory.guild.Guild
@@ -28,7 +29,16 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-private const val BANK_BUTTON_INDEX = 4
+private const val UPGRADE_BUTTON_INDEX = 11
+private const val GENERAL_INFO_BUTTON_INDEX = 13
+private const val STRUCTURES_BUTTON_INDEX = 15
+private const val TELEPORT_BUTTON_INDEX = 19
+private const val MISSIONS_BUTTON_INDEX = 21
+private const val BANK_BUTTON_INDEX = 23
+private const val SHOPS_BUTTON_INDEX = 25
+private const val MEMBERS_BUTTON_INDEX = 29
+private const val PERMISSIONS_BUTTON_INDEX = 31
+private const val PENDING_REQUESTS_BUTTON_INDEX = 33
 private val GUILD_DATE_FORMATTER =
     DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault())
 
@@ -39,11 +49,11 @@ class GuildMenu(
     private val teleportService: TeleportationService,
     private val chatService: ChatEntryService,
     previous: Menu? = null
-) : Menu(MenuSize.Five, "Guilde".toComponent(), previous) {
+) : GuildBaseMenu(MenuSize.Five, "Guilde".toComponent(), previous) {
 
     override fun placeButtons(viewer: Player) {
         val guild = guildService.getGuildByMember(viewer.uniqueId) ?: return close()
-
+        placeDecorations()
         addBankButton(guild, viewer)
         addMembersListButton(viewer)
         addStructuresStatsButton()
@@ -93,7 +103,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Voir la liste des membres de la guilde", NamedTextColor.GRAY)
         addButton(
-            10,
+            MEMBERS_BUTTON_INDEX,
             ItemBuilder(Material.PLAYER_HEAD)
                 .name("Membres", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -107,7 +117,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Voir les statistiques des structures d'artisanat de la guilde", NamedTextColor.GRAY)
         addButton(
-            11,
+            STRUCTURES_BUTTON_INDEX,
             ItemBuilder(Material.PAPER)
                 .name("Structures d'artisanat", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -120,7 +130,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Voir les shops de la guilde", NamedTextColor.GRAY)
         addButton(
-            12,
+            SHOPS_BUTTON_INDEX,
             ItemBuilder(Material.CHEST)
                 .name("Shops", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -133,7 +143,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Voir le tableau des missions de la guilde", NamedTextColor.GRAY)
         addButton(
-            13,
+            MISSIONS_BUTTON_INDEX,
             ItemBuilder(Material.OAK_SIGN)
                 .name("Tableau des missions", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -146,7 +156,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Gérer les permissions des membres de la guilde", NamedTextColor.GRAY)
         addButton(
-            14,
+            PERMISSIONS_BUTTON_INDEX,
             ItemBuilder(Material.BOOK)
                 .name("Permissions", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -159,7 +169,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Se téléporter au spawn privé de sa guilde", NamedTextColor.GRAY)
         addButton(
-            15,
+            TELEPORT_BUTTON_INDEX,
             ItemBuilder(Material.ENDER_PEARL)
                 .name("Téléportation vers sa guilde", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -171,6 +181,18 @@ class GuildMenu(
     }
 
     private fun addUpgradeGuildButton(viewer: Player, guild: Guild) {
+        addButton(
+            UPGRADE_BUTTON_INDEX,
+            ItemBuilder(Material.DIAMOND_PICKAXE)
+                .name("Améliorer le rang de guilde", NamedTextColor.GOLD)
+                .lore(buildUpgradeGuildLore(guild).get())
+                .build()
+        ) {
+            handleUpgradeGuildClick(viewer)
+        }
+    }
+
+    private fun buildUpgradeGuildLore(guild: Guild): ItemLoreBuilder {
         val currentRank = guild.rank
         val nextRank = currentRank.next()
         val lore = ItemLoreBuilder()
@@ -180,66 +202,57 @@ class GuildMenu(
             .newline()
         if (nextRank == null) {
             lore.append("Votre guilde est déjà au rang maximum.", NamedTextColor.GOLD)
-        } else {
-            val hasRequiredLevel = guild.level >= nextRank.minLevel
-            val hasEnoughMoney = guild.money >= nextRank.cost
-            val costColor = if (hasEnoughMoney) NamedTextColor.GREEN else NamedTextColor.RED
-            lore.append("Prochain rang : ", NamedTextColor.GRAY)
-                .append(nextRank.title, nextRank.color)
-                .newline()
-                .append("Coût : ", NamedTextColor.GRAY)
-                .append("${nextRank.cost} Lys", costColor)
-                .newline()
-
-            if (!hasRequiredLevel) {
-                lore.newline()
-                    .append("Niveau minimum requis : ${nextRank.minLevel}", NamedTextColor.RED)
-                    .newline()
-                    .append("(Niveau actuel : ${guild.level})", NamedTextColor.RED, TextDecoration.ITALIC)
-            } else if (!hasEnoughMoney) {
-                lore.newline()
-                    .append("Argent insuffisant.", NamedTextColor.RED)
-                    .newline()
-                    .append("(Banque de guilde : ${guild.money} Lys)", NamedTextColor.RED, TextDecoration.ITALIC)
-            } else {
-                lore.newline()
-                    .append("Cliquez pour améliorer la guilde !", NamedTextColor.GREEN)
-            }
+            return lore
         }
-        addButton(
-            16,
-            ItemBuilder(Material.DIAMOND_PICKAXE)
-                .name("Améliorer le rang de guilde", NamedTextColor.GOLD)
-                .lore(lore.get())
-                .build()
-        ) {
-            val g = guildService.getGuildByMember(viewer.uniqueId) ?: return@addButton
-            val next = g.rank.next()
-            if (next == null) {
-                viewer.sendMessage(GuildChatFormat + "Votre guilde est déjà au rang maximum.")
-                return@addButton
+        val hasRequiredLevel = guild.level >= nextRank.minLevel
+        val hasEnoughMoney = guild.money >= nextRank.cost
+        lore.append("Prochain rang : ", NamedTextColor.GRAY)
+            .append(nextRank.title, nextRank.color)
+            .newline()
+            .append("Coût : ", NamedTextColor.GRAY)
+            .append("${nextRank.cost} Lys", if (hasEnoughMoney) NamedTextColor.GREEN else NamedTextColor.RED)
+            .newline()
+        when {
+            !hasRequiredLevel -> lore
+                .newline()
+                .append("Niveau minimum requis : ${nextRank.minLevel}", NamedTextColor.RED)
+                .newline()
+                .append("(Niveau actuel : ${guild.level})", NamedTextColor.RED, TextDecoration.ITALIC)
+            !hasEnoughMoney -> lore
+                .newline()
+                .append("Argent insuffisant.", NamedTextColor.RED)
+                .newline()
+                .append("(Banque de guilde : ${guild.money} Lys)", NamedTextColor.RED, TextDecoration.ITALIC)
+            else -> lore
+                .newline()
+                .append("Cliquez pour améliorer la guilde !", NamedTextColor.GREEN)
+        }
+        return lore
+    }
+
+    private fun handleUpgradeGuildClick(viewer: Player) {
+        val guild = guildService.getGuildByMember(viewer.uniqueId) ?: return
+        val nextRank = guild.rank.next() ?: run {
+            viewer.sendMessage(GuildChatFormat + "Votre guilde est déjà au rang maximum.")
+            return
+        }
+        when (guildService.upgradeRank(guild.id, nextRank)) {
+            GuildUpgradeResult.SUCCESS -> {
+                close()
+                viewer.sendMessage(
+                    GuildChatSuccess
+                            + "Félicitations, votre guilde est maintenant au rang de "
+                            + Component.text(nextRank.title, nextRank.color)
+                            + " !"
+                )
             }
-            when (guildService.upgradeRank(g.id, next)) {
-                GuildUpgradeResult.SUCCESS -> {
-                    close()
-                    viewer.sendMessage(GuildChatSuccess
-                        + "Félicitations, votre guilde est maintenant au rang de "
-                        + Component.text(next.title, next.color)
-                        + " !"
-                    )
-                }
-                GuildUpgradeResult.NOT_ENOUGH_MONEY -> {
-                    viewer.sendMessage(GuildChatError + "Argent insuffisant : il faut ${next.cost} Lys.")
-                }
-                GuildUpgradeResult.RANK_LOCKED -> {
-                    viewer.sendMessage(
-                        GuildChatError + "Niveau insuffisant : votre guilde doit être niveau ${next.minLevel} minimum."
-                    )
-                }
-                GuildUpgradeResult.ALREADY_AT_OR_ABOVE -> {
-                    viewer.sendMessage(GuildChatFormat + "Votre guilde est déjà à ce rang (ou supérieur).")
-                    open(viewer)
-                }
+            GuildUpgradeResult.NOT_ENOUGH_MONEY ->
+                viewer.sendMessage(GuildChatError + "Argent insuffisant : il faut ${nextRank.cost} Lys.")
+            GuildUpgradeResult.RANK_LOCKED ->
+                viewer.sendMessage(GuildChatError + "Niveau insuffisant : votre guilde doit être niveau ${nextRank.minLevel} minimum.")
+            GuildUpgradeResult.ALREADY_AT_OR_ABOVE -> {
+                viewer.sendMessage(GuildChatFormat + "Votre guilde est déjà à ce rang (ou supérieur).")
+                open(viewer)
             }
         }
     }
@@ -248,7 +261,7 @@ class GuildMenu(
         val lore = ItemLoreBuilder()
             .append("Voir les invitations de joueurs en attente", NamedTextColor.GRAY)
         addButton(
-            17,
+            PENDING_REQUESTS_BUTTON_INDEX,
             ItemBuilder(Material.CLOCK)
                 .name("Demandes pour rejoindre en attente", NamedTextColor.GOLD)
                 .lore(lore.get())
@@ -259,41 +272,44 @@ class GuildMenu(
     }
 
     private fun addGeneralInformationButton(guild: Guild) {
-        val lore = ItemLoreBuilder()
+        addButton(
+            GENERAL_INFO_BUTTON_INDEX,
+            ItemBuilder(Material.BLUE_BANNER)
+                .name("Informations générales", NamedTextColor.GOLD)
+                .lore(buildGeneralInformationLore(guild).get())
+                .build()
+        ) { }
+    }
+
+    private fun buildGeneralInformationLore(guild: Guild): ItemLoreBuilder {
+        val leaderName = Bukkit.getOfflinePlayer(guild.leaderId).name ?: "Inconnu"
+        return ItemLoreBuilder()
             .append("Nom : ", NamedTextColor.GRAY)
             .append(guild.name, NamedTextColor.WHITE)
             .newline()
             .append("Niveau : ", NamedTextColor.GRAY)
             .append(guild.level.toString(), NamedTextColor.GREEN)
-            .newline()
-            .append("X : ", NamedTextColor.GRAY)
-            .append(guild.level.toString(), NamedTextColor.GREEN)
+            .append(" (XP : ", NamedTextColor.GRAY, TextDecoration.ITALIC)
+            .append(guild.xp.toString(), Util.getGreenRedGradient(guild.xp, guild.getXpForNextLevel()),
+                TextDecoration.ITALIC)
+            .append(" / ${guild.getXpForNextLevel()})", NamedTextColor.GRAY, TextDecoration.ITALIC)
             .newline()
             .append("Rang : ", NamedTextColor.GRAY)
             .append(guild.rank.title, guild.rank.color)
             .newline()
             .append("Chef : ", NamedTextColor.GRAY)
-        val leaderName = Bukkit.getOfflinePlayer(guild.leaderId).name ?: "Inconnu"
-        lore.append(leaderName, NamedTextColor.GOLD)
+            .append(leaderName, NamedTextColor.GOLD)
             .newline()
             .append("Date de création : ", NamedTextColor.GRAY)
             .append(GUILD_DATE_FORMATTER.format(guild.creationDate), NamedTextColor.WHITE)
             .newline()
             .append("Membres : ", NamedTextColor.GRAY)
             .append("${guild.members.size}", NamedTextColor.AQUA)
+            .append(" / ${guild.rank.maxMembersNumber}", NamedTextColor.GRAY)
             .newline()
             .append("Nombre de chunks : ", NamedTextColor.GRAY)
             .append("${guild.getChunks().size}", NamedTextColor.AQUA)
             .append(" / ${guild.rank.maxChunksNumber}", NamedTextColor.GRAY)
-        addButton(
-            18,
-            ItemBuilder(Material.BLUE_BANNER)
-                .name("Informations générales", NamedTextColor.GOLD)
-                .lore(lore.get())
-                .build()
-        ) {
-            // TODO menu détaillé
-        }
     }
 
     private fun promptPlayerForBankOperation(guild: Guild, viewer: Player, operation: BankOperation) {
