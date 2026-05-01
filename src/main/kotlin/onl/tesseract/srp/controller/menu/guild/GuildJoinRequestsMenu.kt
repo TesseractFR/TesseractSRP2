@@ -79,6 +79,18 @@ class GuildJoinRequestsMenu(
     ) {
         val playerId = request.playerID
         val name = Bukkit.getOfflinePlayer(playerId).name ?: playerId.toString()
+        addButton(
+            slot,
+            ItemBuilder(getPlayerHead(playerId))
+                .name(name, NamedTextColor.GOLD)
+                .lore(buildRequestLore(request, canManageRequests).get())
+                .build()
+        ) { click ->
+            handleRequestClick(viewer, guild, name, playerId, canManageRequests, click.click)
+        }
+    }
+
+    private fun buildRequestLore(request: GuildJoinRequest, canManageRequests: Boolean): ItemLoreBuilder {
         val displayMsg = request.message
             .trim()
             .ifBlank { "—" }
@@ -94,39 +106,39 @@ class GuildJoinRequestsMenu(
                 .append("Clic droit : ", NamedTextColor.GOLD)
                 .append("Refuser", NamedTextColor.RED)
         }
-        addButton(
-            slot,
-            ItemBuilder(getPlayerHead(playerId))
-                .name(name, NamedTextColor.GOLD)
-                .lore(lore.get())
-                .build()
-        ) { click ->
-            if (!canManageRequests) return@addButton
-            when (click.click) {
-                ClickType.LEFT -> {
-                    menuService.openConfirmationMenu(
-                        viewer,
-                        Component.text("Accepter la demande de $name ?"),
-                        this
-                    ) {
-                        guildService.acceptJoinRequest(viewer.uniqueId, playerId)
-                        GuildJoinRequestsMenu(playerID, guildService, menuService, page, previous).open(viewer)
-                        Bukkit.getOfflinePlayer(playerId).player?.sendMessage(
-                            GuildChatSuccess + "Votre demande pour rejoindre la guilde ${guild.name} a été acceptée !")
-                    }
-                }
-                ClickType.RIGHT -> {
-                    menuService.openConfirmationMenu(
-                        viewer,
-                        Component.text("Refuser la demande de $name ?"),
-                        this
-                    ) {
-                        guildService.declineJoinRequest(guild.name, playerId)
-                        GuildJoinRequestsMenu(playerID, guildService, menuService, page, previous).open(viewer)
-                    }
-                }
-                else -> {/* No action */ }
+        return lore
+    }
+
+    private fun handleRequestClick(
+        viewer: Player,
+        guild: Guild,
+        name: String,
+        playerId: UUID,
+        canManageRequests: Boolean,
+        click: ClickType
+    ) {
+        if (!canManageRequests) return
+        when (click) {
+            ClickType.LEFT -> menuService.openConfirmationMenu(
+                viewer,
+                Component.text("Accepter la demande de $name ?"),
+                this
+            ) {
+                guildService.acceptJoinRequest(viewer.uniqueId, playerId)
+                GuildJoinRequestsMenu(playerID, guildService, menuService, page, previous).open(viewer)
+                Bukkit.getOfflinePlayer(playerId).player?.sendMessage(
+                    GuildChatSuccess + "Votre demande pour rejoindre la guilde ${guild.name} a été acceptée !"
+                )
             }
+            ClickType.RIGHT -> menuService.openConfirmationMenu(
+                viewer,
+                Component.text("Refuser la demande de $name ?"),
+                this
+            ) {
+                guildService.declineJoinRequest(guild.name, playerId)
+                GuildJoinRequestsMenu(playerID, guildService, menuService, page, previous).open(viewer)
+            }
+            else -> { /* No action */ }
         }
     }
 

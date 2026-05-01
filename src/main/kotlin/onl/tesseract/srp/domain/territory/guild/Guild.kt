@@ -21,14 +21,17 @@ class Guild(
     val moneyLedgerID: UUID = UUID.randomUUID(),
     memberContainer: GuildMemberContainer,
     visitorSpawnLocation: Coordinate = spawnLocation,
-    var level: Int = 1,
-    var xp: Int = 0,
+    override var level: Int = 1,
+    override var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
     val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation),
     val creationDate: Instant = Instant.now()
 ) : GuildMemberContainer by memberContainer,
     VisitorSpawnContainer by visitorSpawnContainer,
-    Territory<GuildChunk>(id,spawnLocation) {
+    Territory<GuildChunk>(id,spawnLocation),
+    GuildLevelHolder {
+
+    override fun getXpForNextLevel(): Int = 1000 //TODO Changer la valeur avec une vraie fonction
 
     var money: Int = money
 

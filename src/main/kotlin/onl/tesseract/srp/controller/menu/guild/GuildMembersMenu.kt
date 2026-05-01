@@ -84,21 +84,41 @@ class GuildMembersMenu(
         member: GuildMember,
         canManageMembers: Boolean
     ) {
-        val joinedDateStr = JOINED_DATE_FORMATTER.format(member.joinedDate)
+        val canShowActions = canShowMemberActions(viewer, guild, member, canManageMembers)
+        addButton(
+            slot,
+            ItemBuilder(getPlayerHead(member.playerID))
+                .name(Bukkit.getOfflinePlayer(member.playerID).name ?: member.playerID.toString(), NamedTextColor.GOLD)
+                .lore(buildMemberLore(member, canShowActions).get())
+                .build()
+        ) { click ->
+            handleMemberClick(viewer, guild, member, canManageMembers, click.click)
+        }
+    }
+
+    private fun canShowMemberActions(
+        viewer: Player,
+        guild: Guild,
+        member: GuildMember,
+        canManageMembers: Boolean
+    ): Boolean {
         val isLeaderViewer = viewer.uniqueId == guild.leaderId
-        val canShowActions =
-            canManageMembers &&
-                    member.playerID != guild.leaderId &&
-                    (member.role != GuildRole.Adjoint || isLeaderViewer)
+        return canManageMembers &&
+                member.playerID != guild.leaderId &&
+                (member.role != GuildRole.Adjoint || isLeaderViewer)
+    }
+
+    private fun buildMemberLore(member: GuildMember, canShowActions: Boolean): ItemLoreBuilder {
         val lore = ItemLoreBuilder()
             .append("Rôle : ", NamedTextColor.GRAY)
             .append(member.role.displayName, member.role.color)
             .newline()
             .append("A rejoint : ", NamedTextColor.GRAY)
-            .append(joinedDateStr, NamedTextColor.WHITE)
+            .append(JOINED_DATE_FORMATTER.format(member.joinedDate), NamedTextColor.WHITE)
             .newline().newline()
+
         if (canShowActions) {
-                lore.append("Clic gauche : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
+            lore.append("Clic gauche : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
                 .append("Promouvoir", NamedTextColor.GREEN, TextDecoration.ITALIC)
                 .newline()
                 .append("Clic droit : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
@@ -107,16 +127,7 @@ class GuildMembersMenu(
                     NamedTextColor.RED, TextDecoration.ITALIC
                 )
         }
-        addButton(
-            slot,
-            ItemBuilder(getPlayerHead(member.playerID))
-                .name((Bukkit.getOfflinePlayer(member.playerID).name
-                    ?: member.playerID.toString()), NamedTextColor.GOLD)
-                .lore(lore.get())
-                .build()
-        ) { click ->
-            handleMemberClick(viewer, guild, member, canManageMembers, click.click)
-        }
+        return lore
     }
 
     private fun handleMemberClick(
