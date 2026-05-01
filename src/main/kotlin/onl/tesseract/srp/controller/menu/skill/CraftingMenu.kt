@@ -73,7 +73,7 @@ class CraftingMenu(val skill : Skill,
     }
 
     private fun addRecipeButton(viewer: Player) {
-        val item = customItemService.getCustomItem(CustomItemIds.MENU_MENU_BUTTOM)
+        val item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON)
         item.editMeta { it.displayName(Component.text("Recettes")) }
         addButton(0, item) {
             RecipeMenu(skill, customItemService,playerInventoryPort, this).open(viewer);

@@ -25,7 +25,7 @@ class RecipeMenu(
     var startingRecipe = 0
 
     override fun placeButtons(viewer: Player) {
-        addButton(0,customItemService.getCustomItem(CustomItemIds.MENU_RETURN_BUTTOM)){
+        addButton(0,customItemService.getCustomItem(CustomItemIds.MENU_BACK_ARROW_BUTTON)){
             if(previous==null){
                 this.close()
                 return@addButton
@@ -54,13 +54,13 @@ class RecipeMenu(
         }
 
         addButton(8,customItemService
-                .getCustomItem(CustomItemIds.MENU_UP_ARROW_BUTTOM)
+                .getCustomItem(CustomItemIds.MENU_UP_ARROW_BUTTON)
                 .asQuantity(if(startingRecipe>0)1 else 0)){
             startingRecipe--
             placeRecipes(viewer)
         }
         addBottomButton(35,customItemService
-                .getCustomItem(CustomItemIds.MENU_DOWN_ARROW_BUTTOM)
+                .getCustomItem(CustomItemIds.MENU_DOWN_ARROW_BUTTON)
                 .asQuantity(if(recipes.size > startingRecipe+7)1 else 0)){
             startingRecipe++
             placeRecipes(viewer)
