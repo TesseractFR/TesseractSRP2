@@ -18,7 +18,7 @@ import kotlin.math.min
 class CraftingMenu(val skill : Skill,
                    val customItemService: CustomItemService,
                    val playerInventoryPort: PlayerInventoryPort,
-                   val activeRecipe: Recipe? = null ,previous : Menu? = null) : ItemAdderMenu(
+                   val activeRecipe: Recipe ,previous : Menu? = null) : ItemAdderMenu(
     MenuSize.Six,"tesseract:recipe_launch","testMenu",
     previous){
 
@@ -66,7 +66,6 @@ class CraftingMenu(val skill : Skill,
     }
 
     private fun addActiveRecipe() {
-        if(activeRecipe == null)return
         activeRecipe.components.forEach { (i, component) ->
             addButton(17+i,component.item.asQuantity(component.quantity*quantityToCraft))
         }
@@ -83,10 +82,10 @@ class CraftingMenu(val skill : Skill,
 
     private fun getMaxCraft(viewer: Player): Int {
         var max = 0;
-        activeRecipe?.components?.forEach { (i, component) ->
+        activeRecipe.components.forEach { (i, component) ->
             max = max(max,playerInventoryPort.getItemNumber(viewer.uniqueId,component.item))
         }
-        return max
+        return min(max,activeRecipe.getMax())
     }
 
 
