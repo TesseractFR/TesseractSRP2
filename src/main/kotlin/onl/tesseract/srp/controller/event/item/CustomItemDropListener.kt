@@ -1,7 +1,6 @@
 package onl.tesseract.srp.controller.event.item
 
 import onl.tesseract.lib.task.TaskScheduler
-import onl.tesseract.srp.domain.item.CustomItemStack
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
 import onl.tesseract.srp.domain.item.CustomMaterialEntitySource
@@ -34,7 +33,7 @@ class CustomItemDropListener(
         taskScheduler.runLater(1) {
             event.player.world.dropItemNaturally(
                 event.block.location,
-                customItemService.createCustomItem(CustomItemStack(customItem, 1))
+                customItemService.toItemstack(customItem)
             )
         }
     }
@@ -48,7 +47,7 @@ class CustomItemDropListener(
             .find { it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type }
             ?.let { jobService.generateItem(killer.uniqueId, it) }
             ?: return
-        event.drops.add(customItemService.createCustomItem(CustomItemStack(customItem, 1)))
+        event.drops.add(customItemService.toItemstack(customItem))
     }
 }
 

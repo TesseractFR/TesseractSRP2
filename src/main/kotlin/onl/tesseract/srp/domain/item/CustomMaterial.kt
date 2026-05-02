@@ -1,5 +1,7 @@
 package onl.tesseract.srp.domain.item
 
+import kotlinx.serialization.Serializable
+import onl.tesseract.srp.domain.item.CustomItemIds.STEEL_INGOT
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 
@@ -9,22 +11,12 @@ data class CustomMaterialBlockSource(val material: Material) : CustomMaterialSou
 
 data class CustomMaterialEntitySource(val entityType: EntityType) : CustomMaterialSource
 
+@Serializable
 enum class CustomMaterial(
-    val dropSource: CustomMaterialSource,
-    val customMaterial: Material,
     val displayName: String,
-    val rarity: Rarity,
-) {
-    Wood(Material.OAK_LOG, Material.OAK_LOG, "Bois", Rarity.Common),
-    BirchWood(Material.BIRCH_LOG, Material.BIRCH_LOG, "Bois de bouleau", Rarity.Common),
-
-    ZombieDrop(EntityType.ZOMBIE, Material.ROTTEN_FLESH, "Chair Custom", Rarity.Rare),
-    SkeletonDrop(EntityType.SKELETON, Material.BONE, "Os Custom", Rarity.Rare);
-
-    constructor(material: Material, customMaterial: Material, displayName: String, rarity: Rarity)
-            : this(CustomMaterialBlockSource(material), customMaterial, displayName, rarity)
-
-    constructor(entityType: EntityType, customMaterial: Material, displayName: String, rarity: Rarity)
-            : this(CustomMaterialEntitySource(entityType), customMaterial, displayName, rarity)
-
+    val itemTag: String,
+    val dropSource: List<CustomMaterialSource>,
+    val rarity: Rarity
+){
+    STEEL("Acier",STEEL_INGOT,emptyList(), Rarity.Common)
 }

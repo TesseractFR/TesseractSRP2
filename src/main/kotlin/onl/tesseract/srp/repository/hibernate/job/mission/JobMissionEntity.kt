@@ -2,6 +2,7 @@ package onl.tesseract.srp.repository.hibernate.job.mission
 
 import jakarta.persistence.*
 import onl.tesseract.srp.domain.item.CustomMaterial
+import onl.tesseract.srp.domain.item.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import org.hibernate.annotations.CacheConcurrencyStrategy
@@ -30,8 +31,9 @@ class JobMissionEntity(
     @Column(nullable = false)
     val quantity: Int,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val minimalQuality: Int,
+    val minimalQuality: Quality,
 
     @Column(name = "delivered")
     var delivered: Int = 0,

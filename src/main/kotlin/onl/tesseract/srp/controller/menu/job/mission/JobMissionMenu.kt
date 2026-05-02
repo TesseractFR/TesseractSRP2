@@ -111,14 +111,14 @@ class JobMissionMenu(
         val inventoryAmount = viewer.inventory.contents
             .filterNotNull()
             .mapNotNull { runCatching { customItemService.getCustomItemStack(it) }.getOrNull() }
-            .filter { it.item.material == mission.material && it.item.quality >= mission.minimalQuality }
-            .sumOf { it.amount }
+            .filter { it.material == mission.material && it.quality >= mission.minimalQuality }
+            .sumOf { it.quantity }
 
         val total = progress + inventoryAmount
         val gradientColor = Util.getGreenRedGradient(total, mission.quantity)
-
-        return ItemBuilder(mission.material.customMaterial)
-            .name(Component.text(mission.material.displayName, DARK_AQUA)) // Mettre la couleur de la rareté
+        val material = mission.material
+        return ItemBuilder(customItemService.getCustomItem(material.itemTag))
+            .name(Component.text(material.displayName, DARK_AQUA)) // Mettre la couleur de la rareté
             .lore()
             .append(Component.text("Métier : ", GRAY).append(mission.job.name, GOLD))
             .newline()

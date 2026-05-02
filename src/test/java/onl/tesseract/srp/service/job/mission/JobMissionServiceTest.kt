@@ -1,6 +1,7 @@
 package onl.tesseract.srp.service.job.mission
 
 import onl.tesseract.srp.domain.item.CustomMaterial
+import onl.tesseract.srp.domain.item.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.exception.PlayerNotConnectedException
@@ -62,21 +63,21 @@ class JobMissionServiceTest {
             1L,
             playerId = UUID.randomUUID(),
             job = EnumJob.Mineur,
-            material = CustomMaterial.Wood,
+            material = CustomMaterial.STEEL,
             32,
-            20,
+            Quality.POOR,
             delivered = 0,
             reward = 10
         )
         jobMissionRepository.save(mission)
-        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 32))
+        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 32))
             .thenReturn(30)
 
         // When
         val (delivered, remaining) = service.consumeItemsForMission(player, 1L)
 
         // Then
-        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 32)
+        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 32)
         Assertions.assertEquals(30, delivered)
         Assertions.assertEquals(2, remaining)
 
@@ -92,14 +93,14 @@ class JobMissionServiceTest {
             1L,
             playerId = UUID.randomUUID(),
             job = EnumJob.Mineur,
-            material = CustomMaterial.Wood,
+            material = CustomMaterial.STEEL,
             32,
-            20,
+            Quality.POOR,
             delivered = 0,
             reward = 10
         )
         jobMissionRepository.save(mission)
-        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 32))
+        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 32))
             .thenReturn(32)
 
         // When
@@ -109,7 +110,7 @@ class JobMissionServiceTest {
         Assertions.assertEquals(32, delivered)
         Assertions.assertEquals(0, remaining)
 
-        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 32)
+        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 32)
         verify(playerJobService).increaseReputation(player.uniqueId, EnumJob.Mineur)
 
         val saved = jobMissionRepository.getById(1L)
@@ -123,9 +124,9 @@ class JobMissionServiceTest {
             1L,
             playerId = UUID.randomUUID(),
             job = EnumJob.Mineur,
-            material = CustomMaterial.Wood,
+            material = CustomMaterial.STEEL,
             32,
-            20,
+            Quality.POOR,
             delivered = 32,
             reward = 10
         )
@@ -144,21 +145,21 @@ class JobMissionServiceTest {
             1L,
             playerId = UUID.randomUUID(),
             job = EnumJob.Mineur,
-            material = CustomMaterial.Wood,
+            material = CustomMaterial.STEEL,
             32,
-            20,
+            Quality.POOR,
             delivered = 10,
             reward = 10
         )
         jobMissionRepository.save(mission)
-        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 22))
+        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 22))
             .thenReturn(22)
 
         // When
         val (delivered, remaining) = service.consumeItemsForMission(player, 1L)
 
         // Then
-        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 22)
+        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 22)
         Assertions.assertEquals(22, delivered)
         Assertions.assertEquals(0, remaining)
 
@@ -173,21 +174,21 @@ class JobMissionServiceTest {
             1L,
             playerId = UUID.randomUUID(),
             job = EnumJob.Mineur,
-            material = CustomMaterial.Wood,
+            material = CustomMaterial.STEEL,
             32,
-            20,
+            Quality.POOR,
             delivered = 10,
             reward = 10
         )
         jobMissionRepository.save(mission)
-        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 22))
+        `when`(customItemService.removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 22))
             .thenReturn(0)
 
         // When
         val (delivered, remaining) = service.consumeItemsForMission(player, 1L)
 
         // Then
-        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.Wood, 20, 22)
+        verify(customItemService).removeCustomItems(player.inventory, CustomMaterial.STEEL, Quality.POOR, 22)
         Assertions.assertEquals(0, delivered)
         Assertions.assertEquals(22, remaining)
     }

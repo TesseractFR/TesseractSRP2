@@ -2,20 +2,19 @@ package onl.tesseract.srp.repository.yaml.skill
 
 import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
-import onl.tesseract.srp.domain.skill.recipe.RecipeComponent
-import onl.tesseract.srp.domain.skill.recipe.Recipe
+import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.domain.skill.SkillTier
+import onl.tesseract.srp.domain.skill.recipe.*
 import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
-import org.bukkit.inventory.ItemStack
 import org.slf4j.Logger
-import org.springframework.stereotype.Component as SpringComponent
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.Path
+import org.springframework.stereotype.Component as SpringComponent
 
 private val logger: Logger = LoggerFactory.getLogger(SkillConfigRepository::class.java)
 
@@ -108,18 +107,18 @@ class SkillConfigRepository(
         return RecipeComponent(loadItem(configurationSection), quantity)
     }
 
-    private fun loadItem(configurationSection: ConfigurationSection): ItemStack {
+    private fun loadItem(configurationSection: ConfigurationSection): ComponentWrapper {
         val type =
             configurationSection.getString("type") ?: throw ConfigurationException("A recipe item must have a type.")
         if (type == "vanilla") {
             val mat = configurationSection.getString("material")
                     ?: throw ConfigurationException("A recipe vanilla item must have a material.")
-            return ItemStack(Material.valueOf(mat))
+            return VanillaComponentWrapper(Material.valueOf(mat))
         }
         if (type == "custom") {
-            val namespaceID = configurationSection.getString("namespaceID")
-                    ?: throw ConfigurationException("A recipe custom item must have a namespaceID.")
-            return customItemService.getCustomItem(namespaceID)
+            val mat = configurationSection.getString("material")
+                    ?: throw ConfigurationException("A recipe custom item must have a material.")
+            return CustomComponentWrapper(CustomMaterial.valueOf(mat))
         }
         throw ConfigurationException("Invalid recipe item type.")
     }

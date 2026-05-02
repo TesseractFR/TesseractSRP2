@@ -8,6 +8,7 @@ import onl.tesseract.srp.domain.item.CustomItemIds
 import onl.tesseract.srp.domain.port.PlayerInventoryPort
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
+import onl.tesseract.srp.service.skill.RecipeService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -30,6 +31,7 @@ private const val ITEM_TO_COLLECT_INDEX = 41
 
 class SkillMainMenu(val skill : Skill,
                     val customItemService: CustomItemService,
+                    val recipeService: RecipeService,
                     val playerInventoryPort: PlayerInventoryPort,previous : Menu? = null): ItemAdderMenu(
     MenuSize.Six,"tesseract:recipe_advancement",skill.name, previous) {
 
@@ -49,7 +51,7 @@ class SkillMainMenu(val skill : Skill,
         val item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON)
         item.editMeta { it.displayName(Component.text("Recettes")) }
         addButton(RECIPE_BOOK_BUTTON_INDEX, item) {
-            RecipeMenu(skill, customItemService,playerInventoryPort, this).open(viewer);
+            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService, this, ).open(viewer);
         }
     }
 

@@ -19,4 +19,7 @@ object CustomItemIds {
     const val MENU_RECIPE_BOOK_BUTTON = TESSERACT_BASE+"menu_recipe_book_button"
     const val MENU_STRUCTURE_INFO_BUTTON = TESSERACT_BASE+"menu_structure_info_button"
     const val MENU_INFORMATION_BUTTON = TESSERACT_BASE+"menu_information_button"
+
+
+    const val STEEL_INGOT = TESSERACT_BASE+"steel"
 }

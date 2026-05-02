@@ -1,6 +1,7 @@
 package onl.tesseract.srp.service.job.mission
 
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.srp.domain.item.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.domain.job.mission.JobMission
@@ -31,7 +32,7 @@ class JobMissionService(
         val rep = playerJobService.getPlayerJobProgression(playerId).reputationByJob.getOrDefault(enumJob, 1.0)
 
         val quantity = Random.nextDouble(template.quantity * 0.9, template.quantity * 1.1) * rep
-        val quality = Random.nextDouble(template.minQuality * 0.9, template.minQuality * 1.1) * rep
+        val quality = Quality.POOR
 
         val baseStat = job.baseStats[template.material]
             ?: error("No baseStat configured for job $enumJob")
@@ -46,12 +47,12 @@ class JobMissionService(
             job = enumJob,
             material = template.material,
             quantity = quantity.toInt().coerceAtLeast(1),
-            minimalQuality = quality.toInt().coerceAtLeast(1),
+            minimalQuality = quality,
             reward = reward.toInt()
         )
 
         val saved = jobMissionRepository.save(mission)
-        logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
+        logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
         return saved
     }
 

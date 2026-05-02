@@ -10,6 +10,7 @@ import onl.tesseract.srp.domain.port.PlayerInventoryPort
 import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
+import onl.tesseract.srp.service.skill.RecipeService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -35,6 +36,7 @@ private const val QUANTITY_MIN_INDEX = 41
 
 class CraftingMenu(val skill : Skill,
                    val customItemService: CustomItemService,
+                   val recipeService: RecipeService,
                    val playerInventoryPort: PlayerInventoryPort,
                    val activeRecipe: Recipe ,previous : Menu? = null) : ItemAdderMenu(
     MenuSize.Six,"tesseract:recipe_launch","testMenu",
@@ -95,9 +97,12 @@ class CraftingMenu(val skill : Skill,
 
     private fun addActiveRecipe() {
         activeRecipe.components.forEach { (i, component) ->
-            addButton(COMPONENTS_OFFSET+i,component.item.asQuantity(component.quantity*quantityToCraft))
+            addButton(COMPONENTS_OFFSET+i,
+                customItemService.toItemstack(component.item)
+                        .asQuantity(component.quantity*quantityToCraft))
         }
-        addButton(RESULT_INDEX,activeRecipe.result.item.asQuantity(activeRecipe.result.quantity*quantityToCraft))
+        addButton(RESULT_INDEX, customItemService.toItemstack(activeRecipe.result.item)
+                .asQuantity(activeRecipe.result.quantity*quantityToCraft))
     }
 
     private fun addInfoButton() {
@@ -110,7 +115,7 @@ class CraftingMenu(val skill : Skill,
         val item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON)
         item.editMeta { it.displayName(Component.text("Recettes")) }
         addButton(RECIPE_BOOK_BUTTON_INDEX, item) {
-            RecipeMenu(skill, customItemService,playerInventoryPort, this).open(viewer);
+            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService,this, ).open(viewer);
         }
     }
 
@@ -123,9 +128,10 @@ class CraftingMenu(val skill : Skill,
     private fun getMaxCraft(viewer: Player): Int {
         var max = 0;
         activeRecipe.components.forEach { (i, component) ->
-            max = max(max,playerInventoryPort.getItemNumber(viewer.uniqueId,component.item))
+            max = max(max,playerInventoryPort.getItemNumber(viewer.uniqueId,
+                customItemService.toItemstack(component.item)))
         }
-        return min(max,activeRecipe.getMax())
+        return min(max,recipeService.getMaxStackSize(activeRecipe))
     }
 
 

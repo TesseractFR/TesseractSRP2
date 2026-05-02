@@ -1,6 +1,6 @@
 package onl.tesseract.srp.service.skill
 
-import onl.tesseract.srp.domain.skill.CraftTask
+import onl.tesseract.srp.domain.skill.crafting.CraftTask
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.repository.yaml.skill.SkillConfigRepository
 import org.springframework.stereotype.Component

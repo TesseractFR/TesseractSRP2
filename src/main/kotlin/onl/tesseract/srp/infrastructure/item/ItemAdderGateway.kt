@@ -15,4 +15,8 @@ class ItemAdderGateway : CustomItemGatewayPort {
         val item = customItem.itemStack
         return item
     }
+
+    override fun isCustomItem(itemStack: ItemStack): Boolean {
+        return CustomStack.byItemStack(itemStack) != null
+    }
 }

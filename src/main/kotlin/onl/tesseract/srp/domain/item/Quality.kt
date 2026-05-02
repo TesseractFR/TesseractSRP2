@@ -1,4 +1,4 @@
-package onl.tesseract.srp.domain.skill
+package onl.tesseract.srp.domain.item
 
 enum class Quality {
     POOR,
