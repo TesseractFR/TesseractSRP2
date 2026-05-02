@@ -11,6 +11,7 @@ import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.skill.RecipeService
+import onl.tesseract.srp.service.skill.SkillService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -37,6 +38,7 @@ private const val QUANTITY_MIN_INDEX = 41
 class CraftingMenu(val skill : Skill,
                    val customItemService: CustomItemService,
                    val recipeService: RecipeService,
+                   val skillService: SkillService,
                    val playerInventoryPort: PlayerInventoryPort,
                    val activeRecipe: Recipe ,previous : Menu? = null) : ItemAdderMenu(
     MenuSize.Six,"tesseract:recipe_launch","testMenu",
@@ -114,15 +116,19 @@ class CraftingMenu(val skill : Skill,
     private fun addRecipeButton(viewer: Player) {
         val item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON)
         item.editMeta { it.displayName(Component.text("Recettes")) }
-        addButton(RECIPE_BOOK_BUTTON_INDEX, item) {
-            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService,this, ).open(viewer);
+        addButton(RECIPE_BOOK_BUTTON_INDEX, item) { event ->
+            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService, skillService, this).open(event.whoClicked as Player);
         }
     }
 
     private fun addLaunchButton() {
-        val item = ItemStack(Material.FURNACE)
+        val item = ItemStack(Material.ANVIL)
         item.editMeta { it.displayName(Component.text("Lancer la fabrication")) }
-        addButton(LAUNCH_BUTTON_INDEX, item) {}
+        addButton(LAUNCH_BUTTON_INDEX, item) { event ->
+            val player = event.whoClicked as Player
+            skillService.startCraft(player.uniqueId, skill, activeRecipe, quantityToCraft)
+            this.close()
+        }
     }
 
     private fun getMaxCraft(viewer: Player): Int {

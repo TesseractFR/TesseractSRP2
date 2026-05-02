@@ -21,4 +21,27 @@ class BukkitPlayerInventoryGateway : PlayerInventoryPort {
         }
         return count
     }
+
+    override fun removeItems(player: UUID, item: ItemStack, amount: Int) {
+        val bukkitPlayer = Bukkit.getPlayer(player) ?: return
+        val inventory = bukkitPlayer.inventory
+        var remaining = amount
+        for (i in 0 until inventory.size) {
+            val content = inventory.getItem(i)
+            if (content != null && content.isSimilar(item)) {
+                val toRemove = minOf(remaining, content.amount)
+                content.amount -= toRemove
+                remaining -= toRemove
+                if (remaining <= 0) break
+            }
+        }
+    }
+
+    override fun giveItems(player: UUID, items: List<ItemStack>) {
+        val bukkitPlayer = Bukkit.getPlayer(player) ?: return
+        val remaining = bukkitPlayer.inventory.addItem(*items.toTypedArray())
+        if (remaining.isNotEmpty()) {
+            remaining.values.forEach { bukkitPlayer.world.dropItemNaturally(bukkitPlayer.location, it) }
+        }
+    }
 }

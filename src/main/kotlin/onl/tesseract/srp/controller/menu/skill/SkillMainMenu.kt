@@ -9,6 +9,7 @@ import onl.tesseract.srp.domain.port.PlayerInventoryPort
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.skill.RecipeService
+import onl.tesseract.srp.service.skill.SkillService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -32,6 +33,7 @@ private const val ITEM_TO_COLLECT_INDEX = 41
 class SkillMainMenu(val skill : Skill,
                     val customItemService: CustomItemService,
                     val recipeService: RecipeService,
+                    val skillService: SkillService,
                     val playerInventoryPort: PlayerInventoryPort,previous : Menu? = null): ItemAdderMenu(
     MenuSize.Six,"tesseract:recipe_advancement",skill.name, previous) {
 
@@ -41,8 +43,8 @@ class SkillMainMenu(val skill : Skill,
         addSkillTreeButton()
         addInfoButton()
         addPendingRecipeButtons()
-        addCurrentRecipeButton()
-        addItemToCollectButton()
+        addCurrentRecipeButton(viewer)
+        addItemToCollectButton(viewer)
         addBackButton()
         super.placeButtons(viewer)
     }
@@ -51,7 +53,7 @@ class SkillMainMenu(val skill : Skill,
         val item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON)
         item.editMeta { it.displayName(Component.text("Recettes")) }
         addButton(RECIPE_BOOK_BUTTON_INDEX, item) {
-            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService, this, ).open(viewer);
+            RecipeMenu(skill, customItemService, playerInventoryPort, recipeService, skillService, this).open(viewer);
         }
     }
 
@@ -85,16 +87,43 @@ class SkillMainMenu(val skill : Skill,
         }
     }
 
-    private fun addCurrentRecipeButton() {
-        val item = ItemStack(Material.PAPER)
-        item.editMeta { it.displayName(Component.text("Recette en cours")) }
+    private fun addCurrentRecipeButton(viewer: Player) {
+        val task = skillService.getActiveTask(viewer.uniqueId, skill.name)
+        val item = if (task != null) {
+            customItemService.toItemstack(task.queuedRecipe.recipe.result.item)
+                .asQuantity(task.queuedRecipe.quantity)
+        } else {
+            ItemStack(Material.BARRIER).also {
+                it.editMeta { meta -> meta.displayName(Component.text("Aucune fabrication en cours")) }
+            }
+        }
         addButton(CURRENT_RECIPE_INDEX, item) {}
     }
 
-    private fun addItemToCollectButton() {
-        val item = ItemStack(Material.CHEST)
-        item.editMeta { it.displayName(Component.text("Item à récupérer")) }
-        addButton(ITEM_TO_COLLECT_INDEX, item) {}
+    private fun addItemToCollectButton(viewer: Player) {
+        val task = skillService.getActiveTask(viewer.uniqueId, skill.name)
+        val hasItems = task != null && (task.done.isNotEmpty() || task.garbage.isNotEmpty())
+
+        val item = if (hasItems) {
+            ItemStack(Material.CHEST).also {
+                it.editMeta { meta ->
+                    meta.displayName(Component.text("§aObjets à récupérer"))
+                    val lore = mutableListOf<Component>()
+                    if (task!!.done.isNotEmpty()) lore.add(Component.text("§7- ${task.done.size} objets fabriqués"))
+                    if (task.garbage.isNotEmpty()) lore.add(Component.text("§7- ${task.garbage.size} résidus"))
+                    meta.lore(lore)
+                }
+            }
+        } else {
+            ItemStack(Material.MINECART).also {
+                it.editMeta { meta -> meta.displayName(Component.text("§cRien à récupérer")) }
+            }
+        }
+
+        addButton(ITEM_TO_COLLECT_INDEX, item) {
+            skillService.collectCraftResults(viewer.uniqueId, skill)
+            this.placeButtons(viewer)
+        }
     }
 
 

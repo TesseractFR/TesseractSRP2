@@ -24,7 +24,7 @@ class CustomStructureListener(val skillService: SkillService,
     private fun onClick(player: Player, furniture: CustomFurniture) : Boolean{
         val skill = skillService.getSkillFromStructureID(furniture.namespacedID)?:return false
 
-        SkillMainMenu(skill,customItemService,recipeService,playerInventoryPort).open(player)
+        SkillMainMenu(skill,customItemService,recipeService,skillService,playerInventoryPort).open(player)
 
         return true
     }

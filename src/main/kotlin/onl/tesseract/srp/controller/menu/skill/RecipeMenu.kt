@@ -9,6 +9,7 @@ import onl.tesseract.srp.domain.skill.recipe.Recipe
 import onl.tesseract.srp.domain.skill.Skill
 import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.skill.RecipeService
+import onl.tesseract.srp.service.skill.SkillService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -19,6 +20,7 @@ class RecipeMenu(
     val customItemService: CustomItemService,
     val playerInventoryPort: PlayerInventoryPort,
     val recipeService: RecipeService,
+    val skillService: SkillService,
     previous: Menu? = null,
 ) :
         ItemAdderBiMenu(MenuSize.Six,"tesseract:recipe_book","Recettes "+skill.name, previous,100){
@@ -89,7 +91,7 @@ class RecipeMenu(
         val item = customItemService.toItemstack(recipe.result.item)
         item.amount = recipe.result.quantity
         addButton(9*(ligne)+(8),item){
-            CraftingMenu(skill,customItemService, recipeService,playerInventoryPort,recipe,this).open(viewer)
+            CraftingMenu(skill,customItemService, recipeService, skillService, playerInventoryPort,recipe,this).open(viewer)
         }
 
     }
