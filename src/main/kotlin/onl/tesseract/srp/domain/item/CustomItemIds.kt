@@ -10,6 +10,7 @@ object CustomItemIds {
     const val MENU_LEFT_ARROW_BUTTON = TESSERACT_BASE+"menu_left_arrow_button"
     const val MENU_BACK_ARROW_BUTTON = TESSERACT_BASE+"menu_back_arrow_button"
     const val MENU_CLOSE2_BUTTON = TESSERACT_BASE+"menu_close2_button"
+    const val MENU_QUANTITY_BUTTON = TESSERACT_BASE+"menu_quantity_button"
     const val MENU_MIN_BUTTON = TESSERACT_BASE+"menu_min_button"
     const val MENU_MAX_BUTTON = TESSERACT_BASE+"menu_max_button"
     const val MENU_MINUS_1_BUTTON = TESSERACT_BASE+"menu_minus_1_button"

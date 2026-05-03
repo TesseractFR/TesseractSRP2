@@ -64,7 +64,7 @@ class SkillMainMenu(val skill : Skill,
 
     override fun placeButtons(viewer: Player) {
         addRecipeButton(viewer)
-        addSkillTreeButton()
+        addSkillTreeButton(viewer)
         addInfoButton()
         addPendingRecipeButtons(viewer)
         addCurrentRecipeButton(viewer)
@@ -81,10 +81,12 @@ class SkillMainMenu(val skill : Skill,
         }
     }
 
-    private fun addSkillTreeButton() {
+    private fun addSkillTreeButton(viewer: Player) {
         val item = ItemStack(Material.EXPERIENCE_BOTTLE)
-        item.editMeta { it.displayName(Component.text("Arbre d'améliorations")) }
-        addButton(SKILL_TREE_BUTTON_INDEX, item) {}
+        item.editMeta { it.displayName(Component.text("Améliorations tables/joueur")) }
+        addButton(SKILL_TREE_BUTTON_INDEX, item) {
+            SkillUpgradeMenu(skill, customItemService, skillService, this).open(viewer)
+        }
     }
 
     private fun addInfoButton() {
