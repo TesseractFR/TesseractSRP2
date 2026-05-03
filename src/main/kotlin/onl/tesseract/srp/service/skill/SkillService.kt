@@ -1,24 +1,25 @@
 package onl.tesseract.srp.service.skill
 
-import onl.tesseract.srp.PLUGIN_INSTANCE
 import onl.tesseract.srp.domain.item.CustomItem
-import onl.tesseract.srp.domain.skill.crafting.CraftTask
+import onl.tesseract.srp.domain.item.Quality
+import onl.tesseract.srp.domain.port.PlayerInventoryPort
 import onl.tesseract.srp.domain.skill.Skill
+import onl.tesseract.srp.domain.skill.crafting.CraftTask
 import onl.tesseract.srp.domain.skill.crafting.QueuedRecipe
 import onl.tesseract.srp.domain.skill.recipe.CustomComponentWrapper
 import onl.tesseract.srp.domain.skill.recipe.Recipe
-import onl.tesseract.srp.domain.item.Quality
-import onl.tesseract.srp.domain.port.PlayerInventoryPort
+import onl.tesseract.srp.domain.skill.station.CraftingStation
 import onl.tesseract.srp.infrastructure.scheduler.skill.CraftTaskScheduler
 import onl.tesseract.srp.repository.yaml.skill.SkillConfigRepository
 import onl.tesseract.srp.service.item.CustomItemService
 import org.bukkit.Bukkit
 import org.bukkit.inventory.ItemStack
 import org.springframework.stereotype.Component
-import java.util.UUID
-import kotlin.let
+import java.util.*
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
+
+const val DEFAULT_SUCCES_RATE = 0.75f
 
 @Component
 class SkillService(val skillConfigRepository: SkillConfigRepository,
@@ -76,7 +77,13 @@ class SkillService(val skillConfigRepository: SkillConfigRepository,
         return cache.done.size to cache.garbage.size
     }
 
-    fun startCraft(player: UUID, skill: Skill, recipe: Recipe, quantity: Int) {
+    fun startCraft(player: UUID, skill: Skill, recipe: Recipe, quantity: Int, station: CraftingStation = CraftingStation()) {
+        // Vérifier le Tier accessible
+        if (recipe.tier > station.tier) {
+            Bukkit.getPlayer(player)?.sendMessage("§cLe niveau de cette table est insuffisant pour cette recette ! (Tier requis : ${recipe.tier})")
+            return
+        }
+
         // Vérifier les ressources et les retirer
         for (component in recipe.components.values) {
             val itemStack = customItemService.toItemstack(component.item)
@@ -100,7 +107,7 @@ class SkillService(val skillConfigRepository: SkillConfigRepository,
         val queue = skillQueues.getOrPut(skill.name) { mutableListOf() }
         
         if (activeTasks[player]?.get(skill.name) == null) {
-            val craftTask = CraftTask(queuedRecipe, mutableListOf(), mutableListOf(), 5.seconds)
+            val craftTask = CraftTask(queuedRecipe, mutableListOf(), mutableListOf(), 5.seconds, station)
             activeTasks.getOrPut(player) { mutableMapOf() }[skill.name] = craftTask
             craftTaskScheduler.schedule(player, skill, craftTask, this)
             Bukkit.getPlayer(player)?.sendMessage("§aFabrication lancée !")
@@ -128,15 +135,32 @@ class SkillService(val skillConfigRepository: SkillConfigRepository,
             return
         }
 
-        // Réaliser la recette une fois
-        val resultWrapper = task.queuedRecipe.recipe.result.item
-        if (resultWrapper is CustomComponentWrapper) {
-            val product = CustomItem(
-                resultWrapper.customMaterial,
-                task.queuedRecipe.compoQuality,
-                task.queuedRecipe.recipe.result.quantity
-            )
-            task.done.add(product)
+        val station = task.station
+
+        // Appliquer le taux de réussite
+        val effectiveSuccessRate = DEFAULT_SUCCES_RATE + station.successBonus
+        val success = Random.nextDouble() <= effectiveSuccessRate
+
+        if (success) {
+            // Réaliser la recette une fois
+            val resultWrapper = task.queuedRecipe.recipe.result.item
+            if (resultWrapper is CustomComponentWrapper) {
+                // Appliquer le bonus de qualité
+                var quality = task.queuedRecipe.compoQuality
+                if (Random.nextDouble() <= station.qualityBonus) {
+                    quality = quality.next()
+                }
+
+                val product = CustomItem(
+                    resultWrapper.customMaterial,
+                    quality,
+                    task.queuedRecipe.recipe.result.quantity
+                )
+                task.done.add(product)
+            }
+        } else {
+            // Échec du craft - on pourrait ajouter des résidus (garbage) ici si nécessaire
+            Bukkit.getPlayer(player)?.sendMessage("§cÉchec de la fabrication d'une unité !")
         }
 
         // Déplacer les résultats vers le cache de collecte avec fusion
@@ -161,7 +185,7 @@ class SkillService(val skillConfigRepository: SkillConfigRepository,
         val queue = queues[player]?.get(skill.name)
         if (queue != null && queue.isNotEmpty()) {
             val nextRecipe = queue.removeAt(0)
-            val nextTask = CraftTask(nextRecipe, mutableListOf(), mutableListOf(), 5.seconds)
+            val nextTask = CraftTask(nextRecipe, mutableListOf(), mutableListOf(), 5.seconds, task.station)
             activeTasks.getOrPut(player) { mutableMapOf() }[skill.name] = nextTask
             craftTaskScheduler.schedule(player, skill, nextTask, this)
         }

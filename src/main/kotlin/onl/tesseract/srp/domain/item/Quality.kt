@@ -5,5 +5,9 @@ enum class Quality {
     NORMAL,
     GOOD,
     VERY_GOOD,
-    EXCEPTIONAL,
+    EXCEPTIONAL;
+
+    fun next(): Quality {
+        return entries.getOrNull(ordinal + 1) ?: EXCEPTIONAL
+    }
 }

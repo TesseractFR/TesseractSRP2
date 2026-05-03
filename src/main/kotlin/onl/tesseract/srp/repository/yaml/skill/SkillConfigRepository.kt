@@ -65,7 +65,8 @@ class SkillConfigRepository(
             val recipes: Map<Int, Recipe> = loadRecipes(
                 section.getConfigurationSection("recipes")
                         ?: throw ConfigurationException("The recipes must be set for tier $tierId for skill $skillName"),
-                skillName
+                skillName,
+                tierId
             )
             tiers[tierId] = SkillTier(recipes)
         }
@@ -75,6 +76,7 @@ class SkillConfigRepository(
     private fun loadRecipes(
         configurationSection: ConfigurationSection,
         skillName: String,
+        tier: Int
     ): Map<Int, Recipe> {
         val recipes = mutableMapOf<Int, Recipe> ()
         for (recipeKey in configurationSection.getKeys(false)) {
@@ -86,7 +88,8 @@ class SkillConfigRepository(
             val compos = loadComponents(
                 section.getConfigurationSection("components")
                     ?: throw ConfigurationException("Recipe must have components for $skillName"))
-            recipes[recipeID] = Recipe(compos,result)
+            val successRate = section.getDouble("success_rate", 1.0)
+            recipes[recipeID] = Recipe(compos, result,tier)
         }
         return recipes
     }
