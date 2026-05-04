@@ -155,13 +155,13 @@ class SkillMainMenu(val skill : Skill,
         val hasItems = skillService.hasItemsToCollect(viewer.uniqueId, skill.name)
 
         val item = if (hasItems) {
-            val (doneCount, garbageCount) = skillService.getItemsToCollectCount(viewer.uniqueId, skill.name)
+            val (doneCount, garbageCount) = skillService.getItemsToCollect(viewer.uniqueId, skill.name)
             ItemStack(Material.CHEST).also {
                 it.editMeta { meta ->
                     meta.displayName(Component.text("§aObjets à récupérer"))
                     val lore = mutableListOf<Component>()
-                    if (doneCount > 0) lore.add(Component.text("§7- $doneCount types d'objets fabriqués"))
-                    if (garbageCount > 0) lore.add(Component.text("§7- $garbageCount résidus"))
+                    if (doneCount.isNotEmpty()) lore.add(Component.text("§7- $doneCount types d'objets fabriqués"))
+                    if (garbageCount.isNotEmpty()) lore.add(Component.text("§7- $garbageCount résidus"))
                     meta.lore(lore)
                 }
             }

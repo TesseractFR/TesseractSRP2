@@ -62,13 +62,13 @@ class SkillConfigRepository(
         for (tierKey in configurationSection.getKeys(false)) {
             val tierId = tierKey.toIntOrNull() ?: throw ConfigurationException("Tier must be an integer for $skillName")
             val section = configurationSection.getConfigurationSection(tierKey)?: throw ConfigurationException("Tier must be not empty for $skillName.")
-            val recipes: Map<Int, Recipe> = loadRecipes(
+            val recipes: Map<String, Recipe> = loadRecipes(
                 section.getConfigurationSection("recipes")
                         ?: throw ConfigurationException("The recipes must be set for tier $tierId for skill $skillName"),
                 skillName,
                 tierId
             )
-            tiers[tierId] = SkillTier(recipes)
+            tiers[tierId] = SkillTier(recipes.values.associateBy { it.slot }, recipes)
         }
         return tiers
     }
@@ -77,19 +77,20 @@ class SkillConfigRepository(
         configurationSection: ConfigurationSection,
         skillName: String,
         tier: Int
-    ): Map<Int, Recipe> {
-        val recipes = mutableMapOf<Int, Recipe> ()
+    ): Map<String, Recipe> {
+        val recipes = mutableMapOf<String, Recipe> ()
         for (recipeKey in configurationSection.getKeys(false)) {
-            val recipeID = recipeKey.toIntOrNull() ?: throw ConfigurationException("Recipe must be an integer for $skillName")
+            val name = recipeKey.toString()
             val section = configurationSection.getConfigurationSection(recipeKey)?: throw ConfigurationException("Recipe must be not empty for $skillName")
+            val slot = section.getInt("slot")
             val result = loadResult(
                 section.getConfigurationSection("result")
                         ?: throw ConfigurationException("Recipe must have a result for $skillName"))
             val compos = loadComponents(
                 section.getConfigurationSection("components")
                     ?: throw ConfigurationException("Recipe must have components for $skillName"))
-            val successRate = section.getDouble("success_rate", 1.0)
-            recipes[recipeID] = Recipe(compos, result,tier)
+            val recipe = Recipe(name, slot,compos, result, tier)
+            recipes[name] = recipe
         }
         return recipes
     }

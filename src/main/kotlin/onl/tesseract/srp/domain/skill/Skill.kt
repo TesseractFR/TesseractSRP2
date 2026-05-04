@@ -9,5 +9,6 @@ data class Skill(
 )
 
 data class SkillTier(
-    val recipes: Map<Int, Recipe>
+    val recipes: Map<Int, Recipe>,
+    val recipeByName: Map<String, Recipe>
 )
