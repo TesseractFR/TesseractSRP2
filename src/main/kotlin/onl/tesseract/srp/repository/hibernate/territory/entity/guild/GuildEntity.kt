@@ -114,7 +114,8 @@ class GuildEntity(
             visitorSpawnLocation = visitorSpawn.toCoordinate(),
             level = level,
             xp = xp,
-            rank = rank
+            rank = rank,
+            creationDate = creationDate
         )
         guild.addChunks(chunks.map { GuildChunk(it.id.toDomain(),guild) }.toSet())
         return guild

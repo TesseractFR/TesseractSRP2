@@ -12,6 +12,7 @@ import onl.tesseract.lib.util.append
 import onl.tesseract.srp.SrpCommandInstanceProvider
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg
+import onl.tesseract.srp.controller.menu.campement.CampementMenu
 import onl.tesseract.srp.domain.territory.enum.result.BorderResult
 import onl.tesseract.srp.domain.territory.enum.result.ClaimResult
 import onl.tesseract.srp.domain.territory.enum.result.CreationResult
@@ -254,6 +255,16 @@ class CampementCommands(
             CampementAnnexionStickInvocable::class,
             ::CampementAnnexionStickInvocable
         )
+    }
+
+    @Command(name = "menu", playerOnly = true, description = "Ouvrir le menu de son campement.")
+    fun openMenu(sender: Player) {
+        val campement = campementService.getCampementByOwner(sender.uniqueId)
+        if (campement == null) {
+            sender.sendMessage(NO_CAMPEMENT_MESSAGE)
+            return
+        }
+        CampementMenu(sender.uniqueId, campementService, menuService, teleportService).open(sender)
     }
 
 }

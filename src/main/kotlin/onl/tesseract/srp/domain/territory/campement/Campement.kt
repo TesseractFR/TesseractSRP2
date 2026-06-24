@@ -3,6 +3,7 @@ package onl.tesseract.srp.domain.territory.campement
 import onl.tesseract.srp.domain.commun.ChunkCoord
 import onl.tesseract.srp.domain.commun.Coordinate
 import onl.tesseract.srp.domain.territory.Territory
+import java.time.Instant
 import java.util.*
 
 class Campement(
@@ -10,6 +11,7 @@ class Campement(
     var campLevel: Int,
     spawnLocation: Coordinate,
     trustedPlayers: MutableSet<UUID> = mutableSetOf(),
+    val creationDate: Instant = Instant.now()
 ) : Territory<CampementChunk>(ownerID,spawnLocation,trustedPlayers)
 
 {
