@@ -36,7 +36,7 @@ abstract class BiMenu(size: MenuSize, title: Component, previous: Menu? = null) 
         val fakePlayer = getOrCreateInventoryNPC(viewer)
         this.view = CustomInventoryView(fakePlayer.inventory, topInventory, viewer, serializedTitle)
         this.viewer = viewer
-        viewer.openInventory(view)
+        viewer.openInventory(view!!)
         ServiceContainer[PluginService::class.java].registerEventListener(this)
         placeButtons(viewer)
     }

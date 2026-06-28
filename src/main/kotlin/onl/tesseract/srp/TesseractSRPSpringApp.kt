@@ -1,24 +1,26 @@
 package onl.tesseract.srp
 
+import jakarta.persistence.EntityManagerFactory
 import org.bukkit.Bukkit
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.jdbc.datasource.DriverManagerDataSource
+import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.transaction.PlatformTransactionManager
 import java.util.*
 import javax.sql.DataSource
 
 
 @SpringBootApplication(scanBasePackages = ["onl.tesseract.srp"])
-@EnableJpaRepositories("onl.tesseract.srp.repository.hibernate", entityManagerFactoryRef = "defaultEntityManagerFactory")
+@EnableJpaRepositories("onl.tesseract.srp.repository.hibernate", entityManagerFactoryRef = "defaultEntityManagerFactory",
+    transactionManagerRef = "defaultTransactionManager")
 @EnableScheduling
 open class TesseractSRPSpringApp {
 
@@ -38,17 +40,15 @@ open class TesseractSRPSpringApp {
 
     @Bean(name = ["defaultEntityManagerFactory"])
     @Primary
-    @Autowired
     open fun defaultEntityManagerFactory(
-        entityManagerFactoryBuilder: EntityManagerFactoryBuilder,
         @Qualifier("defaultDataSource") ds: DataSource
     ): LocalContainerEntityManagerFactoryBean {
-        val build = entityManagerFactoryBuilder
-            .dataSource(ds)
-            .packages("onl.tesseract.srp.repository.hibernate")
-            .persistenceUnit("default")
-            .build()
+        val build = LocalContainerEntityManagerFactoryBean()
+        build.setDataSource(ds)
+        build.setPackagesToScan("onl.tesseract.srp.repository.hibernate")
+        build.setPersistenceUnitName("default")
         build.entityManagerInterface = null
+        build.setEntityManagerFactoryInterface(EntityManagerFactory::class.java)
         build.jpaVendorAdapter = HibernateJpaVendorAdapter()
         val jpaProperties = Properties()
         jpaProperties.setProperty("hibernate.hbm2ddl.auto", "update")
@@ -70,4 +70,15 @@ open class TesseractSRPSpringApp {
     open fun bukkitScheduler(): TaskScheduler {
         return BukkitTaskScheduler(PLUGIN_INSTANCE, Bukkit.getScheduler())
     }
+
+
+
+    @Bean(name = ["defaultTransactionManager"])
+    @Primary
+    open fun defaultTransactionManager(
+        @Qualifier("defaultEntityManagerFactory") entityManagerFactory: EntityManagerFactory,
+    ): PlatformTransactionManager {
+        return JpaTransactionManager(entityManagerFactory)
+    }
+
 }
