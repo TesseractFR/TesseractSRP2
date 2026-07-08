@@ -2,12 +2,12 @@ package onl.tesseract.srp.repository.yaml.skill
 
 import onl.tesseract.lib.exception.ConfigurationException
 import onl.tesseract.lib.logger.LoggerFactory
-import onl.tesseract.srp.domain.item.CustomMaterial
-import onl.tesseract.srp.domain.skill.Skill
-import onl.tesseract.srp.domain.skill.SkillTier
-import onl.tesseract.srp.domain.skill.recipe.*
 import onl.tesseract.srp.service.item.CustomItemService
-import org.bukkit.Material
+import onl.tesseract.srp.skill.domain.model.recipe.*
+import onl.tesseract.srp.skill.domain.model.skill.Skill
+import onl.tesseract.srp.skill.domain.model.skill.SkillName
+import onl.tesseract.srp.skill.domain.model.skill.SkillStructureName
+import onl.tesseract.srp.skill.domain.model.skill.SkillTier
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.slf4j.Logger
@@ -50,25 +50,25 @@ class SkillConfigRepository(
         val skillName = conf.getString("name") ?: throw ConfigurationException("The name must be set for $filePath")
         val structureName = conf.getString("structure_name")
                 ?: throw ConfigurationException("The structureName must be set for $skillName")
-        val tiers: Map<Int, SkillTier> = loadTiers(
+        val tiers: Map<Tier, SkillTier> = loadTiers(
             conf.getConfigurationSection("tiers") ?: throw ConfigurationException("The tiers must be set"),
             skillName)
-        skills[skillName] = Skill(tiers, structureName,skillName)
+        skills[skillName] = Skill(SkillName(skillName), SkillStructureName(structureName),tiers)
 
     }
 
-    private fun loadTiers(configurationSection: ConfigurationSection, skillName: String): Map<Int, SkillTier> {
-        val tiers = mutableMapOf<Int, SkillTier>()
+    private fun loadTiers(configurationSection: ConfigurationSection, skillName: String): Map<Tier, SkillTier> {
+        val tiers = mutableMapOf<Tier, SkillTier>()
         for (tierKey in configurationSection.getKeys(false)) {
-            val tierId = tierKey.toIntOrNull() ?: throw ConfigurationException("Tier must be an integer for $skillName")
+            val tierId = Tier(tierKey.toIntOrNull() ?: throw ConfigurationException("Tier must be an integer for $skillName"))
             val section = configurationSection.getConfigurationSection(tierKey)?: throw ConfigurationException("Tier must be not empty for $skillName.")
-            val recipes: Map<String, Recipe> = loadRecipes(
+            val recipes: Map<RecipeName, Recipe> = loadRecipes(
                 section.getConfigurationSection("recipes")
                         ?: throw ConfigurationException("The recipes must be set for tier $tierId for skill $skillName"),
                 skillName,
                 tierId
             )
-            tiers[tierId] = SkillTier(recipes.values.associateBy { it.slot }, recipes)
+            tiers[tierId] = SkillTier(recipes.values.associateBy { it.slot.value() }, recipes.values.associateBy { it.name.value() })
         }
         return tiers
     }
@@ -76,55 +76,42 @@ class SkillConfigRepository(
     private fun loadRecipes(
         configurationSection: ConfigurationSection,
         skillName: String,
-        tier: Int
-    ): Map<String, Recipe> {
-        val recipes = mutableMapOf<String, Recipe> ()
+        tier: Tier
+    ): Map<RecipeName, Recipe> {
+        val recipes = mutableMapOf<RecipeName, Recipe> ()
         for (recipeKey in configurationSection.getKeys(false)) {
-            val name = recipeKey.toString()
+            val name = RecipeName(recipeKey.toString())
             val section = configurationSection.getConfigurationSection(recipeKey)?: throw ConfigurationException("Recipe must be not empty for $skillName")
-            val slot = section.getInt("slot")
+            val slot = Slot(section.getInt("slot"))
             val result = loadResult(
                 section.getConfigurationSection("result")
                         ?: throw ConfigurationException("Recipe must have a result for $skillName"))
             val compos = loadComponents(
                 section.getConfigurationSection("components")
                     ?: throw ConfigurationException("Recipe must have components for $skillName"))
-            val recipe = Recipe(name, slot,compos, result, tier)
+            val duration = java.time.Duration.ofSeconds(section.getInt("duration").toLong())
+            val recipe = Recipe(name, slot,compos, result, tier,duration)
             recipes[name] = recipe
         }
         return recipes
     }
 
-    private fun loadComponents(configurationSection: ConfigurationSection) : Map<Int, RecipeComponent>{
-        val components = mutableMapOf<Int, RecipeComponent>()
+    private fun loadComponents(configurationSection: ConfigurationSection) : Map<IngredientSlot, RecipeComponent>{
+        val components = mutableMapOf<IngredientSlot, RecipeComponent>()
         for (componentKey in configurationSection.getKeys(false)) {
-            val compoId = componentKey.toIntOrNull() ?: throw ConfigurationException("Component key must be an integer")
+            val compoId = IngredientSlot(componentKey.toIntOrNull() ?: throw ConfigurationException("Component key must be an integer"))
             val compoSection = configurationSection.getConfigurationSection(componentKey)!!
             val quantity = compoSection.getInt("quantity")
-            components[compoId] = RecipeComponent(loadItem(compoSection),quantity)
+            val material = Material(compoSection.getString("material"))
+            components[compoId] = RecipeComponent(quantity,material)
         }
         return components
     }
 
     private fun loadResult(configurationSection: ConfigurationSection): RecipeComponent {
         val quantity = configurationSection.getInt("quantity")
-        return RecipeComponent(loadItem(configurationSection), quantity)
-    }
-
-    private fun loadItem(configurationSection: ConfigurationSection): ComponentWrapper {
-        val type =
-            configurationSection.getString("type") ?: throw ConfigurationException("A recipe item must have a type.")
-        if (type == "vanilla") {
-            val mat = configurationSection.getString("material")
-                    ?: throw ConfigurationException("A recipe vanilla item must have a material.")
-            return VanillaComponentWrapper(Material.valueOf(mat))
-        }
-        if (type == "custom") {
-            val mat = configurationSection.getString("material")
-                    ?: throw ConfigurationException("A recipe custom item must have a material.")
-            return CustomComponentWrapper(CustomMaterial.valueOf(mat))
-        }
-        throw ConfigurationException("Invalid recipe item type.")
+        val material = Material(configurationSection.getString("material"))
+        return RecipeComponent(quantity,material)
     }
 
     fun getSkills(): Map<String, Skill> {

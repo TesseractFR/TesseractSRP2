@@ -21,7 +21,7 @@ class PlayerJobProgression(
         get() = _skills
 
     /**
-     * Give (or remove) XP to the player. If amount is positive and enough to increase the level, the level is updated,
+     * Give (or delete) XP to the player. If amount is positive and enough to increase the level, the level is updated,
      * and the xp decreased. Removing more than the current XP amount will set XP to 0 without decreasing the level.
      * @return Amount of passed levels
      */

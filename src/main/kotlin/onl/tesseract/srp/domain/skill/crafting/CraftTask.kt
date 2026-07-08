@@ -11,14 +11,7 @@ data class CraftTask(
     val bonus: CraftingBonus = CraftingBonus(),
     var timeLeft : Duration = unitDuration.times(queuedRecipe.quantity)
 ) {
-    
-    fun tick(duration: Duration) {
-        timeLeft -= duration
-        if (timeLeft.isNegative()) {
-            timeLeft = Duration.ZERO
-        }
-    }
-    
+
     fun getTotalTimeLeft(): Duration {
         return timeLeft
     }

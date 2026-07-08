@@ -5,6 +5,7 @@ import dev.lone.itemsadder.api.FontImages.TexturedInventoryWrapper
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.toComponent
+import onl.tesseract.srp.service.territory.guild.GuildService
 import onl.tesseract.srp.util.menu.BiMenu
 import org.bukkit.entity.Player
 import java.time.ZoneOffset

@@ -23,6 +23,19 @@ class CustomItemService(
         return customItemGatewayPort.getCustomItem(namespaceId)
     }
 
+    fun toItemstack(material: onl.tesseract.srp.skill.domain.model.recipe.Material): ItemStack {
+        try {
+            return ItemStack.of(Material.valueOf(material.value()))
+        }
+        catch (e: IllegalArgumentException){
+            return this.toItemstack(CustomMaterial.valueOf(material.value()))
+        }
+        catch (e: Exception){
+            throw IllegalArgumentException("Material non pris en charge")
+        }
+    }
+
+
     fun toItemstack(customItem: CustomItem): ItemStack {
         return toItemstack(customItem.material, customItem.quality).asQuantity(customItem.quantity)
     }
@@ -49,7 +62,7 @@ class CustomItemService(
         if(!isCustomItem(itemStack))return null
         val dataContainer = itemStack.itemMeta?.persistentDataContainer!!
         val mat = CustomMaterial.valueOf(dataContainer[namespacedKeyProvider.get("customMaterial"), PersistentDataType.STRING]!!)
-        val quality = Quality.valueOf(dataContainer[namespacedKeyProvider.get("quality"), PersistentDataType.STRING])
+        val quality = Quality.valueOf(dataContainer[namespacedKeyProvider.get("quality"), PersistentDataType.STRING]!!)
         return CustomItem(mat,quality,itemStack.amount)
     }
 

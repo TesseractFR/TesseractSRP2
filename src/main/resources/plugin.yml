@@ -33,3 +33,5 @@ commands:
     description: Ouvre le menu des ailes
   elytrasUpgrade:
     description: Ouvre le menu d'amélioration des ailes
+  customitem:
+    description: Commande pour les customitem
