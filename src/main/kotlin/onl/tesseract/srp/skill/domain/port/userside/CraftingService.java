@@ -61,8 +61,8 @@ public class CraftingService {
         if(lootCache.done().isEmpty() && lootCache.garbage().isEmpty()) {
             return;
         }
-        lootCache.done().forEach(item->itemRepository.giveItem(playerID, item.material(), item.quantity()));
-        lootCache.garbage().forEach(item->itemRepository.giveItem(playerID, item.material(), item.quantity()));
+        lootCache.done().forEach(item->itemRepository.giveItem(playerID, item.material(), item.quantity(),item.quality()));
+        lootCache.garbage().forEach(item->itemRepository.giveItem(playerID, item.material(), item.quantity(),item.quality()));
         lootCache.done().clear();
         lootCache.garbage().clear();
         skillResultCacheRepository.delete(playerID, skillName);
@@ -172,13 +172,13 @@ public class CraftingService {
 
         for (var component : recipe.components().values()) {
             int totalNeeded = component.quantity() * quantity;
-            itemRepository.removeItems(player, component.material(), totalNeeded);
+            itemRepository.removeItems(player, component.material(), totalNeeded,Quality.POOR);
         }
 
         // Create bonus from station upgrades
         var bonus = new CraftingBonus(station.getBonus(), new Bonus(0.0), new Bonus(0.0), new Bonus(0.0));
 
-        var queuedRecipe = new QueuedRecipe(recipe, Quality.NORMAL,bonus, quantity);
+        var queuedRecipe = new QueuedRecipe(recipe, Quality.POOR,bonus, quantity);
         var skillQueue = getQueue(player,skill);
 
 

@@ -6,6 +6,8 @@ import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.controller.menu.ItemAdderMenu;
+import onl.tesseract.srp.customitem.adapter.userside.CustomItemTags;
+import onl.tesseract.srp.customitem.adapter.userside.ItemGateway;
 import onl.tesseract.srp.domain.item.CustomItemIds;
 import onl.tesseract.srp.domain.skill.station.StatType;
 import onl.tesseract.srp.service.item.CustomItemService;
@@ -35,21 +37,21 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
     private static final int INFO_BUTTON_INDEX = 44;
 
     private final Skill skill;
-    private final CustomItemService customItemService;
+    private final ItemGateway itemGateway;
     private final StationService stationService;
     private final GuildService guildService;
     private final Station station;
     private final Menu previous;
 
     public SkillUpgradeMenu(Skill skill,
-                            CustomItemService customItemService,
+                            ItemGateway itemGateway,
                             StationService stationService,
                             GuildService guildService,
                             Station station,
                             Menu previous) {
         super(MenuSize.Five, "tesseract:skill_upgrade", "", previous,-8);
         this.skill = skill;
-        this.customItemService = customItemService;
+        this.itemGateway = itemGateway;
         this.stationService = stationService;
         this.guildService = guildService;
         this.station = station;
@@ -67,7 +69,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         addRecoveryFailureButton(viewer);
         addMultiCraftButton(viewer);
 
-        addButton(BACK_BUTTON_INDEX, customItemService.getCustomItem(CustomItemIds.MENU_BACK_ARROW_BUTTON), p -> {
+        addButton(BACK_BUTTON_INDEX, itemGateway.getItemStack(CustomItemTags.MENU_BACK_ARROW_BUTTON), p -> {
             if (previous == null) {
                 this.close();
                 return;
@@ -196,7 +198,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
     }
 
     private void addInfoButton(Player viewer) {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_INFORMATION_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_INFORMATION_BUTTON);
         Object guild = guildService.getById(station.key().territoryId());
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -230,7 +232,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         if (upgraded != null) {
             viewer.sendMessage(Component.text("✓ Amélioration effectuée!", NamedTextColor.GREEN));
             close();
-            new SkillUpgradeMenu(skill, customItemService, stationService, guildService, station, null).open(viewer);
+            new SkillUpgradeMenu(skill, itemGateway, stationService, guildService, station, null).open(viewer);
         } else {
             viewer.sendMessage(Component.text("✗ Erreur lors de l'amélioration", NamedTextColor.RED));
         }

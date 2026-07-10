@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.job
 
 import kotlinx.serialization.Serializable
-import onl.tesseract.srp.domain.item.Quality
+import onl.tesseract.srp.customitem.domain.model.Quality
 import java.util.*
 
 val random = Random()

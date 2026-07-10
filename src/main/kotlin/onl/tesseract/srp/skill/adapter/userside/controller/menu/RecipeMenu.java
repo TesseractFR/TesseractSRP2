@@ -3,10 +3,11 @@ package onl.tesseract.srp.skill.adapter.userside.controller.menu;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.controller.menu.ItemAdderBiMenu;
+import onl.tesseract.srp.customitem.adapter.userside.CustomItemTags;
 import onl.tesseract.srp.customitem.adapter.userside.ItemGateway;
+import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.domain.item.CustomItemIds;
 import onl.tesseract.srp.domain.port.PlayerInventoryPort;
-import onl.tesseract.srp.service.item.CustomItemService;
 import onl.tesseract.srp.service.territory.guild.GuildService;
 import onl.tesseract.srp.skill.domain.model.recipe.IngredientSlot;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;
@@ -26,7 +27,6 @@ import java.util.Map;
 public class RecipeMenu extends ItemAdderBiMenu {
 
     private final Skill skill;
-    private final CustomItemService customItemService;
     private final ItemGateway itemGateway;
     private final PlayerInventoryPort playerInventoryPort;
     private final CraftingService craftingService;
@@ -39,7 +39,6 @@ public class RecipeMenu extends ItemAdderBiMenu {
     private int startingRecipe = 0;
 
     public RecipeMenu(Skill skill,
-                      CustomItemService customItemService,
                       ItemGateway itemGateway,
                       PlayerInventoryPort playerInventoryPort,
                       CraftingService craftingService,
@@ -49,7 +48,6 @@ public class RecipeMenu extends ItemAdderBiMenu {
                       Menu previous) {
         super(MenuSize.Six, "tesseract:recipe_book", "Recettes " + skill.name(), previous, 100);
         this.skill = skill;
-        this.customItemService = customItemService;
         this.itemGateway = itemGateway;
         this.playerInventoryPort = playerInventoryPort;
         this.craftingService = craftingService;
@@ -61,7 +59,7 @@ public class RecipeMenu extends ItemAdderBiMenu {
 
     @Override
     public void placeButtons(Player viewer) {
-        addButton(0, customItemService.getCustomItem(CustomItemIds.MENU_BACK_ARROW_BUTTON), p -> {
+        addButton(0, itemGateway.getItemStack(CustomItemTags.MENU_BACK_ARROW_BUTTON), p -> {
             if (previous == null) {
                 this.close();
                 return;
@@ -81,7 +79,7 @@ public class RecipeMenu extends ItemAdderBiMenu {
             return;
         }
         for (int i = 1; i <= 7; i++) {
-            Recipe recipe = (startingRecipe + i < recipes.size()) ? recipes.get(i + startingRecipe) : null;
+            Recipe recipe = (startingRecipe + i <= recipes.size()) ? recipes.get(i + startingRecipe) : null;
             if (recipe == null) {
                 clearLigne(i);
                 return;
@@ -89,12 +87,12 @@ public class RecipeMenu extends ItemAdderBiMenu {
             placeRecipe(i, recipe, viewer);
         }
 
-        addButton(8, customItemService.getCustomItem(CustomItemIds.MENU_UP_ARROW_BUTTON).asQuantity(startingRecipe > 0 ? 1 : 0), p -> {
+        addButton(8, itemGateway.getItemStack(CustomItemTags.MENU_UP_ARROW_BUTTON).asQuantity(startingRecipe > 0 ? 1 : 0), p -> {
             startingRecipe--;
             placeRecipes(viewer);
         });
 
-        addBottomButton(35, customItemService.getCustomItem(CustomItemIds.MENU_DOWN_ARROW_BUTTON).asQuantity(recipes.size() > startingRecipe + 7 ? 1 : 0), p -> {
+        addBottomButton(35, itemGateway.getItemStack(CustomItemTags.MENU_DOWN_ARROW_BUTTON).asQuantity(recipes.size() > startingRecipe + 7 ? 1 : 0), p -> {
             startingRecipe++;
             placeRecipes(viewer);
         });
@@ -111,14 +109,14 @@ public class RecipeMenu extends ItemAdderBiMenu {
         for (var e : comps.entrySet()) {
             RecipeComponent rc = e.getValue();
             IngredientSlot is = e.getKey();
-            ItemStack item = customItemService.toItemstack(rc.material());
+            ItemStack item = itemGateway.getItemStack(new MaterialName(rc.material().value()));
             item.setAmount(rc.quantity());
             addButton(9 * (ligne) + (is.value() - 1), item, p -> {});
         }
-        ItemStack item = customItemService.toItemstack(recipe.result().material());
+        ItemStack item = itemGateway.getItemStack(new MaterialName(recipe.result().material().value()));
         item.setAmount(recipe.result().quantity());
         addButton(9 * (ligne) + (8), item, p ->
-                new CraftingMenu(skill, customItemService, itemGateway, craftingService,guildService,stationService,playerInventoryPort, recipe, station, this).open(viewer));
+                new CraftingMenu(skill, itemGateway, craftingService,guildService,stationService,playerInventoryPort, recipe, station, this).open(viewer));
     }
 
     private Object getField(Object obj, String fieldName) {

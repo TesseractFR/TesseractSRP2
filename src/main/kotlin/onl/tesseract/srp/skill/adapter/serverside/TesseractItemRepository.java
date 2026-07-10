@@ -24,8 +24,9 @@ public class TesseractItemRepository implements ItemRepository {
     }
 
     @Override
-    public void giveItem(@NotNull PlayerID playerID, Material material, int quantity) {
-        System.out.println("TODO Giving item to player: " + playerID + ", material: " + material + ", quantity: " + quantity);
+    public void giveItem(@NotNull PlayerID playerID, Material material, int quantity, Quality quality) {
+        itemGateway.addItem(playerID.value(), new MaterialName(material.value()),
+                onl.tesseract.srp.customitem.domain.model.Quality.valueOf(quality.toString()), quantity);
     }
 
     @Override
@@ -34,7 +35,8 @@ public class TesseractItemRepository implements ItemRepository {
     }
 
     @Override
-    public void removeItems(PlayerID player, Material material, int totalNeeded) {
+    public void removeItems(PlayerID player, Material material, int totalNeeded, Quality quality) {
+        itemGateway.removeItem(player.value(), new MaterialName(material.value()), onl.tesseract.srp.customitem.domain.model.Quality.valueOf(quality.toString()), totalNeeded);
 
     }
 }

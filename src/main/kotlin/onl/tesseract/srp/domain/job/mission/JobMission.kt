@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.job.mission
 
+import onl.tesseract.srp.customitem.domain.model.Quality
 import onl.tesseract.srp.domain.item.CustomMaterial
-import onl.tesseract.srp.domain.item.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import java.util.*
 

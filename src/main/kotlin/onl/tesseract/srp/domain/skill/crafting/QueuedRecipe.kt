@@ -1,6 +1,6 @@
 package onl.tesseract.srp.domain.skill.crafting
 
-import onl.tesseract.srp.domain.item.Quality
+import onl.tesseract.srp.customitem.domain.model.Quality
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe
 
 data class QueuedRecipe(

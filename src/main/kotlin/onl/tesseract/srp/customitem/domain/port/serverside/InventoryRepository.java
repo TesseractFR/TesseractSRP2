@@ -9,4 +9,14 @@ public interface InventoryRepository {
     int getCustomQuantity(UUID player, CustomItem customItem);
 
     int getVanillaQuantity(UUID player, MaterialName materialName);
+
+    void removeCustomItem(UUID player, CustomItem customItem, int amount);
+
+    void removeVanillaItem(UUID player, MaterialName materialName, int amount);
+
+    void addCustomItem(UUID player, CustomItem customItem, int amount);
+
+    void addVanillaItem(UUID player, MaterialName materialName, int amount);
+
+
 }

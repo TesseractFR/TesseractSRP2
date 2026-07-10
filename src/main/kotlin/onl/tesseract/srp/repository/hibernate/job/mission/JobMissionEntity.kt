@@ -1,8 +1,8 @@
 package onl.tesseract.srp.repository.hibernate.job.mission
 
 import jakarta.persistence.*
+import onl.tesseract.srp.customitem.domain.model.Quality
 import onl.tesseract.srp.domain.item.CustomMaterial
-import onl.tesseract.srp.domain.item.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import org.hibernate.annotations.CacheConcurrencyStrategy

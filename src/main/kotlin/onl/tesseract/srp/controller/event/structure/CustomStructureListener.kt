@@ -37,7 +37,7 @@ class CustomStructureListener(
             skill.name)
 
 
-        SkillMainMenu(skill,customItemService,itemGateway,craftingService,guildService,stationService,playerInventoryPort,structure,null).open(player)
+        SkillMainMenu(skill, itemGateway,craftingService,guildService,stationService,playerInventoryPort,structure,null).open(player)
 
         return true
     }

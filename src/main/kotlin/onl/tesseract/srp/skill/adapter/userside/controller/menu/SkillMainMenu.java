@@ -4,10 +4,11 @@ import net.kyori.adventure.text.Component;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.controller.menu.ItemAdderMenu;
+import onl.tesseract.srp.customitem.adapter.userside.CustomItemTags;
 import onl.tesseract.srp.customitem.adapter.userside.ItemGateway;
+import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.domain.item.CustomItemIds;
 import onl.tesseract.srp.domain.port.PlayerInventoryPort;
-import onl.tesseract.srp.service.item.CustomItemService;
 import onl.tesseract.srp.service.territory.guild.GuildService;
 import onl.tesseract.srp.skill.domain.model.PlayerID;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
@@ -50,7 +51,6 @@ public class SkillMainMenu extends ItemAdderMenu {
     private static final int ITEM_TO_COLLECT_INDEX = 41;
 
     private final Skill skill;
-    private final CustomItemService customItemService;
     private final ItemGateway itemGateway;
     private final CraftingService craftingService;
     private final PlayerInventoryPort playerInventoryPort;
@@ -60,7 +60,6 @@ public class SkillMainMenu extends ItemAdderMenu {
     private final StationService stationService;
 
     public SkillMainMenu(Skill skill,
-                         CustomItemService customItemService,
                          ItemGateway itemGateway,
                          CraftingService craftingService,
                          GuildService guildService,
@@ -70,7 +69,6 @@ public class SkillMainMenu extends ItemAdderMenu {
                          Menu previous) {
         super(MenuSize.Six, "tesseract:recipe_advancement", skill.name().value(), previous,-8);
         this.skill = skill;
-        this.customItemService = customItemService;
         this.itemGateway = itemGateway;
         this.craftingService = craftingService;
         this.playerInventoryPort = playerInventoryPort;
@@ -113,10 +111,10 @@ public class SkillMainMenu extends ItemAdderMenu {
     }
 
     private void addRecipeButton(Player viewer) {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_RECIPE_BOOK_BUTTON);
         ItemMetaUtil.displayName(item, Component.text("Recettes"));
         addButton(RECIPE_BOOK_BUTTON_INDEX, item, p ->
-                new RecipeMenu(skill, customItemService, itemGateway, playerInventoryPort, craftingService,guildService,
+                new RecipeMenu(skill, itemGateway, playerInventoryPort, craftingService,guildService,
                         stationService, station, this).open(viewer));
     }
 
@@ -124,12 +122,12 @@ public class SkillMainMenu extends ItemAdderMenu {
         ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMetaUtil.displayName(item, Component.text("Améliorations tables/joueur"));
         addButton(SKILL_TREE_BUTTON_INDEX, item, p -> {
-            new SkillUpgradeMenu(skill, customItemService, stationService, guildService, station, this).open(viewer);
+            new SkillUpgradeMenu(skill,itemGateway,stationService, guildService, station, this).open(viewer);
         });
     }
 
     private void addInfoButton() {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_INFORMATION_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_INFORMATION_BUTTON);
         ItemMetaUtil.displayName(item, Component.text("Informations"));
         addButton(INFO_BUTTON_INDEX, item, p -> {
         });
@@ -156,7 +154,7 @@ public class SkillMainMenu extends ItemAdderMenu {
                 try {
                     Recipe recipe = queuedRecipe.getRecipe();
                     RecipeComponent result = recipe.result();
-                    ItemStack resultItem = customItemService.toItemstack(result.material());
+                    ItemStack resultItem = itemGateway.getItemStack(new MaterialName(result.material().value()));
                     resultItem.editMeta( meta ->
                     {
                         meta.displayName(Component.text("§eRecette en attente : "
@@ -192,9 +190,12 @@ public class SkillMainMenu extends ItemAdderMenu {
                 QueuedRecipe queuedRecipe = task.queuedRecipe();
                 Recipe recipe = queuedRecipe.getRecipe();
                 RecipeComponent result = recipe.result();
-                ItemStack resultItem = customItemService.toItemstack(result.material());
+                ItemStack resultItem = itemGateway.getItemStack(new MaterialName(result.material().value()));
                 resultItem.setAmount(Math.max(1, queuedRecipe.getQuantity()));
                 ItemMetaUtil.displayName(resultItem, Component.text("§aFabrication en cours..."));
+                List lore = resultItem.lore();
+                lore.add(Component.text("§7Time: " + task.timeLeft()));
+                ItemMetaUtil.lore(resultItem, lore);
                 item = resultItem;
             } catch (Exception e) {
                 item = new ItemStack(Material.BARRIER);

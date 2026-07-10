@@ -47,4 +47,28 @@ public class CustomItemService {
         }
         return inventoryRepository.getVanillaQuantity(player, materialName);
     }
+
+    public void addItem(UUID player, MaterialName materialName, Quality quality, int amount) {
+        if (isCustomMaterial(materialName)) {
+            CustomMaterial customMaterial = getCustomMaterial(materialName);
+            CustomItem customItem = new CustomItem(customMaterial, quality);
+            inventoryRepository.addCustomItem(player, customItem, amount);
+        } else {
+            inventoryRepository.addVanillaItem(player, materialName, amount);
+        }
+    }
+
+    public void removeItem(UUID player, MaterialName materialName, Quality quality, int amount) {
+        if (isCustomMaterial(materialName)) {
+            CustomMaterial customMaterial = getCustomMaterial(materialName);
+            CustomItem customItem = new CustomItem(customMaterial, quality);
+            inventoryRepository.removeCustomItem(player, customItem, amount);
+        } else {
+            inventoryRepository.removeVanillaItem(player, materialName, amount);
+        }
+    }
+
+    public Map<MaterialName, CustomMaterial> getCustomMaterials() {
+        return customItems;
+    }
 }

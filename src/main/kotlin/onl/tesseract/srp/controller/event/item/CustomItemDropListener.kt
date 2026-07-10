@@ -1,10 +1,10 @@
 package onl.tesseract.srp.controller.event.item
 
 import onl.tesseract.lib.task.TaskScheduler
+import onl.tesseract.srp.customitem.adapter.userside.ItemGateway
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
 import onl.tesseract.srp.domain.item.CustomMaterialEntitySource
-import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.job.JobService
 import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.EventHandler
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 class CustomItemDropListener(
     private val jobService: JobService,
-    private val customItemService: CustomItemService,
+    private val customItemService: ItemGateway,
     private val worldService: WorldService,
     private val taskScheduler: TaskScheduler,
 ) : Listener {
@@ -33,7 +33,7 @@ class CustomItemDropListener(
         taskScheduler.runLater(1) {
             event.player.world.dropItemNaturally(
                 event.block.location,
-                customItemService.toItemstack(customItem)
+                customItemService.getItemStack(customItem.material.materialName)
             )
         }
     }
@@ -47,7 +47,7 @@ class CustomItemDropListener(
             .find { it.dropSource is CustomMaterialEntitySource && (it.dropSource).entityType == entity.type }
             ?.let { jobService.generateItem(killer.uniqueId, it) }
             ?: return
-        event.drops.add(customItemService.toItemstack(customItem))
+        event.drops.add(customItemService.getItemStack(customItem.material.materialName))
     }
 }
 

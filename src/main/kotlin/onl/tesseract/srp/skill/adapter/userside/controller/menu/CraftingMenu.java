@@ -6,11 +6,11 @@ import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.controller.menu.ItemAdderMenu;
+import onl.tesseract.srp.customitem.adapter.userside.CustomItemTags;
 import onl.tesseract.srp.customitem.adapter.userside.ItemGateway;
+import onl.tesseract.srp.customitem.domain.model.ItemTag;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
-import onl.tesseract.srp.domain.item.CustomItemIds;
 import onl.tesseract.srp.domain.port.PlayerInventoryPort;
-import onl.tesseract.srp.service.item.CustomItemService;
 import onl.tesseract.srp.service.territory.guild.GuildService;
 import onl.tesseract.srp.skill.domain.model.PlayerID;
 import onl.tesseract.srp.skill.domain.model.recipe.IngredientSlot;
@@ -53,7 +53,6 @@ public class CraftingMenu extends ItemAdderMenu {
     private static final int SECOND_OFFSET = 5;
 
     private final Skill skill;
-    private final CustomItemService customItemService;
     private final ItemGateway itemGateway;
     private final CraftingService craftingService;
     private final GuildService guildService;
@@ -64,7 +63,6 @@ public class CraftingMenu extends ItemAdderMenu {
     private int quantityToCraft = 1;
 
     public CraftingMenu(Skill skill,
-                        CustomItemService customItemService,
                         ItemGateway itemGateway,
                         CraftingService craftingService,
                         GuildService guildService,
@@ -75,7 +73,6 @@ public class CraftingMenu extends ItemAdderMenu {
                         Menu previous) {
         super(MenuSize.Six, "tesseract:recipe_launch", "", previous,-8);
         this.skill = skill;
-        this.customItemService = customItemService;
         this.itemGateway = itemGateway;
         this.craftingService = craftingService;
         this.guildService = guildService;
@@ -97,16 +94,16 @@ public class CraftingMenu extends ItemAdderMenu {
     private void addQuantityButtons(Player viewer) {
         int maxCraft = getMaxCraft(viewer);
         addMinButton(viewer);
-        addMinusButton(viewer, SECOND_OFFSET, QUANTITY_MINUS_SECOND_INDEX, CustomItemIds.MENU_MINUS_5_BUTTON);
-        addMinusButton(viewer, FIRST_OFFSET, QUANTITY_MINUS_FIRST_INDEX, CustomItemIds.MENU_MINUS_1_BUTTON);
+        addMinusButton(viewer, SECOND_OFFSET, QUANTITY_MINUS_SECOND_INDEX, CustomItemTags.MENU_MINUS_5_BUTTON);
+        addMinusButton(viewer, FIRST_OFFSET, QUANTITY_MINUS_FIRST_INDEX, CustomItemTags.MENU_MINUS_1_BUTTON);
         addCurrentQuantityButton();
-        addPlusButton(viewer, FIRST_OFFSET, QUANTITY_PLUS_FIRST_INDEX, CustomItemIds.MENU_PLUS_1_BUTTON, maxCraft);
-        addPlusButton(viewer, SECOND_OFFSET, QUANTITY_PLUS_SECOND_INDEX, CustomItemIds.MENU_PLUS_5_BUTTON, maxCraft);
+        addPlusButton(viewer, FIRST_OFFSET, QUANTITY_PLUS_FIRST_INDEX, CustomItemTags.MENU_PLUS_1_BUTTON, maxCraft);
+        addPlusButton(viewer, SECOND_OFFSET, QUANTITY_PLUS_SECOND_INDEX, CustomItemTags.MENU_PLUS_5_BUTTON, maxCraft);
         addMaxButton(viewer, maxCraft);
     }
 
     private void addCurrentQuantityButton() {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_QUANTITY_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_QUANTITY_BUTTON);
         item.editMeta(m -> {
             m.displayName(Component.text("Nombre actuel d'exécutions : x" + quantityToCraft, NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
             m.lore(Arrays.asList(
@@ -120,7 +117,7 @@ public class CraftingMenu extends ItemAdderMenu {
 
     private void addMinButton(Player viewer) {
         boolean canMin = quantityToCraft > 1;
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_MIN_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_MIN_BUTTON);
         item.editMeta(m -> {
             m.displayName(Component.text("MIN", canMin ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             m.lore(Arrays.asList(
@@ -140,10 +137,10 @@ public class CraftingMenu extends ItemAdderMenu {
         });
     }
 
-    private void addMinusButton(Player viewer, int offset, int index, String itemId) {
+    private void addMinusButton(Player viewer, int offset, int index, ItemTag itemId) {
         int newQuantity = Math.max(1, quantityToCraft - offset);
         boolean canMinus = quantityToCraft - offset >= 1;
-        ItemStack item = customItemService.getCustomItem(itemId);
+        ItemStack item = itemGateway.getItemStack(itemId);
         item.editMeta(m -> {
             m.displayName(Component.text("-" + offset, canMinus ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             m.lore(Arrays.asList(
@@ -179,12 +176,12 @@ public class CraftingMenu extends ItemAdderMenu {
         return Arrays.asList(first, second);
     }
 
-    private void addPlusButton(Player viewer, int offset, int index, String itemId, int maxCraft) {
+    private void addPlusButton(Player viewer, int offset, int index, ItemTag itemId, int maxCraft) {
         boolean noMaterials = maxCraft == 0;
         boolean canPlus = !noMaterials && quantityToCraft + offset <= maxCraft;
         boolean alreadyMax = !noMaterials && quantityToCraft >= maxCraft;
         int newQuantity = noMaterials ? 1 : Math.min(maxCraft, quantityToCraft + offset);
-        ItemStack item = customItemService.getCustomItem(itemId);
+        ItemStack item = itemGateway.getItemStack(itemId);
         item.editMeta(m -> {
             m.displayName(Component.text("+" + offset, canPlus ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             m.lore(buildPlusButtonLore(offset, maxCraft, canPlus, alreadyMax, noMaterials, newQuantity));
@@ -201,7 +198,7 @@ public class CraftingMenu extends ItemAdderMenu {
         boolean noMaterials = maxCraft == 0;
         boolean canMax = !noMaterials && maxCraft > quantityToCraft;
         boolean alreadyMax = !noMaterials && quantityToCraft >= maxCraft;
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_MAX_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_MAX_BUTTON);
         item.editMeta(m -> {
             m.displayName(Component.text("MAX", canMax ? NamedTextColor.GREEN : NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             m.lore(Arrays.asList(
@@ -226,13 +223,13 @@ public class CraftingMenu extends ItemAdderMenu {
             IngredientSlot key = entry.getKey();
             RecipeComponent component = entry.getValue();
             // The original Kotlin used component.material and component.quantity — adapt as needed
-            addButton(COMPONENTS_OFFSET + key.value(), customItemService.toItemstack(component.material()).asQuantity(component.quantity() * quantityToCraft));
+            addButton(COMPONENTS_OFFSET + key.value(), itemGateway.getItemStack(new MaterialName(component.material().value())).asQuantity(component.quantity() * quantityToCraft));
         }
-        addButton(RESULT_INDEX, customItemService.toItemstack(activeRecipe.result().material()).asQuantity(activeRecipe.result().quantity() * quantityToCraft));
+        addButton(RESULT_INDEX, itemGateway.getItemStack(new MaterialName(activeRecipe.result().material().value())).asQuantity(activeRecipe.result().quantity() * quantityToCraft));
     }
 
     private void addInfoButton() {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_INFORMATION_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_INFORMATION_BUTTON);
         item.editMeta(meta -> {
             meta.displayName(Component.text("Informations", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
             meta.lore(Arrays.asList(
@@ -259,13 +256,13 @@ public class CraftingMenu extends ItemAdderMenu {
     }
 
     private void addRecipeButton() {
-        ItemStack item = customItemService.getCustomItem(CustomItemIds.MENU_RECIPE_BOOK_BUTTON);
+        ItemStack item = itemGateway.getItemStack(CustomItemTags.MENU_RECIPE_BOOK_BUTTON);
         item.editMeta(meta -> {
             meta.displayName(Component.text("Livre de recettes").decoration(TextDecoration.ITALIC, false));
             meta.lore(Arrays.asList(Component.text("Retour vers la sélection de recettes.", NamedTextColor.GRAY)));
         });
         addButton(RECIPE_BOOK_BUTTON_INDEX, item, (InventoryClickEvent event) -> {
-            RecipeMenu menu = new RecipeMenu(skill, customItemService, itemGateway, playerInventoryPort, craftingService, guildService, stationService, station, this);
+            RecipeMenu menu = new RecipeMenu(skill, itemGateway, playerInventoryPort, craftingService, guildService, stationService, station, this);
             menu.open((Player) event.getWhoClicked());
         });
     }
@@ -287,7 +284,7 @@ public class CraftingMenu extends ItemAdderMenu {
             if (!canLaunch) return;
             Player player = (Player) event.getWhoClicked();
             craftingService.startCraft(new PlayerID(player.getUniqueId()), skill.name(), activeRecipe, quantityToCraft, station);
-            new SkillMainMenu(skill, customItemService,itemGateway, craftingService, guildService, stationService, playerInventoryPort, station ,this).open(viewer);
+            new SkillMainMenu(skill, itemGateway, craftingService, guildService, stationService, playerInventoryPort, station ,this).open(viewer);
         });
     }
 

@@ -5,15 +5,13 @@ import onl.tesseract.commandBuilder.annotation.Command
 import onl.tesseract.lib.command.argument.IntegerCommandArgument
 import onl.tesseract.srp.controller.command.argument.CustomMaterialArg
 import onl.tesseract.srp.controller.command.argument.QualityArg
-import onl.tesseract.srp.domain.item.CustomItem
-import onl.tesseract.srp.domain.item.Quality
-import onl.tesseract.srp.service.item.CustomItemService
+import onl.tesseract.srp.customitem.adapter.userside.ItemGateway
 import org.bukkit.entity.Player
 import org.springframework.stereotype.Component
 
 @Component
 @Command(name = "customItem", playerOnly = true)
-class CustomItemStaffCommand(private val customItemService: CustomItemService) {
+class CustomItemStaffCommand(private val customItemService: ItemGateway) {
 
     @Command
     fun give(player: Player,
@@ -21,7 +19,6 @@ class CustomItemStaffCommand(private val customItemService: CustomItemService) {
              @Argument("quality", optional = true, def = "POOR") quality: QualityArg,
              @Argument("amount", optional = true, def = "1") amount: IntegerCommandArgument
     ) {
-        val item = customItemService.toItemstack(materialArg.get(), quality.get())
-        player.inventory.addItem(item.asQuantity(amount.get()))
+        customItemService.addItem(player.uniqueId,materialArg.get().name, quality.get(),amount.get())
     }
 }

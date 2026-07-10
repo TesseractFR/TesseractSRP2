@@ -1,7 +1,7 @@
 package onl.tesseract.srp.domain.item
 
 import kotlinx.serialization.Serializable
-import onl.tesseract.srp.domain.item.CustomItemIds.STEEL_INGOT
+import onl.tesseract.srp.customitem.domain.model.MaterialName
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 
@@ -14,9 +14,16 @@ data class CustomMaterialEntitySource(val entityType: EntityType) : CustomMateri
 @Serializable
 enum class CustomMaterial(
     val displayName: String,
-    val itemTag: String,
+    val materialName: MaterialName,
     val dropSource: List<CustomMaterialSource>,
     val rarity: Rarity
 ){
-    STEEL("Acier",STEEL_INGOT,emptyList(), Rarity.Common)
+    STEEL("Acier", MaterialName("steel_ingot"),emptyList(), Rarity.Common);
+
+
+    companion object {
+        fun getByMaterialName(materialName: MaterialName): CustomMaterial? {
+            return entries.find { it.materialName.value == materialName.value }
+        }
+    }
 }

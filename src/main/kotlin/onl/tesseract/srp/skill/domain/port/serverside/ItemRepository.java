@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
 public interface ItemRepository {
     int getItemMaxSize(Material material);
 
-    void giveItem(@NotNull PlayerID playerID, Material material, int quantity);
+    void giveItem(@NotNull PlayerID playerID, Material material, int quantity, Quality quality);
 
-    int getItemNumber(PlayerID player, Material material, Quality poor);
+    int getItemNumber(PlayerID player, Material material, Quality quality);
 
-    void removeItems(PlayerID player, Material material, int totalNeeded);
+    void removeItems(PlayerID player, Material material, int totalNeeded, Quality quality);
 }
