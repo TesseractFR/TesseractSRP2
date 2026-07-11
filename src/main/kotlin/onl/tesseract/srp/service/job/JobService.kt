@@ -47,7 +47,7 @@ class JobService(
             .addQualityMean(playerJobProgression.getQualityBonus(event))
 
         return if (baseStat.randomizeLootChance()) {
-            val item = CustomItem(material, baseStat.generateQuality())
+            val item = CustomItem(material, baseStat.generateQuality(),1)
             eventService.callEvent(JobLootItemEvent(playerID, item, baseStat.xpGain))
             item
         } else

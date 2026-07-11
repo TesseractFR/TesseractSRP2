@@ -1,6 +1,7 @@
 package onl.tesseract.srp.domain.job
 
 import kotlinx.serialization.Serializable
+import onl.tesseract.srp.customitem.domain.model.Quality
 import java.util.*
 
 val random = Random()
@@ -17,9 +18,8 @@ data class BaseStat(
         return random.nextFloat() < lootChance
     }
 
-    fun generateQuality(): Int {
-        val gaussian = random.nextGaussian() * qualityDistribution.stddev + qualityDistribution.expectation
-        return gaussian.toInt().coerceIn(1, 100)
+    fun generateQuality(): Quality {
+        return Quality.POOR
     }
 
     fun multiplyLootChance(coef: Float): BaseStat {

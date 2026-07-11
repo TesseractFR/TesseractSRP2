@@ -19,7 +19,7 @@ import javax.sql.DataSource
 
 
 @SpringBootApplication(scanBasePackages = ["onl.tesseract.srp"])
-@EnableJpaRepositories("onl.tesseract.srp.repository.hibernate", entityManagerFactoryRef = "defaultEntityManagerFactory",
+@EnableJpaRepositories("onl.tesseract.srp", entityManagerFactoryRef = "defaultEntityManagerFactory",
     transactionManagerRef = "defaultTransactionManager")
 @EnableScheduling
 open class TesseractSRPSpringApp {
@@ -45,7 +45,7 @@ open class TesseractSRPSpringApp {
     ): LocalContainerEntityManagerFactoryBean {
         val build = LocalContainerEntityManagerFactoryBean()
         build.setDataSource(ds)
-        build.setPackagesToScan("onl.tesseract.srp.repository.hibernate")
+        build.setPackagesToScan("onl.tesseract.srp")
         build.setPersistenceUnitName("default")
         build.entityManagerInterface = null
         build.setEntityManagerFactoryInterface(EntityManagerFactory::class.java)

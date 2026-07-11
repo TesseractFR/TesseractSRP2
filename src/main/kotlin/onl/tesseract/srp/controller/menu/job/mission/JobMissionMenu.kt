@@ -11,6 +11,7 @@ import onl.tesseract.lib.util.Util
 import onl.tesseract.lib.util.append
 import onl.tesseract.lib.util.plus
 import onl.tesseract.srp.controller.menu.job.JobSelectionMenu
+import onl.tesseract.srp.customitem.adapter.userside.ItemGateway
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.domain.player.PlayerRank
@@ -21,6 +22,7 @@ import onl.tesseract.srp.util.jobsChatFormat
 import onl.tesseract.srp.util.jobsChatFormatError
 import onl.tesseract.srp.util.jobsChatFormatSuccess
 import org.bukkit.Material
+import org.bukkit.entity.Item
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.inventory.ItemStack
@@ -33,7 +35,7 @@ class JobMissionMenu(
     private val playerID: UUID,
     private val missionService: JobMissionService,
     private val playerService: SrpPlayerService,
-    private val customItemService: CustomItemService
+    private val customItemService: ItemGateway
 ) : Menu(MenuSize.Hopper, Component.text("Missions de récolte", BLUE), type = InventoryType.HOPPER) {
 
     private val totalSlots = 5
@@ -76,6 +78,7 @@ class JobMissionMenu(
             buildMissionButtonItem(viewer, mission)
         ) {
             val (delivered, remaining) = missionService.consumeItemsForMission(viewer, mission.id)
+            val customMaterial = customItemService.getCustomMaterial(mission.material.materialName);
             if (remaining == 0) {
                 viewer.sendMessage(
                     jobsChatFormatSuccess
@@ -87,18 +90,18 @@ class JobMissionMenu(
                 viewer.sendMessage(
                     jobsChatFormat + "Tu as déposé " +
                             Component.text("$delivered", YELLOW) + " " +
-                            Component.text(mission.material.displayName, GOLD) + "."
+                            Component.text(customMaterial.displayName.value, GOLD) + "."
                 )
                 viewer.sendMessage(
                     jobsChatFormat + "Il te reste " +
                             Component.text("$remaining", YELLOW) + " " +
-                            Component.text(mission.material.displayName, GOLD) +
+                            Component.text(customMaterial.displayName.value, GOLD) +
                             " à déposer pour compléter la mission."
                 )
             } else {
                 viewer.sendMessage(
                     jobsChatFormatError + "Tu n'as pas de " +
-                            Component.text(mission.material.displayName, GOLD) +
+                            Component.text(customMaterial.displayName.value, GOLD) +
                             " sur toi."
                 )
             }
@@ -110,15 +113,16 @@ class JobMissionMenu(
         val progress = mission.delivered
         val inventoryAmount = viewer.inventory.contents
             .filterNotNull()
-            .mapNotNull { runCatching { customItemService.getCustomItemStack(it) }.getOrNull() }
-            .filter { it.item.material == mission.material && it.item.quality >= mission.minimalQuality }
+            .filter {
+                val ci = customItemService.getCustomItem(it)
+                ci!= null && ci.material == mission.material.materialName && ci.quality >= mission.minimalQuality }
             .sumOf { it.amount }
 
         val total = progress + inventoryAmount
         val gradientColor = Util.getGreenRedGradient(total, mission.quantity)
-
-        return ItemBuilder(mission.material.customMaterial)
-            .name(Component.text(mission.material.displayName, DARK_AQUA)) // Mettre la couleur de la rareté
+        val customMaterial = customItemService.getCustomMaterial(mission.material.materialName)
+        return ItemBuilder(customItemService.getItemStack(customMaterial.itemTag))
+            .name(Component.text(customMaterial.displayName.value, DARK_AQUA)) // Mettre la couleur de la rareté
             .lore()
             .append(Component.text("Métier : ", GRAY).append(mission.job.name, GOLD))
             .newline()

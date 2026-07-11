@@ -1,18 +1,20 @@
 package onl.tesseract.srp.service.job.mission
 
 import onl.tesseract.lib.logger.LoggerFactory
+import onl.tesseract.srp.customitem.adapter.userside.ItemGateway
+import onl.tesseract.srp.customitem.domain.model.Quality
 import onl.tesseract.srp.domain.job.EnumJob
 import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.exception.PlayerNotConnectedException
 import onl.tesseract.srp.repository.generic.job.JobMissionRepository
-import onl.tesseract.srp.service.item.CustomItemService
 import onl.tesseract.srp.service.job.JobService
 import onl.tesseract.srp.service.job.PlayerJobService
 import org.bukkit.entity.Player
 import org.slf4j.Logger
 import org.springframework.stereotype.Service
 import java.util.*
+import kotlin.math.min
 import kotlin.random.Random
 
 private val logger: Logger = LoggerFactory.getLogger(JobMissionService::class.java)
@@ -22,7 +24,7 @@ class JobMissionService(
     private val jobMissionRepository: JobMissionRepository,
     private val jobService: JobService,
     private val playerJobService: PlayerJobService,
-    private val customItemService: CustomItemService
+    private val customItemService: ItemGateway
 ) {
     fun createRandomMissionForJob(playerId: UUID, enumJob: EnumJob): JobMission {
         val job = jobService.getJob(enumJob)
@@ -31,7 +33,7 @@ class JobMissionService(
         val rep = playerJobService.getPlayerJobProgression(playerId).reputationByJob.getOrDefault(enumJob, 1.0)
 
         val quantity = Random.nextDouble(template.quantity * 0.9, template.quantity * 1.1) * rep
-        val quality = Random.nextDouble(template.minQuality * 0.9, template.minQuality * 1.1) * rep
+        val quality = Quality.POOR
 
         val baseStat = job.baseStats[template.material]
             ?: error("No baseStat configured for job $enumJob")
@@ -46,12 +48,12 @@ class JobMissionService(
             job = enumJob,
             material = template.material,
             quantity = quantity.toInt().coerceAtLeast(1),
-            minimalQuality = quality.toInt().coerceAtLeast(1),
+            minimalQuality = quality,
             reward = reward.toInt()
         )
 
         val saved = jobMissionRepository.save(mission)
-        logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material.name}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
+        logger.info("Created mission for player $playerId - Job: $enumJob, Material: ${template.material}, Quantity: $quantity, Quality: $quality, Reputation: $rep")
         return saved
     }
 
@@ -72,27 +74,32 @@ class JobMissionService(
 
         val toReach = currentMission.quantity - currentMission.delivered
 
-        val removedAmount = customItemService.removeCustomItems(
-            player.inventory,
-            currentMission.material,
+        val owned = customItemService.getItemQuantity(player.uniqueId,currentMission.material.materialName,
+            currentMission.minimalQuality)
+
+        val toRemove = min(owned,toReach)
+
+        val removedAmount = customItemService.removeItem(
+            player.uniqueId,
+            currentMission.material.materialName,
             currentMission.minimalQuality,
-            toReach
+            toRemove
         )
 
-        if (removedAmount > 0) {
-            currentMission.delivered += removedAmount
+        if (toRemove > 0) {
+            currentMission.delivered += toRemove
             jobMissionRepository.save(currentMission)
-            logger.info("Player ${player.name} delivered $removedAmount items for mission $missionId")
+            logger.info("Player ${player.name} delivered $toRemove items for mission $missionId")
 
 
             if (currentMission.delivered >= currentMission.quantity) {
                 completeMission(player, currentMission)
-                return MissionDepositResult(removedAmount, 0)
+                return MissionDepositResult(toRemove, 0)
             }
         }
         val remaining = currentMission.quantity - currentMission.delivered
 
-        return MissionDepositResult(removedAmount, remaining)
+        return MissionDepositResult(toRemove, remaining)
     }
 
     /**

@@ -16,18 +16,19 @@ class JobSkillMenuConfigParser {
      * @throws java.io.IOException On IO error
      */
     fun parseForJob(enumJob: EnumJob): JobSkillMenuConfig {
-        javaClass.classLoader.getResourceAsStream("$enumJob.skills")?.use { stream ->
-            var str = String(stream.readAllBytes())
-            val lines = str.split("\n")
+        javaClass.classLoader.getResourceAsStream("$enumJob.skills")
+                ?.use { stream ->
+                    var str = String(stream.readAllBytes())
+                    val lines = str.split("\n")
 
-            val symbolDefs = parseSymbolDefs(lines)
+                    val symbolDefs = parseSymbolDefs(lines)
 
-            val graphLines = lines.dropWhile { !it.startsWith("=") }
-                .drop(1)
-                .takeWhile { it != "END" }
-                .reversed()
-            return parseGraph(graphLines, symbolDefs)
-        } ?: throw ConfigurationException("Configuration file not found for skill menu of job $enumJob")
+                    val graphLines = lines.dropWhile { !it.startsWith("=") }
+                            .drop(1)
+                            .takeWhile { it != "END" }
+                            .reversed()
+                    return parseGraph(graphLines, symbolDefs)
+                } ?: throw ConfigurationException("Configuration file not found for skill menu of job $enumJob")
     }
 
     private fun parseGraph(
@@ -41,7 +42,7 @@ class JobSkillMenuConfigParser {
                     JobSkillMenuConfig.EmptyCell
                 else
                     symbolDefs[line.toCharArray()[it]]
-                        ?: throw ConfigurationException("Invalid character '${line.toCharArray()[it]}'")
+                            ?: throw ConfigurationException("Invalid character '${line.toCharArray()[it]}'")
             }
         }
         return JobSkillMenuConfig(matrix)
@@ -79,7 +80,7 @@ class JobSkillMenuConfigParser {
 }
 
 data class JobSkillMenuConfig(
-    val cells: Array<Array<CellType>>
+    val cells: Array<Array<CellType>>,
 ) {
 
     inline fun forEach(startLine: Int, height: Int, action: (Int, Int, CellType) -> Unit) {

@@ -17,7 +17,7 @@ enum class JobSkill(
         Material.RABBIT_FOOT,
         null,
         1,
-        GenericMaterialJobBonus(CustomMaterial.Wood, JobBonusType.LootChance, 0.15f)
+        GenericMaterialJobBonus(CustomMaterial.STEEL, JobBonusType.LootChance, 0.15f)
     ),
     MINEUR_QUALITY_1(
         EnumJob.Mineur,
@@ -25,7 +25,7 @@ enum class JobSkill(
         Material.EXPERIENCE_BOTTLE,
         null,
         1,
-        GenericMaterialJobBonus(CustomMaterial.Wood, JobBonusType.Quality, 0.5f)
+        GenericMaterialJobBonus(CustomMaterial.STEEL, JobBonusType.Quality, 0.5f)
     ),
     MINEUR_MONEY_1(
         EnumJob.Mineur,
@@ -33,6 +33,6 @@ enum class JobSkill(
         Material.GOLD_NUGGET,
         null,
         1,
-        GenericMaterialJobBonus(CustomMaterial.Wood, JobBonusType.Money, 0.1f)
+        GenericMaterialJobBonus(CustomMaterial.STEEL, JobBonusType.Money, 0.1f)
     ),
 }
