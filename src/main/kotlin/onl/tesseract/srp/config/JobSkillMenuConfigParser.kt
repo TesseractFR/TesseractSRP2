@@ -19,11 +19,11 @@ class JobSkillMenuConfigParser {
         javaClass.classLoader.getResourceAsStream("$enumJob.skills")
                 ?.use { stream ->
                     var str = String(stream.readAllBytes())
-                    val lines = str.split("\n")
-
+                    var lines = str.split("\n")
+                    lines = lines.map { it.replace("\r", "") }
                     val symbolDefs = parseSymbolDefs(lines)
-
-                    val graphLines = lines.dropWhile { !it.startsWith("=") }
+                    val graphLines = lines
+                            .dropWhile { !it.startsWith("=") }
                             .drop(1)
                             .takeWhile { it != "END" }
                             .reversed()

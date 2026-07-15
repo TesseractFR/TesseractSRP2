@@ -5,7 +5,7 @@ import onl.tesseract.srp.customitem.adapter.userside.ItemGateway
 import onl.tesseract.srp.domain.item.CustomMaterial
 import onl.tesseract.srp.domain.item.CustomMaterialBlockSource
 import onl.tesseract.srp.domain.item.CustomMaterialEntitySource
-import onl.tesseract.srp.service.job.JobService
+import onl.tesseract.srp.service.job.JobServicee
 import onl.tesseract.srp.service.world.WorldService
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class CustomItemDropListener(
-    private val jobService: JobService,
+    private val jobService: JobServicee,
     private val customItemService: ItemGateway,
     private val worldService: WorldService,
     private val taskScheduler: TaskScheduler,

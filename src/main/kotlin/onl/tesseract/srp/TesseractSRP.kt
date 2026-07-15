@@ -51,7 +51,7 @@ class TesseractSRP : JavaPlugin() {
             env.propertySources.addFirst(PropertiesPropertySource("customProperties", props))
         })
         this.springContext = app.run()
-        copyConfigsIfAbsent()
+        copyConfigsIfAbsent(this.springContext.getBean(Config::class.java).forceUpdateConfig)
         registerCommands()
         registerListeners()
         registerSerializers()
@@ -97,7 +97,7 @@ class TesseractSRP : JavaPlugin() {
         SrpWorld.entries.forEach { worldService.getBukkitWorld(it) }
     }
 
-    private fun copyConfigsIfAbsent() {
+    private fun copyConfigsIfAbsent(forceUpdateConfig: Boolean) {
         if (Files.notExists(TREEPATH)) {
             Files.createDirectories(TREEPATH)
         }
@@ -112,6 +112,8 @@ class TesseractSRP : JavaPlugin() {
                                         .forEach { x: Path ->
                                             run {
                                                 val outPath = TREEPATH.resolve(x.toString())
+                                                if(forceUpdateConfig && Files.exists(outPath) && Files.isRegularFile(outPath))
+                                                    Files.deleteIfExists(outPath)
                                                 if(Files.notExists(outPath))
                                                     Files.copy(x, outPath)
                                             }

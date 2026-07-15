@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class JobService(
+class JobServicee(
     private val jobConfigRepository: JobsConfigRepository,
     private val playerJobService: PlayerJobService,
     private val eventService: EventService,

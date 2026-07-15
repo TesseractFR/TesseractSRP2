@@ -10,7 +10,8 @@ data class Config(
     val srpDbPort: Int,
     val srpDbUsername: String,
     val srpDbPassword: String,
-    val srpDbDatabase: String
+    val srpDbDatabase: String,
+    val forceUpdateConfig : Boolean
 ){
     companion object {
         private lateinit var instance: Config
@@ -35,7 +36,8 @@ data class Config(
                         ?: throw ConfigurationException("Missing config srp_db_username"),
                 srpDbPassword = yaml.getString("srp_db_password")
                         ?: throw ConfigurationException("Missing config srp_db_password"),
-                srpDbPort = yaml.getInt("srp_db_port")
+                srpDbPort = yaml.getInt("srp_db_port"),
+                forceUpdateConfig = yaml.getBoolean("force_update_config",false)
             )
         }
     }

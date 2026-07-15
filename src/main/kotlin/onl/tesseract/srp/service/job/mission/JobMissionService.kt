@@ -8,7 +8,7 @@ import onl.tesseract.srp.domain.job.JobHarvestEvent
 import onl.tesseract.srp.domain.job.mission.JobMission
 import onl.tesseract.srp.exception.PlayerNotConnectedException
 import onl.tesseract.srp.repository.generic.job.JobMissionRepository
-import onl.tesseract.srp.service.job.JobService
+import onl.tesseract.srp.service.job.JobServicee
 import onl.tesseract.srp.service.job.PlayerJobService
 import org.bukkit.entity.Player
 import org.slf4j.Logger
@@ -22,7 +22,7 @@ private val logger: Logger = LoggerFactory.getLogger(JobMissionService::class.ja
 @Service
 class JobMissionService(
     private val jobMissionRepository: JobMissionRepository,
-    private val jobService: JobService,
+    private val jobService: JobServicee,
     private val playerJobService: PlayerJobService,
     private val customItemService: ItemGateway
 ) {

@@ -8,29 +8,33 @@ import onl.tesseract.lib.util.ItemLoreBuilder
 import onl.tesseract.lib.util.menu.InventoryHeadIcons
 import onl.tesseract.lib.util.plus
 import onl.tesseract.lib.util.toComponent
-import onl.tesseract.srp.config.JobSkillMenuConfig
-import onl.tesseract.srp.config.JobSkillMenuConfigParser
-import onl.tesseract.srp.domain.job.EnumJob
-import onl.tesseract.srp.domain.job.PlayerJobProgression
-import onl.tesseract.srp.service.job.PlayerJobService
+import onl.tesseract.srp.job.domain.model.Job
+import onl.tesseract.srp.job.domain.model.PlayerID
+import onl.tesseract.srp.job.domain.model.talenttree.*
+import onl.tesseract.srp.job.domain.port.userside.JobPlayerProgressionService
+import onl.tesseract.srp.job.domain.port.userside.JobTalentTreeService
 import onl.tesseract.srp.util.menu.BiMenu
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.slf4j.Logger
-import java.util.UUID
+import kotlin.math.min
 
 val logger: Logger = LoggerFactory.getLogger(JobSkillMenu::class.java)
 
-class JobSkillMenu(val playerID: UUID, val job: EnumJob, val playerJobService: PlayerJobService) :
+class JobSkillMenu(
+    val playerID: PlayerID, val job: Job,
+    val jobTalentTreeService: JobTalentTreeService,
+    val jobPlayerProgressionService: JobPlayerProgressionService
+) :
     BiMenu(MenuSize.Six, "Compétences".toComponent()) {
 
-    private lateinit var menuConfig: JobSkillMenuConfig
+    private lateinit var menuConfig: TalentTree
     private var scroll: Int = 0
 
     override fun placeButtons(viewer: Player) {
 
         menuConfig = try {
-            JobSkillMenuConfigParser().parseForJob(job)
+            jobTalentTreeService.getTalentTree(job.jobName())
         } catch (e: Exception) {
             logger.error("Failed to open skill menu for job $job", e)
             viewer.sendMessage(NamedTextColor.RED + "Une erreur est survenue lors de l'ouverture du menu. Veuillez contacter un administrateur.")
@@ -44,10 +48,13 @@ class JobSkillMenu(val playerID: UUID, val job: EnumJob, val playerJobService: P
     private fun openScroll(scroll: Int) {
         clearTop()
         this.scroll = scroll
-        val progression = playerJobService.getPlayerJobProgression(playerID)
-        menuConfig.forEach(scroll, 6) { row, col, cellType ->
-            val index = col + ((5 - (row - scroll)) * 9)
-            placeCell(progression, cellType, index)
+        val maxHeight = min(menuConfig.matrix.size, 6+scroll)
+        for (row in scroll until maxHeight) {
+            for(col in menuConfig.matrix[row].indices){
+                val index = col + ((5 - (row - scroll)) * 9)
+                val cell = menuConfig.matrix[row][col]
+                placeCell(cell,index)
+            }
         }
 
         addBottomButton(
@@ -56,7 +63,7 @@ class JobSkillMenu(val playerID: UUID, val job: EnumJob, val playerJobService: P
                 .name(NamedTextColor.GRAY + "Monter")
                 .build()
         ) {
-            if (scroll < menuConfig.cells.size - 1)
+            if (scroll < menuConfig.matrix.size - 1)
                 openScroll(scroll + 1)
         }
         addBottomButton(
@@ -82,8 +89,8 @@ class JobSkillMenu(val playerID: UUID, val job: EnumJob, val playerJobService: P
         }
     }
 
-    private fun placeCell(progression: PlayerJobProgression, cellType: JobSkillMenuConfig.CellType, index: Int) {
-        if (cellType is JobSkillMenuConfig.Arrow) {
+    private fun placeCell(cellType: CellType, index: Int) {
+        if (cellType is Arrow) {
             addButton(
                 index,
                 ItemBuilder(Material.STONE_BUTTON)
@@ -93,39 +100,39 @@ class JobSkillMenu(val playerID: UUID, val job: EnumJob, val playerJobService: P
             )
         }
 
-        if (cellType is JobSkillMenuConfig.RootCell) {
+        if (cellType is RootCell) {
             addButton(
                 index,
-                ItemBuilder(job.icon)
-                    .name(job.displayName)
+                ItemBuilder(Material.DIAMOND_PICKAXE)
+                    .name(job.jobDisplayName().value())
                     .build()
             )
         }
 
-        if (cellType is JobSkillMenuConfig.SkillCell) {
-            val skill = cellType.skill
+        if (cellType is SkillCell) {
+            val skill = job.talents().get(cellType.talent())
             val lore = ItemLoreBuilder()
                 .newline()
-                .append(skill.bonus.getDescription())
+                .append(skill.bonus.description)
                 .newline()
-            if (progression.hasSkill(skill)) {
+            if (jobPlayerProgressionService.getTalentLevel(playerID, job.jobName(),skill.name) > 0) {
                 lore.append(NamedTextColor.GREEN + "Acquis")
             } else {
                 val color =
-                    if (progression.skillPoints > skill.cost) NamedTextColor.BLUE
+                    if (jobPlayerProgressionService.canBuyUpgrade(playerID, job.jobName(),skill)) NamedTextColor.BLUE
                     else NamedTextColor.RED
-                lore.append(color + "Coût" + (NamedTextColor.GRAY + " : ${skill.cost}"))
-                if (!progression.isSkillAvailable(skill))
+                lore.append(color + "Coût" + (NamedTextColor.GRAY + " : ${jobPlayerProgressionService.getTalentCost(playerID,job.jobName(),skill)}"))
+                if (!jobPlayerProgressionService.isAvailable(playerID, job.jobName(),skill))
                     lore.newline().append(NamedTextColor.RED + "Bloqué")
             }
             addButton(
                 index,
-                ItemBuilder(skill.icon)
-                    .name(skill.displayName)
+                ItemBuilder(Material.RABBIT_FOOT)
+                    .name(skill.name.value)
                     .lore(lore.get())
                     .build()
             ) {
-                val unlocked = playerJobService.unlockSkill(playerID, skill)
+                val unlocked = jobPlayerProgressionService.upgradeSkill(playerID, skill)
                 if (unlocked)
                     openScroll(this.scroll)
             }

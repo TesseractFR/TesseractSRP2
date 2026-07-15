@@ -4,26 +4,29 @@ import onl.tesseract.lib.menu.ItemBuilder
 import onl.tesseract.lib.menu.Menu
 import onl.tesseract.lib.menu.MenuSize
 import onl.tesseract.lib.util.toComponent
-import onl.tesseract.srp.domain.job.EnumJob
+import onl.tesseract.srp.job.domain.model.Job
+import onl.tesseract.srp.job.domain.port.userside.JobService
 import org.bukkit.Material
 import org.bukkit.entity.Player
 
 class JobSelectionMenu(
     title: String,
+    val jobService: JobService,
     previous: Menu? = null,
-    private val onJobClick: (viewer: Player, job: EnumJob) -> Unit
+    private val onJobClick: (viewer: Player, job: Job) -> Unit
 ) : Menu(MenuSize.Two, title.toComponent(), previous) {
 
     override fun placeButtons(viewer: Player) {
         addBackButton()
         addCloseButton()
 
-        EnumJob.entries.forEachIndexed { index, enumJob ->
+        jobService.listJobs().forEachIndexed { index, job ->
             addButton(index, ItemBuilder(Material.DIAMOND_PICKAXE)
-                .name(enumJob.name)
-                .build()) {
-                onJobClick(viewer, enumJob)
+                    .name(job.jobName().value())
+                    .build()) {
+                onJobClick(viewer, job)
             }
+
         }
 
         super.placeButtons(viewer)

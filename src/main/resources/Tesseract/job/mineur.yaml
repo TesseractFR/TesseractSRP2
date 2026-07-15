@@ -1,0 +1,21 @@
+name: mineur
+display-name: "Mineur"
+talents:
+  MINEUR_LOOT_CHANCE_1:
+    maxLevel: 5
+    bonus: LOOT_CHANCE
+    parents : []
+    prices: [1,2,3,4,5]
+  MINEUR_QUALITY_1:
+    maxLevel: 5
+    bonus: QUALITY
+    parents : []
+    prices: [1,2,3,4,5]
+  MINEUR_MONEY_1:
+    maxLevel: 3
+    bonus: MONEY
+    parents : []
+    prices: [1,2,3,4,5]
+items:
+  steel_ingot:
+    blocks: [IRON_ORE]
