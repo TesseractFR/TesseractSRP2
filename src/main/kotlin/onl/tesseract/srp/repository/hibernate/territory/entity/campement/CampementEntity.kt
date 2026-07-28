@@ -9,6 +9,7 @@ import org.hibernate.annotations.Cache
 import org.hibernate.annotations.CacheConcurrencyStrategy
 import org.hibernate.annotations.JdbcTypeCode
 import java.sql.Types
+import java.time.Instant
 import java.util.*
 import kotlin.math.floor
 
@@ -51,14 +52,18 @@ class CampementEntity(
     val spawnZ: Double,
 
     @Column(name = "spawn_world", nullable = false)
-    val spawnWorld: String
+    val spawnWorld: String,
+
+    @Column(nullable = false)
+    val creationDate: Instant
 ) {
     fun toDomain(): Campement {
         val camp =  Campement(
             id,  campLevel,
             Coordinate(spawnX, spawnY, spawnZ,
                 ChunkCoord(floor(spawnX/CHUNK_SIZE).toInt(),floor(spawnZ/CHUNK_SIZE).toInt(), spawnWorld)),
-            trustedPlayers.toMutableSet()
+            trustedPlayers.toMutableSet(),
+            creationDate
         )
         camp.addChunks(listChunks.map { CampementChunk(it.id.toDomain(),camp) }.toSet())
         return camp
@@ -73,7 +78,8 @@ fun Campement.toEntity(): CampementEntity {
         spawnX = getSpawnpoint().x,
         spawnY = getSpawnpoint().y,
         spawnZ = getSpawnpoint().z,
-        spawnWorld = getSpawnpoint().chunkCoord.world
+        spawnWorld = getSpawnpoint().chunkCoord.world,
+         creationDate = creationDate
     )
     campementEntity.listChunks.addAll(getChunks().map { it.toEntity(campementEntity) }.toMutableSet())
     return campementEntity

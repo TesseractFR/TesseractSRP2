@@ -10,6 +10,7 @@ import onl.tesseract.srp.domain.territory.guild.enum.GuildRank
 import onl.tesseract.srp.domain.territory.guild.enum.GuildRole
 import onl.tesseract.srp.domain.territory.guild.event.GuildChunkClaimEvent
 import onl.tesseract.srp.domain.territory.guild.event.GuildChunkUnclaimEvent
+import java.time.Instant
 import java.util.*
 
 class Guild(
@@ -20,18 +21,24 @@ class Guild(
     val moneyLedgerID: UUID = UUID.randomUUID(),
     memberContainer: GuildMemberContainer,
     visitorSpawnLocation: Coordinate = spawnLocation,
-    var level: Int = 1,
-    var xp: Int = 0,
+    override var level: Int = 1,
+    override var xp: Int = 0,
     var rank: GuildRank = GuildRank.HAMEAU,
-    val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation)
+    val visitorSpawnContainer: VisitorSpawnContainer = DefaultVisitorSpawnContainer(visitorSpawnLocation),
+    val creationDate: Instant = Instant.now()
 ) : GuildMemberContainer by memberContainer,
     VisitorSpawnContainer by visitorSpawnContainer,
-    Territory<GuildChunk>(id,spawnLocation) {
+    Territory<GuildChunk>(id,spawnLocation),
+    GuildLevelHolder {
+
+    override fun getXpForNextLevel(): Int = 1000 //TODO Changer la valeur avec une vraie fonction
 
     var money: Int = money
 
     constructor(id: UUID, leaderId: UUID, name: String, spawnLocation: Coordinate)
-            : this(id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId))
+            : this(
+        id, name, spawnLocation, memberContainer = GuildMemberContainerImpl(leaderId), creationDate = Instant.now()
+            )
 
     /**
      * @throws IllegalStateException If the guild already has chunks
@@ -92,7 +99,8 @@ class Guild(
     }
 
     override fun canBuild(player: UUID): Boolean {
-        TODO("Not yet implemented")
+        val role = getMemberRole(player)
+        return role.canBuild()
     }
 
     override fun canOpenChest(player: UUID): Boolean {
