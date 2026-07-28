@@ -1,6 +1,5 @@
 package onl.tesseract.srp.job.domain.port.userside;
 
-import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.talenttree.TalentTree;
 import onl.tesseract.srp.job.domain.port.serverside.JobSkillTreeRepository;

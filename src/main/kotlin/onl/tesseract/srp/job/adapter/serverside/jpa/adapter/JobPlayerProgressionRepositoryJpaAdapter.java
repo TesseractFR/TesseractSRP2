@@ -24,7 +24,7 @@ public class JobPlayerProgressionRepositoryJpaAdapter implements JobPlayerProgre
     }
 
     @Override
-    @Cacheable(value = "playerJobProgression")
+    @Cacheable(cacheNames = "playerJobProgression")
     public PlayerJobProgression getPlayerJobProgression(PlayerID player, JobName jobName) {
         return jobPlayerProgressionJpaRepository.findById(new JobPlayerProgressionEntityKey(player.value(), jobName.value()))
                 .map(this::toDomainModel)

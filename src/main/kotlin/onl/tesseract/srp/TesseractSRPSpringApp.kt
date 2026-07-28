@@ -13,6 +13,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.cache.annotation.EnableCaching
 import org.springframework.transaction.PlatformTransactionManager
 import java.util.*
 import javax.sql.DataSource
@@ -22,6 +23,7 @@ import javax.sql.DataSource
 @EnableJpaRepositories("onl.tesseract.srp", entityManagerFactoryRef = "defaultEntityManagerFactory",
     transactionManagerRef = "defaultTransactionManager")
 @EnableScheduling
+@EnableCaching
 open class TesseractSRPSpringApp {
 
     @Bean
@@ -61,6 +63,7 @@ open class TesseractSRPSpringApp {
         jpaProperties.setProperty("hibernate.cache.use_second_level_cache", "true")
         jpaProperties.setProperty("hibernate.cache.use_query_cache", "true")
         jpaProperties.setProperty("hibernate.javax.cache.missing_cache_strategy", "create")
+        jpaProperties.setProperty("hibernate.javax.cache.provider", "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider")
         build.setJpaProperties(jpaProperties)
         return build
     }

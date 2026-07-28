@@ -1,21 +1,33 @@
 name: mineur
 display-name: "Mineur"
 talents:
-  MINEUR_LOOT_CHANCE_1:
+  MINEUR_TITANE_LOOT_CHANCE_1:
     maxLevel: 5
     bonus: LOOT_CHANCE
-    parents : []
+    parents : [MINEUR_TITANE_UNLOCK]
+    values: [0.01, 0.02, 0.03, 0.04, 0.05]
+    item: TITANE
     prices: [1,2,3,4,5]
-  MINEUR_QUALITY_1:
+  MINEUR_TITANE_QUALITY_1:
     maxLevel: 5
     bonus: QUALITY
-    parents : []
+    parents : [MINEUR_TITANE_UNLOCK]
+    values: [0.01, 0.02, 0.03, 0.04, 0.05]
     prices: [1,2,3,4,5]
-  MINEUR_MONEY_1:
+    item: TITANE
+  MINEUR_TITANE_MONEY_1:
     maxLevel: 3
     bonus: MONEY
-    parents : []
+    parents : [MINEUR_TITANE_UNLOCK]
+    values: [0.01, 0.02, 0.03, 0.04, 0.05]
     prices: [1,2,3,4,5]
-items:
-  steel_ingot:
-    blocks: [IRON_ORE]
+    item: TITANE
+  MINEUR_TITANE_UNLOCK:
+    maxLevel: 1
+    bonus: LOOT_CHANCE
+    parents : []
+    values: [0.025]
+    prices: [1]
+    item: TITANE
+break:
+  IRON_ORE: [TITANE]

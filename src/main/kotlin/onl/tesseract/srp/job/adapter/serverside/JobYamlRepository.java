@@ -2,6 +2,10 @@ package onl.tesseract.srp.job.adapter.serverside;
 
 import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.JobName;
+import onl.tesseract.srp.job.domain.model.Material;
+import onl.tesseract.srp.job.domain.model.Sources;
+import onl.tesseract.srp.job.domain.model.source.Source;
+import onl.tesseract.srp.job.domain.model.source.SourceType;
 import onl.tesseract.srp.job.domain.model.talent.Bonus;
 import onl.tesseract.srp.job.domain.model.talent.Talent;
 import onl.tesseract.srp.job.domain.model.talent.TalentName;
@@ -9,7 +13,6 @@ import onl.tesseract.srp.job.domain.model.talent.Talents;
 import onl.tesseract.srp.job.domain.port.serverside.JobRepository;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -56,6 +59,7 @@ public class JobYamlRepository implements JobRepository {
                 .jobName(new JobName(config.getString("name")))
                 .jobDisplayName(new Job.JobDisplayName(config.getString("display-name")))
                 .talents(loadTalents(config.getConfigurationSection("talents")))
+                .sources(loadSources(config))
                 .build()
                 ;
         jobs.put(job.jobName(),job);
@@ -72,6 +76,8 @@ public class JobYamlRepository implements JobRepository {
                     .bonus(Bonus.valueOf(section.getString("bonus")))
                     .parents(section.getStringList("parents").stream().map(TalentName::new).collect(Collectors.toSet()))
                     .pricePerLevel(loadPricePerLevel(section))
+                    .item(new Material(section.getString("item")))
+                    .values(section.getDoubleList("values"))
                     .build();
             talents.add(talent.name(),talent);
         }
@@ -85,6 +91,21 @@ public class JobYamlRepository implements JobRepository {
             pricePerLevel.put(i + 1, prices.get(i));
         }
         return pricePerLevel;
+    }
+
+    private Sources loadSources(ConfigurationSection config){
+        if(config == null) {
+            return new Sources(new HashMap<>());
+        }
+        Map<Source, List<Material>> sources = new HashMap<>();
+        ConfigurationSection breakConf = config.getConfigurationSection("break");
+        if(breakConf != null){
+            for(String key : breakConf.getKeys(false)){
+                sources.put(new Source(new Material(key), SourceType.BLOCK), breakConf.getStringList(key).stream().map(Material::new).collect(Collectors.toList()));
+            }
+        }
+
+        return new Sources(sources);
     }
 
     private List<Path> loadFiles(){

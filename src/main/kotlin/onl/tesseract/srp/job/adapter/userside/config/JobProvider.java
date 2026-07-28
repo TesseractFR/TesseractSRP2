@@ -1,5 +1,6 @@
 package onl.tesseract.srp.job.adapter.userside.config;
 
+import onl.tesseract.srp.job.domain.port.serverside.ItemRepository;
 import onl.tesseract.srp.job.domain.port.serverside.JobPlayerProgressionRepository;
 import onl.tesseract.srp.job.domain.port.serverside.JobRepository;
 import onl.tesseract.srp.job.domain.port.serverside.JobSkillTreeRepository;
@@ -23,8 +24,8 @@ public class JobProvider {
     }
 
     @Bean
-    public JobService jobService(JobRepository jobRepository){
-        return new JobService(jobRepository);
+    public JobService jobService(JobRepository jobRepository, JobPlayerProgressionService jobPlayerProgressionService, ItemRepository itemRepository){
+        return new JobService(jobRepository, jobPlayerProgressionService, itemRepository);
     }
 
 }

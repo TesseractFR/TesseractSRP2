@@ -1,6 +1,5 @@
 package onl.tesseract.srp.job.domain.port.userside;
 
-import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.PlayerID;
 import onl.tesseract.srp.job.domain.model.PlayerJobProgression;

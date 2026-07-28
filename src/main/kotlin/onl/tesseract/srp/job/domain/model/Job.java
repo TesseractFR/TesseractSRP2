@@ -7,7 +7,8 @@ import onl.tesseract.srp.job.domain.model.talent.Talents;
 public record Job(
         JobName jobName,
         JobDisplayName jobDisplayName,
-        Talents talents
+        Talents talents,
+        Sources sources
 ) {
 
 
