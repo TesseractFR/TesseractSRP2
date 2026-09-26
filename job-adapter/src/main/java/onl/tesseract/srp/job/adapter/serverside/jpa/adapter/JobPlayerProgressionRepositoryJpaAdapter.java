@@ -1,9 +1,9 @@
-package onl.tesseract.srp.adapter.serverside.jpa.adapter;
+package onl.tesseract.srp.job.adapter.serverside.jpa.adapter;
 
-import onl.tesseract.srp.adapter.serverside.jpa.entity.JobPlayerProgressionEntity;
-import onl.tesseract.srp.adapter.serverside.jpa.entity.JobPlayerProgressionEntityKey;
-import onl.tesseract.srp.adapter.serverside.jpa.entity.JobPlayerTalentProgressionEntity;
-import onl.tesseract.srp.adapter.serverside.jpa.repository.JobPlayerProgressionJpaRepository;
+import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobPlayerProgressionEntity;
+import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobPlayerProgressionEntityKey;
+import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobPlayerTalentProgressionEntity;
+import onl.tesseract.srp.job.adapter.serverside.jpa.repository.JobPlayerProgressionJpaRepository;
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.PlayerID;
 import onl.tesseract.srp.job.domain.model.PlayerJobProgression;

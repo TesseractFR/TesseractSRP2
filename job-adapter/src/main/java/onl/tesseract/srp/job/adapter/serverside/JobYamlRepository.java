@@ -1,4 +1,4 @@
-package onl.tesseract.srp.adapter.serverside;
+package onl.tesseract.srp.job.adapter.serverside;
 
 import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.JobName;

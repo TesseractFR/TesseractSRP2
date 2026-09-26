@@ -1,4 +1,4 @@
-package onl.tesseract.srp.adapter.serverside.jpa.entity;
+package onl.tesseract.srp.job.adapter.serverside.jpa.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

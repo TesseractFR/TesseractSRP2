@@ -1,4 +1,4 @@
-package onl.tesseract.srp.adapter.userside.config;
+package onl.tesseract.srp.job.adapter.userside.config;
 
 import onl.tesseract.srp.job.domain.port.serverside.ItemRepository;
 import onl.tesseract.srp.job.domain.port.serverside.JobPlayerProgressionRepository;

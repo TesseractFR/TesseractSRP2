@@ -2,7 +2,7 @@ package onl.tesseract.srp.repository.yaml.skill;
 
 import onl.tesseract.lib.exception.ConfigurationException;
 import onl.tesseract.lib.logger.LoggerFactory;
-import onl.tesseract.srp.service.item.CustomItemService;
+import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.skill.domain.model.recipe.*;
 import onl.tesseract.srp.skill.domain.model.skill.Skill;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;

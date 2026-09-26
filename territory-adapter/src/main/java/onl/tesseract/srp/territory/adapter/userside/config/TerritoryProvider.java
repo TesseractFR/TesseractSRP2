@@ -35,14 +35,14 @@ public class TerritoryProvider {
     }
 
     @Bean
-    public TerritoryBorderService guildTerritoryBorderService(
+    public GuildBorderService guildTerritoryBorderService(
             TerritoryBorderTaskSchedulerImpl scheduler,
             GuildService guildService) {
         return new GuildBorderService(scheduler, guildService);
     }
 
     @Bean
-    public TerritoryBorderService campementTerritoryBorderService(
+    public CampementBorderService campementTerritoryBorderService(
             TerritoryBorderTaskSchedulerImpl scheduler,
             CampementService campementService) {
         return new CampementBorderService(scheduler, campementService);

@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import onl.tesseract.srp.common.domain.model.Coordinate;
-import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.TerritoryChunkEntity;
+import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.GuildChunkEntity;
 import onl.tesseract.srp.territory.domain.model.container.DefaultVisitorSpawnContainer;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
@@ -64,7 +64,7 @@ public class GuildEntity {
     private CoordinateEntity visitorSpawnLocation;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "guild", fetch = FetchType.EAGER)
-    Set<TerritoryChunkEntity> chunks;
+    Set<GuildChunkEntity> chunks;
 
     @ElementCollection
     @CollectionTable(

@@ -101,16 +101,7 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>onl.tesseract</groupId>
-            <artifactId>core</artifactId>
-        </dependency>
-
         <!-- Module dependencies -->
-        <dependency>
-            <groupId>onl.tesseract</groupId>
-            <artifactId>core</artifactId>
-        </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>job-adapter</artifactId>

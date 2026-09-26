@@ -1,6 +1,6 @@
-package onl.tesseract.srp.adapter.serverside.jpa.repository;
+package onl.tesseract.srp.job.adapter.serverside.jpa.repository;
 
-import onl.tesseract.srp.adapter.serverside.jpa.entity.JobMissionEntity;
+import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobMissionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

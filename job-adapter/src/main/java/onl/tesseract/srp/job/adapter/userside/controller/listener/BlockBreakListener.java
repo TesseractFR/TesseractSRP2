@@ -1,4 +1,4 @@
-package onl.tesseract.srp.adapter.userside.controller.listener;
+package onl.tesseract.srp.job.adapter.userside.controller.listener;
 
 import onl.tesseract.srp.job.domain.model.Material;
 import onl.tesseract.srp.job.domain.model.PlayerID;

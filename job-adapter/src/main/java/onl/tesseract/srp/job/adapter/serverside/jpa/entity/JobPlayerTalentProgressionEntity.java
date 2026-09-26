@@ -1,19 +1,18 @@
-package onl.tesseract.srp.adapter.serverside.jpa.entity;
+package onl.tesseract.srp.job.adapter.serverside.jpa.entity;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Embeddable
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-public class JobPlayerProgressionEntityKey {
+public class JobPlayerTalentProgressionEntity {
 
-    UUID playerUuid;
 
-    String jobName;
+    private String talentName;
+
+    private int level;
 }

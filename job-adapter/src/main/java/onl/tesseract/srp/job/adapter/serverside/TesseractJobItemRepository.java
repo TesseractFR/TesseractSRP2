@@ -1,4 +1,4 @@
-package onl.tesseract.srp.adapter.serverside;
+package onl.tesseract.srp.job.adapter.serverside;
 
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;

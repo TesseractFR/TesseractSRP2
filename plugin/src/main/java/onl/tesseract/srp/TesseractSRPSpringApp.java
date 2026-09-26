@@ -30,7 +30,7 @@ public class TesseractSRPSpringApp {
 
     @Bean
     public Config srpConfig() {
-        return new Config();
+        return Config.getInstance();
     }
 
     @Bean("defaultDataSource")
@@ -55,6 +55,7 @@ public class TesseractSRPSpringApp {
         build.setEntityManagerFactoryInterface(EntityManagerFactory.class);
         build.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         Properties jpaProperties = new Properties();
+        jpaProperties.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
         jpaProperties.setProperty("hibernate.hbm2ddl.auto", "update");
         jpaProperties.setProperty("spring.jpa.show-sql", "true");
         jpaProperties.setProperty("hibernate.show_sql", "true");

@@ -1,7 +1,7 @@
-package onl.tesseract.srp.adapter.serverside.jpa.adapter;
+package onl.tesseract.srp.job.adapter.serverside.jpa.adapter;
 
-import onl.tesseract.srp.adapter.serverside.jpa.entity.JobMissionEntity;
-import onl.tesseract.srp.adapter.serverside.jpa.repository.JobMissionJpaRepository;
+import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobMissionEntity;
+import onl.tesseract.srp.job.adapter.serverside.jpa.repository.JobMissionJpaRepository;
 import onl.tesseract.srp.job.domain.model.mission.JobMission;
 import onl.tesseract.srp.job.domain.port.serverside.JobMissionRepository;
 import org.springframework.stereotype.Component;
@@ -21,26 +21,15 @@ public class JobMissionRepositoryJpaAdapter implements JobMissionRepository {
     }
 
     @Override
-    public JobMission getById(Long id) {
-        return jpaRepo.findById(id).map(JobMissionEntity::toDomain).orElse(null);
-    }
-
-    @Override
     public List<JobMission> findAllByPlayerId(UUID playerId) {
         return jpaRepo.findAllByPlayerId(playerId).stream()
                 .map(JobMissionEntity::toDomain)
                 .toList();
     }
 
-    @Override
     public JobMission save(JobMission entity) {
         JobMissionEntity saved = jpaRepo.save(JobMissionEntity.fromDomain(entity));
         return saved.toDomain();
-    }
-
-    @Override
-    public Long idOf(JobMission entity) {
-        return entity.id();
     }
 
     @Override

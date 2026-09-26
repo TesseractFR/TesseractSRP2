@@ -16,7 +16,7 @@ import java.util.UUID;
 @Repository
 public interface GuildJpaRepository extends JpaRepository<GuildEntity, UUID> {
 
-    @Query("SELECT g FROM GuildEntity g WHERE g.id IN (SELECT gm.guildId FROM GuildChunkEntity gm WHERE gm.chunk = :chunk)")
+    @Query("SELECT g FROM GuildEntity g WHERE g.id IN (SELECT gm.guild.id FROM GuildChunkEntity gm WHERE gm.chunkEntityId = :chunk)")
     GuildEntity findGuildByChunk(@Param("chunk") GuildChunk chunk);
 
     @Query("SELECT CASE WHEN COUNT(g) > 0 THEN true ELSE false END FROM GuildEntity g WHERE g.id IN :ids")
