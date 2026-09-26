@@ -15,16 +15,6 @@
 
     <name>SRP Plugin</name>
 
-    <properties>
-        <!-- Fichier .env (à la racine du projet) permettant de surcharger les propriétés ci-dessous -->
-        <env.file>${maven.multiModuleProjectDirectory}/.env</env.file>
-        <!-- Dossier de destination du jar. Surchargeable via PLUGIN_OUTPUT_DIR dans le .env
-             ou en ligne de commande : -DPLUGIN_OUTPUT_DIR=... -->
-        <PLUGIN_OUTPUT_DIR>${project.build.directory}/dist</PLUGIN_OUTPUT_DIR>
-        <!-- Nom du jar copié dans PLUGIN_OUTPUT_DIR -->
-        <PLUGIN_OUTPUT_NAME>${project.build.finalName}.jar</PLUGIN_OUTPUT_NAME>
-    </properties>
-
     <build>
         <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
         <resources>
@@ -34,27 +24,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <executions>
-                    <execution>
-                        <id>read-dot-env</id>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>read-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Pas d'erreur si le .env n'existe pas : les valeurs par défaut s'appliquent -->
-                            <quiet>true</quiet>
-                            <files>
-                                <file>${env.file}</file>
-                            </files>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -114,6 +83,10 @@
                         </goals>
                         <configuration>
                             <target>
+                                <!-- Load .env during package so Maven does not freeze values earlier. -->
+                                <property file="${project.basedir}/../.env"/>
+                                <property name="PLUGIN_OUTPUT_DIR" value="${project.build.directory}/dist"/>
+                                <property name="PLUGIN_OUTPUT_NAME" value="${project.build.finalName}.jar"/>
                                 <mkdir dir="${PLUGIN_OUTPUT_DIR}"/>
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
                                       tofile="${PLUGIN_OUTPUT_DIR}/${PLUGIN_OUTPUT_NAME}"
