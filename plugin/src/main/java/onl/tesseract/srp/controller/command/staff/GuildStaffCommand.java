@@ -22,9 +22,9 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 import java.util.Optional;
 
-import static onl.tesseract.srp.util.SrpChatFormats.STAFF_CHAT_ERROR;
-import static onl.tesseract.srp.util.SrpChatFormats.STAFF_CHAT_FORMAT;
-import static onl.tesseract.srp.util.SrpChatFormats.STAFF_CHAT_SUCCESS;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_ERROR;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_FORMAT;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_SUCCESS;
 
 @org.springframework.stereotype.Component
 @Command(name = "guild")

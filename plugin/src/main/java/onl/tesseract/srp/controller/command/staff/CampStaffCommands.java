@@ -9,7 +9,7 @@ import onl.tesseract.lib.command.argument.PlayerArg;
 import onl.tesseract.lib.menu.MenuService;
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg;
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg;
-import onl.tesseract.srp.mapper.CoordinateMapper;
+import onl.tesseract.srp.common.adapter.mapper.CoordinateMapper;
 import onl.tesseract.srp.territory.domain.model.enums.result.CreationResult;
 import onl.tesseract.srp.territory.domain.model.enums.result.TrustResult;
 import onl.tesseract.srp.territory.domain.model.enums.result.UntrustResult;
@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static onl.tesseract.srp.util.SrpChatFormats.*;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.*;
 
 @org.springframework.stereotype.Component
 @Command(name = "camp", permission = @Perm("staff"), playerOnly = true)

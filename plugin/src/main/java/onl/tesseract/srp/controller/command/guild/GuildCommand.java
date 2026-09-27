@@ -15,9 +15,9 @@ import onl.tesseract.srp.controller.command.argument.guild.GuildArg;
 import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg;
 import onl.tesseract.srp.controller.command.argument.guild.GuildSpawnKindArg;
 import onl.tesseract.srp.controller.menu.guild.GuildMenu;
-import onl.tesseract.srp.mapper.ChunkCoordMapper;
-import onl.tesseract.srp.mapper.CoordinateMapper;
-import onl.tesseract.srp.mapper.LocationMapper;
+import onl.tesseract.srp.common.adapter.mapper.ChunkCoordMapper;
+import onl.tesseract.srp.common.adapter.mapper.CoordinateMapper;
+import onl.tesseract.srp.common.adapter.mapper.LocationMapper;
 import onl.tesseract.srp.service.TeleportationService;
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService;
 import onl.tesseract.srp.territory.domain.model.enums.result.BorderResult;
@@ -31,7 +31,7 @@ import onl.tesseract.srp.util.equipment.annexionStick.GuildAnnexionStickInvocabl
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import static onl.tesseract.srp.util.SrpChatFormats.*;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.*;
 
 @org.springframework.stereotype.Component
 @Command(name = "guild")

@@ -10,9 +10,9 @@ import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.lib.task.TaskScheduler;
 import onl.tesseract.lib.util.ItemLoreBuilder;
 import onl.tesseract.lib.util.menu.InventoryHeadIcons;
-import onl.tesseract.srp.common.adapter.menu.BiMenu;
-import onl.tesseract.srp.domain.player.PlayerRank;
-import onl.tesseract.srp.domain.player.SrpPlayer;
+import onl.tesseract.srp.common.adapter.userside.menu.BiMenu;
+import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
+import onl.tesseract.srp.common.domain.model.SrpPlayer;
 import onl.tesseract.srp.service.player.SrpPlayerService;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -140,7 +140,7 @@ public class PlayerRankProgressMenu extends BiMenu {
         }
 
         return new Button(
-                new ItemBuilder(rank.getIcon())
+                new ItemBuilder(Material.NAME_TAG)
                         .name(rank.name())
                         .enchanted(rank.compareTo(player.getRank()) <= 0)
                         .lore(lore.get())

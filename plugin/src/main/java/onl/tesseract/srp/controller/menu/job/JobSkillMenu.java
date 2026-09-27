@@ -6,7 +6,7 @@ import onl.tesseract.lib.menu.ItemBuilder;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.util.ItemLoreBuilder;
 import onl.tesseract.lib.util.menu.InventoryHeadIcons;
-import onl.tesseract.srp.common.adapter.menu.BiMenu;
+import onl.tesseract.srp.common.adapter.userside.menu.BiMenu;
 import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.PlayerID;
 import onl.tesseract.srp.job.domain.model.talent.Talent;

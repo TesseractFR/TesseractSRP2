@@ -1,12 +1,11 @@
 package onl.tesseract.srp.territory.adapter.userside.config;
 
-import onl.tesseract.srp.common.domain.EventPublisher;
+import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.territory.adapter.serverside.repository.*;
 import onl.tesseract.srp.territory.adapter.serverside.scheduler.TerritoryBorderTaskSchedulerImpl;
 import onl.tesseract.srp.territory.adapter.serverside.service.MoneyServiceImpl;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
-import onl.tesseract.srp.territory.domain.port.userside.TerritoryBorderService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildBorderService;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementBorderService;
 import org.springframework.context.annotation.Bean;

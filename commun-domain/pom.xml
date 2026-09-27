@@ -6,7 +6,7 @@
     <parent>
         <groupId>onl.tesseract.srp</groupId>
         <artifactId>srp-parent</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>common-domain</artifactId>
@@ -20,6 +20,11 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract</groupId>
+            <artifactId>core</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

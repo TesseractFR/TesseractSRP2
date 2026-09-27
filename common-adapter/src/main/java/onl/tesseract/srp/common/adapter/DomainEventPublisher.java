@@ -1,6 +1,6 @@
 package onl.tesseract.srp.common.adapter;
 
-import onl.tesseract.srp.common.domain.EventPublisher;
+import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 

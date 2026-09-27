@@ -3,7 +3,6 @@ package onl.tesseract.srp.controller.menu.elytra;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.core.cosmetics.menu.ElytraTrailSelectionMenu;
-import onl.tesseract.lib.chat.ChatFormats;
 import onl.tesseract.lib.equipment.EquipmentService;
 import onl.tesseract.lib.event.equipment.invocable.Elytra;
 import onl.tesseract.lib.menu.ItemBuilder;
@@ -18,7 +17,7 @@ import org.bukkit.entity.Player;
 
 import static onl.tesseract.lib.chat.ChatFormats.ELYTRA_ERROR;
 import static onl.tesseract.lib.chat.ChatFormats.ELYTRA_SUCCESS;
-import static onl.tesseract.srp.util.PlayerUtils.tryFreeChestplateSlot;
+import static onl.tesseract.srp.common.adapter.utils.PlayerUtils.tryFreeChestplateSlot;
 
 public class ElytraMenu extends ElytraBaseMenu {
     private static final int SLOT_FLANC_ETHERE = 22;

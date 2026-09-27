@@ -10,9 +10,9 @@ import onl.tesseract.lib.menu.MenuService;
 import onl.tesseract.srp.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.command.argument.CampOwnerArg;
 import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg;
-import onl.tesseract.srp.mapper.CoordinateMapper;
-import onl.tesseract.srp.mapper.ChunkCoordMapper;
-import onl.tesseract.srp.mapper.LocationMapper;
+import onl.tesseract.srp.common.adapter.mapper.CoordinateMapper;
+import onl.tesseract.srp.common.adapter.mapper.ChunkCoordMapper;
+import onl.tesseract.srp.common.adapter.mapper.LocationMapper;
 import onl.tesseract.srp.service.TeleportationService;
 import onl.tesseract.srp.service.equipment.annexionStick.AnnexionStickService;
 import onl.tesseract.srp.territory.domain.model.enums.result.BorderResult;
@@ -27,7 +27,7 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
-import static onl.tesseract.srp.util.SrpChatFormats.*;
+import static onl.tesseract.srp.common.adapter.SrpChatFormats.*;
 
 @Command(name = "campement", playerOnly = true)
 public class CampementCommands extends CommandContext {

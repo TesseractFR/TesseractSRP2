@@ -7,7 +7,7 @@
     <parent>
         <groupId>onl.tesseract.srp</groupId>
         <artifactId>srp-parent</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>skill-adapter</artifactId>
@@ -71,6 +71,17 @@
             <artifactId>territory-domain</artifactId>
             <version>0.1-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract</groupId>
+            <artifactId>core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.lone</groupId>
+            <artifactId>api-itemsadder</artifactId>
+            <scope>provided</scope>
+            <version>4.0.10</version>
         </dependency>
         <dependency>
             <groupId>onl.tesseract</groupId>

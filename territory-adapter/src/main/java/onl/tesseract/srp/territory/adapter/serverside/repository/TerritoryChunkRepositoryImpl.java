@@ -2,6 +2,7 @@ package onl.tesseract.srp.territory.adapter.serverside.repository;
 
 import onl.tesseract.srp.common.domain.model.ChunkCoord;
 import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.CampementChunkEntity;
+import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.ChunkEntityId;
 import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.GuildChunkEntity;
 import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.TerritoryChunkEntity;
 import onl.tesseract.srp.territory.domain.model.TerritoryChunk;
@@ -22,13 +23,13 @@ public class TerritoryChunkRepositoryImpl implements TerritoryChunkRepository {
 
     @Override
     public TerritoryChunk getById(ChunkCoord id) {
-        TerritoryChunkEntity entity = jpaRepository.findById(id).orElse(null);
+        TerritoryChunkEntity entity = jpaRepository.findById(ChunkEntityId.fromDomain(id)).orElse(null);
         return entity != null ? toDomain(entity) : null;
     }
 
     @Override
     public <T extends TerritoryChunk> T findByIdAndType(ChunkCoord id, Class<T> type) {
-        TerritoryChunkEntity entity = jpaRepository.findById(id).orElse(null);
+        TerritoryChunkEntity entity = jpaRepository.findById(ChunkEntityId.fromDomain(id)).orElse(null);
         if (entity == null) return null;
         if (!isType(entity, type)) return null;
         @SuppressWarnings("unchecked")

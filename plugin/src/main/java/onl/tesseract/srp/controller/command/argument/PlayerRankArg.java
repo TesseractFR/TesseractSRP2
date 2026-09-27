@@ -2,7 +2,7 @@ package onl.tesseract.srp.controller.command.argument;
 
 import onl.tesseract.commandBuilder.CommandArgument;
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps;
-import onl.tesseract.srp.domain.player.PlayerRank;
+import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;

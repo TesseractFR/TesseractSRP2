@@ -8,10 +8,11 @@ import onl.tesseract.lib.persistence.yaml.equipment.EquipmentYamlRepository;
 import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer;
 import onl.tesseract.lib.service.ServiceContainer;
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand;
-import onl.tesseract.srp.domain.player.PlayerRank;
+import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 import onl.tesseract.srp.common.domain.model.world.SrpWorld;
 import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer;
-import onl.tesseract.srp.service.world.WorldService;
+import onl.tesseract.srp.common.domain.port.userside.world.WorldService;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.springframework.boot.SpringApplication;
@@ -109,9 +110,8 @@ public class TesseractSRP extends JavaPlugin {
     }
 
     private void checkWorldsExist() {
-        WorldService worldService = this.springContext.getBean(WorldService.class);
         for (SrpWorld world : SrpWorld.values()) {
-            worldService.getBukkitWorld(world);
+            Bukkit.getWorld(world.getBukkitName().value());
         }
     }
 

@@ -1,7 +1,7 @@
 package onl.tesseract.srp.territory.domain.port.userside.campement;
 
 
-import onl.tesseract.srp.common.domain.EventPublisher;
+import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.common.domain.model.ChunkCoord;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.common.domain.model.enums.InteractionAllowResult;

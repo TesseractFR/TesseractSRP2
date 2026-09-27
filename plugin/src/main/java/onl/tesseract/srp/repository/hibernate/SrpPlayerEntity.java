@@ -3,8 +3,8 @@ package onl.tesseract.srp.repository.hibernate;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import onl.tesseract.srp.domain.player.PlayerRank;
-import onl.tesseract.srp.domain.player.SrpPlayer;
+import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
+import onl.tesseract.srp.common.domain.model.SrpPlayer;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.util.UUID;

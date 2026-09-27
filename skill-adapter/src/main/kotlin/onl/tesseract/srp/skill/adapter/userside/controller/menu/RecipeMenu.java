@@ -2,8 +2,8 @@ package onl.tesseract.srp.skill.adapter.userside.controller.menu;
 
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
-import onl.tesseract.srp.common.adapter.menu.CustomMenuButton;
-import onl.tesseract.srp.common.adapter.menu.ItemAdderBiMenu;
+import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
+import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderBiMenu;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.skill.domain.model.recipe.IngredientSlot;

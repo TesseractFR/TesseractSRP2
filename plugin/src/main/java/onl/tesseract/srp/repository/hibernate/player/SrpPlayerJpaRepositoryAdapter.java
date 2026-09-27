@@ -1,11 +1,9 @@
 package onl.tesseract.srp.repository.hibernate.player;
 
-import onl.tesseract.srp.domain.player.SrpPlayer;
+import onl.tesseract.srp.common.domain.model.SrpPlayer;
 import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository;
 import onl.tesseract.srp.repository.hibernate.SrpPlayerEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;

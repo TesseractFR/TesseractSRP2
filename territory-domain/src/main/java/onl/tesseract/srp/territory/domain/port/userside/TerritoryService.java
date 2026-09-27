@@ -1,6 +1,6 @@
 package onl.tesseract.srp.territory.domain.port.userside;
 
-import onl.tesseract.srp.common.domain.EventPublisher;
+import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.common.domain.model.ChunkCoord;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.common.domain.model.enums.InteractionAllowResult;
@@ -41,7 +41,7 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
 
     private TerritoryWorld getTerritoryWorld(String world) {
         for (TerritoryWorld entry : TerritoryWorld.values()) {
-            if (entry.getSrpWorld().getBukkitName().equals(world)) {
+            if (entry.getSrpWorld().getBukkitName().value().equals(world)) {
                 return entry;
             }
         }
@@ -157,7 +157,7 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
 
     private boolean isTooCloseToOthers(TerritoryWorld world, int x0, int z0, T territory) {
         Collection<TerritoryChunk> alreadyClaimed = getTerritoryChunkRepository().findAllByRange(
-                world.getSrpWorld().getBukkitName(),
+                world.getSrpWorld().getBukkitName().value(),
                 x0 - world.getClaimDistance(),
                 x0 + world.getClaimDistance(),
                 z0 - world.getClaimDistance(),
