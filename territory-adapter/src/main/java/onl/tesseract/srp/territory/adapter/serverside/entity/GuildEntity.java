@@ -12,9 +12,6 @@ import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMemberContainerImpl;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.sql.Types;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,12 +24,10 @@ import java.util.UUID;
 public class GuildEntity {
 
     @Id
-    @Column(name = "id", length = 36, columnDefinition = "VARCHAR(36)")
-    @JdbcTypeCode(Types.VARCHAR)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
     @Column(nullable = false)
-    @JdbcTypeCode(Types.VARCHAR)
     private UUID leaderId;
 
     @Column(unique = true)
@@ -51,6 +46,7 @@ public class GuildEntity {
     private int xp;
 
     @Setter
+    @Column(name = "`rank`")
     @Enumerated(EnumType.STRING)
     private GuildRank rank;
 

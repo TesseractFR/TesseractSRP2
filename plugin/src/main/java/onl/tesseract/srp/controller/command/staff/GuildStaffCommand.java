@@ -56,6 +56,7 @@ public class GuildStaffCommand {
     }
 
     @Command(name = "members", description = "Gérer les membres d'une guilde")
+    @org.springframework.stereotype.Component
     public static class MembersCommand {
         private final GuildService guildService;
 
@@ -157,6 +158,7 @@ public class GuildStaffCommand {
     }
 
     @Command(name = "money", description = "Gérer l'argent d'une guilde")
+    @org.springframework.stereotype.Component
     public static class MoneyCommand {
         private final GuildService guildService;
 
@@ -184,6 +186,7 @@ public class GuildStaffCommand {
     }
 
     @Command(name = "level", description = "Gérer le niveau d'une guilde")
+    @org.springframework.stereotype.Component
     public static class LevelCommand {
         private final GuildService guildService;
 
@@ -215,7 +218,7 @@ public class GuildStaffCommand {
             sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + xpArg.get() + " XP ajoutés à " + guildArg.get().getName())));
         }
     }
-
+    @org.springframework.stereotype.Component
     @Command(name = "rank", description = "Gérer le rang d'une guilde")
     public static class RankCommand {
         private final GuildService guildService;

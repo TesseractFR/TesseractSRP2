@@ -49,7 +49,8 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findGuildByLeader(UUID leaderID) {
-        return jpaRepository.findGuildByLeader(leaderID).toDomain();
+        GuildEntity guild = jpaRepository.findGuildByLeader(leaderID);
+        return guild!=null?guild.toDomain():null;
     }
 
     @Override

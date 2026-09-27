@@ -32,9 +32,9 @@ public final class HibernateConfig {
 
     private static Configuration setConfiguration(Config config) {
         Configuration configuration = new Configuration();
-        configuration.setProperty(AvailableSettings.JAKARTA_JDBC_DRIVER, "com.mysql.cj.jdbc.Driver");
+        configuration.setProperty(AvailableSettings.JAKARTA_JDBC_DRIVER, "org.postgresql.Driver");
         configuration.setProperty(AvailableSettings.JAKARTA_JDBC_URL,
-            "jdbc:mysql://" + config.srpDbHost() + ":" + config.srpDbPort() + "/" + config.srpDbDatabase());
+            "jdbc:postgresql://" + config.srpDbHost() + ":" + config.srpDbPort() + "/" + config.srpDbDatabase());
         configuration.setProperty(AvailableSettings.JAKARTA_JDBC_USER, config.srpDbUsername());
         configuration.setProperty(AvailableSettings.JAKARTA_JDBC_PASSWORD, config.srpDbPassword());
         configuration.setProperty(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "thread");

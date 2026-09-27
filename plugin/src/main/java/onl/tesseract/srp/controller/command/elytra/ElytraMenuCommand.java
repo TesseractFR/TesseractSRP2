@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 import org.springframework.stereotype.Component;
 
 @Component
-@Command(name = "elytra", playerOnly = true)
+@Command(name = "elytras", playerOnly = true)
 public class ElytraMenuCommand extends CommandContext {
     private final ElytraService elytraService;
     private final PlayerProfileService playerProfileService;

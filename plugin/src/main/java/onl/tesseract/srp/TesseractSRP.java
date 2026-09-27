@@ -82,6 +82,7 @@ public class TesseractSRP extends JavaPlugin {
         Map<String, CommandContext> beans = this.springContext.getBeansOfType(CommandContext.class);
         for (Map.Entry<String, CommandContext> entry : beans.entrySet()) {
             CommandContext bean = entry.getValue();
+
             bean.register(this, bean.getCommandDefinition().getName());
         }
     }

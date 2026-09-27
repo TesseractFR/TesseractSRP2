@@ -1,16 +1,14 @@
-package onl.tesseract.srp.repository.yaml.skill;
+package onl.tesseract.srp.skill.adapter.serverside.yaml;
 
 import onl.tesseract.lib.exception.ConfigurationException;
-import onl.tesseract.lib.logger.LoggerFactory;
-import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.skill.domain.model.recipe.*;
 import onl.tesseract.srp.skill.domain.model.skill.Skill;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
 import onl.tesseract.srp.skill.domain.model.skill.SkillStructureName;
 import onl.tesseract.srp.skill.domain.model.skill.SkillTier;
+import onl.tesseract.srp.skill.domain.port.serverside.SkillConfigRepository;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -19,15 +17,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class SkillConfigRepository {
-    private static final Logger logger = LoggerFactory.getLogger(SkillConfigRepository.class);
+public class YamlSkillConfigRepository implements SkillConfigRepository {
 
-    private final CustomItemService customItemService;
     private Map<String, Skill> skills;
-
-    public SkillConfigRepository(CustomItemService customItemService) {
-        this.customItemService = customItemService;
-    }
 
     private void loadSkills() {
         Path path = Path.of("plugins/Tesseract/artisanat");
@@ -35,8 +27,8 @@ public class SkillConfigRepository {
             throw new ConfigurationException("The directory artisanat doesn't exist!");
         }
         skills = new HashMap<>();
-        try {
-            Files.list(path).forEach(filePath -> {
+        try(var list = Files.list(path)) {
+            list.forEach(filePath -> {
                 if (Files.isRegularFile(filePath) && filePath.getFileName().toString().endsWith(".yml")) {
                     var conf = YamlConfiguration.loadConfiguration(filePath.toFile());
                     loadSkill(filePath, conf);
@@ -150,6 +142,8 @@ public class SkillConfigRepository {
         return new RecipeComponent(quantity, material);
     }
 
+
+    @Override
     public Map<String, Skill> getSkills() {
         if (skills == null || skills.isEmpty()) {
             loadSkills();
@@ -157,4 +151,3 @@ public class SkillConfigRepository {
         return skills;
     }
 }
-

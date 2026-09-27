@@ -7,7 +7,6 @@ import onl.tesseract.srp.SrpCommandInstanceProvider;
 
 @Command(name = "staffSrp", permission = @Perm("staff"), subCommands = {
     CustomItemStaffCommand.class,
-    PlayerJobStaffCommand.class,
     PlayerRankStaffCommand.class,
     CampStaffCommands.class,
     MoneyStaffCommand.class,

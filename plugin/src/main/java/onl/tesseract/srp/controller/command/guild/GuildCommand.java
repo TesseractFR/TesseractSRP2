@@ -33,6 +33,8 @@ import org.bukkit.entity.Player;
 
 import static onl.tesseract.srp.util.SrpChatFormats.*;
 
+@org.springframework.stereotype.Component
+@Command(name = "guild")
 public class GuildCommand extends CommandContext {
     private static final Component NO_GUILD_MESSAGE = GUILD_CHAT_ERROR
         .append(Component.text("Tu ne possèdes pas de guilde. Rejoins ou crées-en une avec "))
