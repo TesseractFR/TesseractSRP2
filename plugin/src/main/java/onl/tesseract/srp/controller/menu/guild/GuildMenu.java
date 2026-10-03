@@ -4,10 +4,10 @@ import kotlin.Unit;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.chat.ChatEntryService;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
-import onl.tesseract.lib.util.ItemLoreBuilder;
+import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
@@ -95,11 +95,11 @@ public class GuildMenu extends Menu {
                 amount = Integer.parseInt(input);
                 if (amount < 0) {
                     viewer.sendMessage(CHAT_ERROR.append(Component.text("Nombre invalide")));
-                    return Unit.INSTANCE;
+                    return;
                 }
             } catch (NumberFormatException e) {
                 viewer.sendMessage(CHAT_ERROR.append(Component.text("Nombre invalide")));
-                return Unit.INSTANCE;
+                return;
             }
 
             try {
@@ -118,7 +118,6 @@ public class GuildMenu extends Menu {
             } catch (Exception e) {
                 viewer.sendMessage(CHAT_ERROR.append(Component.text("Une erreur est survenue")));
             }
-            return Unit.INSTANCE;
         });
     }
 

@@ -9,7 +9,7 @@ import onl.tesseract.lib.Tick;
 import onl.tesseract.lib.menu.AButton;
 import onl.tesseract.lib.menu.AsyncButton;
 import onl.tesseract.lib.menu.Button;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.service.PluginService;

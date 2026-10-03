@@ -14,6 +14,7 @@ import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer;
 import onl.tesseract.srp.common.domain.port.userside.world.WorldService;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -66,6 +67,7 @@ public class TesseractSRP extends JavaPlugin {
         registerSerializers();
         registerTitles();
         checkWorldsExist();
+        ServiceContainer.getInstance().registerService(Plugin.class, this);
         getLogger().info("Tesseract SRP enabled, Spring context enabled");
     }
 

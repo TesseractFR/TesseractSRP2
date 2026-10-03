@@ -2,10 +2,10 @@ package onl.tesseract.srp.controller.menu.job;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
+import onl.tesseract.lib.menu.InventoryHeadIcons;
 import onl.tesseract.lib.menu.MenuSize;
-import onl.tesseract.lib.util.ItemLoreBuilder;
-import onl.tesseract.lib.util.menu.InventoryHeadIcons;
+import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.srp.common.adapter.userside.menu.BiMenu;
 import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.PlayerID;

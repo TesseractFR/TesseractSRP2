@@ -3,7 +3,7 @@ package onl.tesseract.srp.controller.menu.elytra;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.profile.PlayerProfileService;

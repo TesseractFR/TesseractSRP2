@@ -3,13 +3,13 @@ package onl.tesseract.srp.controller.menu.player;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.menu.Button;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
+import onl.tesseract.lib.menu.InventoryHeadIcons;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.lib.task.TaskScheduler;
-import onl.tesseract.lib.util.ItemLoreBuilder;
-import onl.tesseract.lib.util.menu.InventoryHeadIcons;
+import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.srp.common.adapter.userside.menu.BiMenu;
 import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 import onl.tesseract.srp.common.domain.model.SrpPlayer;
@@ -86,7 +86,7 @@ public class PlayerRankProgressMenu extends BiMenu {
 
     private void addScrollButtons(int scroll, Player viewer) {
         addBottomButton(21, new ItemBuilder(Material.PLAYER_HEAD)
-                .customHead(InventoryHeadIcons.LEFT_ARROW.getData(), InventoryHeadIcons.LEFT_ARROW.getSignature())
+                .customHead(    InventoryHeadIcons.LEFT_ARROW.getData(), InventoryHeadIcons.LEFT_ARROW.getSignature())
                 .name("Gauche")
                 .build(), event -> placeButtons(viewer, scroll - 1));
 

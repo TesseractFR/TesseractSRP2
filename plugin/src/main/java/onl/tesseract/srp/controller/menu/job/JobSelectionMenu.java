@@ -1,7 +1,7 @@
 package onl.tesseract.srp.controller.menu.job;
 
 import net.kyori.adventure.text.Component;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.job.domain.model.Job;

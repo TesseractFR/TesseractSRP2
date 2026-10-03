@@ -5,7 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.core.cosmetics.menu.ElytraTrailSelectionMenu;
 import onl.tesseract.lib.equipment.EquipmentService;
 import onl.tesseract.lib.event.equipment.invocable.Elytra;
-import onl.tesseract.lib.menu.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.profile.PlayerProfileService;
