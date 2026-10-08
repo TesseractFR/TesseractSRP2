@@ -9,6 +9,7 @@ import onl.tesseract.srp.territory.domain.port.serverside.GuildRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -55,7 +56,7 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findGuildByMember(UUID memberID) {
-        return jpaRepository.findGuildByMember(memberID).toDomain();
+        return Optional.of(jpaRepository.findGuildByMember(memberID)).map(GuildEntity::toDomain).orElse(null);
     }
 
     @Override

@@ -2,9 +2,11 @@ package onl.tesseract.srp.territory.adapter.serverside.entity.chunk;
 
 
 import jakarta.persistence.Embeddable;
+import lombok.EqualsAndHashCode;
 import onl.tesseract.srp.common.domain.model.ChunkCoord;
 
 @Embeddable
+@EqualsAndHashCode
 public class ChunkEntityId {
     private int x;
     private int z;

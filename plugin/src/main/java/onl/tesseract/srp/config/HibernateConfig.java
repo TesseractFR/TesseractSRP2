@@ -6,7 +6,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import onl.tesseract.srp.Config;
-import onl.tesseract.srp.repository.hibernate.SrpPlayerEntity;
+import onl.tesseract.srp.common.adapter.serverside.jpa.entity.SrpPlayerEntity;
 
 public final class HibernateConfig {
     private static final SessionFactory sessionFactory = buildSessionFactory();

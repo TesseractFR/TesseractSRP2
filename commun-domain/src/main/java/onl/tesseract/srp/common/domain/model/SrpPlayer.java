@@ -2,15 +2,16 @@ package onl.tesseract.srp.common.domain.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 import onl.tesseract.srp.common.domain.model.exception.NotEnoughIlluminationPointsException;
 import onl.tesseract.srp.common.domain.model.exception.NotEnoughMoneyException;
 
-import java.util.UUID;
+import static onl.tesseract.srp.common.domain.model.enums.PlayerRank.*;
 
 @Getter
 public class SrpPlayer {
-    private final UUID uniqueId;
+    private final PlayerId uniqueId;
     @Setter
     private PlayerRank rank;
     private int money;
@@ -18,7 +19,7 @@ public class SrpPlayer {
     @Setter
     private String titleID;
 
-    public SrpPlayer(UUID uniqueId, PlayerRank rank, int money, String titleID, int illuminationPoints) {
+    public SrpPlayer(PlayerId uniqueId, PlayerRank rank, int money, String titleID, int illuminationPoints) {
         this.uniqueId = uniqueId;
         this.rank = rank;
         this.money = money;
@@ -26,8 +27,8 @@ public class SrpPlayer {
         this.illuminationPoints = illuminationPoints;
     }
 
-    public SrpPlayer(UUID uniqueId) {
-        this(uniqueId, PlayerRank.Survivant, 0, PlayerRank.Survivant.getTitle().getId(), 0);
+    public SrpPlayer(PlayerId uniqueId) {
+        this(uniqueId, Survivant, 0, Survivant.getTitle().getId(), 0);
     }
 
     public int addMoney(int amount) {

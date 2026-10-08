@@ -6,7 +6,7 @@ import onl.tesseract.srp.domain.money.ledger.TransactionType;
 import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 import onl.tesseract.srp.common.domain.model.SrpPlayer;
 import onl.tesseract.srp.common.domain.model.event.PlayerRankUpEvent;
-import onl.tesseract.srp.repository.generic.player.SrpPlayerRepository;
+import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import onl.tesseract.srp.service.money.MoneyLedgerService;
 import onl.tesseract.srp.service.money.TransferService;
 import org.springframework.stereotype.Service;
@@ -16,19 +16,18 @@ import java.util.UUID;
 
 @Service
 public class SrpPlayerService {
-    private final SrpPlayerRepository repository;
+    private final PlayerService playerService;
     private final MoneyLedgerService ledgerService;
     private final DomainEventPublisher eventService;
 
-    public SrpPlayerService(SrpPlayerRepository repository, MoneyLedgerService ledgerService, DomainEventPublisher eventService) {
-        this.repository = repository;
+    public SrpPlayerService(PlayerService playerService, MoneyLedgerService ledgerService, DomainEventPublisher eventService) {
+        this.playerService = playerService;
         this.ledgerService = ledgerService;
         this.eventService = eventService;
     }
 
     public SrpPlayer getPlayer(UUID id) {
-        SrpPlayer player = repository.getById(id);
-        return player != null ? player : new SrpPlayer(id);
+        return playerService.getPlayer(id);
     }
 
     /**
@@ -37,10 +36,7 @@ public class SrpPlayerService {
      */
     public boolean setRank(UUID playerID, PlayerRank rank) {
         SrpPlayer player = getPlayer(playerID);
-        if (player.getRank() == rank) return false;
-        player.setRank(rank);
-        player.setTitleID(rank.getTitle().getId());
-        savePlayer(player);
+        if (!playerService.setRank(playerID, rank)) return false;
         eventService.publish(new PlayerRankUpEvent(playerID, rank));
         return true;
     }
@@ -52,9 +48,8 @@ public class SrpPlayerService {
     @Transactional
     public boolean buyNextRank(UUID playerID) {
         SrpPlayer player = getPlayer(playerID);
-        boolean result = player.buyNextRank();
+        boolean result = playerService.buyNextRank(playerID);
         if (result) {
-            player.setTitleID(player.getRank().getTitle().getId());
             ledgerService.recordTransaction(
                 ledgerService.getPlayerLedger(playerID),
                 ledgerService.getServerLedger(),
@@ -63,7 +58,6 @@ public class SrpPlayerService {
                 TransactionSubType.Player.Rank,
                 player.getRank().name()
             );
-            savePlayer(player);
             eventService.publish(new PlayerRankUpEvent(playerID, player.getRank()));
         }
         return result;
@@ -76,8 +70,7 @@ public class SrpPlayerService {
     @Transactional
     public boolean giveMoneyAsStaff(UUID playerID, int amount) {
         SrpPlayer player = getPlayer(playerID);
-        if (player.getMoney() + amount < 0) return false;
-        player.addMoney(amount);
+        if (!playerService.adjustMoney(playerID, amount)) return false;
         ledgerService.recordTransaction(
             ledgerService.getServerLedger(),
             ledgerService.getPlayerLedger(playerID),
@@ -85,14 +78,13 @@ public class SrpPlayerService {
             TransactionType.Staff,
             TransactionSubType.Staff.Give
         );
-        savePlayer(player);
         return true;
     }
 
     @Transactional
     public void takeMoney(UUID playerID, int amount, TransactionType type, TransactionSubType subType, String details) {
         SrpPlayer player = getPlayer(playerID);
-        if (player.getMoney() - amount < 0) {
+        if ((long) player.getMoney() - amount < 0) {
             throw new IllegalArgumentException("Player " + playerID + " does not have enough money (current = " + player.getMoney() + ", to pay = " + amount + ")");
         }
         player.addMoney(-amount);
@@ -104,7 +96,7 @@ public class SrpPlayerService {
             subType,
             details
         );
-        savePlayer(player);
+        playerService.savePlayer(player);
     }
 
     public void moneyTransaction(UUID playerID, int amount, TransferService.TransferTransactionBuilder transactionBuilder) {
@@ -118,20 +110,17 @@ public class SrpPlayerService {
             transactionBuilder.setTo(ledgerService.getPlayerLedger(playerID));
         }
         player.addMoney(amount);
-        savePlayer(player);
+        playerService.savePlayer(player);
     }
 
     @Transactional
     public boolean giveIlluminationPoints(UUID playerID, int amount) {
         SrpPlayer player = getPlayer(playerID);
-        if (player.getIlluminationPoints() + amount < 0) return false;
-        player.addIlluminationPoints(amount);
-        savePlayer(player);
-        return true;
+        return playerService.adjustIlluminationPoints(playerID, amount);
     }
 
     protected void savePlayer(SrpPlayer player) {
-        repository.save(player);
+        playerService.savePlayer(player);
     }
 }
 

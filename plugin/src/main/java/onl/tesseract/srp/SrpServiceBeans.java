@@ -11,6 +11,8 @@ import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider;
 import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.lib.service.ServiceContainer;
 import onl.tesseract.lib.task.TaskScheduler;
+import onl.tesseract.srp.common.domain.port.serverside.PlayerRepository;
+import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import org.bukkit.plugin.Plugin;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -71,6 +73,11 @@ public class SrpServiceBeans {
     @Bean
     public Plugin plugin() {
         return TesseractSRP.PLUGIN_INSTANCE;
+    }
+
+    @Bean
+    public PlayerService playerService(PlayerRepository repository) {
+        return new PlayerService(repository);
     }
 }
 

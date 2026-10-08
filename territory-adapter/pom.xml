@@ -29,6 +29,8 @@
                             <version>1.18.38</version>
                         </path>
                     </annotationProcessorPaths>
+                    <source>25</source>
+                    <target>25</target>
                 </configuration>
             </plugin>
         </plugins>

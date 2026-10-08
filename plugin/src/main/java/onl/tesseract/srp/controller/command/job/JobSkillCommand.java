@@ -2,7 +2,7 @@ package onl.tesseract.srp.controller.command.job;
 
 import onl.tesseract.commandBuilder.CommandContext;
 import onl.tesseract.commandBuilder.annotation.Command;
-import onl.tesseract.srp.SrpCommandInstanceProvider;
+import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.menu.job.JobSelectionMenu;
 import onl.tesseract.srp.controller.menu.job.JobSkillMenu;
 import onl.tesseract.srp.job.domain.model.PlayerID;
@@ -10,7 +10,6 @@ import onl.tesseract.srp.job.domain.port.userside.JobPlayerProgressionService;
 import onl.tesseract.srp.job.domain.port.userside.JobService;
 import onl.tesseract.srp.job.domain.port.userside.JobTalentTreeService;
 import org.bukkit.entity.Player;
-import org.springframework.stereotype.Component;
 
 @Command(name = "jobskill", playerOnly = true)
 public class JobSkillCommand extends CommandContext {

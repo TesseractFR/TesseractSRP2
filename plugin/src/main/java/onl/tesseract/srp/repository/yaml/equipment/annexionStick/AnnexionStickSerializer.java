@@ -1,7 +1,7 @@
 package onl.tesseract.srp.repository.yaml.equipment.annexionStick;
 
 import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer;
-import onl.tesseract.srp.util.equipment.annexionStick.AnnexionStickInvocable;
+import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.AnnexionStickInvocable;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 

@@ -2,9 +2,8 @@ package onl.tesseract.srp.controller.command.elytra;
 
 import onl.tesseract.commandBuilder.CommandContext;
 import onl.tesseract.commandBuilder.annotation.Command;
-import onl.tesseract.lib.equipment.EquipmentService;
 import onl.tesseract.lib.profile.PlayerProfileService;
-import onl.tesseract.srp.SrpCommandInstanceProvider;
+import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.menu.elytra.ElytraUpgradeMenu;
 import onl.tesseract.srp.service.equipment.elytra.ElytraService;
 import onl.tesseract.srp.service.player.SrpPlayerService;

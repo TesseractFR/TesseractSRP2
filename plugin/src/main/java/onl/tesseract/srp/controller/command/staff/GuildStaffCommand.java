@@ -7,10 +7,10 @@ import onl.tesseract.commandBuilder.annotation.Command;
 import onl.tesseract.lib.command.argument.IntegerCommandArgument;
 import onl.tesseract.lib.command.argument.PlayerArg;
 import onl.tesseract.lib.menu.MenuService;
-import onl.tesseract.srp.controller.command.argument.guild.GuildArg;
-import onl.tesseract.srp.controller.command.argument.guild.GuildMembersRoleArg;
-import onl.tesseract.srp.controller.command.argument.guild.GuildMembersArg;
-import onl.tesseract.srp.controller.command.argument.guild.GuildRankArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersRoleArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildRankArg;
 import onl.tesseract.srp.common.domain.model.enums.StaffSetRoleResult;
 import onl.tesseract.srp.territory.domain.model.enums.result.KickResult;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
@@ -50,7 +50,6 @@ public class GuildStaffCommand {
                 } else {
                     sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Suppression impossible.")));
                 }
-                return null;
             }
         );
     }

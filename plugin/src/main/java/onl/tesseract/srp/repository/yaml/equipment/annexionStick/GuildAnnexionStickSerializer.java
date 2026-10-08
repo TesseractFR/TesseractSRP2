@@ -1,8 +1,7 @@
 package onl.tesseract.srp.repository.yaml.equipment.annexionStick;
 
 import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer;
-import onl.tesseract.srp.util.equipment.annexionStick.CampementAnnexionStickInvocable;
-import onl.tesseract.srp.util.equipment.annexionStick.GuildAnnexionStickInvocable;
+import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.GuildAnnexionStickInvocable;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

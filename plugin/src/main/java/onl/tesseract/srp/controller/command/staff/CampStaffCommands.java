@@ -7,8 +7,8 @@ import onl.tesseract.commandBuilder.annotation.Command;
 import onl.tesseract.commandBuilder.annotation.Perm;
 import onl.tesseract.lib.command.argument.PlayerArg;
 import onl.tesseract.lib.menu.MenuService;
-import onl.tesseract.srp.controller.command.argument.CampOwnerArg;
-import onl.tesseract.srp.controller.command.argument.TrustedPlayerArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.CampOwnerArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.TrustedPlayerArg;
 import onl.tesseract.srp.common.adapter.mapper.CoordinateMapper;
 import onl.tesseract.srp.territory.domain.model.enums.result.CreationResult;
 import onl.tesseract.srp.territory.domain.model.enums.result.TrustResult;
@@ -103,7 +103,6 @@ public class CampStaffCommands {
                     if (owner.getPlayer() != null) {
                         owner.getPlayer().sendMessage(CAMPEMENT_CHAT_ERROR.append(Component.text("Ton campement a été supprimé par un administrateur.")));
                     }
-                    return null;
                 }
         );
     }

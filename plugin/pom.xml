@@ -108,6 +108,11 @@
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>common-adapter</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>skill-domain</artifactId>
         </dependency>
         <dependency>
