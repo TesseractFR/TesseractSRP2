@@ -154,15 +154,10 @@ public abstract class BiMenu extends Menu {
         if (event.getCurrentItem() == null) return;
 
         // If the clicked item is a button
-        Integer realSlot = view.convertSlot(event.getRawSlot());
+        int realSlot = this.view.convertSlot(event.getRawSlot());
         AButton clickedButton;
-        if (event.getClickedInventory() == view.getTopInventory()) {
-            var buttons = getButtons();
-            if (buttons != null && realSlot != null && realSlot >= 0 && realSlot < buttons.size()) {
-                clickedButton = buttons.get(realSlot);
-            } else {
-                return;
-            }
+        if (event.getClickedInventory() == this.view.getTopInventory()) {
+            clickedButton = getButtons().get(realSlot);
         } else {
             clickedButton = bottomButtons.get(realSlot);
         }

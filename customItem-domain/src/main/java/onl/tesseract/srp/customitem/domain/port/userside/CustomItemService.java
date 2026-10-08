@@ -77,6 +77,8 @@ public class CustomItemService {
     }
 
     public ItemStack getItemStack(MaterialName materialName) {
-        return customItemRepository.toItemStack(getCustomMaterial(materialName));
+        if(isCustomMaterial(materialName))
+            return customItemRepository.toCustomItemStack(getCustomMaterial(materialName));
+        return customItemRepository.toVanillaItemStack(materialName);
     }
 }

@@ -6,6 +6,7 @@ import onl.tesseract.lib.util.Pair;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.*;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustomItemRepository;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -24,12 +25,19 @@ public class CustomItemstackMapper implements CustomItemRepository {
         this.namedspacedKeyProvider = namedspacedKeyProvider;
     }
 
-    public ItemStack toItemStack(CustomMaterial material) {
+    public ItemStack toCustomItemStack(CustomMaterial material) {
         return itemAdderGateway.getCustomItem(material.itemTag().value());
     }
 
+    @Override
+    public ItemStack toVanillaItemStack(MaterialName materialName) {
+        Material material = Material.getMaterial(materialName.value());
+        if(material == null)return null;
+        return ItemStack.of(material);
+    }
+
     public ItemStack toItemStack(CustomItem customItem) {
-        ItemStack itemStack = toItemStack(customItem.material());
+        ItemStack itemStack = toCustomItemStack(customItem.material());
         itemStack.editMeta(itemMeta -> {
                     PersistentDataContainer dataContainer = itemMeta.getPersistentDataContainer();
                     dataContainer.set(namedspacedKeyProvider.get("customMaterial"), PersistentDataType.STRING, customItem.material().name().value());

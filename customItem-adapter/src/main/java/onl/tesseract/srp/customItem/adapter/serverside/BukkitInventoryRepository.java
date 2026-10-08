@@ -36,7 +36,7 @@ public class BukkitInventoryRepository implements InventoryRepository {
         AtomicInteger count = new AtomicInteger();
         ItemStack refItem = itemstackMapper.toItemStack(customItem);
         inventory.forEach(itemStack -> {
-            if (itemStack.isSimilar(refItem)) {
+            if (itemStack!=null && itemStack.isSimilar(refItem)) {
                 count.addAndGet(itemStack.getAmount());
             }
         });
