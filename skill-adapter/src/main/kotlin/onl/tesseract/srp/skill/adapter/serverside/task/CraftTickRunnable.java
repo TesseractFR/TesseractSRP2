@@ -6,7 +6,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.time.Duration;
 
 public class CraftTickRunnable extends BukkitRunnable {
-    private CraftTask craftTask;
+    private final CraftTask craftTask;
 
     public CraftTickRunnable(CraftTask craftTask) {
         this.craftTask = craftTask;
@@ -14,6 +14,6 @@ public class CraftTickRunnable extends BukkitRunnable {
 
     @Override
     public void run() {
-        craftTask = craftTask.tick(Duration.ofSeconds(1));
+        craftTask.tick(Duration.ofSeconds(1));
     }
 }

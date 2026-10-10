@@ -44,16 +44,16 @@ public class CraftingRepositoryJpaAdapter implements CraftingRepository {
         entity.setPlayerSkill(playerSkill);
         entity.setQueueOrder(0);
         entity.setRecipe(new RecipeEmbeddable(
-            task.queuedRecipe().getRecipe().name().value(),
-            task.queuedRecipe().getCompoQuality(),
-            task.queuedRecipe().getQuantity()
+            task.getQueuedRecipe().getRecipe().name().value(),
+            task.getQueuedRecipe().getCompoQuality(),
+            task.getQueuedRecipe().getQuantity()
         ));
         entity.setCraftBonus(new CraftBonusEmbeddable(
-            task.queuedRecipe().getBonus().craftingStationBonus().qualityBonus().value(),
-            task.queuedRecipe().getBonus().craftingStationBonus().successBonus().value()
+            task.getQueuedRecipe().getBonus().craftingStationBonus().qualityBonus().value(),
+            task.getQueuedRecipe().getBonus().craftingStationBonus().successBonus().value()
         ));
-        entity.setUnitDurationNanos(task.unitDuration().toSeconds());
-        entity.setTimeLeftNanos(task.timeLeft().toNanos());
+        entity.setUnitDurationNanos(task.getUnitDuration().toSeconds());
+        entity.setTimeLeftNanos(task.getTimeLeft().toNanos());
         
         craftingJpaRepository.save(entity);
     }

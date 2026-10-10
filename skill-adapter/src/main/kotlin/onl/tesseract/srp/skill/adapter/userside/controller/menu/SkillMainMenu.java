@@ -26,6 +26,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +79,7 @@ public class SkillMainMenu extends ItemAdderMenu {
         refreshTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!hasViewer()) {
+                if (!hasViewer() || !viewer.getOpenInventory().title().equals(Component.text(skill.name().value()))) {
                     cancel();
                     return;
                 }
@@ -182,14 +183,14 @@ public class SkillMainMenu extends ItemAdderMenu {
         ItemStack item;
         if (task != null) {
             try {
-                QueuedRecipe queuedRecipe = task.queuedRecipe();
+                QueuedRecipe queuedRecipe = task.getQueuedRecipe();
                 Recipe recipe = queuedRecipe.getRecipe();
                 RecipeComponent result = recipe.result();
                 ItemStack resultItem = itemGateway.getItemStack(new MaterialName(result.material().value()));
                 resultItem.setAmount(Math.max(1, queuedRecipe.getQuantity()));
                 ItemMetaUtil.displayName(resultItem, Component.text("§aFabrication en cours..."));
                 List<Component> lore = resultItem.lore();
-                lore.add(Component.text("§7Time: " + task.timeLeft()));
+                lore.add(Component.text("§7Time: " + formatDuration(task.getTimeLeft())));
                 ItemMetaUtil.lore(resultItem, lore);
                 item = resultItem;
             } catch (Exception e) {
@@ -202,6 +203,18 @@ public class SkillMainMenu extends ItemAdderMenu {
         }
         addButton(CURRENT_RECIPE_INDEX, item, p -> {
         });
+    }
+
+    private static String formatDuration(Duration duration) {
+        long totalSeconds = Math.max(0, duration.getSeconds());
+        long hours = totalSeconds / 3_600;
+        long minutes = (totalSeconds % 3_600) / 60;
+        long seconds = totalSeconds % 60;
+
+        StringBuilder formatted = new StringBuilder();
+        if (hours > 0) formatted.append(hours).append("h ");
+        if (minutes > 0) formatted.append(minutes).append("m ");
+        return formatted.append(seconds).append("s").toString();
     }
 
     private void addItemToCollectButton(Player viewer) {

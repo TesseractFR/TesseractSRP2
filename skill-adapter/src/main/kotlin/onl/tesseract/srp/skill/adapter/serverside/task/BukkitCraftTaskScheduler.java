@@ -26,7 +26,7 @@ public class BukkitCraftTaskScheduler implements CraftTaskScheduler {
     @Override
     public void schedule(PlayerID player, SkillName skill, CraftTask craftTask, CraftingService craftingService) {
         var runnable = new CraftRunnable(player, skill, craftTask, craftingService);
-        var ticks = (craftTask.unitDuration().toMillis() / 50);
+        var ticks = (craftTask.getUnitDuration().toMillis() / 50);
         var task = runnable.runTaskTimer(plugin, ticks, ticks);
 
         var tickRunnable = new CraftTickRunnable(craftTask);

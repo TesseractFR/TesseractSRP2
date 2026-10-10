@@ -78,18 +78,17 @@ public class CraftingService {
 
 
     public void processCraftStep(PlayerID player, SkillName skill, CraftTask task) {
-        if (task.queuedRecipe().getQuantity() <= 0) {
+        if (task.getQueuedRecipe().getQuantity() <= 0) {
             finishTask(player, skill, task);
         }
-        CraftingBonus bonus = task.queuedRecipe().getBonus();
+        CraftingBonus bonus = task.getQueuedRecipe().getBonus();
         // Appliquer le taux de réussite
         double effectiveSuccessRate = DEFAULT_SUCCESS_RATE + bonus.craftingStationBonus().successBonus().value();
         boolean success = new Random().nextDouble() <= effectiveSuccessRate;
-
         if(success){
-            var result = task.queuedRecipe().getRecipe().result();
+            var result = task.getQueuedRecipe().getRecipe().result();
 
-            var quality = task.queuedRecipe().getCompoQuality();
+            var quality = task.getQueuedRecipe().getCompoQuality();
             if(new Random().nextDouble() <= bonus.craftingStationBonus().qualityBonus().value()){
                 quality= quality.next();
             }
@@ -99,7 +98,7 @@ public class CraftingService {
         task.decrementQuantity();
         saveTasks(player, skill);
         savePlayerCache(player, skill);
-        if(task.queuedRecipe().getQuantity() <= 0) {
+        if(task.getQueuedRecipe().getQuantity() <= 0) {
             finishTask(player, skill, task);
         }
     }

@@ -1,26 +1,35 @@
 package onl.tesseract.srp.skill.domain.model.crafting;
 
+import lombok.Getter;
 
 import java.time.Duration;
 
-public record CraftTask(
-        QueuedRecipe queuedRecipe,
-        Duration unitDuration,
-        Duration timeLeft
-) {
-    public CraftTask(
-            QueuedRecipe queuedRecipe,
-            Duration unitDuration
-    ){
+public final class CraftTask {
+    @Getter
+    private final QueuedRecipe queuedRecipe;
+    @Getter
+    private final Duration unitDuration;
+    private Duration timeLeft;
+
+    public CraftTask(QueuedRecipe queuedRecipe, Duration unitDuration, Duration timeLeft) {
+        this.queuedRecipe = queuedRecipe;
+        this.unitDuration = unitDuration;
+        this.timeLeft = timeLeft;
+    }
+
+    public CraftTask(QueuedRecipe queuedRecipe, Duration unitDuration) {
         this(queuedRecipe, unitDuration, unitDuration.multipliedBy(queuedRecipe.getQuantity()));
     }
 
-    public CraftTask tick(Duration duration) {
-        Duration newTimeLeft = timeLeft.minus(duration);
-        if (newTimeLeft.isNegative()) {
-            newTimeLeft = Duration.ZERO;
+    public Duration getTimeLeft() {
+        return timeLeft;
+    }
+
+    public void tick(Duration duration) {
+        timeLeft = timeLeft.minus(duration);
+        if (timeLeft.isNegative()) {
+            timeLeft = Duration.ZERO;
         }
-        return new CraftTask(queuedRecipe, unitDuration, newTimeLeft);
     }
 
     public void decrementQuantity() {
