@@ -58,5 +58,16 @@
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>customItem-domain</artifactId>
         </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>common-adapter</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.lib</groupId>
+            <artifactId>tesseract-menu</artifactId>
+            <version>5.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

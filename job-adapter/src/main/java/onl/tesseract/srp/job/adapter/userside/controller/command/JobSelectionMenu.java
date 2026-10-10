@@ -1,4 +1,4 @@
-package onl.tesseract.srp.controller.menu.job;
+package onl.tesseract.srp.job.adapter.userside.controller.command;
 
 import net.kyori.adventure.text.Component;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
