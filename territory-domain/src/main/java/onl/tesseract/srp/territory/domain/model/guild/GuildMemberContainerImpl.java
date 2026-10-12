@@ -26,10 +26,19 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
         this.invitations = new HashSet<>(invitations);
         this.joinRequests = new HashSet<>(joinRequests);
 
-        boolean hasLeader = this.members.stream().anyMatch(m -> m.getPlayerID().equals(leaderId));
-        if (!hasLeader) {
-            this.members.add(new GuildMember(leaderId, GuildRole.Leader));
+        if (this.members.stream().map(GuildMember::getPlayerID).distinct().count() != this.members.size()) {
+            throw new IllegalArgumentException("Guild member list contains duplicate players");
         }
+
+        GuildMember leader = this.members.stream().filter(m -> m.getPlayerID().equals(leaderId)).findFirst().orElse(null);
+        if (leader == null) {
+            this.members.add(new GuildMember(leaderId, GuildRole.Leader));
+        } else {
+            leader.setRole(GuildRole.Leader);
+        }
+        this.members.stream()
+                .filter(member -> !member.getPlayerID().equals(leaderId) && member.getRole() == GuildRole.Leader)
+                .forEach(member -> member.setRole(GuildRole.Citoyen));
     }
 
     @Override
@@ -39,6 +48,15 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
 
     @Override
     public void setLeaderId(UUID leaderId) {
+        requireNotNull(leaderId);
+        GuildMember newLeader = members.stream()
+                .filter(member -> member.getPlayerID().equals(leaderId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Leader must be a guild member"));
+        members.stream()
+                .filter(member -> member.getRole() == GuildRole.Leader && !member.getPlayerID().equals(leaderId))
+                .forEach(member -> member.setRole(GuildRole.Citoyen));
+        newLeader.setRole(GuildRole.Leader);
         this.leaderId = leaderId;
     }
 
@@ -91,10 +109,15 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
     }
 
     private void requireNotMember(UUID playerID) {
+        requireNotNull(playerID);
         boolean isMember = members.stream().anyMatch(m -> m.getPlayerID().equals(playerID));
         if (isMember) {
             throw new IllegalArgumentException("Player " + playerID + " is already a member");
         }
+    }
+
+    private void requireNotNull(UUID playerID) {
+        if (playerID == null) throw new IllegalArgumentException("Player id cannot be null");
     }
 }
 

@@ -30,6 +30,7 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
             TerritoryChunkRepository territoryChunkRepository,
             EventPublisher eventService,
             SrpPlayerRepository srpPlayerService) {
+        super();
         this.territoryRepository = territoryRepository;
         this.territoryChunkRepository = territoryChunkRepository;
         this.eventService = eventService;
@@ -86,12 +87,11 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
     public CreationResult createCampement(UUID ownerID, Coordinate spawnLocation) {
         CreationResult result = isCreationAvailable(ownerID, spawnLocation.chunkCoord());
         if (result != CreationResult.SUCCESS) return result;
-
-        int campLevel = srpPlayerService.getCampLevel();
+        int campLevel = srpPlayerService.getCampLevel(ownerID);
         Campement campement = new Campement(ownerID, campLevel, spawnLocation);
         campement.claimInitialChunks();
         territoryRepository.save(campement);
-        return result;
+        return CreationResult.SUCCESS;
     }
 
     public void deleteCampement(UUID id) {
@@ -114,6 +114,7 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
      * @return The new camp level if successful, or null if the camp does not exist.
      */
     public Boolean setCampLevel(UUID ownerID, int level) {
+        if (level < 1) throw new IllegalArgumentException("Camp level must be at least 1");
         Campement campement = territoryRepository.getById(ownerID);
         if (campement == null) {
             throw new IllegalArgumentException("Campement from " + ownerID + " does not exist");

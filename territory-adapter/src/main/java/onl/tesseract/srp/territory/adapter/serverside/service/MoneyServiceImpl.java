@@ -1,6 +1,7 @@
 package onl.tesseract.srp.territory.adapter.serverside.service;
 
 import onl.tesseract.srp.territory.domain.port.userside.guild.MoneyService;
+import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -8,29 +9,29 @@ import java.util.UUID;
 @Component
 public class MoneyServiceImpl implements MoneyService {
 
+    private final PlayerService playerService;
+
+    public MoneyServiceImpl(PlayerService playerService) {
+        this.playerService = playerService;
+    }
+
     @Override
     public int getPlayerMoney(UUID player) {
-        // TODO: Implement based on economy plugin (Vault, etc.)
-        return 0;
+        return playerService.getPlayer(player).getMoney();
     }
 
     @Override
-    public void payCreation(UUID player, int amount) {
-        // TODO: Implement payment logic
+    public boolean payCreation(UUID player, int amount) {
+        return amount > 0 && playerService.adjustMoney(player, -amount);
     }
 
     @Override
-    public void transfertToGuild(UUID player, int amount) {
-        // TODO: Implement transfer to guild
+    public boolean transfertToGuild(UUID player, int amount) {
+        return amount > 0 && playerService.adjustMoney(player, -amount);
     }
 
     @Override
-    public void transfertFromGuild(UUID player, int amount) {
-        // TODO: Implement transfer from guild
-    }
-
-    @Override
-    public void transfertToGuildStaff(int amount) {
-        // TODO: Implement staff transfer
+    public boolean transfertFromGuild(UUID player, int amount) {
+        return amount > 0 && playerService.adjustMoney(player, amount);
     }
 }

@@ -36,6 +36,7 @@ public abstract class ClaimContainer<TC extends TerritoryChunk> {
         int lx = chunkCoord.x();
         int lz = chunkCoord.z();
         for (TC n : _chunks) {
+            if (!n.getChunkCoord().world().equals(chunkCoord.world())) continue;
             int nx = n.getChunkCoord().x();
             int nz = n.getChunkCoord().z();
             if (Math.abs(nx - lx) + Math.abs(nz - lz) == 1) return true;
@@ -90,6 +91,7 @@ public abstract class ClaimContainer<TC extends TerritoryChunk> {
     }
 
     private boolean neighbors(TC a, TC b) {
+        if (!a.getChunkCoord().world().equals(b.getChunkCoord().world())) return false;
         int x1 = a.getChunkCoord().x();
         int z1 = a.getChunkCoord().z();
         int x2 = b.getChunkCoord().x();

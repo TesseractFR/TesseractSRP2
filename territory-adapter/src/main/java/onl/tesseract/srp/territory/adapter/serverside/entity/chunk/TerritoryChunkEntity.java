@@ -9,6 +9,7 @@ import onl.tesseract.srp.territory.domain.model.TerritoryChunk;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type")
+@Table(name = "t_territory_chunks")
 @Getter
 @Setter
 @NoArgsConstructor

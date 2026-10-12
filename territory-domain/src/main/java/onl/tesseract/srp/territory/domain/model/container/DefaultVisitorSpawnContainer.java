@@ -20,7 +20,7 @@ public class DefaultVisitorSpawnContainer implements VisitorSpawnContainer {
 
     @Override
     public boolean canSetSpawn(UUID player) {
-        throw new UnsupportedOperationException("Must be defined");
+        return false;
     }
 
     @Override

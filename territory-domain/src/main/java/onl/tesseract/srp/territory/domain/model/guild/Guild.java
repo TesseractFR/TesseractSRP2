@@ -9,6 +9,7 @@ import onl.tesseract.srp.territory.domain.model.Territory;
 import onl.tesseract.srp.territory.domain.model.container.DefaultVisitorSpawnContainer;
 import onl.tesseract.srp.territory.domain.model.container.VisitorSpawnContainer;
 import onl.tesseract.srp.territory.domain.model.enums.result.SetSpawnResult;
+import onl.tesseract.srp.territory.domain.model.enums.result.UnclaimResult;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 import onl.tesseract.srp.territory.domain.model.guild.event.GuildChunkClaimEvent;
@@ -31,13 +32,9 @@ public class Guild extends Territory<GuildChunk> implements
     //Attributes
     private final String name;
 
-    @Setter
     private int money;
-    @Setter
     private int level;
-    @Setter
     private int xp;
-    @Setter
     private GuildRank rank;
 
     public Guild(UUID id, Coordinate spawnLocation, Set<UUID> trustedPlayers, GuildMemberContainer memberContainer,
@@ -51,6 +48,9 @@ public class Guild extends Territory<GuildChunk> implements
         this.level = level;
         this.xp = xp;
         this.rank = rank;
+        if (money < 0 || level < 1 || xp < 0 || rank == null) {
+            throw new IllegalArgumentException("Invalid guild balance or progression state");
+        }
     }
 
     public Guild(UUID leaderId, String name, Coordinate spawnLocation) {
@@ -77,6 +77,8 @@ public class Guild extends Territory<GuildChunk> implements
 
     @Override
     public SetSpawnResult setVisitorSpawnpoint(Coordinate newLocation, UUID player) {
+        if (!canSetSpawn(player)) return SetSpawnResult.NOT_ALLOWED;
+        if (newLocation == null || !hasChunk(newLocation.chunkCoord())) return SetSpawnResult.OUTSIDE_TERRITORY;
         return visitorSpawnContainer.setVisitorSpawnpoint(newLocation, player);
     }
 
@@ -86,11 +88,28 @@ public class Guild extends Territory<GuildChunk> implements
     }
 
     public void addMoney(int amount) {
-        money += amount;
+        int updated = Math.addExact(money, amount);
+        if (updated < 0) throw new IllegalArgumentException("Guild money cannot be negative");
+        money = updated;
+    }
+
+    @Override
+    public UnclaimResult unclaimChunk(ChunkCoord chunkCoord, UUID player) {
+        Coordinate visitorSpawn = getVisitorSpawnpoint();
+        if (visitorSpawn != null && visitorSpawn.chunkCoord().equals(chunkCoord)) {
+            return UnclaimResult.IS_SPAWN_CHUNK;
+        }
+        return super.unclaimChunk(chunkCoord, player);
+    }
+
+    public void setMoney(int amount) {
+        if (amount < 0) throw new IllegalArgumentException("Guild money cannot be negative");
+        this.money = amount;
     }
 
     public void addXp(int amount) {
-        xp += amount;
+        if (amount < 0) throw new IllegalArgumentException("Guild XP cannot be negative");
+        xp = Math.addExact(xp, amount);
     }
 
     /**
@@ -128,24 +147,52 @@ public class Guild extends Territory<GuildChunk> implements
     }
 
     @Override
-    public boolean canSetSpawn(UUID player) {
-        GuildRole role = getMemberRole(player);
-        return role.canSetSpawn();
-    }
-
-    @Override
     public boolean canBuild(UUID player) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return isTrusted(player) || hasMemberRole(player, GuildRole.Batisseur);
     }
 
     @Override
     public boolean canOpenChest(UUID player) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return isTrusted(player) || hasMember(player);
     }
 
     public boolean canInvite(UUID sender) {
-        GuildRole role = getMemberRole(sender);
-        return role.canInvite();
+        return hasMemberRole(sender, GuildRole.Adjoint);
+    }
+
+    public void setLevel(int level) {
+        if (level < 1) throw new IllegalArgumentException("Guild level must be at least 1");
+        this.level = level;
+    }
+
+    public void setXp(int xp) {
+        if (xp < 0) throw new IllegalArgumentException("Guild XP cannot be negative");
+        this.xp = xp;
+    }
+
+    public void setRank(GuildRank rank) {
+        if (rank == null) throw new IllegalArgumentException("Guild rank cannot be null");
+        this.rank = rank;
+    }
+
+    @Override
+    public boolean canTrust(UUID player) {
+        return hasMemberRole(player, GuildRole.Adjoint);
+    }
+
+    @Override
+    public boolean canSetSpawn(UUID player) {
+        return hasMemberRole(player, GuildRole.Adjoint);
+    }
+
+    private boolean hasMember(UUID player) {
+        return memberContainer.getMembers().stream().anyMatch(member -> member.getPlayerID().equals(player));
+    }
+
+    private boolean hasMemberRole(UUID player, GuildRole minimumRole) {
+        return memberContainer.getMembers().stream()
+                .filter(member -> member.getPlayerID().equals(player))
+                .anyMatch(member -> member.getRole().ordinal() >= minimumRole.ordinal());
     }
 
 
@@ -188,8 +235,7 @@ public class Guild extends Territory<GuildChunk> implements
     }
 
     public boolean removeMember(UUID playerID) {
-        memberContainer.removeMember(playerID);
-        return false;
+        return memberContainer.removeMember(playerID);
     }
 
 }

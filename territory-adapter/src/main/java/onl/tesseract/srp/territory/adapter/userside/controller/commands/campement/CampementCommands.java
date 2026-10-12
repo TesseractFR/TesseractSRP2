@@ -29,6 +29,7 @@ import java.util.UUID;
 
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.*;
 
+@org.springframework.stereotype.Component
 @Command(name = "campement", playerOnly = true)
 public class CampementCommands extends CommandContext {
     private static final String CAMP_BORDER_COMMAND = "/campement border";

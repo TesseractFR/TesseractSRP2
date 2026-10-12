@@ -1,21 +1,29 @@
 package onl.tesseract.srp.territory.adapter.serverside.repository;
 
 import onl.tesseract.srp.territory.domain.port.serverside.SrpPlayerRepository;
+import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
+import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 @Component
 public class SrpPlayerRepositoryImpl implements SrpPlayerRepository {
 
-    @Override
-    public boolean isBaron() {
-        // TODO: Implement based on player rank system
-        return false;
+    private final PlayerService playerService;
+
+    public SrpPlayerRepositoryImpl(PlayerService playerService) {
+        this.playerService = playerService;
     }
 
     @Override
-    public int getCampLevel() {
-        // TODO: Implement based on player camp level
-        return 1;
+    public boolean hasRequiredGuildRank(UUID playerId) {
+        return playerService.getPlayer(playerId).getRank().ordinal() >= PlayerRank.Baron.ordinal();
+    }
+
+    @Override
+    public int getCampLevel(UUID playerId) {
+        return playerService.getPlayer(playerId).getRank().getCampLevel();
     }
 }
 

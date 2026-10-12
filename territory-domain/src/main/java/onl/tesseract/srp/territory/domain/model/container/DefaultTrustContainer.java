@@ -5,6 +5,7 @@ import onl.tesseract.srp.territory.domain.model.enums.result.UntrustResult;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ public class DefaultTrustContainer implements TrustContainer {
     }
 
     public DefaultTrustContainer(Set<UUID> trusted) {
-        this.trusted = trusted;
+        this.trusted = new HashSet<>(trusted);
     }
 
     @Override
@@ -32,7 +33,7 @@ public class DefaultTrustContainer implements TrustContainer {
 
     @Override
     public Collection<UUID> getTrusted() {
-        return trusted;
+        return Collections.unmodifiableSet(trusted);
     }
 
     @Override

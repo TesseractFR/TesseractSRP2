@@ -42,8 +42,8 @@ public class GuildCommand extends CommandContext {
     private static final Component GUILD_BORDER_MESSAGE = Component.text("Visualise les bordures avec ")
         .append(Component.text(GUILD_BORDER_COMMAND, NamedTextColor.GOLD))
         .append(Component.text("."));
-    private static final String NOT_IN_GUILD_WORLD_MESSAGE =
-        GUILD_CHAT_ERROR + "Tu n'es pas dans le bon monde, cette commande n'est utilisable que dans le monde des guildes.";
+    private static final Component NOT_IN_GUILD_WORLD_MESSAGE =
+        GUILD_CHAT_ERROR.append(Component.text("Tu n'es pas dans le bon monde, cette commande n'est utilisable que dans le monde des guildes."));
 
     private final GuildService guildService;
     private final GuildBorderService guildBorderService;
@@ -70,7 +70,7 @@ public class GuildCommand extends CommandContext {
         Component msg = null;
         switch (result) {
             case NOT_ENOUGH_MONEY -> msg = GUILD_CHAT_ERROR.append(Component.text("Tu n'as pas assez d'argent pour créer ta guilde."));
-            case INVALID_WORLD -> msg = Component.text(NOT_IN_GUILD_WORLD_MESSAGE);
+            case INVALID_WORLD -> msg = NOT_IN_GUILD_WORLD_MESSAGE;
             case NEAR_SPAWN -> msg = GUILD_CHAT_ERROR.append(Component.text("Tu es trop proche du spawn pour créer ta guilde."));
             case TOO_CLOSE_TO_OTHER_TERRITORY -> msg = GUILD_CHAT_ERROR.append(Component.text("Impossible de créer ta guilde ici, tu es trop proche d'une autre guilde."));
             case NAME_TAKEN -> msg = GUILD_CHAT_ERROR.append(Component.text("Ce nom de guilde est déjà pris, choisis-en un autre."));
@@ -166,7 +166,7 @@ public class GuildCommand extends CommandContext {
             case NOT_ADJACENT -> sender.sendMessage(GUILD_CHAT_ERROR.append(Component.text("Tu dois sélectionner un chunk collé au territoire de ta guilde. ")).append(GUILD_BORDER_MESSAGE));
             case NOT_ALLOWED -> sender.sendMessage(GUILD_CHAT_ERROR.append(Component.text("Tu n'es pas autorisé(e) à utiliser cette commande.")));
             case TOO_CLOSE -> sender.sendMessage(GUILD_CHAT_ERROR.append(Component.text("Tu ne peux pas annexer ce chunk, il est trop proche d'une autre guilde.")));
-            case INVALID_WORLD -> sender.sendMessage(Component.text(NOT_IN_GUILD_WORLD_MESSAGE));
+            case INVALID_WORLD -> sender.sendMessage(NOT_IN_GUILD_WORLD_MESSAGE);
         }
     }
 
@@ -191,7 +191,7 @@ public class GuildCommand extends CommandContext {
             case SHOW_BORDERS -> msg = GUILD_CHAT_SUCCESS.append(Component.text("Les bordures de ta guilde sont maintenant visibles !"));
             case CLEAR_BORDERS -> msg = GUILD_CHAT_SUCCESS.append(Component.text("Les bordures de ta guilde ont été masquées."));
             case TERRITORY_NOT_FOUND -> msg = NO_GUILD_MESSAGE;
-            case INVALID_WORLD -> msg = Component.text(NOT_IN_GUILD_WORLD_MESSAGE);
+            case INVALID_WORLD -> msg = NOT_IN_GUILD_WORLD_MESSAGE;
         }
         sender.sendMessage(msg);
     }

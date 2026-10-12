@@ -30,7 +30,9 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findByPlayer(UUID player) {
-        return jpaRepository.findGuildByLeader(player).toDomain();
+        GuildEntity guild = jpaRepository.findGuildByLeader(player);
+        if(guild == null) return null;
+        return guild.toDomain();
     }
 
     @Override
@@ -45,7 +47,9 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findGuildByName(String name) {
-        return jpaRepository.findGuildByName(name).toDomain();
+        GuildEntity guildByName = jpaRepository.findGuildByName(name);
+        if(guildByName == null) return null;
+        return guildByName.toDomain();
     }
 
     @Override

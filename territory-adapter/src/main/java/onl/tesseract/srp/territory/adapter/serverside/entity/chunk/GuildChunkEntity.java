@@ -13,8 +13,15 @@ import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
 public class GuildChunkEntity extends TerritoryChunkEntity {
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "guild_id", nullable = false)
+    @JoinColumn(name = "guild_id")
     private GuildEntity guild;
+
+    public GuildChunkEntity() {}
+
+    public GuildChunkEntity(ChunkEntityId chunkEntityId, GuildEntity guild) {
+        this.chunkEntityId = chunkEntityId;
+        this.guild = guild;
+    }
 
     @Override
     public GuildChunk toDomain() {

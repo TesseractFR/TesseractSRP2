@@ -9,8 +9,15 @@ import onl.tesseract.srp.territory.domain.model.campement.CampementChunk;
 @DiscriminatorValue("CAMPEMENT")
 public class CampementChunkEntity extends TerritoryChunkEntity{
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "campement_id", nullable = false)
+    @JoinColumn(name = "campement_id")
     private CampementEntity campement;
+
+    public CampementChunkEntity() {}
+
+    public CampementChunkEntity(ChunkEntityId chunkEntityId, CampementEntity campement) {
+        this.chunkEntityId = chunkEntityId;
+        this.campement = campement;
+    }
 
     @Override
     public TerritoryChunk toDomain() {

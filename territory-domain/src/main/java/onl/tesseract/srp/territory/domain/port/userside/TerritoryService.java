@@ -21,6 +21,8 @@ import java.util.UUID;
 
 public abstract class TerritoryService<TC extends TerritoryChunk, T extends Territory<TC>> {
 
+    protected TerritoryService() {}
+
     protected abstract EventPublisher getEventService();
     protected abstract TerritoryChunkRepository getTerritoryChunkRepository();
     protected abstract TerritoryRepository<T, UUID> getTerritoryRepository();
@@ -63,7 +65,7 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
         if (territoryChunk == null) {
             return false;
         }
-        return territory.equals(territoryChunk.getOwner());
+        return !territory.equals(territoryChunk.getOwner());
     }
 
     /**
@@ -92,7 +94,7 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
     /**
      * Permet de claim un chunk
      */
-    public ClaimResult claimChunk(UUID player, ChunkCoord chunkCoord) {
+    public synchronized ClaimResult claimChunk(UUID player, ChunkCoord chunkCoord) {
         TerritoryWorld world = getTerritoryWorld(chunkCoord.world());
         if (world == null || !isCorrectWorld(world)) {
             return ClaimResult.INVALID_WORLD;
@@ -113,41 +115,35 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
             return ClaimResult.TOO_CLOSE;
         }
         ClaimResult result = territory.claimChunk(chunkCoord, player);
-        if (result == ClaimResult.SUCCESS) {
-            getTerritoryRepository().save(territory);
-            getEventService().publish(territory.createClaimEvent(player));
-        }
+        if (result == ClaimResult.SUCCESS) getTerritoryRepository().save(territory);
+        if (result == ClaimResult.SUCCESS) getEventService().publish(territory.createClaimEvent(player));
         return result;
     }
 
     /**
      * Permet de unclaim un chunk
      */
-    public UnclaimResult unclaimChunk(UUID player, ChunkCoord chunkCoord) {
+    public synchronized UnclaimResult unclaimChunk(UUID player, ChunkCoord chunkCoord) {
         T territory = getByPlayer(player);
         if (territory == null) {
             return UnclaimResult.TERRITORY_NOT_FOUND;
         }
         UnclaimResult result = territory.unclaimChunk(chunkCoord, player);
-        if (result == UnclaimResult.SUCCESS) {
-            getTerritoryRepository().save(territory);
-            getEventService().publish(territory.createUnclaimEvent(player));
-        }
+        if (result == UnclaimResult.SUCCESS) getTerritoryRepository().save(territory);
+        if (result == UnclaimResult.SUCCESS) getEventService().publish(territory.createUnclaimEvent(player));
         return result;
     }
 
     /**
      * Permet de set le point de spawn
      */
-    public SetSpawnResult setSpawnpoint(UUID player, Coordinate coordinate) {
+    public synchronized SetSpawnResult setSpawnpoint(UUID player, Coordinate coordinate) {
         T territory = getByPlayer(player);
         if (territory == null) {
             return SetSpawnResult.TERRITORY_NOT_FOUND;
         }
         SetSpawnResult result = territory.setSpawnpoint(coordinate, player);
-        if (result == SetSpawnResult.SUCCESS) {
-            getTerritoryRepository().save(territory);
-        }
+        if (result == SetSpawnResult.SUCCESS) getTerritoryRepository().save(territory);
         return result;
     }
 
@@ -216,36 +212,32 @@ public abstract class TerritoryService<TC extends TerritoryChunk, T extends Terr
     /**
      * Permet de trust un joueur
      */
-    public TrustResult trust(UUID player, UUID target) {
+    public synchronized TrustResult trust(UUID player, UUID target) {
         T territory = getTerritoryRepository().findByPlayer(player);
         if (territory == null) {
             return TrustResult.TERRITORY_NOT_FOUND;
         }
-        if (!territory.canTrust(player)) {
+        if (player.equals(target) || !territory.canTrust(player)) {
             return TrustResult.NOT_ALLOWED;
         }
         TrustResult result = territory.addTrust(player, target);
-        if (result == TrustResult.SUCCESS) {
-            getTerritoryRepository().save(territory);
-        }
+        if (result == TrustResult.SUCCESS) getTerritoryRepository().save(territory);
         return result;
     }
 
     /**
      * Permet de untrust un joueur
      */
-    public UntrustResult untrust(UUID player, UUID target) {
+    public synchronized UntrustResult untrust(UUID player, UUID target) {
         T territory = getTerritoryRepository().findByPlayer(player);
         if (territory == null) {
             return UntrustResult.TERRITORY_NOT_FOUND;
         }
-        if (!territory.canTrust(player)) {
+        if (player.equals(target) || !territory.canTrust(player)) {
             return UntrustResult.NOT_ALLOWED;
         }
         UntrustResult result = territory.removeTrust(player, target);
-        if (result == UntrustResult.SUCCESS) {
-            getTerritoryRepository().save(territory);
-        }
+        if (result == UntrustResult.SUCCESS) getTerritoryRepository().save(territory);
         return result;
     }
 }

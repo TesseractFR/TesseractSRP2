@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.GuildChunkEntity;
+import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.ChunkEntityId;
+import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
 import onl.tesseract.srp.territory.domain.model.container.DefaultVisitorSpawnContainer;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
@@ -83,6 +85,10 @@ public class GuildEntity {
     )
     private Set<UUID> joinRequests;
 
+    @ElementCollection
+    @CollectionTable(name = "guild_trusted_players", joinColumns = @JoinColumn(name = "guild_id"))
+    private Set<UUID> trustedPlayers = new HashSet<>();
+
     @PrePersist
     public void prePersist() {
         if (spawnLocation == null) {
@@ -122,6 +128,7 @@ public class GuildEntity {
             onl.tesseract.srp.territory.domain.model.guild.Guild guild) {
         GuildEntity entity = new GuildEntity();
         entity.id = guild.getId();
+        entity.leaderId = guild.getLeaderId();
         entity.name = guild.getName();
         entity.spawnLocation = new CoordinateEntity(guild.getSpawnpoint());
         entity.money = guild.getMoney();
@@ -134,6 +141,10 @@ public class GuildEntity {
                 .toList();
         entity.invitations = guild.getInvitations();
         entity.joinRequests = guild.getJoinRequests();
+        entity.trustedPlayers = new HashSet<>(guild.getTrusted());
+        entity.chunks = guild.getChunks().stream()
+                .map(chunk -> new GuildChunkEntity(ChunkEntityId.fromDomain(chunk.getChunkCoord()), entity))
+                .collect(java.util.stream.Collectors.toSet());
         return entity;
     }
 
@@ -148,8 +159,14 @@ public class GuildEntity {
                 joinRequests != null ? joinRequests : Set.of()
         );
 
-        return new Guild(id,spawn,new HashSet<>(),memberContainer,
+        Guild guild = new Guild(id,spawn,trustedPlayers != null ? new HashSet<>(trustedPlayers) : new HashSet<>(),memberContainer,
                 new DefaultVisitorSpawnContainer(visitorSpawn),name,money,level,xp,rank);
+        if (chunks != null) {
+            guild.addChunks(chunks.stream()
+                    .map(entity -> new GuildChunk(entity.getChunkEntityId().toDomain(), guild))
+                    .collect(java.util.stream.Collectors.toSet()));
+        }
+        return guild;
     }
 }
 

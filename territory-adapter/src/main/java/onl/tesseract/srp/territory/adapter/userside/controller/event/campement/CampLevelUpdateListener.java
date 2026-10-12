@@ -18,6 +18,8 @@ public class CampLevelUpdateListener implements Listener {
 
     @EventListener
     public void onPlayerRankUpdate(PlayerRankUpEvent event) {
-        campementService.setCampLevel(event.getPlayerId(), event.getNewRank().getCampLevel());
+        if (campementService.getByPlayer(event.getPlayerId()) != null) {
+            campementService.setCampLevel(event.getPlayerId(), event.getNewRank().getCampLevel());
+        }
     }
 }

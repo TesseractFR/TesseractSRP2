@@ -1,7 +1,9 @@
 package onl.tesseract.srp.territory.domain.port.serverside;
 
-public interface SrpPlayerRepository {
-    boolean isBaron();
+import java.util.UUID;
 
-    int getCampLevel();
+public interface SrpPlayerRepository {
+    boolean hasRequiredGuildRank(UUID playerId);
+
+    int getCampLevel(UUID playerId);
 }

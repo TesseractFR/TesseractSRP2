@@ -26,7 +26,7 @@ public class DefaultSpawnContainer implements SpawnContainer {
 
     @Override
     public boolean canSetSpawn(UUID player) {
-        throw new IllegalAccessError("La méthode doit être override");
+        return false;
     }
 
     @Override

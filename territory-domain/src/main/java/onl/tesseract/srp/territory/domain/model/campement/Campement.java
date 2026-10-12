@@ -68,7 +68,7 @@ public class Campement extends Territory<CampementChunk> {
 
     @Override
     public boolean canOpenChest(UUID player) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return player.equals(ownerID) || isTrusted(player);
     }
 }
 
