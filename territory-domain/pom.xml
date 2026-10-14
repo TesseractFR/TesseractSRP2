@@ -29,7 +29,7 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>onl.tesseract</groupId>
+            <groupId>onl.tesseract.lib</groupId>
             <artifactId>tesseract-persistence</artifactId>
             <version>5.0.0-SNAPSHOT</version>
             <scope>provided</scope>
