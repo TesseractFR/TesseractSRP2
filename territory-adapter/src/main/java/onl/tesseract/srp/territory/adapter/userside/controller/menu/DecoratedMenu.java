@@ -6,6 +6,8 @@ import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
+import onl.tesseract.lib.profile.PlayerProfileService;
+import onl.tesseract.lib.service.ServiceContainer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -82,5 +84,9 @@ public abstract class DecoratedMenu extends Menu {
                             .name("Page suivante", NamedTextColor.YELLOW).lore(lore).build(),
                     click -> menuForPage.apply(page + 1).open(viewer));
         }
+    }
+
+    protected static ItemStack playerHead(UUID id) {
+        return ServiceContainer.get(PlayerProfileService.class).getPlayerHead(id);
     }
 }

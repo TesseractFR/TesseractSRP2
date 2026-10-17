@@ -63,7 +63,7 @@ public class CampementTrustedPlayersMenu extends DecoratedMenu {
             lore.newline().append("Clic droit : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
                     .append("Retirer", NamedTextColor.RED, TextDecoration.ITALIC);
         }
-        button(slot, new ItemBuilder(PlayerUtils.getPlayerHead(uuid))
+        button(slot, new ItemBuilder(playerHead(uuid))
                 .name(name, NamedTextColor.GOLD).lore(lore.get()).build(), click -> {
             if (owner && click == ClickType.RIGHT) {
                 menuService.openConfirmationMenu(viewer,

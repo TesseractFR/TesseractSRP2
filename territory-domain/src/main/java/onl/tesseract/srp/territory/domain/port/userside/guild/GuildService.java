@@ -572,7 +572,9 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         return true;
     }
 
-    public void invalidAmount(UUID player) { messaging.playerInvalidAmount(player); }
+    public void invalidAmount(UUID player) {
+        messaging.playerInvalidAmount(player);
+    }
 
     public void giveMoneyAsStaff(UUID staff, UUID guildID, int amount) {
         if (amount <= 0) { messaging.staffInvalidAmount(staff); return; }
@@ -686,7 +688,9 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     }
 
     public boolean canOpenMenu(UUID player) {
-        if (getGuildByMember(player) == null) { messaging.playerNoGuild(player); return false; }
+        if (getGuildByMember(player) == null) {
+            messaging.playerNoGuild(player); return false;
+        }
         return true;
     }
 }
