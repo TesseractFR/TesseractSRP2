@@ -20,6 +20,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -116,13 +117,17 @@ public class GuildEntity {
         @Enumerated(EnumType.STRING)
         private GuildRole role;
 
-        public MemberEmbeddable(UUID playerID, GuildRole role) {
+        private Instant joinedDate;
+
+        public MemberEmbeddable(UUID playerID, GuildRole role, Instant joinedDate) {
             this.playerID = playerID;
             this.role = role;
+            this.joinedDate = joinedDate;
         }
 
         public static GuildMember toDomain(MemberEmbeddable embeddable) {
-            return new GuildMember(embeddable.getPlayerID(), embeddable.getRole());
+            Instant joined = embeddable.getJoinedDate() != null ? embeddable.getJoinedDate() : Instant.now();
+            return new GuildMember(embeddable.getPlayerID(), embeddable.getRole(), joined);
         }
     }
 
@@ -169,8 +174,8 @@ public class GuildEntity {
         entity.rank = guild.getRank();
         entity.visitorSpawnLocation = new CoordinateEntity(guild.getVisitorSpawnpoint());
         entity.members = guild.getMembers().stream()
-                .map(m -> new MemberEmbeddable(m.getPlayerID(), m.getRole()))
-                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+                .map(m -> new MemberEmbeddable(m.getPlayerID(), m.getRole(), m.getJoinedDate()))
+                .collect(Collectors.toCollection(ArrayList::new));
         entity.invitations = new HashSet<>(guild.getInvitations());
         entity.joinRequests = guild.getJoinRequests().stream()
                 .map(r -> new JoinRequestEmbeddable(r.getPlayerID(), r.getMessage(), r.getRequestedDate()))

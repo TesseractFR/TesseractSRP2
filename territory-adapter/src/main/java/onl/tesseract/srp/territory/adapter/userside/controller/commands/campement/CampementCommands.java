@@ -17,6 +17,7 @@ import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.Ann
 import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.CampementAnnexionStickInvocable;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.CampOwnerArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.TrustedPlayerArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.menu.campement.CampementMenu;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementBorderService;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementService;
 import org.bukkit.Bukkit;
@@ -53,13 +54,20 @@ public class CampementCommands extends CommandContext {
     @Command(name = "delete", description = "Supprimer son campement.")
     public void deleteCampement(Player sender) {
         UUID id = sender.getUniqueId();
-        if (!campementService.canDeleteCampement(id)) return;
+        if (!campementService.hasCampement(id)) return;
         menuService.openConfirmationMenu(sender,
                 Component.text("⚠ Es-tu sûr de vouloir supprimer ton campement ?", NamedTextColor.RED),
                 null, () -> {
                     campementService.deleteOwnCampement(id);
                     campementBorderService.clearBorders(id);
                 });
+    }
+
+    @Command(name = "menu", description = "Ouvrir le menu du campement.")
+    public void openMenu(Player sender) {
+        if (!campementService.hasCampement(sender.getUniqueId())) return;
+        new CampementMenu(sender.getUniqueId(), campementService, menuService,
+                teleportService, null).open(sender);
     }
 
     @Command(name = "spawn", description = "Se téléporter au spawn de son campement (pas d'argument) ou de celui d'un autre joueur.")

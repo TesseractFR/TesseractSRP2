@@ -37,6 +37,10 @@ public interface PlayerGuildMessagingRepository {
     void playerGuildFull(UUID player);
     void playerAlreadyRequested(UUID player);
     void playerJoinRequestSent(UUID player, String guildName);
+    void playerJoinRequestAccepted(UUID sender, UUID target, String guildName);
+    void playerJoinRequestDeclined(UUID sender, UUID target, String guildName);
+    void playerNoJoinRequest(UUID player);
+    String defaultJoinRequestMessage();
 
     // kick / leave
     void playerKickNotMember(UUID player, UUID target);
@@ -67,6 +71,24 @@ public interface PlayerGuildMessagingRepository {
     // border
     void playerBordersShown(UUID player);
     void playerBordersHidden(UUID player);
+
+    // rôles
+    void playerRoleChanged(UUID sender, UUID target, GuildRole role);
+    void playerLeaderTransferred(UUID sender, UUID target);
+    void playerRoleChangeImpossible(UUID sender);
+
+    // rang
+    void playerRankUpgraded(UUID player, GuildRank rank);
+    void playerRankMax(UUID player);
+    void playerRankMoneyMissing(UUID player, int cost);
+    void playerRankLevelMissing(UUID player, int minLevel);
+
+    // banque
+    void playerInvalidAmount(UUID player);
+    void playerNotEnoughMoney(UUID player);
+    void playerGuildNotEnoughMoney(UUID player);
+    void playerBankDeposited(UUID player, int amount);
+    void playerBankWithdrawn(UUID player, int amount);
 
     // staff
     void staffGuildDeleted(UUID staff, String guildName);
