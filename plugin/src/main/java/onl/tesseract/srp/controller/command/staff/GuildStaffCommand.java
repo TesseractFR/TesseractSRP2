@@ -11,8 +11,7 @@ import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.Gui
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersRoleArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildRankArg;
-import onl.tesseract.srp.common.domain.model.enums.StaffSetRoleResult;
-import onl.tesseract.srp.territory.domain.model.enums.result.KickResult;
+import onl.tesseract.srp.territory.domain.port.serverside.PlayerGuildMessagingRepository;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -20,9 +19,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.Optional;
 
-import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_ERROR;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_FORMAT;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_SUCCESS;
 
@@ -39,18 +36,12 @@ public class GuildStaffCommand {
 
     @Command(name = "delete", description = "Supprimer une guilde")
     public void deleteGuild(@Argument("guild") GuildArg guildArg, Player sender) {
+        var guild = guildArg.get();
         menuService.openConfirmationMenu(
-            sender,
-            Component.text("⚠ Es-tu sûr de vouloir supprimer la guilde " + guildArg.get().getName() + "?",NamedTextColor.RED),
-            null,
-            () -> {
-                boolean ok = guildService.deleteGuildAsStaff(guildArg.get().getId());
-                if (ok) {
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("La guilde " + guildArg.get().getName() + " a été supprimée avec succès.")));
-                } else {
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Suppression impossible.")));
-                }
-            }
+                sender,
+                Component.text("⚠ Es-tu sûr de vouloir supprimer la guilde " + guild.getName() + "?", NamedTextColor.RED),
+                null,
+                () -> guildService.deleteGuildAsStaff(sender.getUniqueId(), guild.getId())
         );
     }
 
@@ -58,6 +49,7 @@ public class GuildStaffCommand {
     @org.springframework.stereotype.Component
     public static class MembersCommand {
         private final GuildService guildService;
+        PlayerGuildMessagingRepository messaging;
 
         public MembersCommand(GuildService guildService) {
             this.guildService = guildService;
@@ -65,94 +57,42 @@ public class GuildStaffCommand {
 
         @Command(name = "get", description = "Voir les membres d'une guilde")
         public void getMembers(@Argument("guild") GuildArg guildArg, Player sender) {
-            var guild = guildArg.get();
-            sender.sendMessage(STAFF_CHAT_FORMAT.append(Component.text("Membres de la guilde " + guild.getName() + ":")));
-            for (var member : guild.getMembers()) {
-                String playerName = Bukkit.getOfflinePlayer(member.getPlayerID()).getName() != null
-                    ? Bukkit.getOfflinePlayer(member.getPlayerID()).getName()
-                    : member.getPlayerID().toString();
-                sender.sendMessage(STAFF_CHAT_FORMAT.append(Component.text("- " + playerName + " : " + member.getRole())));
-            }
+            guildService.showMembersAsStaff(sender.getUniqueId(), guildArg.get().getId());
         }
 
         @Command(name = "add", description = "Ajouter un membre à une guilde")
-        public void addMember(@Argument("guild") GuildArg guildArg, @Argument("playerName") PlayerArg playerArg, CommandSender sender) {
-            var player = playerArg.get();
-            // Check if player is already in guild
-            boolean alreadyInGuild = guildArg.get().getMembers().stream()
-                .anyMatch(m -> Bukkit.getOfflinePlayer(m.getPlayerID()).getUniqueId().equals(player.getUniqueId()));
-
-            if (alreadyInGuild) {
-                sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Le joueur " + player.getName() + " fait déjà partie de la guilde.")));
-                return;
-            }
-
-            guildService.addMemberAsStaff(guildArg.get().getId(), player.getUniqueId());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + playerArg.get().getName() + " ajouté à la guilde " + guildArg.get().getName())));
+        public void addMember(@Argument("guild") GuildArg guildArg, @Argument("playerName") PlayerArg playerArg, Player sender) {
+            guildService.addMemberAsStaff(sender.getUniqueId(), guildArg.get().getId(), playerArg.get().getUniqueId());
         }
 
         @Command(name = "kick", description = "Expulser un joueur d'une guilde")
-        public void kickMember(@Argument("guild") GuildArg guildArg, @Argument("playerName") GuildMembersArg playerArg, CommandSender sender) {
-            var guild = guildArg.get();
-            var player = Bukkit.getOfflinePlayer(UUID.fromString(playerArg.get()));
-            KickResult result = guildService.kickMember(guild.getLeaderId(), player.getUniqueId());
-
-            switch (result) {
-                case TERRITORY_NOT_FOUND ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Le joueur " + player.getName() + " ne fait partie d'aucune guilde.")));
-                case NOT_MEMBER ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Le joueur " + player.getName() + " ne fait pas partie de la guilde.")));
-                case CANNOT_KICK_LEADER ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Impossible d'expulser le leader de la guilde. Change son rôle.")));
-                case NOT_ALLOWED ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Tu n'es pas autorisé à expulser ce joueur.")));
-                case SUCCESS ->
-                    sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + player.getName() + " expulsé de la guilde " + guild.getName())));
-            }
+        public void kickMember(@Argument("guild") GuildArg guildArg, @Argument("playerName") GuildMembersArg playerArg, Player sender) {
+            UUID target = UUID.fromString(playerArg.get());
+            guildService.kickMemberAsStaff(sender.getUniqueId(), guildArg.get().getId(), target);
         }
 
         @Command(name = "setRole", description = "Définir le rôle d'un joueur dans une guilde. Si on rétrograde le leader actuel, indiquer [newLeader].")
-        public void setRole(CommandSender sender, @Argument("guild") GuildArg guildArg, @Argument("player") GuildMembersArg playerArg,
-                           @Argument("role") GuildMembersRoleArg roleArg, @Argument(value = "newLeader", optional = true) GuildMembersArg newLeaderArg) {
+        public void setRole(Player sender, @Argument("guild") GuildArg guildArg, @Argument("player") GuildMembersArg playerArg,
+                            @Argument("role") GuildMembersRoleArg roleArg,
+                            @Argument(value = "newLeader", optional = true) GuildMembersArg newLeaderArg) {
             var guild = guildArg.get();
             String playerName = playerArg.get();
-            var role = roleArg.get();
+            UUID targetId = guild.getMembers().stream()
+                    .map(m -> Bukkit.getOfflinePlayer(m.getPlayerID()))
+                    .filter(it -> {
+                        String name = it.getName();
+                        return (name != null && name.equalsIgnoreCase(playerName))
+                                || it.getUniqueId().toString().equals(playerName);
+                    })
+                    .map(OfflinePlayer::getUniqueId)
+                    .findFirst()
+                    .orElse(null);
 
-            Optional<OfflinePlayer> targetOpt = guild.getMembers().stream()
-                .map(m -> Bukkit.getOfflinePlayer(m.getPlayerID()))
-                .filter(it -> {
-                    String name = it.getName();
-                    return name != null && name.equalsIgnoreCase(playerName) || it.getUniqueId().toString().equals(playerName);
-                })
-                .findFirst();
+            UUID replacementLeaderId = newLeaderArg != null
+                    ? Bukkit.getOfflinePlayer(newLeaderArg.get()).getUniqueId() : null;
 
-            if (targetOpt.isEmpty()) {
-                sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Joueur \"" + playerName + "\" introuvable.")));
-                return;
-            }
-
-            var target = targetOpt.get();
-            var oldLeader = Bukkit.getOfflinePlayer(guild.getLeaderId());
-            UUID replacementLeaderID = newLeaderArg != null ? Bukkit.getOfflinePlayer(newLeaderArg.get()).getUniqueId() : null;
-
-            StaffSetRoleResult result = guildService.setMemberRoleAsStaff(guild.getId(), target.getUniqueId(), role, replacementLeaderID);
-
-            switch (result) {
-                case SUCCESS -> {
-                    if (role.name().equalsIgnoreCase("Leader")) {
-                        sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Leader de la guilde " + guild.getName() + " défini sur " + target.getName() + ". L'ancien leader " + oldLeader.getName() + " a été passé Citoyen.")));
-                    } else if (replacementLeaderID != null) {
-                        var replacementLeader = Bukkit.getOfflinePlayer(replacementLeaderID);
-                        sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Rôle de " + target.getName() + " défini à " + role.name() + " et " + replacementLeader.getName() + " à Leader pour la guilde " + guild.getName() + ".")));
-                    }
-                }
-                case NEED_NEW_LEADER ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("La cible est le leader actuel. Indique un nouveau leader : /staffrole set " + guild.getName() + " " + playerName + " " + role.name() + " <newLeader>")));
-                case NEW_LEADER_SAME_AS_TARGET ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text("Le nouveau leader ne peut pas être le même joueur que la cible.")));
-                case SAME_ROLE ->
-                    sender.sendMessage(STAFF_CHAT_ERROR.append(Component.text((target.getName() != null ? target.getName() : target.getUniqueId().toString()) + " a déjà le rôle " + role.name() + " dans la guilde " + guild.getName() + ".")));
-            }
+            guildService.setMemberRoleAsStaff(sender.getUniqueId(), guild.getId(),
+                    targetId, roleArg.get(), replacementLeaderId);
         }
     }
 
@@ -166,21 +106,18 @@ public class GuildStaffCommand {
         }
 
         @Command(name = "give")
-        public void giveMoney(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument amountArg, CommandSender sender) {
-            guildService.giveMoneyAsStaff(guildArg.get().getId(), amountArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée")));
+        public void giveMoney(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument amountArg, Player sender) {
+            guildService.giveMoneyAsStaff(sender.getUniqueId(), guildArg.get().getId(), amountArg.get());
         }
 
         @Command(name = "take")
-        public void takeMoney(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument amountArg, CommandSender sender) {
-            guildService.giveMoneyAsStaff(guildArg.get().getId(), -amountArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée")));
+        public void takeMoney(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument amountArg, Player sender) {
+            guildService.takeMoneyAsStaff(sender.getUniqueId(), guildArg.get().getId(), amountArg.get());
         }
 
         @Command(name = "get")
-        public void getMoney(@Argument("guild") GuildArg guildArg, CommandSender sender) {
-            var guild = guildArg.get();
-            sender.sendMessage(STAFF_CHAT_FORMAT.append(Component.text(guild.getName() + " : " + guild.getMoney() + " Lys")));
+        public void getMoney(@Argument("guild") GuildArg guildArg, Player sender) {
+            guildService.showMoneyAsStaff(sender.getUniqueId(), guildArg.get().getId());
         }
     }
 
@@ -194,29 +131,26 @@ public class GuildStaffCommand {
         }
 
         @Command(name = "set")
-        public void setLevel(@Argument("guild") GuildArg guildArg, @Argument("level") IntegerCommandArgument levelArg, CommandSender sender) {
-            guildService.setLevel(guildArg.get().getId(), levelArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - niveau de " + guildArg.get().getName() + " défini à " + levelArg.get())));
+        public void setLevel(@Argument("guild") GuildArg guildArg, @Argument("level") IntegerCommandArgument levelArg, Player sender) {
+            guildService.setLevelAsStaff(sender.getUniqueId(), guildArg.get().getId(), levelArg.get());
         }
 
         @Command(name = "get")
-        public void getLevel(@Argument("guild") GuildArg guildArg, CommandSender sender) {
-            var guild = guildArg.get();
-            sender.sendMessage(STAFF_CHAT_FORMAT.append(Component.text(guild.getName() + " : niveau " + guild.getLevel())));
+        public void getLevel(@Argument("guild") GuildArg guildArg, Player sender) {
+            guildService.showLevelAsStaff(sender.getUniqueId(), guildArg.get().getId());
         }
 
         @Command(name = "addLevel")
-        public void addLevel(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument levelArg, CommandSender sender) {
-            guildService.addLevel(guildArg.get().getId(), levelArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + levelArg.get() + " niveaux ajoutés à " + guildArg.get().getName())));
+        public void addLevel(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument levelArg, Player sender) {
+            guildService.addLevelAsStaff(sender.getUniqueId(), guildArg.get().getId(), levelArg.get());
         }
 
         @Command(name = "addXp")
-        public void addXp(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument xpArg, CommandSender sender) {
-            guildService.addGuildXp(guildArg.get().getId(), xpArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + xpArg.get() + " XP ajoutés à " + guildArg.get().getName())));
+        public void addXp(@Argument("guild") GuildArg guildArg, @Argument("amount") IntegerCommandArgument xpArg, Player sender) {
+            guildService.addGuildXpAsStaff(sender.getUniqueId(), guildArg.get().getId(), xpArg.get());
         }
     }
+
     @org.springframework.stereotype.Component
     @Command(name = "rank", description = "Gérer le rang d'une guilde")
     public static class RankCommand {
@@ -227,15 +161,13 @@ public class GuildStaffCommand {
         }
 
         @Command(name = "set")
-        public void setRank(@Argument("guild") GuildArg guildArg, @Argument("rank") GuildRankArg rankArg, CommandSender sender) {
-            guildService.setRank(guildArg.get().getId(), rankArg.get());
-            sender.sendMessage(STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - rang de la guilde " + guildArg.get().getName() + " défini à " + rankArg.get())));
+        public void setRank(@Argument("guild") GuildArg guildArg, @Argument("rank") GuildRankArg rankArg, Player sender) {
+            guildService.setRankAsStaff(sender.getUniqueId(), guildArg.get().getId(), rankArg.get());
         }
 
         @Command(name = "get")
-        public void getRank(@Argument("guild") GuildArg guildArg, CommandSender sender) {
-            var guild = guildArg.get();
-            sender.sendMessage(STAFF_CHAT_FORMAT.append(Component.text(guild.getName() + " : rang " + guild.getRank())));
+        public void getRank(@Argument("guild") GuildArg guildArg, Player sender) {
+            guildService.showRankAsStaff(sender.getUniqueId(), guildArg.get().getId());
         }
     }
 }

@@ -1,7 +1,6 @@
 package onl.tesseract.srp.territory.adapter.serverside.repository;
 
 import onl.tesseract.srp.territory.adapter.serverside.entity.GuildEntity;
-import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,7 +24,7 @@ public interface GuildJpaRepository extends JpaRepository<GuildEntity, UUID> {
     @Query("SELECT g FROM GuildEntity g WHERE g.name = :name")
     GuildEntity findGuildByName(@Param("name") String name);
 
-    @Query("SELECT g FROM GuildEntity g WHERE g.id = :leaderId")
+    @Query("SELECT g FROM GuildEntity g WHERE g.leaderId = :leaderId")
     GuildEntity findGuildByLeader(@Param("leaderId") UUID leaderId);
 
     @Query("SELECT g FROM GuildEntity g JOIN g.members m WHERE m.playerID = :memberId")

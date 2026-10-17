@@ -4,6 +4,8 @@ import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.territory.adapter.serverside.repository.*;
 import onl.tesseract.srp.territory.adapter.serverside.scheduler.TerritoryBorderTaskSchedulerImpl;
 import onl.tesseract.srp.territory.adapter.serverside.service.MoneyServiceImpl;
+import onl.tesseract.srp.territory.domain.port.serverside.PlayerCampementMessagingRepository;
+import onl.tesseract.srp.territory.domain.port.serverside.PlayerGuildMessagingRepository;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildBorderService;
@@ -22,8 +24,9 @@ public class TerritoryProvider {
             TerritoryChunkRepositoryImpl territoryChunkRepository,
             SrpPlayerRepositoryImpl srpPlayerService,
             EventPublisher eventService,
-            MoneyServiceImpl moneyService) {
-        return new GuildService(guildRepository, territoryChunkRepository, srpPlayerService, eventService, moneyService);
+            MoneyServiceImpl moneyService,
+            PlayerGuildMessagingRepository messaging) {
+        return new GuildService(guildRepository, territoryChunkRepository, srpPlayerService, eventService, moneyService, messaging);
     }
 
     @Bean
@@ -31,22 +34,25 @@ public class TerritoryProvider {
             CampementRepositoryImpl campementRepository,
             TerritoryChunkRepositoryImpl territoryChunkRepository,
             EventPublisher eventService,
-            SrpPlayerRepositoryImpl srpPlayerService) {
-        return new CampementService(campementRepository, territoryChunkRepository, eventService, srpPlayerService);
+            SrpPlayerRepositoryImpl srpPlayerService,
+            PlayerCampementMessagingRepository messaging) {
+        return new CampementService(campementRepository, territoryChunkRepository, eventService, srpPlayerService, messaging);
     }
 
     @Bean
     public GuildBorderService guildTerritoryBorderService(
             TerritoryBorderTaskSchedulerImpl scheduler,
-            GuildService guildService) {
-        return new GuildBorderService(scheduler, guildService);
+            GuildService guildService,
+            PlayerGuildMessagingRepository messaging) {
+        return new GuildBorderService(scheduler, guildService, messaging);
     }
 
     @Bean
     public CampementBorderService campementTerritoryBorderService(
             TerritoryBorderTaskSchedulerImpl scheduler,
-            CampementService campementService) {
-        return new CampementBorderService(scheduler, campementService);
+            CampementService campementService,
+            PlayerCampementMessagingRepository messaging) {
+        return new CampementBorderService(scheduler, campementService, messaging);
     }
 
     @Bean
