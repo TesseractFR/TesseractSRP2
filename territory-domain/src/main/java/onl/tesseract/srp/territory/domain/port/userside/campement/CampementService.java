@@ -88,7 +88,7 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
         return territoryRepository.findAll();
     }
 
-    public boolean createCampement(UUID ownerID, Coordinate spawnLocation) {
+    public void createCampement(UUID ownerID, Coordinate spawnLocation) {
         CreationResult result = isCreationAvailable(ownerID, spawnLocation.chunkCoord());
         if (result != CreationResult.SUCCESS) {
             switch (result) {
@@ -99,18 +99,20 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
                 case ON_OTHER_TERRITORY -> messaging.playerOnOtherTerritoryCreateCampement(ownerID);
                 default -> { /* Rien */ }
             }
-            return false;
+            return;
         }
         int campLevel = srpPlayerService.getCampLevel(ownerID);
         Campement campement = new Campement(ownerID, campLevel, spawnLocation);
         campement.claimInitialChunks();
         territoryRepository.save(campement);
         messaging.playerCampementCreated(ownerID);
-        return true;
     }
 
-    public boolean canDeleteCampement(UUID player) {
-        if (getCampementByOwner(player) == null) { messaging.playerNoCampement(player); return false; }
+    public boolean hasCampement(UUID player) {
+        if (getCampementByOwner(player) == null) {
+            messaging.playerNoCampement(player);
+            return false;
+        }
         return true;
     }
 
@@ -201,10 +203,10 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
 
     /**
      * Increments the level of the player's camp.
+     *
      * @param ownerID The UUID of the player who owns the camp.
-     * @return The new camp level if successful, or null if the camp does not exist.
      */
-    public Boolean setCampLevel(UUID ownerID, int level) {
+    public void setCampLevel(UUID ownerID, int level) {
         if (level < 1) throw new IllegalArgumentException("Camp level must be at least 1");
         Campement campement = territoryRepository.getById(ownerID);
         if (campement == null) {
@@ -214,12 +216,10 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
         if (campement.getCampLevel() != level) {
             campement.setCampLevel(level);
             territoryRepository.save(campement);
-            return true;
         }
-        return false;
     }
 
-    public boolean createCampementAsStaff(UUID staff, UUID owner, Coordinate loc) {
+    public void createCampementAsStaff(UUID staff, UUID owner, Coordinate loc) {
         CreationResult result = isCreationAvailable(owner, loc.chunkCoord());
         if (result != CreationResult.SUCCESS) {
             switch (result) {
@@ -230,7 +230,7 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
                 case ON_OTHER_TERRITORY -> messaging.staffCreateOnOtherTerritory(staff);
                 default -> { /* Rien */ }
             }
-            return false;
+            return;
         }
         Campement campement = new Campement(owner, srpPlayerService.getCampLevel(owner), loc);
         campement.claimInitialChunks();
@@ -238,11 +238,13 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
         var chunk = loc.chunkCoord();
         messaging.staffCampementCreated(staff, owner, chunk.x(), chunk.z());
         messaging.campementCreatedByStaff(owner, chunk.x(), chunk.z());
-        return true;
     }
 
     public boolean canDeleteCampementAsStaff(UUID staff, UUID owner) {
-        if (getCampementByOwner(owner) == null) { messaging.staffTargetNoCampement(staff, owner); return false; }
+        if (getCampementByOwner(owner) == null) {
+            messaging.staffTargetNoCampement(staff, owner);
+            return false;
+        }
         return true;
     }
 
@@ -253,9 +255,15 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
     }
 
     public void trustAsStaff(UUID staff, UUID owner, UUID target) {
-        if (owner.equals(target)) { messaging.staffCannotTrustOwner(staff); return; }
+        if (owner.equals(target)) {
+            messaging.staffCannotTrustOwner(staff);
+            return;
+        }
         switch (trust(owner, target)) {
-            case SUCCESS -> { messaging.staffTrusted(staff, owner, target); messaging.trustedByStaff(target, owner); }
+            case SUCCESS -> {
+                messaging.staffTrusted(staff, owner, target);
+                messaging.trustedByStaff(target, owner);
+            }
             case ALREADY_TRUST -> messaging.staffAlreadyTrusted(staff);
             case NOT_ALLOWED -> messaging.staffNotAllowed(staff);
             case TERRITORY_NOT_FOUND -> messaging.staffTargetNoCampement(staff, owner);
@@ -273,7 +281,10 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
 
     public void showTrustedPlayers(UUID staff, UUID owner) {
         var campement = getCampementByOwner(owner);
-        if (campement == null) { messaging.staffTargetNoCampement(staff, owner); return; }
+        if (campement == null) {
+            messaging.staffTargetNoCampement(staff, owner);
+            return;
+        }
         messaging.staffTrustedList(staff, owner, campement.getTrusted());
     }
 }

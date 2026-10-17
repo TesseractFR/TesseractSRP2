@@ -71,12 +71,21 @@ public class GuildCommand extends CommandContext {
     @Command(name = "menu", playerOnly = true, description = "Ouvrir le menu des guildes.")
     public void openMenu(Player sender) {
         if (!guildService.canOpenMenu(sender.getUniqueId())) return;
-        new GuildMenu(sender.getUniqueId(), guildService, chatEntryService).open(sender);
+        new GuildMenu(sender.getUniqueId(), guildService, menuService, teleportService,
+                chatEntryService, null).open(sender);
     }
 
     @Command(name = "invite", playerOnly = true, description = "Inviter un joueur dans sa guilde.")
     public void invite(Player sender, @Argument("joueur") PlayerArg player) {
         guildService.invitePlayer(sender.getUniqueId(), player.get().getUniqueId());
+    }
+
+    @Command(name = "join", playerOnly = true, description = "Demander à rejoindre une guilde.")
+    public void join(Player sender,
+                     @Argument("guilde") GuildArg guildArg,
+                     @Argument(value = "message", optional = true) StringArg messageArg) {
+        guildService.requestJoin(sender.getUniqueId(), guildArg.get().getName(),
+                messageArg != null ? messageArg.get() : "");
     }
 
     @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")

@@ -2,6 +2,8 @@ package onl.tesseract.srp.territory.adapter.serverside.messaging;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRoleDisplay;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
@@ -21,6 +23,7 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
     private static final Component BORDER_HINT = Component.text("Visualise les bordures avec ")
             .append(Component.text("/guild border", NamedTextColor.GOLD))
             .append(Component.text("."));
+    private static final String DEFAULT_JOIN_MESSAGE = "Bonjour, j'aimerais rejoindre votre guilde !";
 
     private void send(UUID id, Component msg) {
         Player p = Bukkit.getPlayer(id);
@@ -67,6 +70,22 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
         success(s, nameOf(t) + " a rejoint votre guilde.");
         success(t, "Vous avez rejoint la guilde " + guild + ".");
     }
+    @Override public void playerJoinGuildNotFound(UUID p, String name) { error(p, "La guilde \"" + name + "\" n'existe pas."); }
+    @Override public void playerAlreadyInGuild(UUID p) { error(p, "Tu es déjà dans une guilde."); }
+    @Override public void playerGuildFull(UUID p) { error(p, "Cette guilde a atteint son nombre maximum de membres."); }
+    @Override public void playerAlreadyRequested(UUID p) { info(p, "Tu as déjà une demande en attente pour cette guilde."); }
+    @Override public void playerJoinRequestSent(UUID p, String guild) { success(p, "Ta demande pour rejoindre la guilde " + guild + " a été envoyée."); }
+    @Override public void playerJoinRequestAccepted(UUID s, UUID t, String guild) {
+        success(s, nameOf(t) + " a rejoint votre guilde.");
+        success(t, "Votre demande pour rejoindre la guilde " + guild + " a été acceptée !");
+    }
+    @Override public void playerJoinRequestDeclined(UUID s, UUID t, String guild) {
+        info(s, "La demande de " + nameOf(t) + " a été refusée.");
+        error(t, "Votre demande pour rejoindre la guilde " + guild + " a été refusée.");
+    }
+    @Override public void playerNoJoinRequest(UUID p) { error(p, "Aucune demande en attente pour ce joueur."); }
+    @Override
+    public String defaultJoinRequestMessage() { return DEFAULT_JOIN_MESSAGE; }
 
     // kick / leave
     @Override public void playerKickNotMember(UUID p, UUID t) { error(p, nameOf(t) + " n'est pas membre de ta guilde."); }
@@ -104,6 +123,33 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
     // border
     @Override public void playerBordersShown(UUID p) { success(p, "Les bordures de ta guilde sont maintenant visibles !"); }
     @Override public void playerBordersHidden(UUID p) { success(p, "Les bordures de ta guilde ont été masquées."); }
+
+    // rôles
+    @Override public void playerRoleChanged(UUID s, UUID t, GuildRole role) {
+        success(s, "Le rôle de " + nameOf(t) + " est maintenant " + GuildRoleDisplay.name(role) + ".");
+    }
+    @Override public void playerLeaderTransferred(UUID s, UUID t) {
+        success(s, nameOf(t) + " est maintenant chef de la guilde.");
+    }
+    @Override public void playerRoleChangeImpossible(UUID s) { error(s, "Ce changement de rôle est impossible."); }
+
+    // rang
+    @Override public void playerRankUpgraded(UUID p, GuildRank rank) {
+        send(p, GUILD_CHAT_SUCCESS
+                .append(Component.text("Félicitations, votre guilde est maintenant au rang de "))
+                .append(Component.text(GuildRankDisplay.title(rank), GuildRankDisplay.color(rank)))
+                .append(Component.text(" !")));
+    }
+    @Override public void playerRankMax(UUID p) { info(p, "Votre guilde est déjà au rang maximum."); }
+    @Override public void playerRankMoneyMissing(UUID p, int cost) { error(p, "Argent insuffisant : il faut " + cost + " Lys."); }
+    @Override public void playerRankLevelMissing(UUID p, int min) { error(p, "Niveau insuffisant : votre guilde doit être niveau " + min + " minimum."); }
+
+    // banque
+    @Override public void playerInvalidAmount(UUID p) { error(p, "Nombre invalide."); }
+    @Override public void playerNotEnoughMoney(UUID p) { error(p, "Argent insuffisant."); }
+    @Override public void playerGuildNotEnoughMoney(UUID p) { error(p, "La banque de guilde n'a pas assez d'argent."); }
+    @Override public void playerBankDeposited(UUID p, int a) { success(p, a + " Lys déposés dans la banque de guilde."); }
+    @Override public void playerBankWithdrawn(UUID p, int a) { success(p, a + " Lys retirés de la banque de guilde."); }
 
     private void staffError(UUID id, String text) { send(id, STAFF_CHAT_ERROR.append(Component.text(text))); }
     private void staffSuccess(UUID id, String text) { send(id, STAFF_CHAT_SUCCESS.append(Component.text(text))); }

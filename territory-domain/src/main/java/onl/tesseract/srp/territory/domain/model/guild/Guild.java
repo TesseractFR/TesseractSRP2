@@ -1,8 +1,6 @@
 package onl.tesseract.srp.territory.domain.model.guild;
 
-import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 import onl.tesseract.srp.common.domain.model.ChunkCoord;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.territory.domain.model.Territory;
@@ -40,6 +38,9 @@ public class Guild extends Territory<GuildChunk> implements
     public Guild(UUID id, Coordinate spawnLocation, Set<UUID> trustedPlayers, GuildMemberContainer memberContainer,
                  VisitorSpawnContainer visitorSpawnContainer, String name, int money, int level, int xp,
                  GuildRank rank) {
+        if (money < 0 || level < 1 || xp < 0 || rank == null) {
+            throw new IllegalArgumentException("Invalid guild balance or progression state");
+        }
         super(id, spawnLocation ,trustedPlayers);
         this.memberContainer = memberContainer;
         this.visitorSpawnContainer = visitorSpawnContainer;
@@ -48,9 +49,6 @@ public class Guild extends Territory<GuildChunk> implements
         this.level = level;
         this.xp = xp;
         this.rank = rank;
-        if (money < 0 || level < 1 || xp < 0 || rank == null) {
-            throw new IllegalArgumentException("Invalid guild balance or progression state");
-        }
     }
 
     public Guild(UUID leaderId, String name, Coordinate spawnLocation) {
@@ -170,6 +168,10 @@ public class Guild extends Territory<GuildChunk> implements
         this.xp = xp;
     }
 
+    public int getXpForNextLevel() {
+        return 1000 * level;
+    }
+
     public void setRank(GuildRank rank) {
         if (rank == null) throw new IllegalArgumentException("Guild rank cannot be null");
         this.rank = rank;
@@ -214,17 +216,13 @@ public class Guild extends Territory<GuildChunk> implements
         return memberContainer.getInvitations();
     }
 
-    public java.util.Set<UUID> getJoinRequests() {
-        return memberContainer.getJoinRequests();
-    }
+    public java.util.Set<GuildJoinRequest> getJoinRequests() { return memberContainer.getJoinRequests(); }
 
     public void invitePlayer(UUID playerID) {
         memberContainer.invitePlayer(playerID);
     }
 
-    public void askToJoin(UUID playerID) {
-        memberContainer.askToJoin(playerID);
-    }
+    public void askToJoin(UUID playerID, String message) {memberContainer.askToJoin(playerID, message);}
 
     public void join(UUID playerID) {
         memberContainer.join(playerID);
@@ -233,6 +231,8 @@ public class Guild extends Territory<GuildChunk> implements
     public boolean removeInvitation(UUID playerID) {
         return memberContainer.removeInvitation(playerID);
     }
+
+    public boolean removeJoinRequest(UUID playerID) { return memberContainer.removeJoinRequest(playerID); }
 
     public boolean removeMember(UUID playerID) {
         return memberContainer.removeMember(playerID);
