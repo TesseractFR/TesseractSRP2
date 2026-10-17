@@ -111,9 +111,9 @@ public class CampementService extends TerritoryService<CampementChunk, Campement
     public boolean hasCampement(UUID player) {
         if (getCampementByOwner(player) == null) {
             messaging.playerNoCampement(player);
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public void deleteOwnCampement(UUID player) {

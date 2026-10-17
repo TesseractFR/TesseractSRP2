@@ -113,7 +113,7 @@ public class GuildMembersMenu extends DecoratedMenu {
         UUID viewerId = viewer.getUniqueId();
         UUID target = member.getPlayerID();
         if (member.getRole() == GuildRole.Citoyen) {
-            if (guildService.canKick(viewerId, target)) return;
+            if (!guildService.canKick(viewerId, target)) return;
             menuService.openConfirmationMenu(viewer,
                     Component.text("⚠ Exclure " + playerName(target) + " ?", NamedTextColor.RED), this,
                     () -> { guildService.kick(viewerId, target); reopen(viewer); });

@@ -513,25 +513,25 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         var guild = getGuildByMember(sender);
         if (guild == null) {
             messaging.playerNoGuild(sender);
-            return true;
+            return false;
         }
         if (!guild.canInvite(sender)) {
             messaging.playerNotAllowed(sender);
-            return true;
+            return false;
         }
         if (guild.getMembers().stream().noneMatch(m -> m.getPlayerID().equals(target))) {
             messaging.playerKickNotMember(sender, target);
-            return true;
+            return false;
         }
         if (guild.getLeaderId().equals(target)) {
             messaging.playerCannotKickLeader(sender);
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public synchronized void kick(UUID sender, UUID target) {
-        if (canKick(sender, target)) return;
+        if (!canKick(sender, target)) return;
         var guild = getGuildByMember(sender);
         guild.removeMember(target);
         territoryRepository.save(guild);
@@ -543,17 +543,17 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         var guild = getGuildByMember(player);
         if (guild == null) {
             messaging.playerNoGuild(player);
-            return true;
+            return false;
         }
         if (guild.getLeaderId().equals(player)) {
             messaging.playerLeaderMustDelete(player);
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public synchronized void leave(UUID player) {
-        if (canLeave(player)) return;
+        if (!canLeave(player)) return;
         var guild = getGuildByMember(player);
         guild.removeMember(player);
         territoryRepository.save(guild);
