@@ -54,7 +54,7 @@ public class CampementCommands extends CommandContext {
     @Command(name = "delete", description = "Supprimer son campement.")
     public void deleteCampement(Player sender) {
         UUID id = sender.getUniqueId();
-        if (!campementService.hasCampement(id)) return;
+        if (campementService.hasCampement(id)) return;
         menuService.openConfirmationMenu(sender,
                 Component.text("⚠ Es-tu sûr de vouloir supprimer ton campement ?", NamedTextColor.RED),
                 null, () -> {
@@ -65,7 +65,7 @@ public class CampementCommands extends CommandContext {
 
     @Command(name = "menu", description = "Ouvrir le menu du campement.")
     public void openMenu(Player sender) {
-        if (!campementService.hasCampement(sender.getUniqueId())) return;
+        if (campementService.hasCampement(sender.getUniqueId())) return;
         new CampementMenu(sender.getUniqueId(), campementService, menuService,
                 teleportService, null).open(sender);
     }

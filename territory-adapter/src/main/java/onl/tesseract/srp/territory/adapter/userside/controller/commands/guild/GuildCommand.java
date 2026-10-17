@@ -20,7 +20,6 @@ import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.Gui
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildSpawnKindArg;
-import onl.tesseract.srp.territory.adapter.userside.controller.menu.guild.GuildBaseMenu;
 import onl.tesseract.srp.territory.adapter.userside.controller.menu.guild.GuildMenu;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildSpawnKind;
@@ -93,7 +92,7 @@ public class GuildCommand extends CommandContext {
     public void kick(Player sender, @Argument("joueur") GuildMembersArg targetName) {
         UUID senderId = sender.getUniqueId();
         UUID targetId = Bukkit.getOfflinePlayer(targetName.get()).getUniqueId();
-        if (!guildService.canKick(senderId, targetId)) return;
+        if (guildService.canKick(senderId, targetId)) return;
         menuService.openConfirmationMenu(sender,
                 Component.text("⚠ Es-tu sûr de vouloir exclure ce joueur ?", NamedTextColor.RED),
                 null, () -> guildService.kick(senderId, targetId));
@@ -102,7 +101,7 @@ public class GuildCommand extends CommandContext {
     @Command(name = "leave", playerOnly = true, description = "Quitter sa guilde.")
     public void leave(Player sender) {
         UUID id = sender.getUniqueId();
-        if (!guildService.canLeave(id)) return;
+        if (guildService.canLeave(id)) return;
         menuService.openConfirmationMenu(sender,
                 Component.text("⚠ Es-tu sûr de vouloir quitter la guilde ?", NamedTextColor.RED),
                 null, () -> guildService.leave(id));

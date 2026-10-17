@@ -115,20 +115,20 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         return territoryRepository.findMemberRole(playerID);
     }
 
-    public synchronized boolean createGuild(UUID playerID, Coordinate coordinate, String guildName) {
+    public synchronized void createGuild(UUID playerID, Coordinate coordinate, String guildName) {
         if (coordinate == null) throw new IllegalArgumentException("Spawn coordinate cannot be null");
         if (guildName == null || guildName.isBlank()) throw new IllegalArgumentException("Guild name cannot be blank");
         if (!playerService.hasRequiredGuildRank(playerID)) {
             messaging.playerRankTooLowCreateGuild(playerID);
-            return false;
+            return;
         }
         if (moneyService.getPlayerMoney(playerID) < GUILD_COST) {
             messaging.playerNoMoneyCreateGuild(playerID);
-            return false;
+            return;
         }
         if (getByName(guildName) != null) {
             messaging.playerNameTakenCreateGuild(playerID);
-            return false;
+            return;
         }
         var availability = isCreationAvailable(playerID, coordinate.chunkCoord());
         if (availability != CreationResult.SUCCESS) {
@@ -140,13 +140,13 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
                 case ON_OTHER_TERRITORY -> messaging.playerOnOtherTerritoryCreateGuild(playerID);
                 default -> { /* Rien */ }
             }
-            return false;
+            return;
         }
         var guild = new Guild(playerID, guildName, coordinate);
         guild.claimInitialChunks();
         if (!moneyService.payCreation(playerID, GUILD_COST)) {
             messaging.playerNoMoneyCreateGuild(playerID);
-            return false;
+            return;
         }
         try {
             territoryRepository.save(guild);
@@ -155,7 +155,6 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
             throw exception;
         }
         messaging.playerGuildCreated(playerID, guildName);
-        return true;
     }
 
     public Guild getByName(String guildName) {
@@ -204,8 +203,14 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public boolean canDeleteGuild(UUID player) {
         var role = getMemberRole(player);
-        if (role == null) { messaging.playerNoGuild(player); return false; }
-        if (role != GuildRole.Leader) { messaging.playerNotAllowed(player); return false; }
+        if (role == null) {
+            messaging.playerNoGuild(player);
+            return false;
+        }
+        if (role != GuildRole.Leader) {
+            messaging.playerNotAllowed(player);
+            return false;
+        }
         return true;
     }
 
@@ -222,7 +227,10 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public synchronized void deleteGuildAsStaff(UUID staff, UUID guildId) {
         var guild = territoryRepository.getById(guildId);
-        if (guild == null) { messaging.staffDeleteFailed(staff); return; }
+        if (guild == null) {
+            messaging.staffDeleteFailed(staff);
+            return;
+        }
         territoryRepository.deleteById(guildId);
         messaging.staffGuildDeleted(staff, guild.getName());
     }
@@ -230,10 +238,22 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public synchronized void invitePlayer(UUID sender, UUID target) {
         var guild = getGuildByMember(sender);
-        if (guild == null) { messaging.playerNoGuild(sender); return; }
-        if (!guild.canInvite(sender)) { messaging.playerNotAllowed(sender); return; }
-        if (sender.equals(target)) { messaging.playerCannotInviteSelf(sender); return; }
-        if (getGuildByMember(target) != null) { messaging.playerInviteTargetHasGuild(sender, target); return; }
+        if (guild == null) {
+            messaging.playerNoGuild(sender);
+            return;
+        }
+        if (!guild.canInvite(sender)) {
+            messaging.playerNotAllowed(sender);
+            return;
+        }
+        if (sender.equals(target)) {
+            messaging.playerCannotInviteSelf(sender);
+            return;
+        }
+        if (getGuildByMember(target) != null) {
+            messaging.playerInviteTargetHasGuild(sender, target);
+            return;
+        }
 
         if (guild.getJoinRequests().stream().anyMatch(r -> r.getPlayerID().equals(target))) {
             guild.join(target);
@@ -249,13 +269,21 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public synchronized void requestJoin(UUID player, String guildName, String message) {
         var guild = getByName(guildName);
-        if (guild == null) { messaging.playerJoinGuildNotFound(player, guildName); return; }
-        if (getGuildByMember(player) != null) { messaging.playerAlreadyInGuild(player); return; }
+        if (guild == null) {
+            messaging.playerJoinGuildNotFound(player, guildName);
+            return;
+        }
+        if (getGuildByMember(player) != null) {
+            messaging.playerAlreadyInGuild(player);
+            return;
+        }
         if (guild.getMembers().size() >= guild.getRank().getMaxMembersNumber()) {
-            messaging.playerGuildFull(player); return;
+            messaging.playerGuildFull(player);
+            return;
         }
         if (guild.getJoinRequests().stream().anyMatch(r -> r.getPlayerID().equals(player))) {
-            messaging.playerAlreadyRequested(player); return;
+            messaging.playerAlreadyRequested(player);
+            return;
         }
         String text = (message == null || message.isBlank())
                 ? messaging.defaultJoinRequestMessage()
@@ -293,44 +321,75 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         return removed;
     }
 
-    public synchronized boolean acceptJoinRequest(UUID sender, UUID target) {
+    public synchronized void acceptJoinRequest(UUID sender, UUID target) {
         var guild = getGuildByMember(sender);
-        if (guild == null) { messaging.playerNoGuild(sender); return false; }
-        if (!guild.canInvite(sender)) { messaging.playerNotAllowed(sender); return false; }
-        if (getGuildByMember(target) != null) { messaging.playerInviteTargetHasGuild(sender, target); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(sender);
+            return;
+        }
+        if (!guild.canInvite(sender)) {
+            messaging.playerNotAllowed(sender);
+            return;
+        }
+        if (getGuildByMember(target) != null) {
+            messaging.playerInviteTargetHasGuild(sender, target);
+            return;
+        }
         if (guild.getJoinRequests().stream().noneMatch(r -> r.getPlayerID().equals(target))) {
-            messaging.playerNoJoinRequest(sender); return false;
+            messaging.playerNoJoinRequest(sender);
+            return;
         }
         if (guild.getMembers().size() >= guild.getRank().getMaxMembersNumber()) {
-            messaging.playerGuildFull(sender); return false;
+            messaging.playerGuildFull(sender);
+            return;
         }
         guild.join(target);
         territoryRepository.save(guild);
         messaging.playerJoinRequestAccepted(sender, target, guild.getName());
-        return true;
     }
 
-    public synchronized boolean declineJoinRequest(UUID sender, UUID target) {
+    public synchronized void declineJoinRequest(UUID sender, UUID target) {
         var guild = getGuildByMember(sender);
-        if (guild == null) { messaging.playerNoGuild(sender); return false; }
-        if (!guild.canInvite(sender)) { messaging.playerNotAllowed(sender); return false; }
-        if (!guild.removeJoinRequest(target)) { messaging.playerNoJoinRequest(sender); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(sender);
+            return;
+        }
+        if (!guild.canInvite(sender)) {
+            messaging.playerNotAllowed(sender);
+            return;
+        }
+        if (!guild.removeJoinRequest(target)) {
+            messaging.playerNoJoinRequest(sender);
+            return;
+        }
         territoryRepository.save(guild);
         messaging.playerJoinRequestDeclined(sender, target, guild.getName());
-        return true;
     }
 
     public synchronized boolean changeMemberRole(UUID sender, UUID target, GuildRoleChange change) {
         var guild = getGuildByMember(sender);
-        if (guild == null) { messaging.playerNoGuild(sender); return false; }
-        if (!guild.canInvite(sender)) { messaging.playerNotAllowed(sender); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(sender);
+            return false;
+        }
+        if (!guild.canInvite(sender)) {
+            messaging.playerNotAllowed(sender);
+            return false;
+        }
         var member = guild.getMembers().stream()
                 .filter(m -> m.getPlayerID().equals(target)).findFirst().orElse(null);
-        if (member == null) { messaging.playerKickNotMember(sender, target); return false; }
-        if (target.equals(guild.getLeaderId())) { messaging.playerRoleChangeImpossible(sender); return false; }
+        if (member == null) {
+            messaging.playerKickNotMember(sender, target);
+            return false;
+        }
+        if (target.equals(guild.getLeaderId())) {
+            messaging.playerRoleChangeImpossible(sender);
+            return false;
+        }
         boolean senderIsLeader = sender.equals(guild.getLeaderId());
         if (member.getRole() == GuildRole.Adjoint && !senderIsLeader) {
-            messaging.playerNotAllowed(sender); return false;
+            messaging.playerNotAllowed(sender);
+            return false;
         }
 
         if (change == GuildRoleChange.PROMOTE && member.getRole() == GuildRole.Adjoint) {
@@ -353,7 +412,10 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
                 default -> null;
             };
         };
-        if (newRole == null) { messaging.playerRoleChangeImpossible(sender); return false; }
+        if (newRole == null) {
+            messaging.playerRoleChangeImpossible(sender);
+            return false;
+        }
         member.setRole(newRole);
         territoryRepository.save(guild);
         messaging.playerRoleChanged(sender, target, newRole);
@@ -369,10 +431,12 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     public synchronized void addMemberAsStaff(UUID staff, UUID guildID, UUID playerID) {
         var guild = getGuild(guildID);
         if (guild.getMembers().stream().anyMatch(m -> m.getPlayerID().equals(playerID))) {
-            messaging.staffMemberAlreadyInGuild(staff, playerID); return;
+            messaging.staffMemberAlreadyInGuild(staff, playerID);
+            return;
         }
         if (territoryRepository.findGuildByMember(playerID) != null) {
-            messaging.staffMemberHasOtherGuild(staff, playerID); return;
+            messaging.staffMemberHasOtherGuild(staff, playerID);
+            return;
         }
         guild.join(playerID);
         territoryRepository.save(guild);
@@ -383,9 +447,13 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     public synchronized void kickMemberAsStaff(UUID staff, UUID guildID, UUID target) {
         var guild = getGuild(guildID);
         if (guild.getMembers().stream().noneMatch(m -> m.getPlayerID().equals(target))) {
-            messaging.staffMemberNotInGuild(staff, target); return;
+            messaging.staffMemberNotInGuild(staff, target);
+            return;
         }
-        if (guild.getLeaderId().equals(target)) { messaging.staffCannotKickLeader(staff); return; }
+        if (guild.getLeaderId().equals(target)) {
+            messaging.staffCannotKickLeader(staff);
+            return;
+        }
         guild.removeMember(target);
         territoryRepository.save(guild);
         messaging.staffMemberKicked(staff, target, guild.getName());
@@ -443,18 +511,27 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public boolean canKick(UUID sender, UUID target) {
         var guild = getGuildByMember(sender);
-        if (guild == null) { messaging.playerNoGuild(sender); return false; }
-        if (!guild.canInvite(sender)) { messaging.playerNotAllowed(sender); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(sender);
+            return true;
+        }
+        if (!guild.canInvite(sender)) {
+            messaging.playerNotAllowed(sender);
+            return true;
+        }
         if (guild.getMembers().stream().noneMatch(m -> m.getPlayerID().equals(target))) {
             messaging.playerKickNotMember(sender, target);
-            return false;
+            return true;
         }
-        if (guild.getLeaderId().equals(target)) { messaging.playerCannotKickLeader(sender); return false; }
-        return true;
+        if (guild.getLeaderId().equals(target)) {
+            messaging.playerCannotKickLeader(sender);
+            return true;
+        }
+        return false;
     }
 
     public synchronized void kick(UUID sender, UUID target) {
-        if (!canKick(sender, target)) return;
+        if (canKick(sender, target)) return;
         var guild = getGuildByMember(sender);
         guild.removeMember(target);
         territoryRepository.save(guild);
@@ -464,13 +541,19 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public boolean canLeave(UUID player) {
         var guild = getGuildByMember(player);
-        if (guild == null) { messaging.playerNoGuild(player); return false; }
-        if (guild.getLeaderId().equals(player)) { messaging.playerLeaderMustDelete(player); return false; }
-        return true;
+        if (guild == null) {
+            messaging.playerNoGuild(player);
+            return true;
+        }
+        if (guild.getLeaderId().equals(player)) {
+            messaging.playerLeaderMustDelete(player);
+            return true;
+        }
+        return false;
     }
 
     public synchronized void leave(UUID player) {
-        if (!canLeave(player)) return;
+        if (canLeave(player)) return;
         var guild = getGuildByMember(player);
         guild.removeMember(player);
         territoryRepository.save(guild);
@@ -555,19 +638,40 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public synchronized boolean bankDeposit(UUID player, int amount) {
         var guild = getGuildByMember(player);
-        if (guild == null) { messaging.playerNoGuild(player); return false; }
-        if (amount <= 0) { messaging.playerInvalidAmount(player); return false; }
-        if (!depositMoney(guild.getId(), player, amount)) { messaging.playerNotEnoughMoney(player); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(player);
+            return false;
+        }
+        if (amount <= 0) {
+            messaging.playerInvalidAmount(player);
+            return false;
+        }
+        if (!depositMoney(guild.getId(), player, amount)) {
+            messaging.playerNotEnoughMoney(player);
+            return false;
+        }
         messaging.playerBankDeposited(player, amount);
         return true;
     }
 
     public synchronized boolean bankWithdraw(UUID player, int amount) {
         var guild = getGuildByMember(player);
-        if (guild == null) { messaging.playerNoGuild(player); return false; }
-        if (amount <= 0) { messaging.playerInvalidAmount(player); return false; }
-        if (!guild.getMemberRole(player).canWithdrawMoney()) { messaging.playerNotAllowed(player); return false; }
-        if (!withdrawMoney(guild.getId(), player, amount)) { messaging.playerGuildNotEnoughMoney(player); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(player);
+            return false;
+        }
+        if (amount <= 0) {
+            messaging.playerInvalidAmount(player);
+            return false;
+        }
+        if (!guild.getMemberRole(player).canWithdrawMoney()) {
+            messaging.playerNotAllowed(player);
+            return false;
+        }
+        if (!withdrawMoney(guild.getId(), player, amount)) {
+            messaging.playerGuildNotEnoughMoney(player);
+            return false;
+        }
         messaging.playerBankWithdrawn(player, amount);
         return true;
     }
@@ -577,7 +681,10 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     }
 
     public void giveMoneyAsStaff(UUID staff, UUID guildID, int amount) {
-        if (amount <= 0) { messaging.staffInvalidAmount(staff); return; }
+        if (amount <= 0) {
+            messaging.staffInvalidAmount(staff);
+            return;
+        }
         var guild = getGuild(guildID);
         guild.addMoney(amount);
         territoryRepository.save(guild);
@@ -585,9 +692,15 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     }
 
     public void takeMoneyAsStaff(UUID staff, UUID guildID, int amount) {
-        if (amount <= 0) { messaging.staffInvalidAmount(staff); return; }
+        if (amount <= 0) {
+            messaging.staffInvalidAmount(staff);
+            return;
+        }
         var guild = getGuild(guildID);
-        if (guild.getMoney() < amount) { messaging.staffNotEnoughGuildMoney(staff, guild.getName()); return; }
+        if (guild.getMoney() < amount) {
+            messaging.staffNotEnoughGuildMoney(staff, guild.getName());
+            return;
+        }
         guild.addMoney(-amount);
         territoryRepository.save(guild);
         messaging.staffMoneyTaken(staff, guild.getName(), amount);
@@ -603,7 +716,10 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     }
 
     public void addGuildXpAsStaff(UUID staff, UUID guildId, int amount) {
-        if (amount <= 0) { messaging.staffInvalidAmount(staff); return; }
+        if (amount <= 0) {
+            messaging.staffInvalidAmount(staff);
+            return;
+        }
         var guild = getGuild(guildId);
         guild.addXp(amount);
         List<Integer> levelUps = new ArrayList<>();
@@ -619,7 +735,10 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
     }
 
     public void addLevelAsStaff(UUID staff, UUID guildId, int amount) {
-        if (amount <= 0) { messaging.staffInvalidAmount(staff); return; }
+        if (amount <= 0) {
+            messaging.staffInvalidAmount(staff);
+            return;
+        }
         var guild = getGuild(guildId);
         guild.setLevel(Math.addExact(guild.getLevel(), amount));
         guild.setXp(0);
@@ -668,12 +787,27 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public synchronized boolean upgradeRank(UUID player) {
         var guild = getGuildByMember(player);
-        if (guild == null) { messaging.playerNoGuild(player); return false; }
-        if (!guild.getMemberRole(player).canWithdrawMoney()) { messaging.playerNotAllowed(player); return false; }
+        if (guild == null) {
+            messaging.playerNoGuild(player);
+            return false;
+        }
+        if (!guild.getMemberRole(player).canWithdrawMoney()) {
+            messaging.playerNotAllowed(player);
+            return false;
+        }
         GuildRank next = guild.getRank().next();
-        if (next == null) { messaging.playerRankMax(player); return false; }
-        if (guild.getLevel() < next.getMinLevel()) { messaging.playerRankLevelMissing(player, next.getMinLevel()); return false; }
-        if (guild.getMoney() < next.getCost()) { messaging.playerRankMoneyMissing(player, next.getCost()); return false; }
+        if (next == null) {
+            messaging.playerRankMax(player);
+            return false;
+        }
+        if (guild.getLevel() < next.getMinLevel()) {
+            messaging.playerRankLevelMissing(player, next.getMinLevel());
+            return false;
+        }
+        if (guild.getMoney() < next.getCost()) {
+            messaging.playerRankMoneyMissing(player, next.getCost());
+            return false;
+        }
         guild.addMoney(-next.getCost());
         guild.setRank(next);
         territoryRepository.save(guild);
