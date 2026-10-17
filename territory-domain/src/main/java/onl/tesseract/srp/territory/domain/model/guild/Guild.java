@@ -214,17 +214,13 @@ public class Guild extends Territory<GuildChunk> implements
         return memberContainer.getInvitations();
     }
 
-    public java.util.Set<UUID> getJoinRequests() {
-        return memberContainer.getJoinRequests();
-    }
+    public java.util.Set<GuildJoinRequest> getJoinRequests() { return memberContainer.getJoinRequests(); }
 
     public void invitePlayer(UUID playerID) {
         memberContainer.invitePlayer(playerID);
     }
 
-    public void askToJoin(UUID playerID) {
-        memberContainer.askToJoin(playerID);
-    }
+    public void askToJoin(UUID playerID, String message) {memberContainer.askToJoin(playerID, message);}
 
     public void join(UUID playerID) {
         memberContainer.join(playerID);
@@ -233,6 +229,8 @@ public class Guild extends Territory<GuildChunk> implements
     public boolean removeInvitation(UUID playerID) {
         return memberContainer.removeInvitation(playerID);
     }
+
+    public boolean removeJoinRequest(UUID playerID) { return memberContainer.removeJoinRequest(playerID); }
 
     public boolean removeMember(UUID playerID) {
         return memberContainer.removeMember(playerID);

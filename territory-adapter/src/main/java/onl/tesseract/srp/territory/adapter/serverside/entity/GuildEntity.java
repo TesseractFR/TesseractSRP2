@@ -1,6 +1,7 @@
 package onl.tesseract.srp.territory.adapter.serverside.entity;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import onl.tesseract.srp.territory.adapter.serverside.entity.chunk.ChunkEntityId
 import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
 import onl.tesseract.srp.territory.domain.model.container.DefaultVisitorSpawnContainer;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
+import onl.tesseract.srp.territory.domain.model.guild.GuildJoinRequest;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMemberContainerImpl;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
@@ -17,10 +19,12 @@ import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "t_guilds")
@@ -85,11 +89,8 @@ public class GuildEntity {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Fetch(FetchMode.SUBSELECT)
-    @CollectionTable(
-            name = "guild_join_requests",
-            joinColumns = @JoinColumn(name = "guild_id")
-    )
-    private Set<UUID> joinRequests;
+    @CollectionTable(name = "guild_join_requests", joinColumns = @JoinColumn(name = "guild_id"))
+    private Set<JoinRequestEmbeddable> joinRequests;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Fetch(FetchMode.SUBSELECT)
@@ -131,6 +132,30 @@ public class GuildEntity {
                 .toList();
     }
 
+    @Getter
+    @Embeddable
+    @NoArgsConstructor
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+    public static class JoinRequestEmbeddable {
+        @EqualsAndHashCode.Include
+        private UUID playerID;
+
+        @Column(length = 256)
+        private String message;
+
+        private Instant requestedDate;
+
+        public JoinRequestEmbeddable(UUID playerID, String message, Instant requestedDate) {
+            this.playerID = playerID;
+            this.message = message;
+            this.requestedDate = requestedDate;
+        }
+
+        public GuildJoinRequest toDomain() {
+            return new GuildJoinRequest(playerID, message, requestedDate);
+        }
+    }
+
     public static GuildEntity fromDomain(
             onl.tesseract.srp.territory.domain.model.guild.Guild guild) {
         GuildEntity entity = new GuildEntity();
@@ -147,7 +172,9 @@ public class GuildEntity {
                 .map(m -> new MemberEmbeddable(m.getPlayerID(), m.getRole()))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
         entity.invitations = new HashSet<>(guild.getInvitations());
-        entity.joinRequests = new HashSet<>(guild.getJoinRequests());
+        entity.joinRequests = guild.getJoinRequests().stream()
+                .map(r -> new JoinRequestEmbeddable(r.getPlayerID(), r.getMessage(), r.getRequestedDate()))
+                .collect(Collectors.toCollection(HashSet::new));
         entity.trustedPlayers = new HashSet<>(guild.getTrusted());
         entity.chunks = guild.getChunks().stream()
                 .map(chunk -> new GuildChunkEntity(ChunkEntityId.fromDomain(chunk.getChunkCoord()), entity))
@@ -163,7 +190,9 @@ public class GuildEntity {
                 leaderId,
                 getMembersAsDomain(),
                 invitations != null ? new HashSet<>(invitations) : new HashSet<>(),
-                joinRequests != null ? new HashSet<>(joinRequests) : new HashSet<>()
+                joinRequests != null
+                        ? joinRequests.stream().map(JoinRequestEmbeddable::toDomain).collect(Collectors.toCollection(HashSet::new))
+                        : new HashSet<>()
         );
 
         Guild guild = new Guild(id,spawn,trustedPlayers != null ? new HashSet<>(trustedPlayers) : new HashSet<>(),memberContainer,
