@@ -689,7 +689,8 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
 
     public boolean canOpenMenu(UUID player) {
         if (getGuildByMember(player) == null) {
-            messaging.playerNoGuild(player); return false;
+            messaging.playerNoGuild(player);
+            return false;
         }
         return true;
     }
