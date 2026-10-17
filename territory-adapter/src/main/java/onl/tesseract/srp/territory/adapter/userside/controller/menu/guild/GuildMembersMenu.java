@@ -8,7 +8,6 @@ import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuService;
 import onl.tesseract.lib.menu.MenuSize;
-import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
 import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRoleDisplay;
 import onl.tesseract.srp.territory.adapter.userside.controller.menu.DecoratedMenu;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
@@ -114,7 +113,7 @@ public class GuildMembersMenu extends DecoratedMenu {
         UUID viewerId = viewer.getUniqueId();
         UUID target = member.getPlayerID();
         if (member.getRole() == GuildRole.Citoyen) {
-            if (!guildService.canKick(viewerId, target)) return;
+            if (guildService.canKick(viewerId, target)) return;
             menuService.openConfirmationMenu(viewer,
                     Component.text("⚠ Exclure " + playerName(target) + " ?", NamedTextColor.RED), this,
                     () -> { guildService.kick(viewerId, target); reopen(viewer); });
