@@ -8,8 +8,10 @@ import onl.tesseract.srp.territory.domain.port.userside.campement.CampementServi
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildBorderService;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementBorderService;
+import onl.tesseract.lib.service.ServiceContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 
 @Configuration
 public class TerritoryProvider {
@@ -45,6 +47,16 @@ public class TerritoryProvider {
             TerritoryBorderTaskSchedulerImpl scheduler,
             CampementService campementService) {
         return new CampementBorderService(scheduler, campementService);
+    }
+
+    @Bean
+    public SmartInitializingSingleton registerTerritoryServices(
+            GuildService guildService,
+            CampementService campementService) {
+        return () -> {
+            ServiceContainer.getInstance().registerService(GuildService.class, guildService);
+            ServiceContainer.getInstance().registerService(CampementService.class, campementService);
+        };
     }
 }
 
