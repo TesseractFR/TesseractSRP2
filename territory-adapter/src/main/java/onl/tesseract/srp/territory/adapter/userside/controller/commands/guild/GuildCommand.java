@@ -20,6 +20,7 @@ import onl.tesseract.srp.territory.adapter.userside.controller.annexionStick.Gui
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildMembersArg;
 import onl.tesseract.srp.territory.adapter.userside.controller.commands.args.GuildSpawnKindArg;
+import onl.tesseract.srp.territory.adapter.userside.controller.menu.guild.GuildBaseMenu;
 import onl.tesseract.srp.territory.adapter.userside.controller.menu.guild.GuildMenu;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildSpawnKind;
@@ -71,7 +72,8 @@ public class GuildCommand extends CommandContext {
     @Command(name = "menu", playerOnly = true, description = "Ouvrir le menu des guildes.")
     public void openMenu(Player sender) {
         if (!guildService.canOpenMenu(sender.getUniqueId())) return;
-        new GuildMenu(sender.getUniqueId(), guildService, chatEntryService).open(sender);
+        new GuildMenu(sender.getUniqueId(), guildService, menuService, teleportService,
+                chatEntryService, null).open(sender);
     }
 
     @Command(name = "invite", playerOnly = true, description = "Inviter un joueur dans sa guilde.")
