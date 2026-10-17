@@ -14,6 +14,9 @@ import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMemberContainerImpl;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,28 +67,32 @@ public class GuildEntity {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "guild", fetch = FetchType.EAGER)
     Set<GuildChunkEntity> chunks;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @CollectionTable(
             name = "guild_members",
             joinColumns = @JoinColumn(name = "guild_id")
     )
     private List<MemberEmbeddable> members;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @CollectionTable(
             name = "guild_invitations",
             joinColumns = @JoinColumn(name = "guild_id")
     )
     private Set<UUID> invitations;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @CollectionTable(
             name = "guild_join_requests",
             joinColumns = @JoinColumn(name = "guild_id")
     )
     private Set<UUID> joinRequests;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @CollectionTable(name = "guild_trusted_players", joinColumns = @JoinColumn(name = "guild_id"))
     private Set<UUID> trustedPlayers = new HashSet<>();
 
@@ -138,9 +145,9 @@ public class GuildEntity {
         entity.visitorSpawnLocation = new CoordinateEntity(guild.getVisitorSpawnpoint());
         entity.members = guild.getMembers().stream()
                 .map(m -> new MemberEmbeddable(m.getPlayerID(), m.getRole()))
-                .toList();
-        entity.invitations = guild.getInvitations();
-        entity.joinRequests = guild.getJoinRequests();
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        entity.invitations = new HashSet<>(guild.getInvitations());
+        entity.joinRequests = new HashSet<>(guild.getJoinRequests());
         entity.trustedPlayers = new HashSet<>(guild.getTrusted());
         entity.chunks = guild.getChunks().stream()
                 .map(chunk -> new GuildChunkEntity(ChunkEntityId.fromDomain(chunk.getChunkCoord()), entity))
@@ -155,8 +162,8 @@ public class GuildEntity {
         var memberContainer = new GuildMemberContainerImpl(
                 leaderId,
                 getMembersAsDomain(),
-                invitations != null ? invitations : Set.of(),
-                joinRequests != null ? joinRequests : Set.of()
+                invitations != null ? new HashSet<>(invitations) : new HashSet<>(),
+                joinRequests != null ? new HashSet<>(joinRequests) : new HashSet<>()
         );
 
         Guild guild = new Guild(id,spawn,trustedPlayers != null ? new HashSet<>(trustedPlayers) : new HashSet<>(),memberContainer,

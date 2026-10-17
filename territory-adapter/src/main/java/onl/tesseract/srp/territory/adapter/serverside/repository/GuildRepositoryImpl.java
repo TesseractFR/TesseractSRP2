@@ -1,18 +1,16 @@
 package onl.tesseract.srp.territory.adapter.serverside.repository;
 
 import onl.tesseract.srp.territory.adapter.serverside.entity.GuildEntity;
-import onl.tesseract.srp.territory.domain.model.TerritoryChunk;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 import onl.tesseract.srp.territory.domain.port.serverside.GuildRepository;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.UUID;
 
-@Component
+@Repository
 public class GuildRepositoryImpl implements GuildRepository {
 
     private final GuildJpaRepository jpaRepository;
@@ -30,14 +28,13 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findByPlayer(UUID player) {
-        GuildEntity guild = jpaRepository.findGuildByLeader(player);
-        if(guild == null) return null;
-        return guild.toDomain();
+        return findGuildByMember(player);
     }
 
     @Override
     public Guild findGuildByChunk(GuildChunk chunk) {
-        return jpaRepository.findGuildByChunk(chunk).toDomain();
+        GuildEntity guild = jpaRepository.findGuildByChunk(chunk);
+        return guild != null ? guild.toDomain() : null;
     }
 
     @Override
@@ -60,7 +57,8 @@ public class GuildRepositoryImpl implements GuildRepository {
 
     @Override
     public Guild findGuildByMember(UUID memberID) {
-        return Optional.of(jpaRepository.findGuildByMember(memberID)).map(GuildEntity::toDomain).orElse(null);
+        GuildEntity guild = jpaRepository.findGuildByMember(memberID);
+        return guild != null ? guild.toDomain() : null;
     }
 
     @Override
