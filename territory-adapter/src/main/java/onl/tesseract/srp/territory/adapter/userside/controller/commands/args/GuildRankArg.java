@@ -3,6 +3,7 @@ package onl.tesseract.srp.territory.adapter.userside.controller.commands.args;
 import onl.tesseract.commandBuilder.CommandArgument;
 import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps;
 import onl.tesseract.commandBuilder.annotation.Command;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 
 import java.util.Arrays;
@@ -19,26 +20,29 @@ public class GuildRankArg extends CommandArgument<GuildRank> {
 
     @Override
     public void define(CommandArgumentBuilderSteps.Parser<GuildRank> builder) {
-        List<String> allTitles = Arrays.stream(GuildRank.values()).map(GuildRank::getTitle).toList();
-        Map<String, GuildRank> byTitleCI = Arrays.stream(GuildRank.values()).collect(Collectors.toMap(g -> g.getTitle().toLowerCase(), g -> g));
+        List<String> allTitles = Arrays.stream(GuildRank.values())
+                .map(GuildRankDisplay::title)
+                .toList();
+        Map<String, GuildRank> byTitleCI = Arrays.stream(GuildRank.values())
+                .collect(Collectors.toMap(g -> GuildRankDisplay.title(g).toLowerCase(), g -> g));
 
         builder
-            .parser((input, _) -> {
-                String key = input.trim().toLowerCase();
-                GuildRank guildRank = byTitleCI.get(key);
-                if (guildRank == null) {
-                    throw new IllegalArgumentException(
-                            "Rang inconnu: \"" + input + "\". Valeurs: " + String.join(", ", allTitles)
-                    );
-                }
-                return guildRank;
-            })
-            .tabCompleter((prefix, _) -> {
-                String p = (prefix != null ? prefix : "").toLowerCase();
-                return Stream.concat(
-                        Stream.of("<Rang>"),
-                        allTitles.stream().filter(it -> it.toLowerCase().startsWith(p))
-                ).toList();
-            });
-}
+                .parser((input, _) -> {
+                    String key = input.trim().toLowerCase();
+                    GuildRank guildRank = byTitleCI.get(key);
+                    if (guildRank == null) {
+                        throw new IllegalArgumentException(
+                                "Rang inconnu: \"" + input + "\". Valeurs: " + String.join(", ", allTitles)
+                        );
+                    }
+                    return guildRank;
+                })
+                .tabCompleter((prefix, _) -> {
+                    String p = (prefix != null ? prefix : "").toLowerCase();
+                    return Stream.concat(
+                            Stream.of("<Rang>"),
+                            allTitles.stream().filter(it -> it.toLowerCase().startsWith(p))
+                    ).toList();
+                });
+    }
 }

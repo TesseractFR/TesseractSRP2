@@ -13,6 +13,7 @@ import onl.tesseract.lib.util.Util;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.userside.TeleportationService;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
@@ -146,16 +147,16 @@ public class GuildMenu extends GuildBaseMenu {
             if (guildService.upgradeRank(playerId)) close();
         });
     }
-
     private ItemLoreBuilder upgradeLore(Guild guild) {
         GuildRank current = guild.getRank();
         GuildRank next = current.next();
         var lore = new ItemLoreBuilder().append("Rang actuel : ", NamedTextColor.GRAY)
-                .append(current.getTitle(), current.getColor()).newline().newline();
+                .append(GuildRankDisplay.title(current), GuildRankDisplay.color(current)).newline().newline();
         if (next == null) return lore.append("Votre guilde est déjà au rang maximum.", NamedTextColor.GOLD);
         boolean level = guild.getLevel() >= next.getMinLevel();
         boolean money = guild.getMoney() >= next.getCost();
-        lore.append("Prochain rang : ", NamedTextColor.GRAY).append(next.getTitle(), next.getColor()).newline()
+        lore.append("Prochain rang : ", NamedTextColor.GRAY)
+                .append(GuildRankDisplay.title(next), GuildRankDisplay.color(next)).newline()
                 .append("Coût : ", NamedTextColor.GRAY)
                 .append(next.getCost() + " Lys", money ? NamedTextColor.GREEN : NamedTextColor.RED)
                 .newline().newline();
@@ -178,6 +179,7 @@ public class GuildMenu extends GuildBaseMenu {
     }
 
     private void addInfo(Guild guild) {
+        GuildRank rank = guild.getRank();
         var lore = new ItemLoreBuilder()
                 .append("Nom : ", NamedTextColor.GRAY).append(guild.getName(), NamedTextColor.WHITE).newline()
                 .append("Niveau : ", NamedTextColor.GRAY)
@@ -188,14 +190,14 @@ public class GuildMenu extends GuildBaseMenu {
                 .append(" / " + guild.getXpForNextLevel() + ")", NamedTextColor.GRAY, TextDecoration.ITALIC)
                 .newline()
                 .append("Rang : ", NamedTextColor.GRAY)
-                .append(guild.getRank().getTitle(), guild.getRank().getColor()).newline()
+                .append(GuildRankDisplay.title(rank), GuildRankDisplay.color(rank)).newline()
                 .append("Chef : ", NamedTextColor.GRAY).append(playerName(guild.getLeaderId()), NamedTextColor.GOLD).newline()
                 .append("Membres : ", NamedTextColor.GRAY)
                 .append(String.valueOf(guild.getMembers().size()), NamedTextColor.AQUA)
-                .append(" / " + guild.getRank().getMaxMembersNumber(), NamedTextColor.GRAY).newline()
+                .append(" / " + rank.getMaxMembersNumber(), NamedTextColor.GRAY).newline()
                 .append("Chunks : ", NamedTextColor.GRAY)
                 .append(String.valueOf(guild.getChunks().size()), NamedTextColor.AQUA)
-                .append(" / " + guild.getRank().getMaxChunksNumber(), NamedTextColor.GRAY);
+                .append(" / " + rank.getMaxChunksNumber(), NamedTextColor.GRAY);
         button(INFO, new ItemBuilder(Material.BLUE_BANNER).name("Informations générales", NamedTextColor.GOLD)
                 .lore(lore.get()).build(), _ -> { });
     }

@@ -69,7 +69,7 @@ public class GuildJoinRequestsMenu extends DecoratedMenu {
                     .append("Clic gauche : ", NamedTextColor.GOLD).append("Accepter", NamedTextColor.GREEN).newline()
                     .append("Clic droit : ", NamedTextColor.GOLD).append("Refuser", NamedTextColor.RED);
         }
-        button(slot, new ItemBuilder(PlayerUtils.getPlayerHead(target))
+        button(slot, new ItemBuilder(playerHead(target))
                 .name(name, NamedTextColor.GOLD).lore(lore.get()).build(), click -> {
             if (!canManage) return;
             UUID viewerId = viewer.getUniqueId();

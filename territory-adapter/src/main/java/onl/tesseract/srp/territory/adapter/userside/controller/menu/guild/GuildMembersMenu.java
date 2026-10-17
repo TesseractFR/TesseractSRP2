@@ -8,7 +8,8 @@ import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuService;
 import onl.tesseract.lib.menu.MenuSize;
-import onl.tesseract.srp.common.adapter.utils.PlayerUtils;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRoleDisplay;
 import onl.tesseract.srp.territory.adapter.userside.controller.menu.DecoratedMenu;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
@@ -76,19 +77,20 @@ public class GuildMembersMenu extends DecoratedMenu {
 
     private void addMember(Player viewer, Guild guild, int slot, GuildMember member, boolean canManage) {
         boolean actions = canShowActions(viewer, guild, member, canManage);
+        GuildRole role = member.getRole();
         var lore = new ItemLoreBuilder()
                 .append("Rôle : ", NamedTextColor.GRAY)
-                .append(member.getRole().getDisplayName(), member.getRole().getColor()).newline()
+                .append(GuildRoleDisplay.name(role), GuildRoleDisplay.color(role)).newline()
                 .append("A rejoint : ", NamedTextColor.GRAY)
                 .append(JOINED.format(member.getJoinedDate()), NamedTextColor.WHITE).newline().newline();
         if (actions) {
             lore.append("Clic gauche : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
                     .append("Promouvoir", NamedTextColor.GREEN, TextDecoration.ITALIC).newline()
                     .append("Clic droit : ", NamedTextColor.GOLD, TextDecoration.ITALIC)
-                    .append(member.getRole() == GuildRole.Citoyen ? "Exclure" : "Rétrograder",
+                    .append(role == GuildRole.Citoyen ? "Exclure" : "Rétrograder",
                             NamedTextColor.RED, TextDecoration.ITALIC);
         }
-        button(slot, new ItemBuilder(PlayerUtils.getPlayerHead(member.getPlayerID()))
+        button(slot, new ItemBuilder(playerHead(member.getPlayerID()))
                 .name(playerName(member.getPlayerID()), NamedTextColor.GOLD).lore(lore.get()).build(), click -> {
             if (!actions) return;
             if (click == ClickType.LEFT) promote(viewer, member);

@@ -2,6 +2,8 @@ package onl.tesseract.srp.territory.adapter.serverside.messaging;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRankDisplay;
+import onl.tesseract.srp.territory.adapter.userside.controller.display.GuildRoleDisplay;
 import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRank;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
@@ -124,7 +126,7 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
 
     // rôles
     @Override public void playerRoleChanged(UUID s, UUID t, GuildRole role) {
-        success(s, "Le rôle de " + nameOf(t) + " est maintenant " + role.getDisplayName() + ".");
+        success(s, "Le rôle de " + nameOf(t) + " est maintenant " + GuildRoleDisplay.name(role) + ".");
     }
     @Override public void playerLeaderTransferred(UUID s, UUID t) {
         success(s, nameOf(t) + " est maintenant chef de la guilde.");
@@ -135,7 +137,7 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
     @Override public void playerRankUpgraded(UUID p, GuildRank rank) {
         send(p, GUILD_CHAT_SUCCESS
                 .append(Component.text("Félicitations, votre guilde est maintenant au rang de "))
-                .append(Component.text(rank.getTitle(), rank.getColor()))
+                .append(Component.text(GuildRankDisplay.title(rank), GuildRankDisplay.color(rank)))
                 .append(Component.text(" !")));
     }
     @Override public void playerRankMax(UUID p) { info(p, "Votre guilde est déjà au rang maximum."); }
