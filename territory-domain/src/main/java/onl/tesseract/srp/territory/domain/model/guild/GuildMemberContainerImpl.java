@@ -2,6 +2,7 @@ package onl.tesseract.srp.territory.domain.model.guild;
 
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,13 +15,13 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
     private UUID leaderId;
     private final List<GuildMember> members;
     private final Set<UUID> invitations;
-    private final Set<UUID> joinRequests;
+    private final Set<GuildJoinRequest> joinRequests;
 
     public GuildMemberContainerImpl(UUID leaderId) {
         this(leaderId, List.of(), Set.of(), Set.of());
     }
 
-    public GuildMemberContainerImpl(UUID leaderId, List<GuildMember> members, Set<UUID> invitations, Set<UUID> joinRequests) {
+    public GuildMemberContainerImpl(UUID leaderId, List<GuildMember> members, Set<UUID> invitations, Set<GuildJoinRequest> joinRequests) {
         this.leaderId = leaderId;
         this.members = new ArrayList<>(members);
         this.invitations = new HashSet<>(invitations);
@@ -71,7 +72,7 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
     }
 
     @Override
-    public Set<UUID> getJoinRequests() {
+    public Set<GuildJoinRequest> getJoinRequests() {
         return Collections.unmodifiableSet(joinRequests);
     }
 
@@ -82,16 +83,16 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
     }
 
     @Override
-    public void askToJoin(UUID playerID) {
+    public void askToJoin(UUID playerID, String message) {
         requireNotMember(playerID);
-        joinRequests.add(playerID);
+        joinRequests.add(new GuildJoinRequest(playerID, message, Instant.now()));
     }
 
     @Override
     public void join(UUID playerID) {
         requireNotMember(playerID);
         invitations.remove(playerID);
-        joinRequests.remove(playerID);
+        removeJoinRequest(playerID);
         members.add(new GuildMember(playerID, GuildRole.Citoyen));
     }
 
@@ -101,10 +102,15 @@ public class GuildMemberContainerImpl implements GuildMemberContainer {
     }
 
     @Override
+    public boolean removeJoinRequest(UUID playerID) {
+        return joinRequests.removeIf(r -> r.getPlayerID().equals(playerID));
+    }
+
+    @Override
     public boolean removeMember(UUID playerID) {
         if (playerID.equals(leaderId)) return false;
         invitations.remove(playerID);
-        joinRequests.remove(playerID);
+        removeJoinRequest(playerID);
         return members.removeIf(m -> m.getPlayerID().equals(playerID));
     }
 

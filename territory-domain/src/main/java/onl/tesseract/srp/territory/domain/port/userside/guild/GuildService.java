@@ -239,7 +239,7 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         if (sender.equals(target)) { messaging.playerCannotInviteSelf(sender); return; }
         if (getGuildByMember(target) != null) { messaging.playerInviteTargetHasGuild(sender, target); return; }
 
-        if (guild.getJoinRequests().contains(target)) {
+        if (guild.getJoinRequests().stream().anyMatch(r -> r.getPlayerID().equals(target))) {
             guild.join(target);
             territoryRepository.save(guild);
             messaging.playerInviteJoined(sender, target, guild.getName());
@@ -249,6 +249,21 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         territoryRepository.save(guild);
         eventService.publish(new GuildInvitationEvent(guild.getName(), sender, target));
         messaging.playerInviteSent(sender, target);
+    }
+
+    public synchronized void requestJoin(UUID player, String guildName, String message) {
+        var guild = getByName(guildName);
+        if (guild == null) { messaging.playerJoinGuildNotFound(player, guildName); return; }
+        if (getGuildByMember(player) != null) { messaging.playerAlreadyInGuild(player); return; }
+        if (guild.getMembers().size() >= guild.getRank().getMaxMembersNumber()) {
+            messaging.playerGuildFull(player); return;
+        }
+        if (guild.getJoinRequests().stream().anyMatch(r -> r.getPlayerID().equals(player))) {
+            messaging.playerAlreadyRequested(player); return;
+        }
+        guild.askToJoin(player, message == null ? "" : message);
+        territoryRepository.save(guild);
+        messaging.playerJoinRequestSent(player, guild.getName());
     }
 
     public synchronized boolean acceptInvitation(String guildName, UUID playerID) {

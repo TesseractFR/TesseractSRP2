@@ -67,6 +67,11 @@ public class PlayerGuildMessagingRepositoryImpl implements PlayerGuildMessagingR
         success(s, nameOf(t) + " a rejoint votre guilde.");
         success(t, "Vous avez rejoint la guilde " + guild + ".");
     }
+    @Override public void playerJoinGuildNotFound(UUID p, String name) { error(p, "La guilde \"" + name + "\" n'existe pas."); }
+    @Override public void playerAlreadyInGuild(UUID p) { error(p, "Tu es déjà dans une guilde."); }
+    @Override public void playerGuildFull(UUID p) { error(p, "Cette guilde a atteint son nombre maximum de membres."); }
+    @Override public void playerAlreadyRequested(UUID p) { info(p, "Tu as déjà une demande en attente pour cette guilde."); }
+    @Override public void playerJoinRequestSent(UUID p, String guild) { success(p, "Ta demande pour rejoindre la guilde " + guild + " a été envoyée."); }
 
     // kick / leave
     @Override public void playerKickNotMember(UUID p, UUID t) { error(p, nameOf(t) + " n'est pas membre de ta guilde."); }

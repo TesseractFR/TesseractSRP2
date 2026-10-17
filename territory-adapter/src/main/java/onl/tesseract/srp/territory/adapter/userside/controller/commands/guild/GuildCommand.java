@@ -79,6 +79,14 @@ public class GuildCommand extends CommandContext {
         guildService.invitePlayer(sender.getUniqueId(), player.get().getUniqueId());
     }
 
+    @Command(name = "join", playerOnly = true, description = "Demander à rejoindre une guilde.")
+    public void join(Player sender,
+                     @Argument("guilde") GuildArg guildArg,
+                     @Argument(value = "message", optional = true) StringArg messageArg) {
+        guildService.requestJoin(sender.getUniqueId(), guildArg.get().getName(),
+                messageArg != null ? messageArg.get() : "");
+    }
+
     @Command(name = "kick", playerOnly = true, description = "Exclure un membre de sa guilde.")
     public void kick(Player sender, @Argument("joueur") GuildMembersArg targetName) {
         UUID senderId = sender.getUniqueId();

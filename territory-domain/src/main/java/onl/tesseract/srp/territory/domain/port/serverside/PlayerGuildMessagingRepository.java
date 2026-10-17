@@ -32,6 +32,11 @@ public interface PlayerGuildMessagingRepository {
     void playerInviteTargetHasGuild(UUID player, UUID target);
     void playerInviteSent(UUID sender, UUID target);
     void playerInviteJoined(UUID sender, UUID target, String guildName);
+    void playerJoinGuildNotFound(UUID player, String name);
+    void playerAlreadyInGuild(UUID player);
+    void playerGuildFull(UUID player);
+    void playerAlreadyRequested(UUID player);
+    void playerJoinRequestSent(UUID player, String guildName);
 
     // kick / leave
     void playerKickNotMember(UUID player, UUID target);
