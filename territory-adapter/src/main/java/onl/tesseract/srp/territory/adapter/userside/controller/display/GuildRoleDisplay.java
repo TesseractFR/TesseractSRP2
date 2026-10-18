@@ -21,6 +21,11 @@ public enum GuildRoleDisplay {
     }
 
     public static GuildRoleDisplay of(GuildRole role) {
-        return valueOf(role.name());
+        return switch (role) {
+            case Citoyen -> Citoyen;
+            case Batisseur -> Batisseur;
+            case Adjoint -> Adjoint;
+            case Leader -> Leader;
+        };
     }
 }
