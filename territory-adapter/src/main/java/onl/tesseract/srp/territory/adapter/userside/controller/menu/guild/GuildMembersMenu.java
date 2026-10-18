@@ -79,7 +79,7 @@ public class GuildMembersMenu extends DecoratedMenu {
         GuildRole role = member.getRole();
         var lore = new ItemLoreBuilder()
                 .append("Rôle : ", NamedTextColor.GRAY)
-                .append(GuildRoleDisplay.name(role), GuildRoleDisplay.color(role)).newline()
+                .append(GuildRoleDisplay.of(role).getDisplayName(), GuildRoleDisplay.of(role).getColor()).newline()
                 .append("A rejoint : ", NamedTextColor.GRAY)
                 .append(JOINED.format(member.getJoinedDate()), NamedTextColor.WHITE).newline().newline();
         if (actions) {

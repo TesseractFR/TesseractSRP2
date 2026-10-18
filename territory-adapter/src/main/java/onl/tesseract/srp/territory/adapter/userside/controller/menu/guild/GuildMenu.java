@@ -147,16 +147,19 @@ public class GuildMenu extends GuildBaseMenu {
             if (guildService.upgradeRank(playerId)) close();
         });
     }
+
     private ItemLoreBuilder upgradeLore(Guild guild) {
         GuildRank current = guild.getRank();
         GuildRank next = current.next();
+        GuildRankDisplay currentDisplay = GuildRankDisplay.of(current);
         var lore = new ItemLoreBuilder().append("Rang actuel : ", NamedTextColor.GRAY)
-                .append(GuildRankDisplay.title(current), GuildRankDisplay.color(current)).newline().newline();
+                .append(currentDisplay.getTitle(), currentDisplay.getColor()).newline().newline();
         if (next == null) return lore.append("Votre guilde est déjà au rang maximum.", NamedTextColor.GOLD);
+        GuildRankDisplay nextDisplay = GuildRankDisplay.of(next);
         boolean level = guild.getLevel() >= next.getMinLevel();
         boolean money = guild.getMoney() >= next.getCost();
         lore.append("Prochain rang : ", NamedTextColor.GRAY)
-                .append(GuildRankDisplay.title(next), GuildRankDisplay.color(next)).newline()
+                .append(nextDisplay.getTitle(), nextDisplay.getColor()).newline()
                 .append("Coût : ", NamedTextColor.GRAY)
                 .append(next.getCost() + " Lys", money ? NamedTextColor.GREEN : NamedTextColor.RED)
                 .newline().newline();
@@ -190,7 +193,7 @@ public class GuildMenu extends GuildBaseMenu {
                 .append(" / " + guild.getXpForNextLevel() + ")", NamedTextColor.GRAY, TextDecoration.ITALIC)
                 .newline()
                 .append("Rang : ", NamedTextColor.GRAY)
-                .append(GuildRankDisplay.title(rank), GuildRankDisplay.color(rank)).newline()
+                .append(GuildRankDisplay.of(rank).getTitle(), GuildRankDisplay.of(rank).getColor()).newline()
                 .append("Chef : ", NamedTextColor.GRAY).append(playerName(guild.getLeaderId()), NamedTextColor.GOLD).newline()
                 .append("Membres : ", NamedTextColor.GRAY)
                 .append(String.valueOf(guild.getMembers().size()), NamedTextColor.AQUA)
