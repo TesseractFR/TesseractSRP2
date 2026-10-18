@@ -20,12 +20,13 @@ public class GuildRankArg extends CommandArgument<GuildRank> {
 
     @Override
     public void define(CommandArgumentBuilderSteps.Parser<GuildRank> builder) {
-        List<String> allTitles = Arrays.stream(GuildRank.values())
-                .map(GuildRankDisplay::title)
+        List<String> allTitles = Arrays.stream(GuildRankDisplay.values())
+                .map(GuildRankDisplay::getTitle)
                 .toList();
         Map<String, GuildRank> byTitleCI = Arrays.stream(GuildRank.values())
-                .collect(Collectors.toMap(g -> GuildRankDisplay.title(g).toLowerCase(), g -> g));
-
+                .collect(Collectors.toMap(
+                        r -> GuildRankDisplay.of(r).getTitle().toLowerCase(),
+                        r -> r));
         builder
                 .parser((input, _) -> {
                     String key = input.trim().toLowerCase();

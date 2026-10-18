@@ -1,21 +1,26 @@
 package onl.tesseract.srp.territory.adapter.userside.controller.display;
 
+import lombok.Getter;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.srp.territory.domain.model.guild.enums.GuildRole;
 
-public final class GuildRoleDisplay {
-    private GuildRoleDisplay() {}
+@SuppressWarnings("java:S115")
+@Getter
+public enum GuildRoleDisplay {
+    Citoyen("Citoyen", NamedTextColor.GRAY),
+    Batisseur("Batisseur", NamedTextColor.GREEN),
+    Adjoint("Adjoint", NamedTextColor.GOLD),
+    Leader("Leader", NamedTextColor.RED);
 
-    public static String name(GuildRole role) {
-        return role.name();
+    private final String displayName;
+    private final NamedTextColor color;
+
+    GuildRoleDisplay(String displayName, NamedTextColor color) {
+        this.displayName = displayName;
+        this.color = color;
     }
 
-    public static NamedTextColor color(GuildRole role) {
-        return switch (role) {
-            case Citoyen -> NamedTextColor.GRAY;
-            case Batisseur -> NamedTextColor.GREEN;
-            case Adjoint -> NamedTextColor.GOLD;
-            case Leader -> NamedTextColor.RED;
-        };
+    public static GuildRoleDisplay of(GuildRole role) {
+        return valueOf(role.name());
     }
 }
