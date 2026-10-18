@@ -28,6 +28,10 @@ public abstract class ItemAdderMenu extends Menu {
     }
 
     protected ItemStack getCustomButtonItemStack(CustomMenuButton customMenuButton){
-        return CustomStack.getInstance(customMenuButton.getItemTag().value()).getItemStack();
+        try{
+            return CustomStack.getInstance(customMenuButton.getItemTag().value()).getItemStack();
+        }catch(Exception e){
+            throw new RuntimeException("Could not get item stack for custom menu button "+customMenuButton,e);
+        }
     }
 }
