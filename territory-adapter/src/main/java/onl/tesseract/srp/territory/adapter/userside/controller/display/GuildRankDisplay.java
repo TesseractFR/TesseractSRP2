@@ -22,6 +22,13 @@ public enum GuildRankDisplay {
     }
 
     public static GuildRankDisplay of(GuildRank rank) {
-        return valueOf(rank.name());
+        return switch (rank) {
+            case HAMEAU -> HAMEAU;
+            case COMMUNE -> COMMUNE;
+            case VILLAGE -> VILLAGE;
+            case VILLE -> VILLE;
+            case CITE -> CITE;
+            case CAPITALE -> CAPITALE;
+        };
     }
 }
