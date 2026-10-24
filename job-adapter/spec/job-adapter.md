@@ -8,7 +8,7 @@ L’adaptateur relie les services du domaine des métiers aux fichiers du serveu
 flowchart LR
     YAML[plugins/Tesseract/job/*.yaml et *.skills] --> S[Services job-domain]
     Bukkit[Commandes / casse de blocs] --> S
-    S --> JPA[JPA missions et progressions]
+    S --> JPA[JPA progressions]
     S --> ITEMS[CustomItemService]
 ```
 
@@ -20,11 +20,9 @@ Chaque entrée de talent fournit sa clé/nom, `maxLevel` (défaut 1), `bonus`, `
 
 `JobSkillTreeYamlRepository` lit `plugins/Tesseract/job/<jobName>.skills`. Les lignes de correspondance caractère=talent précèdent les lignes du dessin; le dessin se termine à `END`. Il construit une matrice de cellules avec cases vides, racine, cellules de talent et flèches typées. Un fichier absent ou un nom nul déclenche `IllegalArgumentException`; les erreurs de lecture deviennent `RuntimeException`. Bien qu’une map statique soit présente, la condition de cache contient `&& false`, donc le fichier est relu à chaque appel.
 
-## Progressions et missions JPA
+## Progressions JPA
 
 - `JobPlayerProgressionEntity` et ses classes associées représentent une progression par joueur/métier et les niveaux de talents, avec une clé composée. L’adaptateur lit une progression pour `(PlayerID, JobName)` et la convertit en `PlayerJobProgression`.
-- `JobMissionEntity` mappe une mission (identifiant, joueur, métier, matériau, quantité, qualité minimale, quantité livrée et récompense) vers le modèle immuable `JobMission`.
-- `JobMissionRepositoryJpaAdapter` liste les missions d’un joueur, enregistre et reconvertit une mission, et supprime par ID.
 
 ## Objets et déclencheurs Bukkit
 
