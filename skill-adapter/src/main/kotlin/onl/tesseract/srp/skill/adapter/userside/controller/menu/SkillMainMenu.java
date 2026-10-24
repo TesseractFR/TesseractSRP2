@@ -118,7 +118,7 @@ public class SkillMainMenu extends ItemAdderMenu {
         ItemStack item = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMetaUtil.displayName(item, Component.text("Améliorations tables/joueur"));
         addButton(SKILL_TREE_BUTTON_INDEX, item, p -> {
-            new SkillUpgradeMenu(skill,itemGateway,stationService, guildService, station, this).open(viewer);
+            new SkillUpgradeMenu(skill,itemGateway,craftingService,stationService, guildService, station, this).open(viewer);
         });
     }
 

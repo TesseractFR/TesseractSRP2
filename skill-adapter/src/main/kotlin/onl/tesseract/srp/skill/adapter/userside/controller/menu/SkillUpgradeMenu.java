@@ -8,10 +8,13 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
+import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.skill.domain.model.Quality;
 import onl.tesseract.srp.skill.domain.model.skill.Skill;
 import onl.tesseract.srp.skill.domain.model.station.StatType;
 import onl.tesseract.srp.skill.domain.model.station.Station;
 import onl.tesseract.srp.skill.domain.port.userside.StationService;
+import onl.tesseract.srp.skill.domain.port.userside.CraftingService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -26,10 +29,11 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
     private static final int QUALITY_BUTTON_INDEX = 12;
     private static final int SUCCESS_BUTTON_INDEX = 14;
     private static final int TIME_BUTTON_INDEX = 16;
+    private static final int INGREDIENT_QUALITY_BUTTON_INDEX = 34;
 
-    private static final int RECOVERY_SUCCESS_INDEX = 29;
-    private static final int RECOVERY_FAILURE_INDEX = 31;
-    private static final int MULTI_CRAFT_INDEX = 33;
+    private static final int RECOVERY_SUCCESS_INDEX = 28;
+    private static final int RECOVERY_FAILURE_INDEX = 30;
+    private static final int MULTI_CRAFT_INDEX = 32;
 
     private static final int BACK_BUTTON_INDEX = 36;
     private static final int INFO_BUTTON_INDEX = 44;
@@ -37,12 +41,14 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
     private final Skill skill;
     private final CustomItemService itemGateway;
     private final StationService stationService;
+    private final CraftingService craftingService;
     private final GuildService guildService;
     private final Station station;
     private final Menu previous;
 
     public SkillUpgradeMenu(Skill skill,
                             CustomItemService itemGateway,
+                            CraftingService craftingService,
                             StationService stationService,
                             GuildService guildService,
                             Station station,
@@ -50,6 +56,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         super(MenuSize.Five, "tesseract:skill_upgrade", "", previous,-8);
         this.skill = skill;
         this.itemGateway = itemGateway;
+        this.craftingService = craftingService;
         this.stationService = stationService;
         this.guildService = guildService;
         this.station = station;
@@ -62,6 +69,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         addQualityButton(viewer);
         addSuccessButton(viewer);
         addTimeButton(viewer);
+        addIngredientQualityButton(viewer);
 
         addRecoverySuccessButton(viewer);
         addRecoveryFailureButton(viewer);
@@ -75,6 +83,29 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
             previous.open(viewer);
         });
         addInfoButton(viewer);
+    }
+
+    private void addIngredientQualityButton(Player viewer) {
+        Quality current = craftingService.getMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name());
+        boolean maxed = current == Quality.EXCEPTIONAL;
+        Quality next = maxed ? current : current.next();
+        ItemStack item = new ItemStack(Material.AMETHYST_SHARD);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.displayName(Component.text("Capacité d'utiliser la qualité " + current.name(), NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+            meta.lore(Arrays.asList(
+                    Component.text("Niveau actuel : ", NamedTextColor.GRAY).append(Component.text(current.name(), NamedTextColor.WHITE)),
+                    Component.text(maxed ? "Qualité maximale débloquée." : "Niveau suivant : " + next.name(), maxed ? NamedTextColor.GRAY : NamedTextColor.GREEN),
+                    Component.text("Débloque l'utilisation d'ingrédients de meilleure qualité.", NamedTextColor.GRAY)
+            ));
+            item.setItemMeta(meta);
+        }
+        addButton(INGREDIENT_QUALITY_BUTTON_INDEX, item, p -> {
+            if (maxed) return;
+            craftingService.upgradeMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name());
+            viewer.sendMessage(Component.text("✓ Qualité " + next.name() + " débloquée !", NamedTextColor.GREEN));
+            new SkillUpgradeMenu(skill, itemGateway, craftingService, stationService, guildService, station, previous).open(viewer);
+        });
     }
 
     private void addTierButton(Player viewer) {
@@ -230,7 +261,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         if (upgraded != null) {
             viewer.sendMessage(Component.text("✓ Amélioration effectuée!", NamedTextColor.GREEN));
             close();
-            new SkillUpgradeMenu(skill, itemGateway, stationService, guildService, station, null).open(viewer);
+            new SkillUpgradeMenu(skill, itemGateway, craftingService, stationService, guildService, station, null).open(viewer);
         } else {
             viewer.sendMessage(Component.text("✗ Erreur lors de l'amélioration", NamedTextColor.RED));
         }

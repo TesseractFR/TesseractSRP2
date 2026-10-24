@@ -4,6 +4,7 @@ import onl.tesseract.srp.skill.domain.model.PlayerID;
 import onl.tesseract.srp.skill.domain.model.Quality;
 import onl.tesseract.srp.skill.domain.model.bonus.Bonus;
 import onl.tesseract.srp.skill.domain.model.bonus.CraftingBonus;
+import onl.tesseract.srp.skill.domain.model.bonus.StationBonus;
 import onl.tesseract.srp.skill.domain.model.crafting.*;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;
 import onl.tesseract.srp.skill.domain.model.recipe.RecipeComponent;
@@ -23,16 +24,18 @@ public class CraftingService {
     private final ItemRepository itemRepository;
     private final CraftTaskScheduler craftTaskScheduler;
     private final MessagingRepository messagingRepository;
+    private final PlayerSkillUpgradeRepository playerSkillUpgradeRepository;
     private final Map<PlayerID, PlayerLootCache> playersLootCache = new HashMap<>();
     private final Map<PlayerID, PerSkillTask> activeTasks = new HashMap<>();
     private final Map<PlayerID, PerSkillQueue> queues = new HashMap<>();
 
-    public CraftingService(SkillResultCacheRepository skillResultCacheRepository, CraftingRepository craftingRepository, ItemRepository itemRepository, CraftTaskScheduler craftTaskScheduler, MessagingRepository messagingRepository) {
+    public CraftingService(SkillResultCacheRepository skillResultCacheRepository, CraftingRepository craftingRepository, ItemRepository itemRepository, CraftTaskScheduler craftTaskScheduler, MessagingRepository messagingRepository, PlayerSkillUpgradeRepository playerSkillUpgradeRepository) {
         this.skillResultCacheRepository = skillResultCacheRepository;
         this.craftingRepository = craftingRepository;
         this.itemRepository = itemRepository;
         this.craftTaskScheduler = craftTaskScheduler;
         this.messagingRepository = messagingRepository;
+        this.playerSkillUpgradeRepository = playerSkillUpgradeRepository;
 
         loadAllCollectionCaches();
     }
@@ -83,7 +86,7 @@ public class CraftingService {
         }
         CraftingBonus bonus = task.getQueuedRecipe().getBonus();
         // Appliquer le taux de réussite
-        double effectiveSuccessRate = DEFAULT_SUCCESS_RATE + bonus.craftingStationBonus().successBonus().value();
+        double effectiveSuccessRate = getSuccessRate(bonus.craftingStationBonus());
         boolean success = new Random().nextDouble() <= effectiveSuccessRate;
         if(success){
             var result = task.getQueuedRecipe().getRecipe().result();
@@ -144,15 +147,45 @@ public class CraftingService {
     }
 
     private void startTask(PlayerID player,SkillName skill,QueuedRecipe queuedRecipe){
-        Duration baseDuration = queuedRecipe.getRecipe().duration();
-        Duration reducedDuration = Duration.ofMillis(
-                Math.round(baseDuration.toMillis() * (1-queuedRecipe.getBonus().craftingStationBonus().timeReduction().value())));
+        Duration reducedDuration = getAdjustedDuration(queuedRecipe.getRecipe(), queuedRecipe.getBonus().craftingStationBonus());
         CraftTask craftTask = new CraftTask(queuedRecipe,reducedDuration);
         activeTasks.get(player).tasks().put(skill, craftTask);
         craftTaskScheduler.schedule(player, skill, craftTask, this);
     }
 
-    public void startCraft(PlayerID player, SkillName skill, Recipe recipe, int quantity, Station station) {
+    public double getSuccessRate(StationBonus stationBonus) {
+        return DEFAULT_SUCCESS_RATE + stationBonus.successBonus().value();
+    }
+
+    public Duration getAdjustedDuration(Recipe recipe, StationBonus stationBonus) {
+        return Duration.ofMillis(Math.round(
+                recipe.duration().toMillis() * (1 - stationBonus.timeReduction().value())));
+    }
+
+    public Quality getMaximumIngredientQuality(PlayerID player, SkillName skill) {
+        return playerSkillUpgradeRepository.getMaximumIngredientQuality(player, skill);
+    }
+
+    public Quality upgradeMaximumIngredientQuality(PlayerID player, SkillName skill) {
+        Quality current = getMaximumIngredientQuality(player, skill);
+        if (current == Quality.EXCEPTIONAL) return current;
+        Quality next = current.next();
+        playerSkillUpgradeRepository.saveMaximumIngredientQuality(player, skill, next);
+        return next;
+    }
+
+    public int getMaxCraft(Recipe recipe, PlayerID player, Quality quality) {
+        int maxCraft = Integer.MAX_VALUE;
+        for (RecipeComponent component : recipe.components().values()) {
+            int owned = itemRepository.getItemNumber(player, component.material(), quality);
+            maxCraft = Math.min(maxCraft, owned / component.quantity());
+        }
+        if (maxCraft == Integer.MAX_VALUE) return 0;
+        return Math.min(maxCraft, getMaxStackSize(recipe));
+    }
+
+    public void startCraft(PlayerID player, SkillName skill, Recipe recipe, int quantity, Quality quality, Station station) {
+        if (!quality.isAtMost(getMaximumIngredientQuality(player, skill))) return;
         // Tier check
         if (recipe.tier().value() > station.getStatLevel(StatType.TIER)) {
             messagingRepository.sendInsuffisantTableTier(player,recipe.tier());
@@ -161,7 +194,7 @@ public class CraftingService {
 
         // Check and delete resources
         for (var component : recipe.components().values()) {
-            int available = itemRepository.getItemNumber(player, component.material(),Quality.POOR);
+            int available = itemRepository.getItemNumber(player, component.material(),quality);
             int totalNeeded = component.quantity() * quantity;
             if (available < totalNeeded) {
                 messagingRepository.sendInsuffisantComponent(player);
@@ -171,13 +204,13 @@ public class CraftingService {
 
         for (var component : recipe.components().values()) {
             int totalNeeded = component.quantity() * quantity;
-            itemRepository.removeItems(player, component.material(), totalNeeded,Quality.POOR);
+            itemRepository.removeItems(player, component.material(), totalNeeded,quality);
         }
 
         // Create bonus from station upgrades
         var bonus = new CraftingBonus(station.getBonus(), new Bonus(0.0), new Bonus(0.0), new Bonus(0.0));
 
-        var queuedRecipe = new QueuedRecipe(recipe, Quality.POOR,bonus, quantity);
+        var queuedRecipe = new QueuedRecipe(recipe, quality,bonus, quantity);
         var skillQueue = getQueue(player,skill);
 
 

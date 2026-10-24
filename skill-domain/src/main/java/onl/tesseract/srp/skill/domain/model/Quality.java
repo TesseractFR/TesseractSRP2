@@ -9,4 +9,8 @@ public enum Quality {    POOR,
     public Quality next() {
         return Quality.values()[Math.min(ordinal() + 1, values().length - 1)];
     }
+
+    public boolean isAtMost(Quality maximum) {
+        return ordinal() <= maximum.ordinal();
+    }
 }

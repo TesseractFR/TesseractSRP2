@@ -1,5 +1,7 @@
 package onl.tesseract.srp.skill.adapter.userside.controller.menu;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
@@ -20,6 +22,10 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class RecipeMenu extends ItemAdderBiMenu {
@@ -111,8 +117,34 @@ public class RecipeMenu extends ItemAdderBiMenu {
         }
         ItemStack item = customItemService.getItemStack(new MaterialName(recipe.result().material().value()));
         item.setAmount(recipe.result().quantity());
+        item.editMeta(meta -> {
+            List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+            lore.add(Component.empty());
+
+            double successRate = craftingService.getSuccessRate(station.getBonus());
+            double failureRate = Math.max(0, 1 - successRate);
+            double successBonus = station.getBonus().successBonus().value();
+            lore.add(Component.text("Taux de r\u00e9ussite : " + formatPercentage(successRate)
+                    + " (+" + formatPercentage(successBonus) + ")", NamedTextColor.GREEN));
+            lore.add(Component.text("Taux d'\u00e9chec : " + formatPercentage(failureRate), NamedTextColor.RED));
+            lore.add(Component.text("Dur\u00e9e : " + formatDuration(craftingService.getAdjustedDuration(recipe, station.getBonus())), NamedTextColor.GRAY));
+            lore.add(Component.text("Chance d'am\u00e9lioration de qualit\u00e9 : "
+                    + formatPercentage(station.getBonus().qualityBonus().value()), NamedTextColor.LIGHT_PURPLE));
+            meta.lore(lore);
+        });
         addButton(9 * (ligne) + (8), item, p ->
                 new CraftingMenu(skill,recipe,station, craftingService,guildService,stationService,customItemService,this).open(viewer));
+    }
+
+    private String formatPercentage(double value) {
+        return String.format(Locale.FRANCE, "%.1f%%", value * 100);
+    }
+
+    private String formatDuration(Duration duration) {
+        long totalSeconds = duration.toSeconds();
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return minutes > 0 ? minutes + " min " + seconds + " s" : seconds + " s";
     }
 
     private Object getField(Object obj, String fieldName) {

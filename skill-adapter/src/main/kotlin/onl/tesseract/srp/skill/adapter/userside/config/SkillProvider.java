@@ -19,9 +19,10 @@ public class SkillProvider {
     @Bean
     public CraftingService craftingService(SkillResultCacheRepository skillResultCacheRepository,
                                            CraftingRepository craftingRepository, ItemRepository itemRepository,
-                                           CraftTaskScheduler craftTaskScheduler, MessagingRepository messagingRepository) {
+                                           CraftTaskScheduler craftTaskScheduler, MessagingRepository messagingRepository,
+                                           PlayerSkillUpgradeRepository playerSkillUpgradeRepository) {
         return new CraftingService(skillResultCacheRepository, craftingRepository, itemRepository,
-                craftTaskScheduler, messagingRepository);
+                craftTaskScheduler, messagingRepository, playerSkillUpgradeRepository);
     }
 
     @Bean

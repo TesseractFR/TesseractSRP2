@@ -22,8 +22,11 @@ import onl.tesseract.srp.skill.domain.port.userside.StationService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -41,6 +44,7 @@ public class CraftingMenu extends ItemAdderMenu {
     private static final int QUANTITY_MAX_INDEX = 23;
 
     private static final int QUANTITY_DISPLAY_INDEX = 31;
+    private static final int QUALITY_SELECT_INDEX = 33;
     private static final int LAUNCH_BUTTON_INDEX = 34;
 
     private static final int RECIPE_BOOK_BUTTON_INDEX = 36;
@@ -59,6 +63,7 @@ public class CraftingMenu extends ItemAdderMenu {
     private final Recipe activeRecipe;
     private final Station station;
     private int quantityToCraft = 1;
+    private Quality selectedQuality = Quality.POOR;
 
     public CraftingMenu(Skill skill,
                         Recipe activeRecipe,
@@ -83,8 +88,37 @@ public class CraftingMenu extends ItemAdderMenu {
         addRecipeButton();
         addActiveRecipe();
         addInfoButton();
+        if (hasCustomIngredients()) {
+            addQualitySelector(viewer);
+        }
         addLaunchButton(viewer);
         addQuantityButtons(viewer);
+    }
+
+    private void addQualitySelector(Player viewer) {
+        Quality maximum = Quality.valueOf(craftingService.getMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name()).name());
+        Quality[] qualities = Arrays.stream(Quality.values()).filter(q -> q.ordinal() <= maximum.ordinal()).toArray(Quality[]::new);
+        ItemStack item = new ItemStack(org.bukkit.Material.AMETHYST_SHARD);
+        item.editMeta(meta -> {
+            meta.displayName(Component.text("Qualité des ingrédients : " + selectedQuality.name(), NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+            meta.lore(Arrays.asList(Component.text("Cliquez pour choisir une qualité débloquée.", NamedTextColor.GRAY)));
+        });
+        addButton(QUALITY_SELECT_INDEX, item, (InventoryClickEvent event) -> {
+            for (int i = 0; i < qualities.length; i++) {
+                if (qualities[i] == selectedQuality) {
+                    selectedQuality = qualities[(i + 1) % qualities.length];
+                    break;
+                }
+            }
+            quantityToCraft = Math.min(quantityToCraft, Math.max(1, getMaxCraft(viewer)));
+            placeButtons(viewer);
+        });
+    }
+
+    private boolean hasCustomIngredients() {
+        return activeRecipe.components().values().stream()
+                .anyMatch(component -> customItemService.isCustomMaterial(
+                        new MaterialName(component.material().value())));
     }
 
     private void addQuantityButtons(Player viewer) {
@@ -99,16 +133,19 @@ public class CraftingMenu extends ItemAdderMenu {
     }
 
     private void addCurrentQuantityButton() {
-        ItemStack item = getCustomButtonItemStack(CustomMenuButton.MENU_QUANTITY_BUTTON);
+        int totalProduced = activeRecipe.result().quantity() * quantityToCraft;
+        ItemStack item = customItemService.getItemStack(new MaterialName(activeRecipe.result().material().value()));
         item.editMeta(m -> {
-            m.displayName(Component.text("Nombre actuel d'exécutions : x" + quantityToCraft, NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
-            m.lore(Arrays.asList(
-                    Component.text("La recette sera lancée ", NamedTextColor.GRAY)
-                            .append(Component.text(quantityToCraft + " fois", NamedTextColor.WHITE))
-                            .append(Component.text(".", NamedTextColor.GRAY))
-            ));
+            List<Component> lore = new ArrayList<>(Arrays.asList(
+                    Component.text("Production totale : ", NamedTextColor.GRAY)
+                            .append(Component.text(totalProduced + "x " + getComponentName(activeRecipe.result().material()), NamedTextColor.WHITE)),
+                    Component.text("Ex\u00e9cutions : x" + quantityToCraft, NamedTextColor.GRAY)));
+            if (hasCustomIngredients()) {
+                lore.add(Component.text("Qualit\u00e9 s\u00e9lectionn\u00e9e : " + selectedQuality.name(), NamedTextColor.LIGHT_PURPLE));
+            }
+            m.lore(lore);
         });
-        addButton(QUANTITY_DISPLAY_INDEX, item.asQuantity(quantityToCraft));
+        addButton(QUANTITY_DISPLAY_INDEX, item.asQuantity(totalProduced));
     }
 
     private void addMinButton(Player viewer) {
@@ -221,7 +258,34 @@ public class CraftingMenu extends ItemAdderMenu {
             // The original Kotlin used component.material and component.quantity — adapt as needed
             addButton(COMPONENTS_OFFSET + key.value(), customItemService.getItemStack(new MaterialName(component.material().value())).asQuantity(component.quantity() * quantityToCraft));
         }
-        addButton(RESULT_INDEX, customItemService.getItemStack(new MaterialName(activeRecipe.result().material().value())).asQuantity(activeRecipe.result().quantity() * quantityToCraft));
+        ItemStack result = customItemService.getItemStack(new MaterialName(activeRecipe.result().material().value()));
+        result.editMeta(meta -> {
+            List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+            lore.add(Component.empty());
+
+            double successRate = craftingService.getSuccessRate(station.getBonus());
+            double failureRate = Math.max(0, 1 - successRate);
+            double successBonus = station.getBonus().successBonus().value();
+            lore.add(Component.text("Taux de r\u00e9ussite : " + formatPercentage(successRate)
+                    + " (+" + formatPercentage(successBonus) + ")", NamedTextColor.GREEN));
+            lore.add(Component.text("Taux d'\u00e9chec : " + formatPercentage(failureRate), NamedTextColor.RED));
+            lore.add(Component.text("Dur\u00e9e : " + formatDuration(craftingService.getAdjustedDuration(activeRecipe, station.getBonus())), NamedTextColor.GRAY));
+            lore.add(Component.text("Chance d'am\u00e9lioration de qualit\u00e9 : "
+                    + formatPercentage(station.getBonus().qualityBonus().value()), NamedTextColor.LIGHT_PURPLE));
+            meta.lore(lore);
+        });
+        addButton(RESULT_INDEX, result.asQuantity(activeRecipe.result().quantity() * quantityToCraft));
+    }
+
+    private String formatPercentage(double value) {
+        return String.format(Locale.FRANCE, "%.1f%%", value * 100);
+    }
+
+    private String formatDuration(Duration duration) {
+        long totalSeconds = duration.toSeconds();
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return minutes > 0 ? minutes + " min " + seconds + " s" : seconds + " s";
     }
 
     private void addInfoButton() {
@@ -279,7 +343,8 @@ public class CraftingMenu extends ItemAdderMenu {
         addButton(LAUNCH_BUTTON_INDEX, item, (InventoryClickEvent event) -> {
             if (!canLaunch) return;
             Player player = (Player) event.getWhoClicked();
-            craftingService.startCraft(new PlayerID(player.getUniqueId()), skill.name(), activeRecipe, quantityToCraft, station);
+            craftingService.startCraft(new PlayerID(player.getUniqueId()), skill.name(), activeRecipe, quantityToCraft,
+                    onl.tesseract.srp.skill.domain.model.Quality.valueOf(selectedQuality.name()), station);
             new SkillMainMenu(skill, station , craftingService, customItemService, guildService, stationService, this).open(viewer);
         });
     }
@@ -289,14 +354,7 @@ public class CraftingMenu extends ItemAdderMenu {
     }
 
     private int getMaxCraft(Player viewer) {
-        int max = Integer.MAX_VALUE;
-        for (Map.Entry<IngredientSlot, RecipeComponent> e : activeRecipe.components().entrySet()) {
-            RecipeComponent component = e.getValue();
-            int owned = customItemService.getItemQuantity(viewer.getUniqueId(), new MaterialName(component.material().value()), Quality.POOR);
-            int craftable = owned / component.quantity();
-            max = Math.min(max, craftable);
-        }
-        if (max == Integer.MAX_VALUE) return 0;
-        return Math.min(max, craftingService.getMaxStackSize(activeRecipe));
+        return craftingService.getMaxCraft(activeRecipe, new PlayerID(viewer.getUniqueId()),
+                onl.tesseract.srp.skill.domain.model.Quality.valueOf(selectedQuality.name()));
     }
 }
