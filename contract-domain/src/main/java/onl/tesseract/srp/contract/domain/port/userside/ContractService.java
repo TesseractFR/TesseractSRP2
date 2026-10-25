@@ -3,209 +3,196 @@ package onl.tesseract.srp.contract.domain.port.userside;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.event.ContractDelivered;
-import onl.tesseract.srp.contract.domain.model.event.ContractExpired;
-import onl.tesseract.srp.contract.domain.model.event.ContractIssued;
-import onl.tesseract.srp.contract.domain.model.profile.PlayerContractProfile;
-import onl.tesseract.srp.contract.domain.model.result.DeliveryResult;
-import onl.tesseract.srp.contract.domain.model.result.DeliveryStatus;
-import onl.tesseract.srp.contract.domain.model.result.PurchaseResult;
-import onl.tesseract.srp.contract.domain.model.result.PurchaseStatus;
-import onl.tesseract.srp.contract.domain.model.ticket.ContractPlayerState;
-import onl.tesseract.srp.contract.domain.port.serverside.*;
+import onl.tesseract.srp.contract.domain.model.contract.ContractType;
+import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
+import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository.DeliveryRefusal;
+import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.PlayerInventoryRepository;
 
-import java.time.Clock;
-import java.util.List;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
+import static onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository.DeliveryRefusal.*;
+
 public class ContractService {
 
-    static final String REWARD_REASON = "CONTRAT_RECOMPENSE";
-
     private final ContractRepository contracts;
-    private final ContractPlayerStateRepository states;
-    private final PlayerProfileRepository profiles;
-    private final ScrollItemRepository scrolls;
-    private final ItemRepository items;
-    private final MoneyRepository money;
+    private final PlayerInventoryRepository inventory;
     private final ContractGenerator generator;
-    private final ContractTicketService tickets;
-    private final TransactionRunner transactions;
-    private final ContractEventPublisher events;
-    private final Clock clock;
+    private final PlayerInfoRepository players;
+    private final ContractMessagingRepository messaging;
 
-    public ContractService(ContractRepository contracts, ContractPlayerStateRepository states,
-                           PlayerProfileRepository profiles, ScrollItemRepository scrolls, ItemRepository items,
-                           MoneyRepository money, ContractGenerator generator, ContractTicketService tickets,
-                           TransactionRunner transactions, ContractEventPublisher events, Clock clock) {
+    public ContractService(ContractRepository contracts, PlayerInventoryRepository inventory, ContractGenerator generator, PlayerInfoRepository players, ContractMessagingRepository messaging) {
         this.contracts = contracts;
-        this.states = states;
-        this.profiles = profiles;
-        this.scrolls = scrolls;
-        this.items = items;
-        this.money = money;
+        this.inventory = inventory;
         this.generator = generator;
-        this.tickets = tickets;
-        this.transactions = transactions;
-        this.events = events;
-        this.clock = clock;
+        this.players = players;
+        this.messaging = messaging;
     }
 
-    /** Dépense un ticket pour acheter un parchemin aléatoire. Le ticket n'est pas dépensé si le joueur ne peut pas le recevoir. */
-    public PurchaseResult buyScroll(PlayerID player) {
-        ContractPlayerState state = tickets.currentState(player);
-        if (state.tickets() < 1) {
-            return PurchaseResult.failed(PurchaseStatus.NO_TICKET);
+    public void buyScroll(PlayerID player) {
+        int ticketsBefore = getTickets(player);
+        if (ticketsBefore < 1) {
+            messaging.sendPurchaseNoTicket(player);
+            return;
         }
-        if (!scrolls.canReceive(player)) {
-            return PurchaseResult.failed(PurchaseStatus.INVENTORY_FULL);
+        if (!inventory.canReceiveScroll(player)) {
+            messaging.sendPurchaseInventoryFull(player);
+            return;
         }
-        PlayerContractProfile profile = profiles.profileOf(player);
-        Optional<Contract> draft = generator.generate(player, profile);
+        Optional<Contract> draft = generator.generate(player);
         if (draft.isEmpty()) {
-            return PurchaseResult.failed(PurchaseStatus.NOTHING_UNLOCKED);
+            messaging.sendPurchaseNoContractAvailable(player);
+            return;
         }
-        Contract saved = transactions.inTransaction(() -> {
-            Contract contract = contracts.save(draft.get());
-            states.save(state.spendOne());
-            return contract;
-        });
-        if (!scrolls.give(player, saved)) {
-            transactions.inTransaction(() -> {
-                contracts.delete(saved.id());
-                states.save(state);
-                return null;
-            });
-            return PurchaseResult.failed(PurchaseStatus.INVENTORY_FULL);
+        players.saveTickets(player, ticketsBefore - 1);
+        Contract saved = saveOrRefund(player, ticketsBefore, draft.get());
+        if (!inventory.giveScroll(player, saved)) {
+            contracts.delete(saved.id());
+            players.saveTickets(player, ticketsBefore);
+            messaging.sendPurchaseInventoryFull(player);
+            return;
         }
-        events.publish(new ContractIssued(player, saved.id()));
-        return PurchaseResult.ok(saved);
+        messaging.sendPurchaseSucceeded(player, saved, ticketsBefore - 1);
     }
 
-    /**
-     * Donne le parchemin de découverte gratuit à un joueur qui n'en a jamais reçu. Ne coûte pas de ticket.
-     *
-     * @return vrai si un parchemin a été donné
-     */
-    public boolean giveDiscoveryScroll(PlayerID player) {
-        ContractPlayerState state = tickets.currentState(player);
-        if (state.discoveryGiven() || !scrolls.canReceive(player)) {
-            return false;
-        }
-        Optional<Contract> draft = generator.generateDiscovery(player, profiles.profileOf(player));
-        if (draft.isEmpty()) {
-            return false;
-        }
-        Contract saved = transactions.inTransaction(() -> {
-            Contract contract = contracts.save(draft.get());
-            states.save(state.withDiscoveryGiven());
-            return contract;
-        });
-        if (!scrolls.give(player, saved)) {
-            transactions.inTransaction(() -> {
-                contracts.delete(saved.id());
-                states.save(state);
-                return null;
-            });
-            return false;
-        }
-        events.publish(new ContractIssued(player, saved.id()));
-        return true;
-    }
-
-    /**
-     * Livre un parchemin au PNJ d'un métier, en une seule fois. Toute la récompense va au joueur qui livre.
-     * Tout est vérifié d'abord ; les items et le parchemin sont retirés, puis le contrat est supprimé et payé dans une
-     * transaction. Si elle échoue, les items et le parchemin sont rendus.
-     */
-    public DeliveryResult deliver(PlayerID player, long contractId, String npcJob) {
-        Optional<Contract> found = contracts.findById(contractId);
+    public void deliver(PlayerID player, long contractId, String npcJob) {
+        Optional<Contract> found = prepareDelivery(player, contractId, npcJob);
         if (found.isEmpty()) {
-            return DeliveryResult.failed(DeliveryStatus.INVALID_SCROLL);
+            return;
         }
         Contract contract = found.get();
-        if (!contract.isForJob(npcJob)) {
-            return DeliveryResult.failed(DeliveryStatus.WRONG_CLIENT);
+        if (!inventory.hasScroll(player, contractId)) {
+            refuse(player, npcJob, contractId, INVALID_SCROLL);
+            return;
         }
-        if (contract.isExpired(clock.instant())) {
-            transactions.inTransaction(() -> contracts.delete(contractId));
-            return DeliveryResult.failed(DeliveryStatus.EXPIRED);
-        }
-        if (!scrolls.has(player, contractId)) {
-            return DeliveryResult.failed(DeliveryStatus.INVALID_SCROLL);
-        }
-        int have = items.countAtLeast(player, contract.material(), contract.minimalQuality());
+        int have = inventory.countAtLeast(player, contract.material(), contract.minimalQuality());
         if (have < contract.quantity()) {
-            int missing = contract.quantity() - have;
-            boolean lowerQualityExists = items.countAtLeast(player, contract.material(), Quality.POOR) > have;
-            return DeliveryResult.missing(lowerQualityExists
-                    ? DeliveryStatus.NOT_ENOUGH_QUALITY
-                    : DeliveryStatus.MISSING_ITEMS, missing);
+            boolean lowerQualityExists = inventory.countAtLeast(player, contract.material(), Quality.POOR) > have;
+            messaging.sendDeliveryRefused(player, npcJob, lowerQualityExists ? NOT_ENOUGH_QUALITY : MISSING_ITEMS, contract.quantity() - have);
+            return;
         }
-
-        if (!scrolls.remove(player, contractId)) {
-            return DeliveryResult.failed(DeliveryStatus.INVALID_SCROLL);
-        }
-        Map<Quality, Integer> removed = items.removeAtLeast(player, contract.material(),
-                contract.minimalQuality(), contract.quantity());
-        if (removed.isEmpty()) {
-            scrolls.give(player, contract);
-            return DeliveryResult.missing(DeliveryStatus.MISSING_ITEMS, contract.quantity());
-        }
-
-        DeliveryResult result;
-        try {
-            result = transactions.inTransaction(() -> payAndDelete(player, contract));
-        } catch (PaymentFailedException e) {
-            giveBack(player, contract, removed);
-            return DeliveryResult.failed(DeliveryStatus.PAYMENT_FAILED);
-        } catch (RuntimeException e) {
-            giveBack(player, contract, removed);
-            throw e;
-        }
-        if (!result.isDelivered()) {
-            giveBack(player, contract, removed);
-            return result;
-        }
-        events.publish(new ContractDelivered(player, contract.issuedTo(), contractId, contract.type(),
-                contract.material(), contract.quantity(), contract.reward()));
-        return result;
+        withdrawAndPay(player, npcJob, contract);
     }
 
-    private DeliveryResult payAndDelete(PlayerID player, Contract contract) {
-        if (!contracts.delete(contract.id())) {
-            return DeliveryResult.failed(DeliveryStatus.INVALID_SCROLL);
+    public int moneyBonus(PlayerID deliverer, Contract contract) {
+        if (contract.type() != ContractType.HARVEST) {
+            return 0;
         }
-        if (!money.pay(player, contract.reward(), REWARD_REASON)) {
-            throw new PaymentFailedException();
+        double rate = Math.max(0, players.getMoneyBonus(deliverer, contract.job(), contract.material()));
+        return (int) Math.round(contract.reward() * rate);
+    }
+
+    public void noScrollInHand(PlayerID player, String npcJob) {
+        messaging.sendNoScrollInHand(player, npcJob);
+    }
+
+    public void useScroll(PlayerID player, long contractId) {
+        boolean valid = contracts.findById(contractId).map(c -> !c.isExpired(Instant.now())).orElse(false);
+        if (!valid && inventory.removeScroll(player, contractId)) {
+            messaging.sendScrollDestroyed(player);
         }
-        states.save(states.find(player).withOneMoreDelivered());
-        return DeliveryResult.delivered(contract.reward());
     }
 
-    private void giveBack(PlayerID player, Contract contract, Map<Quality, Integer> removed) {
-        items.giveBack(player, contract.material(), removed);
-        scrolls.give(player, contract);
+    public int getDailyQuota(PlayerID player) {
+        return players.getDailyTickets(player);
     }
 
-    public boolean isValid(long contractId) {
-        return contracts.findById(contractId).map(c -> !c.isExpired(clock.instant())).orElse(false);
+    public int getTickets(PlayerID player) {
+        return players.findTickets(player).orElseGet(() -> players.getDailyTickets(player));
     }
 
-    public Optional<Contract> find(long contractId) {
-        return contracts.findById(contractId);
+    public void showTickets(PlayerID player) {
+        messaging.sendTicketsShown(player, getTickets(player), getDailyQuota(player));
+    }
+
+    public void giveTicketsAsStaff(PlayerID staff, PlayerID target, int amount) {
+        if (amount <= 0) {
+            messaging.sendStaffInvalidAmount(staff);
+            return;
+        }
+        players.saveTickets(target, getTickets(target) + amount);
+        messaging.sendStaffTicketsGiven(staff, target, amount);
+    }
+
+    public void showTicketsAsStaff(PlayerID staff, PlayerID target) {
+        messaging.sendStaffTicketsShown(staff, target, getTickets(target), getDailyQuota(target));
+    }
+
+    public void renewDaily(PlayerID player) {
+        int quota = players.getDailyTickets(player);
+        if (getTickets(player) != quota) {
+            players.saveTickets(player, quota);
+        }
     }
 
     public int purgeExpired() {
-        List<Long> ids = transactions.inTransaction(() -> contracts.deleteExpired(clock.instant()));
-        ids.forEach(id -> events.publish(new ContractExpired(id)));
-        return ids.size();
+        return contracts.deleteExpired(Instant.now());
     }
 
-    private static final class PaymentFailedException extends RuntimeException {
-        PaymentFailedException() {
-            super("payment failed", null, false, false);
+    public Optional<Contract> prepareDelivery(PlayerID player, long contractId, String npcJob) {
+        Optional<Contract> found = contracts.findById(contractId);
+        if (found.isEmpty()) {
+            refuse(player, npcJob, contractId, INVALID_SCROLL);
+            return Optional.empty();
+        } else if (!found.get().isForJob(npcJob)) {
+            refuse(player, npcJob, contractId, WRONG_CLIENT);
+            return Optional.empty();
+        } else if (found.get().isExpired(Instant.now())) {
+            refuse(player, npcJob, contractId, EXPIRED);
+            return Optional.empty();
+        }
+        return found;
+    }
+
+    private void refuse(PlayerID player, String npcJob, long contractId, DeliveryRefusal why) {
+        if (why == EXPIRED) {
+            contracts.delete(contractId);
+        }
+        messaging.sendDeliveryRefused(player, npcJob, why, 0);
+    }
+
+    private void withdrawAndPay(PlayerID player, String npcJob, Contract contract) {
+        if (!inventory.removeScroll(player, contract.id())) {
+            messaging.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
+            return;
+        }
+        Map<Quality, Integer> removed = inventory.removeAtLeast(player, contract.material(), contract.minimalQuality(), contract.quantity());
+        if (removed.isEmpty()) {
+            inventory.giveScroll(player, contract);
+            messaging.sendDeliveryRefused(player, npcJob, MISSING_ITEMS, contract.quantity());
+            return;
+        }
+        int payout = 0;
+        boolean paid = false;
+        DeliveryRefusal refusal = INVALID_SCROLL;
+        try {
+            payout = contract.reward() + moneyBonus(player, contract);
+            paid = contracts.settle(contract.id(), player, payout);
+        } catch (PaymentFailedException e) {
+            refusal = PAYMENT_FAILED;
+        } finally {
+            if (!paid) {
+                inventory.giveBack(player, contract.material(), removed);
+                inventory.giveScroll(player, contract);
+            }
+        }
+        if (paid) {
+            messaging.sendDeliverySucceeded(player, npcJob, payout);
+        } else {
+            messaging.sendDeliveryRefused(player, npcJob, refusal, 0);
+        }
+    }
+
+    private Contract saveOrRefund(PlayerID player, int ticketsBefore, Contract draft) {
+        try {
+            return contracts.save(draft);
+        } catch (RuntimeException e) {
+            players.saveTickets(player, ticketsBefore);
+            throw e;
         }
     }
 }
