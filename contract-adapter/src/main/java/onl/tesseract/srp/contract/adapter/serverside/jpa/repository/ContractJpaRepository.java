@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.List;
 
 @Repository
 public interface ContractJpaRepository extends JpaRepository<ContractEntity, Long> {
@@ -16,6 +15,7 @@ public interface ContractJpaRepository extends JpaRepository<ContractEntity, Lon
     @Query("delete from ContractEntity c where c.id = :id")
     int deleteByIdCounting(@Param("id") Long id);
 
-    @Query("select c.id from ContractEntity c where c.expiresAt <= :now")
-    List<Long> findExpiredIds(@Param("now") Instant now);
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from ContractEntity c where c.expiresAt <= :now")
+    int deleteExpired(@Param("now") Instant now);
 }

@@ -37,12 +37,16 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Lot 2 : lecture de la progression de métier, items custom, argent du joueur -->
-        <!-- common-domain n'est pas dans le dependencyManagement du parent : on précise la version
-             (ou ajoute-le au parent, comme job-domain). -->
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>common-domain</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>common-adapter</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -54,6 +58,11 @@
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>customItem-domain</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>skill-domain</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -74,8 +83,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Persistance (lot 1) : versions gérées par le parent.
-             Aligne le scope (provided / compile) sur celui de job-adapter ou skill-adapter. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -87,20 +94,29 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Lot 3 : PNJ et item du parchemin
         <dependency>
-            <groupId>net.citizensnpcs</groupId>
-            <artifactId>citizensapi</artifactId>
+            <groupId>onl.tesseract.lib</groupId>
+            <artifactId>tesseract-persistence</artifactId>
+            <version>5.0.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>onl.tesseract.lib</groupId>
+            <artifactId>tesseract-chat</artifactId>
+            <version>5.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract</groupId>
+            <artifactId>core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>dev.lone</groupId>
             <artifactId>api-itemsadder</artifactId>
             <version>4.0.10</version>
             <scope>provided</scope>
         </dependency>
-        À confirmer pour Tesseract Core : le parent déclare onl.tesseract:core,
-        customItem-adapter utilise onl.tesseract.lib:tesseract-core.
-        -->
     </dependencies>
 </project>

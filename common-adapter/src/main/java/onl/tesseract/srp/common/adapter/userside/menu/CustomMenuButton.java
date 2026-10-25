@@ -20,7 +20,8 @@ public enum CustomMenuButton {
     MENU_PLUS_5_BUTTON("menu_plus_5_button"),
     MENU_RECIPE_BOOK_BUTTON("menu_recipe_book_button"),
     MENU_STRUCTURE_INFO_BUTTON("menu_structure_info_button"),
-    MENU_INFORMATION_BUTTON("menu_information_button")
+    MENU_INFORMATION_BUTTON("menu_information_button"),
+    MENU_CONTRACT_SCROLL_BUTTON("contract_scroll")
     ;
     private final static String TESSERACT_BASE = "tesseract:";
     private final ItemTag itemTag;
