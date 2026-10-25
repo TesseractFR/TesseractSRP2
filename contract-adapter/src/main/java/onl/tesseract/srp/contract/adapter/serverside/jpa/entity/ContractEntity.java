@@ -1,6 +1,8 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.entity;
 
+import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -44,9 +46,6 @@ public class ContractEntity {
     private int reward;
 
     @Column(nullable = false)
-    private int tier;
-
-    @Column(nullable = false)
     private Instant issuedAt;
 
     @Column(name = "expires_at", nullable = false)
@@ -54,4 +53,14 @@ public class ContractEntity {
 
     @Version
     private long version;
+
+    public static ContractEntity fromDomain(Contract c) {
+        return new ContractEntity(c.id(), c.issuedTo().value(), c.type(), c.job(), c.material(), c.quantity(),
+                c.minimalQuality(), c.reward(), c.issuedAt(), c.expiresAt(), 0L);
+    }
+
+    public Contract toDomain() {
+        return new Contract(id, new PlayerID(issuedTo), type, job, material, quantity, minimalQuality, reward,
+                issuedAt, expiresAt);
+    }
 }

@@ -1,0 +1,19 @@
+scroll-lifetime-hours: 72
+
+quantity-by-rarity:
+  COMMON: 600
+  SPECIAL: 300
+  RARE: 120
+  EPIC: 40
+  LEGENDARY: 10
+
+rarity-weights:
+  COMMON: 100
+  SPECIAL: 50
+  RARE: 20
+  EPIC: 5
+  LEGENDARY: 1
+
+npc-names:
+  fonte: Fondeur
+  mineur: Mineur
