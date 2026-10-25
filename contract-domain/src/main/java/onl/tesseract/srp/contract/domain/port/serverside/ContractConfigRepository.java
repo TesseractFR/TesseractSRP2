@@ -1,8 +1,7 @@
 package onl.tesseract.srp.contract.domain.port.serverside;
 
-import onl.tesseract.srp.contract.domain.model.settings.ContractSettings;
+import java.time.Duration;
 
 public interface ContractConfigRepository {
-
-    ContractSettings current();
+    Duration getScrollTtl();
 }
