@@ -42,6 +42,16 @@ public final class SrpChatFormats {
     public static final Component GUILD_CHAT_ERROR = GUILD_CHAT_FORMAT.color(NamedTextColor.RED);
     public static final Component GUILD_CHAT_SUCCESS = GUILD_CHAT_FORMAT.color(NamedTextColor.GREEN);
 
+    public static final Component CONTRACT_CHAT_FORMAT = Component.empty().color(NamedTextColor.GRAY)
+            .append(
+                    Component.empty()
+                            .append(Component.text("[", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD))
+                            .append(Component.text("Contrat", NamedTextColor.LIGHT_PURPLE))
+                            .append(Component.text("] ", NamedTextColor.DARK_PURPLE, TextDecoration.BOLD))
+            );
+    public static final Component CONTRACT_CHAT_ERROR = CONTRACT_CHAT_FORMAT.color(NamedTextColor.RED);
+    public static final Component CONTRACT_CHAT_SUCCESS = CONTRACT_CHAT_FORMAT.color(NamedTextColor.GREEN);
+
     public static final Component STAFF_CHAT_FORMAT = Component.empty().color(NamedTextColor.GRAY)
             .append(
                     Component.empty()

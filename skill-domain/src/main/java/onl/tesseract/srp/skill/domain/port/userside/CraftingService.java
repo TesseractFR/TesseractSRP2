@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.util.*;
 
 public class CraftingService {
-    private static final float DEFAULT_SUCCESS_RATE = 0.75f;
+    public static final float DEFAULT_SUCCESS_RATE = 0.75f;
     private final SkillResultCacheRepository skillResultCacheRepository;
     private final CraftingRepository craftingRepository;
     private final ItemRepository itemRepository;
