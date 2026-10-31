@@ -7,7 +7,6 @@ import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepo
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
 import org.bukkit.Bukkit;
@@ -73,7 +72,7 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
     @Override public void sendPurchaseSucceeded(PlayerID player, Contract contract, int ticketsLeft) {
         success(player, "Parchemin acheté : " + contract.quantity() + " × " + contract.material() + " (" + contract.job()
                 + "), qualité minimale " + contract.minimalQuality().name() + ", récompense " + contract.reward()
-                + " Lys" + (contract.type() == ContractType.HARVEST ? " + bonus métier" : "")
+                + " Lys"
                 + ". Tickets restants : " + ticketsLeft + ".");
     }
     @Override public void sendPurchaseNoTicket(PlayerID player) { error(player, "Tu n'as plus de ticket de contrat aujourd'hui."); }

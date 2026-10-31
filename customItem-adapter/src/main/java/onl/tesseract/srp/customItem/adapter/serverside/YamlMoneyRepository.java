@@ -120,6 +120,19 @@ public class YamlMoneyRepository implements MoneyRepository {
 
     @Override
     public MoneyValue getValue(MaterialName materialName, Quality quality) {
-        return values.get(new MaterialName(materialName.value())).multiply(qualityRates.get(quality));
+        MoneyValue value = values.get(materialName);
+        if (value == null) {
+            throw new IllegalArgumentException("No money value defined in itemValue.yml for " + materialName.value());
+        }
+        MoneyValue rate = qualityRates.get(quality);
+        if (rate == null) {
+            throw new IllegalArgumentException("No quality rate defined in itemValue.yml for " + quality);
+        }
+        return value.multiply(rate);
+    }
+
+    @Override
+    public boolean hasValue(MaterialName materialName) {
+        return values.containsKey(materialName);
     }
 }

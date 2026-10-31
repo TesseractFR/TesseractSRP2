@@ -7,6 +7,6 @@ import java.util.OptionalInt;
 public interface PlayerInfoRepository {
     OptionalInt findTickets(PlayerID player);
     void saveTickets(PlayerID player, int tickets);
-    int getDailyTickets(PlayerID player);
+    int getDailyQuota(PlayerID player);
     double getMoneyBonus(PlayerID player, String job, String material);
 }
