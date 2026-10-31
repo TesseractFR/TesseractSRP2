@@ -1,5 +1,6 @@
 package onl.tesseract.srp.customitem.domain.port.userside;
 
+import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.CustomItem;
 import onl.tesseract.srp.customitem.domain.model.CustomMaterial;
@@ -7,6 +8,7 @@ import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustomItemRepository;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustumMaterialRepository;
 import onl.tesseract.srp.customitem.domain.port.serverside.InventoryRepository;
+import onl.tesseract.srp.customitem.domain.port.serverside.MoneyRepository;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
@@ -18,13 +20,15 @@ public class CustomItemService {
     private final CustumMaterialRepository custumMaterialRepository;
     private final InventoryRepository inventoryRepository;
     private final CustomItemRepository customItemRepository;
+    private final MoneyRepository moneyRepository;
 
     private final Map<MaterialName, CustomMaterial> customItems = new HashMap<>();
 
-    public CustomItemService(CustumMaterialRepository custumMaterialRepository, InventoryRepository inventoryRepository, CustomItemRepository customItemRepository) {
+    public CustomItemService(CustumMaterialRepository custumMaterialRepository, InventoryRepository inventoryRepository, CustomItemRepository customItemRepository, MoneyRepository moneyRepository) {
         this.custumMaterialRepository = custumMaterialRepository;
         this.inventoryRepository = inventoryRepository;
         this.customItemRepository = customItemRepository;
+        this.moneyRepository = moneyRepository;
         loadAll();
     }
 
@@ -80,5 +84,9 @@ public class CustomItemService {
         if(isCustomMaterial(materialName))
             return customItemRepository.toCustomItemStack(getCustomMaterial(materialName));
         return customItemRepository.toVanillaItemStack(materialName);
+    }
+
+    public MoneyValue getMoneyValue(MaterialName materialName,Quality quality) {
+        return moneyRepository.getValue(materialName, quality);
     }
 }

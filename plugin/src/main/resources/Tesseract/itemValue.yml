@@ -1,0 +1,17 @@
+Vanilla:
+  STONE: 1.0
+  IRON_ORE: 2.0
+  COAL: 1.0
+
+Custom: {}
+
+CustomComposed:
+  STEEL:
+    IRON_ORE: 1
+    COAL: 1
+QualityRate:
+  POOR : 0.5
+  NORMAL : 1.0
+  GOOD : 1.25
+  VERY_GOOD : 1.60
+  EXCEPTIONAL : 2.0
