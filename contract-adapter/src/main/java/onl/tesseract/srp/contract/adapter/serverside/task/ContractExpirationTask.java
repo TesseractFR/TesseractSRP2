@@ -24,8 +24,8 @@ public class ContractExpirationTask implements Runnable {
 
     @Override
     public void run() {
-        int purged = contractService.purgeExpired();
-        if (purged > 0) {
-            plugin.getLogger().log(Level.INFO, "[contract] {0} contrat(s) expiré(s) supprimé(s).", purged);        }
+        int purgedCount = contractService.purgeExpired();
+        if (purgedCount > 0) {
+            plugin.getLogger().log(Level.INFO, "[contract] {0} contrat(s) expiré(s) supprimé(s).", purgedCount);        }
     }
 }

@@ -14,43 +14,42 @@ import java.util.OptionalLong;
 
 public final class ContractScrollItem {
 
-    private static final NamespacedKey KEY = Objects.requireNonNull(NamespacedKey.fromString("srp:contract_id"));
-
-    private static final NamespacedKey EXPIRES_KEY = Objects.requireNonNull(NamespacedKey.fromString("srp:contract_expires_at"));
+    private static final NamespacedKey CONTRACT_ID_KEY = Objects.requireNonNull(NamespacedKey.fromString("srp:contract_id"));
+    private static final NamespacedKey EXPIRES_AT_KEY = Objects.requireNonNull(NamespacedKey.fromString("srp:contract_expires_at"));
 
     private ContractScrollItem() {
     }
 
     public static Optional<ItemStack> create() {
-        CustomStack custom = CustomStack.getInstance(CustomMenuButton.MENU_CONTRACT_SCROLL_BUTTON.getItemTag().value());
-        return custom == null ? Optional.empty() : Optional.of(custom.getItemStack());
+        CustomStack customStack = CustomStack.getInstance(CustomMenuButton.MENU_CONTRACT_SCROLL_BUTTON.getItemTag().value());
+        return customStack == null ? Optional.empty() : Optional.of(customStack.getItemStack());
     }
 
-    public static void writeContractId(ItemMeta meta, long contractId) {
-        meta.getPersistentDataContainer().set(KEY, PersistentDataType.LONG, contractId);
+    public static void writeContractId(ItemMeta itemMeta, long contractId) {
+        itemMeta.getPersistentDataContainer().set(CONTRACT_ID_KEY, PersistentDataType.LONG, contractId);
     }
 
-    public static void writeExpiry(ItemMeta meta, Instant expiresAt) {
-        meta.getPersistentDataContainer().set(EXPIRES_KEY, PersistentDataType.LONG, expiresAt.toEpochMilli());
+    public static void writeExpiry(ItemMeta itemMeta, Instant expiresAt) {
+        itemMeta.getPersistentDataContainer().set(EXPIRES_AT_KEY, PersistentDataType.LONG, expiresAt.toEpochMilli());
     }
 
-    public static Optional<Instant> readExpiry(ItemStack stack) {
-        if (stack == null || !stack.hasItemMeta()) {
+    public static Optional<Instant> readExpiry(ItemStack itemStack) {
+        if (itemStack == null || !itemStack.hasItemMeta()) {
             return Optional.empty();
         }
-        Long millis = stack.getItemMeta().getPersistentDataContainer().get(EXPIRES_KEY, PersistentDataType.LONG);
-        return millis == null ? Optional.empty() : Optional.of(Instant.ofEpochMilli(millis));
+        Long expiresAtMillis = itemStack.getItemMeta().getPersistentDataContainer().get(EXPIRES_AT_KEY, PersistentDataType.LONG);
+        return expiresAtMillis == null ? Optional.empty() : Optional.of(Instant.ofEpochMilli(expiresAtMillis));
     }
 
-    public static boolean isExpired(ItemStack stack, Instant now) {
-        return readContractId(stack).isPresent() && readExpiry(stack).map(now::isAfter).orElse(false);
+    public static boolean isExpired(ItemStack itemStack, Instant now) {
+        return readContractId(itemStack).isPresent() && readExpiry(itemStack).map(now::isAfter).orElse(false);
     }
 
-    public static OptionalLong readContractId(ItemStack stack) {
-        if (stack == null || !stack.hasItemMeta()) {
+    public static OptionalLong readContractId(ItemStack itemStack) {
+        if (itemStack == null || !itemStack.hasItemMeta()) {
             return OptionalLong.empty();
         }
-        Long id = stack.getItemMeta().getPersistentDataContainer().get(KEY, PersistentDataType.LONG);
-        return id == null ? OptionalLong.empty() : OptionalLong.of(id);
+        Long contractId = itemStack.getItemMeta().getPersistentDataContainer().get(CONTRACT_ID_KEY, PersistentDataType.LONG);
+        return contractId == null ? OptionalLong.empty() : OptionalLong.of(contractId);
     }
 }
