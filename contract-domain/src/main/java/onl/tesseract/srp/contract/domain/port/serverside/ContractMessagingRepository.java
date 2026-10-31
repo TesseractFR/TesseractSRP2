@@ -2,6 +2,7 @@ package onl.tesseract.srp.contract.domain.port.serverside;
 
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
+import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 
 public interface ContractMessagingRepository {
     // achat
@@ -17,14 +18,11 @@ public interface ContractMessagingRepository {
 
     // parchemin et tickets
     void sendScrollDestroyed(PlayerID player);
+    void sendScrollsExpired(PlayerID player, int count);
     void sendTicketsShown(PlayerID player, int tickets, int dailyQuota);
 
     // staff
     void sendStaffInvalidAmount(PlayerID staff);
     void sendStaffTicketsGiven(PlayerID staff, PlayerID target, int amount);
     void sendStaffTicketsShown(PlayerID staff, PlayerID target, int tickets, int dailyQuota);
-
-    enum DeliveryRefusal {
-        WRONG_CLIENT, INVALID_SCROLL, EXPIRED, MISSING_ITEMS, NOT_ENOUGH_QUALITY, PAYMENT_FAILED
-    }
 }

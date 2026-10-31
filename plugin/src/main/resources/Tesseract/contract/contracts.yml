@@ -14,6 +14,19 @@ rarity-weights:
   EPIC: 5
   LEGENDARY: 1
 
+daily-tickets:
+  Survivant: 2
+  Explorateur: 3
+  Aventurier: 4
+  Noble: 5
+  Baron: 6
+  Seigneur: 7
+  Vicomte: 8
+  Comte: 8
+  Duc: 9
+  Roi: 9
+  Empereur: 10
+
 npc-names:
   fonte: Fondeur
   mineur: Mineur

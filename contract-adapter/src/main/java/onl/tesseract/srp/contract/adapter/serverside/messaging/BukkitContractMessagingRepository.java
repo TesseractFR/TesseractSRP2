@@ -8,15 +8,16 @@ import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
+import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static onl.tesseract.srp.common.adapter.SrpChatFormats.CONTRACT_CHAT_ERROR;
-import static onl.tesseract.srp.common.adapter.SrpChatFormats.CONTRACT_CHAT_FORMAT;
-import static onl.tesseract.srp.common.adapter.SrpChatFormats.CONTRACT_CHAT_SUCCESS;
+import static onl.tesseract.srp.contract.adapter.utils.ContractChatFormats.CONTRACT_CHAT_ERROR;
+import static onl.tesseract.srp.contract.adapter.utils.ContractChatFormats.CONTRACT_CHAT_FORMAT;
+import static onl.tesseract.srp.contract.adapter.utils.ContractChatFormats.CONTRACT_CHAT_SUCCESS;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_ERROR;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_FORMAT;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_SUCCESS;
@@ -139,6 +140,11 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
 
     // parchemin et tickets
     @Override public void sendScrollDestroyed(PlayerID p) { error(p, "Ce parchemin n'est plus valable : il a été détruit."); }
+    @Override public void sendScrollsExpired(PlayerID p, int count) {
+        error(p, count == 1
+                ? "Un de tes parchemins de contrat a expiré : il a été supprimé de ton inventaire."
+                : count + " de tes parchemins de contrat ont expiré : ils ont été supprimés de ton inventaire.");
+    }
     @Override public void sendTicketsShown(PlayerID p, int tickets, int dailyQuota) {
         info(p, "Tickets de contrat : " + tickets + " (quota par jour : " + dailyQuota + ").");
     }
