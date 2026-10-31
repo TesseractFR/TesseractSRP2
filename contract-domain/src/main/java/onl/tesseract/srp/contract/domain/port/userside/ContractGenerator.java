@@ -13,46 +13,46 @@ import java.util.Optional;
 import java.util.Random;
 
 public class ContractGenerator {
-    private final ContractConfigRepository config;
-    private final ItemInfoRepository itemInfo;
+    private final ContractConfigRepository contractConfigRepository;
+    private final ItemInfoRepository itemInfoRepository;
     private final Random random;
 
-    public ContractGenerator(ContractConfigRepository config, ItemInfoRepository itemInfo, Random random) {
-        this.config = config;
-        this.itemInfo = itemInfo;
+    public ContractGenerator(ContractConfigRepository contractConfigRepository, ItemInfoRepository itemInfoRepository, Random random) {
+        this.contractConfigRepository = contractConfigRepository;
+        this.itemInfoRepository = itemInfoRepository;
         this.random = random;
     }
 
     public Optional<Contract> generate(PlayerID buyer) {
-        List<CatalogItem> items = itemInfo.getCatalogItems();
-        if (items.isEmpty()) {
+        List<CatalogItem> catalogItems = itemInfoRepository.getCatalogItems();
+        if (catalogItems.isEmpty()) {
             return Optional.empty();
         }
-        CatalogItem item = pick(items);
-        Quality[] qualities = Quality.values();
-        Quality minimal = qualities[random.nextInt(qualities.length)];
-        Instant now = Instant.now();
-        return Optional.of(new Contract(null, buyer, item.type(), item.job(), item.material(), item.quantity(), minimal,
-                reward(item, minimal), now, now.plus(config.getScrollTtl())));
+        CatalogItem catalogItem = pickWeighted(catalogItems);
+        Quality[] allQualities = Quality.values();
+        Quality minimalQuality = allQualities[random.nextInt(allQualities.length)];
+        Instant issuedAt = Instant.now();
+        return Optional.of(new Contract(null, buyer, catalogItem.type(), catalogItem.job(), catalogItem.material(), catalogItem.quantity(), minimalQuality,
+                reward(catalogItem, minimalQuality), issuedAt, issuedAt.plus(contractConfigRepository.getScrollTtl())));
     }
 
-    private int reward(CatalogItem item, Quality minimal) {
-        double value = itemInfo.getValue(item.material(), minimal);
-        return (int) Math.max(1, Math.round(value * item.quantity()));
+    private int reward(CatalogItem catalogItem, Quality minimalQuality) {
+        double itemValue = itemInfoRepository.getValue(catalogItem.material(), minimalQuality);
+        return (int) Math.max(1, Math.round(itemValue * catalogItem.quantity()));
     }
 
-    private CatalogItem pick(List<CatalogItem> items) {
-        double total = 0;
-        for (CatalogItem item : items) {
-            total += item.weight();
+    private CatalogItem pickWeighted(List<CatalogItem> catalogItems) {
+        double totalWeight = 0;
+        for (CatalogItem catalogItem : catalogItems) {
+            totalWeight += catalogItem.weight();
         }
-        double r = random.nextDouble() * total;
-        for (CatalogItem item : items) {
-            r -= item.weight();
-            if (r < 0) {
-                return item;
+        double remainingWeight = random.nextDouble() * totalWeight;
+        for (CatalogItem catalogItem : catalogItems) {
+            remainingWeight -= catalogItem.weight();
+            if (remainingWeight < 0) {
+                return catalogItem;
             }
         }
-        return items.getLast();
+        return catalogItems.getLast();
     }
 }

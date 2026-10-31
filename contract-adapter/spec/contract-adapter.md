@@ -17,9 +17,9 @@ flowchart TD
 
 ## Persistance
 
-`ContractEntity` (`t_contracts`) stocke un contrat par ligne, avec un index sur `expires_at` et un verrou optimiste `@Version`. `ContractTicketEntity` (`t_contract_player_state`, nom de table conservé) stocke le nombre de tickets par joueur. La conversion entité ↔ domaine se fait dans `ContractEntity` (`fromDomain`, `toDomain`). La suppression passe par une requête `DELETE` qui retourne le nombre de lignes : `settle` s’en sert pour empêcher deux livraisons simultanées d’être payées. `ContractPlayerInfoRepository.findTickets` retourne vide si le joueur n’a pas de ligne : le domaine le traite alors comme un joueur nouveau. `ContractJpaRepositoryAdapter.settle` est `@Transactional` : il supprime le contrat puis appelle `PlayerService.adjustMoney`, et lève `PaymentFailedException` (rollback) si le paiement est refusé.
+`ContractEntity` (`t_contracts`) stocke un contrat par ligne, avec un index sur `expires_at` et un verrou optimiste `@Version`. `ContractTicketEntity` (`t_contract_player_state`, nom de table conservé) stocke le nombre de tickets par joueur. Les UUID sont stockés en texte (`VARCHAR(36)`), pas en `BINARY(16)`. La conversion entité ↔ domaine se fait dans `ContractEntity` (`fromDomain`, `toDomain`). La suppression passe par une requête `DELETE` qui retourne le nombre de lignes : `settle` s’en sert pour empêcher deux livraisons simultanées d’être payées. `ContractPlayerInfoRepository.findTickets` retourne vide si le joueur n’a pas de ligne : le domaine le traite alors comme un joueur nouveau. `ContractJpaRepositoryAdapter.settle` est `@Transactional` : il supprime le contrat puis appelle `PlayerService.adjustMoney`, et lève `PaymentFailedException` (rollback) si le paiement est refusé.
 
-Les tables sont créées automatiquement. Les anciennes colonnes (`discovery_given`, `tier`, `tickets_day`, `delivered_count`) et l’ancienne table `t_job_missions` sont à supprimer à la main.
+Les tables sont créées automatiquement. Les colonnes `issued_to` et `player_id` étaient en `BINARY(16)` avant le passage au texte : les lignes existantes sont à migrer à la main. Les anciennes colonnes (`discovery_given`, `tier`, `tickets_day`, `delivered_count`) et l’ancienne table `t_job_missions` sont à supprimer à la main.
 
 ## Configuration
 
@@ -76,7 +76,7 @@ Le parchemin est l’item ItemsAdder `tesseract:contract_scroll`, non empilable.
 Les PNJ sont créés à part et configurés avec des commandes exécutées comme le joueur. Le module ne lit rien sur le PNJ.
 
 - `/contract merchant` ouvre `ContractMerchantMenu` : tickets restants, quota et achat (`ContractService.buyScroll`).
-- `/contract deliver <métier>` lit le parchemin en main, appelle `prepareDelivery` puis ouvre `ContractDeliveryMenu`, dont la confirmation appelle `deliver`. `<métier>` est un métier ou une compétence (`ContractJobArg`, complétion par `ContractJobCatalog`).
+- `/contract deliver <métier>` lit le parchemin en main, appelle `checkDeliverable` puis ouvre `ContractDeliveryMenu`, dont la confirmation appelle `deliver`. `<métier>` est un métier ou une compétence (`ContractJobArg`, complétion par `ContractJobCatalog`).
 - `/contract tickets` affiche les tickets restants.
 - Côté staff, `/staffSrp contract tickets give|get` est dans le module `plugin` (`ContractStaffCommand`).
 

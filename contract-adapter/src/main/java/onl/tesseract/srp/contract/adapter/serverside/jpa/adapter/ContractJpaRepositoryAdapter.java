@@ -16,42 +16,42 @@ import java.util.Optional;
 @Component
 public class ContractJpaRepositoryAdapter implements ContractRepository {
 
-    private final ContractJpaRepository jpaRepo;
+    private final ContractJpaRepository contractJpaRepository;
     private final PlayerService playerService;
 
-    public ContractJpaRepositoryAdapter(ContractJpaRepository jpaRepo, PlayerService playerService) {
-        this.jpaRepo = jpaRepo;
+    public ContractJpaRepositoryAdapter(ContractJpaRepository contractJpaRepository, PlayerService playerService) {
+        this.contractJpaRepository = contractJpaRepository;
         this.playerService = playerService;
     }
 
     @Override
     @Transactional
     public Contract save(Contract contract) {
-        return jpaRepo.save(ContractEntity.fromDomain(contract)).toDomain();
+        return contractJpaRepository.save(ContractEntity.fromDomain(contract)).toDomain();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Contract> findById(long id) {
-        return jpaRepo.findById(id).map(ContractEntity::toDomain);
+        return contractJpaRepository.findById(id).map(ContractEntity::toDomain);
     }
 
     @Override
     @Transactional
     public void delete(long id) {
-        jpaRepo.deleteByIdCounting(id);
+        contractJpaRepository.deleteByIdCounting(id);
     }
 
     @Override
     @Transactional
     public int deleteExpired(Instant now) {
-        return jpaRepo.deleteExpired(now);
+        return contractJpaRepository.deleteExpired(now);
     }
 
     @Override
     @Transactional
     public boolean settle(long contractId, PlayerID deliverer, int payout) {
-        if (jpaRepo.deleteByIdCounting(contractId) == 0) {
+        if (contractJpaRepository.deleteByIdCounting(contractId) == 0) {
             return false;
         }
         if (!playerService.adjustMoney(deliverer.value(), payout)) {

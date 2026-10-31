@@ -7,8 +7,8 @@ import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import java.util.Map;
 
 public interface PlayerInventoryRepository {
-    int countAtLeast(PlayerID player, String material, Quality min);
-    Map<Quality, Integer> removeAtLeast(PlayerID player, String material, Quality min, int amount);
+    int countAtLeast(PlayerID player, String material, Quality minimalQuality);
+    Map<Quality, Integer> removeAtLeast(PlayerID player, String material, Quality minimalQuality, int amount);
     void giveBack(PlayerID player, String material, Map<Quality, Integer> items);
 
     boolean canReceiveScroll(PlayerID player);

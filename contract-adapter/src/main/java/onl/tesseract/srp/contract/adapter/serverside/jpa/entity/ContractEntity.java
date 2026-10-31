@@ -22,8 +22,8 @@ public class ContractEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "issued_to", nullable = false, columnDefinition = "BINARY(16)")
-    private UUID issuedTo;
+    @Column(name = "issued_to", nullable = false, length = 36)
+    private String issuedTo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -54,13 +54,13 @@ public class ContractEntity {
     @Version
     private long version;
 
-    public static ContractEntity fromDomain(Contract c) {
-        return new ContractEntity(c.id(), c.issuedTo().value(), c.type(), c.job(), c.material(), c.quantity(),
-                c.minimalQuality(), c.reward(), c.issuedAt(), c.expiresAt(), 0L);
+    public static ContractEntity fromDomain(Contract contract) {
+        return new ContractEntity(contract.id(), contract.issuedTo().value().toString(), contract.type(), contract.job(), contract.material(), contract.quantity(),
+                contract.minimalQuality(), contract.reward(), contract.issuedAt(), contract.expiresAt(), 0L);
     }
 
     public Contract toDomain() {
-        return new Contract(id, new PlayerID(issuedTo), type, job, material, quantity, minimalQuality, reward,
+        return new Contract(id, new PlayerID(UUID.fromString(issuedTo)), type, job, material, quantity, minimalQuality, reward,
                 issuedAt, expiresAt);
     }
 }

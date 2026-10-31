@@ -6,6 +6,7 @@
 
 ## Corrections et rangement
 
+- [ ] Migrer les colonnes `t_contracts.issued_to` et `t_contract_player_state.player_id` de `BINARY(16)` vers `VARCHAR(36)` (UUID en texte) sur les bases déjà créées : la création automatique des tables ne les convertit pas.
 
 ## Remplacements provisoires
 
