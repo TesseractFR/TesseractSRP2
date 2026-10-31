@@ -19,11 +19,11 @@ import java.time.Instant;
 @Component
 public class ContractScrollCleanupListener implements Listener {
 
-    private final ContractMessagingRepository messaging;
+    private final ContractMessagingRepository contractMessagingRepository;
     private final ContractService contractService;
 
-    public ContractScrollCleanupListener(ContractMessagingRepository messaging, ContractService contractService) {
-        this.messaging = messaging;
+    public ContractScrollCleanupListener(ContractMessagingRepository contractMessagingRepository, ContractService contractService) {
+        this.contractMessagingRepository = contractMessagingRepository;
         this.contractService = contractService;
     }
 
@@ -37,18 +37,18 @@ public class ContractScrollCleanupListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        Item item = event.getItem();
-        if (ContractScrollItem.isExpired(item.getItemStack(), Instant.now())) {
+        Item droppedItem = event.getItem();
+        if (ContractScrollItem.isExpired(droppedItem.getItemStack(), Instant.now())) {
             event.setCancelled(true);
-            item.remove();
+            droppedItem.remove();
             contractService.purgeExpired();
-            messaging.sendScrollsExpired(new PlayerID(player.getUniqueId()), 1);
+            contractMessagingRepository.sendScrollsExpired(new PlayerID(player.getUniqueId()), 1);
         }
     }
 
     @EventHandler
     public void onOpen(InventoryOpenEvent event) {
-        if (purge(event.getInventory()) > 0) {
+        if (removeExpiredScrolls(event.getInventory()) > 0) {
             contractService.purgeExpired();
         }
         if (event.getPlayer() instanceof Player player) {
@@ -57,22 +57,22 @@ public class ContractScrollCleanupListener implements Listener {
     }
 
     private void cleanPlayer(Player player) {
-        int removed = purge(player.getInventory());
-        if (removed > 0) {
+        int removedCount = removeExpiredScrolls(player.getInventory());
+        if (removedCount > 0) {
             contractService.purgeExpired();
-            messaging.sendScrollsExpired(new PlayerID(player.getUniqueId()), removed);
+            contractMessagingRepository.sendScrollsExpired(new PlayerID(player.getUniqueId()), removedCount);
         }
     }
 
-    private static int purge(Inventory inventory) {
+    private static int removeExpiredScrolls(Inventory inventory) {
         Instant now = Instant.now();
-        int removed = 0;
+        int removedCount = 0;
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             if (ContractScrollItem.isExpired(inventory.getItem(slot), now)) {
                 inventory.setItem(slot, null);
-                removed++;
+                removedCount++;
             }
         }
-        return removed;
+        return removedCount;
     }
 }

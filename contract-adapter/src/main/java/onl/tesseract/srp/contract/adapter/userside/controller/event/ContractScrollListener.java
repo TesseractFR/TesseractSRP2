@@ -49,11 +49,11 @@ public class ContractScrollListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        OptionalLong id = ContractScrollItem.readContractId(player.getInventory().getItemInMainHand());
-        if (id.isEmpty()) {
+        OptionalLong contractId = ContractScrollItem.readContractId(player.getInventory().getItemInMainHand());
+        if (contractId.isEmpty()) {
             return;
         }
         event.setUseItemInHand(Event.Result.DENY);
-        contractService.useScroll(new PlayerID(player.getUniqueId()), id.getAsLong());
+        contractService.useScroll(new PlayerID(player.getUniqueId()), contractId.getAsLong());
     }
 }

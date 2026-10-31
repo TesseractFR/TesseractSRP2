@@ -19,60 +19,80 @@ import static onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal.*
 
 public class ContractService {
 
-    private final ContractRepository contracts;
-    private final PlayerInventoryRepository inventory;
-    private final ContractGenerator generator;
-    private final PlayerInfoRepository players;
-    private final ContractMessagingRepository messaging;
+    private final ContractRepository contractRepository;
+    private final PlayerInventoryRepository playerInventoryRepository;
+    private final ContractGenerator contractGenerator;
+    private final PlayerInfoRepository playerInfoRepository;
+    private final ContractMessagingRepository contractMessagingRepository;
 
-    public ContractService(ContractRepository contracts, PlayerInventoryRepository inventory, ContractGenerator generator, PlayerInfoRepository players, ContractMessagingRepository messaging) {
-        this.contracts = contracts;
-        this.inventory = inventory;
-        this.generator = generator;
-        this.players = players;
-        this.messaging = messaging;
+    public ContractService(ContractRepository contractRepository, PlayerInventoryRepository playerInventoryRepository,
+                           ContractGenerator contractGenerator, PlayerInfoRepository playerInfoRepository,
+                           ContractMessagingRepository contractMessagingRepository) {
+        this.contractRepository = contractRepository;
+        this.playerInventoryRepository = playerInventoryRepository;
+        this.contractGenerator = contractGenerator;
+        this.playerInfoRepository = playerInfoRepository;
+        this.contractMessagingRepository = contractMessagingRepository;
     }
 
     public void buyScroll(PlayerID player) {
-        int ticketsBefore = getTickets(player);
-        if (ticketsBefore < 1) {
-            messaging.sendPurchaseNoTicket(player);
+        if (!hasTicket(player)) {
+            contractMessagingRepository.sendPurchaseNoTicket(player);
             return;
         }
-        if (!inventory.canReceiveScroll(player)) {
-            messaging.sendPurchaseInventoryFull(player);
+        if (!playerInventoryRepository.canReceiveScroll(player)) {
+            contractMessagingRepository.sendPurchaseInventoryFull(player);
             return;
         }
-        Optional<Contract> draft = generator.generate(player);
-        if (draft.isEmpty()) {
-            messaging.sendPurchaseNoContractAvailable(player);
+        Optional<Contract> draftContract = contractGenerator.generate(player);
+        if (draftContract.isEmpty()) {
+            contractMessagingRepository.sendPurchaseNoContractAvailable(player);
             return;
         }
-        players.saveTickets(player, ticketsBefore - 1);
-        Contract saved = saveOrRefund(player, ticketsBefore, draft.get());
-        if (!inventory.giveScroll(player, saved)) {
-            contracts.delete(saved.id());
-            players.saveTickets(player, ticketsBefore);
-            messaging.sendPurchaseInventoryFull(player);
+
+        withdrawTicket(player);
+        Contract savedContract = saveContractOrRefundTicket(player, draftContract.get());
+
+        if (!playerInventoryRepository.giveScroll(player, savedContract)) {
+            cancelPurchase(player, savedContract);
+            contractMessagingRepository.sendPurchaseInventoryFull(player);
             return;
         }
-        messaging.sendPurchaseSucceeded(player, saved, ticketsBefore - 1);
+        contractMessagingRepository.sendPurchaseSucceeded(player, savedContract, getTickets(player));
+    }
+
+    public Optional<Contract> checkDeliverable(PlayerID player, long contractId, String npcJob) {
+        Optional<Contract> foundContract = contractRepository.findById(contractId);
+        if (foundContract.isEmpty()) {
+            refuse(player, npcJob, contractId, INVALID_SCROLL);
+            return Optional.empty();
+        }
+        Contract contract = foundContract.get();
+        if (!contract.isForJob(npcJob)) {
+            refuse(player, npcJob, contractId, WRONG_CLIENT);
+            return Optional.empty();
+        }
+        if (contract.isExpired(Instant.now())) {
+            refuse(player, npcJob, contractId, EXPIRED);
+            return Optional.empty();
+        }
+        return foundContract;
     }
 
     public void deliver(PlayerID player, long contractId, String npcJob) {
-        Optional<Contract> found = prepareDelivery(player, contractId, npcJob);
-        if (found.isEmpty()) {
+        Optional<Contract> foundContract = checkDeliverable(player, contractId, npcJob);
+        if (foundContract.isEmpty()) {
             return;
         }
-        Contract contract = found.get();
-        if (!inventory.hasScroll(player, contractId)) {
+        Contract contract = foundContract.get();
+
+        if (!playerInventoryRepository.hasScroll(player, contractId)) {
             refuse(player, npcJob, contractId, INVALID_SCROLL);
             return;
         }
-        int have = inventory.countAtLeast(player, contract.material(), contract.minimalQuality());
-        if (have < contract.quantity()) {
-            boolean lowerQualityExists = inventory.countAtLeast(player, contract.material(), Quality.POOR) > have;
-            messaging.sendDeliveryRefused(player, npcJob, lowerQualityExists ? NOT_ENOUGH_QUALITY : MISSING_ITEMS, contract.quantity() - have);
+        int itemsOwned = playerInventoryRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
+        if (itemsOwned < contract.quantity()) {
+            refuseMissingItems(player, npcJob, contract, itemsOwned);
             return;
         }
         withdrawAndPay(player, npcJob, contract);
@@ -82,117 +102,152 @@ public class ContractService {
         if (contract.type() != ContractType.HARVEST) {
             return 0;
         }
-        double rate = Math.max(0, players.getMoneyBonus(deliverer, contract.job(), contract.material()));
-        return (int) Math.round(contract.reward() * rate);
+        double bonusRate = Math.max(0, playerInfoRepository.getMoneyBonus(deliverer, contract.job(), contract.material()));
+        return (int) Math.round(contract.reward() * bonusRate);
     }
 
     public void noScrollInHand(PlayerID player, String npcJob) {
-        messaging.sendNoScrollInHand(player, npcJob);
+        contractMessagingRepository.sendNoScrollInHand(player, npcJob);
     }
 
     public void useScroll(PlayerID player, long contractId) {
-        boolean valid = contracts.findById(contractId).map(c -> !c.isExpired(Instant.now())).orElse(false);
-        if (!valid && inventory.removeScroll(player, contractId)) {
-            messaging.sendScrollDestroyed(player);
-        }
-    }
-
-    public int getDailyQuota(PlayerID player) {
-        return players.getDailyTickets(player);
-    }
-
-    public int getTickets(PlayerID player) {
-        return players.findTickets(player).orElseGet(() -> players.getDailyTickets(player));
-    }
-
-    public void showTickets(PlayerID player) {
-        messaging.sendTicketsShown(player, getTickets(player), getDailyQuota(player));
-    }
-
-    public void giveTicketsAsStaff(PlayerID staff, PlayerID target, int amount) {
-        if (amount <= 0) {
-            messaging.sendStaffInvalidAmount(staff);
-            return;
-        }
-        players.saveTickets(target, getTickets(target) + amount);
-        messaging.sendStaffTicketsGiven(staff, target, amount);
-    }
-
-    public void showTicketsAsStaff(PlayerID staff, PlayerID target) {
-        messaging.sendStaffTicketsShown(staff, target, getTickets(target), getDailyQuota(target));
-    }
-
-    public void renewDaily(PlayerID player) {
-        int quota = players.getDailyTickets(player);
-        if (getTickets(player) != quota) {
-            players.saveTickets(player, quota);
+        boolean contractStillValid = contractRepository.findById(contractId)
+                .map(contract -> !contract.isExpired(Instant.now()))
+                .orElse(false);
+        if (!contractStillValid && playerInventoryRepository.removeScroll(player, contractId)) {
+            contractMessagingRepository.sendScrollDestroyed(player);
         }
     }
 
     public int purgeExpired() {
-        return contracts.deleteExpired(Instant.now());
+        return contractRepository.deleteExpired(Instant.now());
     }
 
-    public Optional<Contract> prepareDelivery(PlayerID player, long contractId, String npcJob) {
-        Optional<Contract> found = contracts.findById(contractId);
-        if (found.isEmpty()) {
-            refuse(player, npcJob, contractId, INVALID_SCROLL);
-            return Optional.empty();
-        } else if (!found.get().isForJob(npcJob)) {
-            refuse(player, npcJob, contractId, WRONG_CLIENT);
-            return Optional.empty();
-        } else if (found.get().isExpired(Instant.now())) {
-            refuse(player, npcJob, contractId, EXPIRED);
-            return Optional.empty();
-        }
-        return found;
+    public int getDailyQuota(PlayerID player) {
+        return playerInfoRepository.getDailyTickets(player);
     }
 
-    private void refuse(PlayerID player, String npcJob, long contractId, DeliveryRefusal why) {
-        if (why == EXPIRED) {
-            contracts.delete(contractId);
+    public int getTickets(PlayerID player) {
+        return playerInfoRepository.findTickets(player).orElseGet(() -> getDailyQuota(player));
+    }
+
+    public void showTickets(PlayerID player) {
+        contractMessagingRepository.sendTicketsShown(player, getTickets(player), getDailyQuota(player));
+    }
+
+    public void giveTicketsAsStaff(PlayerID staff, PlayerID target, int amount) {
+        if (amount <= 0) {
+            contractMessagingRepository.sendStaffInvalidAmount(staff);
+            return;
         }
-        messaging.sendDeliveryRefused(player, npcJob, why, 0);
+        addTickets(target, amount);
+        contractMessagingRepository.sendStaffTicketsGiven(staff, target, amount);
+    }
+
+    public void showTicketsAsStaff(PlayerID staff, PlayerID target) {
+        contractMessagingRepository.sendStaffTicketsShown(staff, target, getTickets(target), getDailyQuota(target));
+    }
+
+    public void renewDaily(PlayerID player) {
+        int quota = getDailyQuota(player);
+        if (getTickets(player) != quota) {
+            playerInfoRepository.saveTickets(player, quota);
+        }
+    }
+
+    private boolean hasTicket(PlayerID player) {
+        return getTickets(player) >= 1;
+    }
+
+    private void addTickets(PlayerID player, int amount) {
+        playerInfoRepository.saveTickets(player, getTickets(player) + amount);
+    }
+
+    private void withdrawTicket(PlayerID player) {
+        playerInfoRepository.saveTickets(player, getTickets(player) - 1);
+    }
+
+    private Contract saveContractOrRefundTicket(PlayerID player, Contract draftContract) {
+        try {
+            return contractRepository.save(draftContract);
+        } catch (RuntimeException e) {
+            addTickets(player, 1);
+            throw e;
+        }
+    }
+
+    private void cancelPurchase(PlayerID player, Contract savedContract) {
+        contractRepository.delete(savedContract.id());
+        addTickets(player, 1);
+    }
+
+    private void refuse(PlayerID player, String npcJob, long contractId, DeliveryRefusal refusalReason) {
+        if (refusalReason == EXPIRED) {
+            contractRepository.delete(contractId);
+        }
+        contractMessagingRepository.sendDeliveryRefused(player, npcJob, refusalReason, 0);
+    }
+
+    private void refuseMissingItems(PlayerID player, String npcJob, Contract contract, int itemsOwned) {
+        int itemsOwnedAnyQuality = playerInventoryRepository.countAtLeast(player, contract.material(), Quality.POOR);
+        DeliveryRefusal refusalReason = itemsOwnedAnyQuality > itemsOwned ? NOT_ENOUGH_QUALITY : MISSING_ITEMS;
+        contractMessagingRepository.sendDeliveryRefused(player, npcJob, refusalReason, contract.quantity() - itemsOwned);
     }
 
     private void withdrawAndPay(PlayerID player, String npcJob, Contract contract) {
-        if (!inventory.removeScroll(player, contract.id())) {
-            messaging.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
+        int payout = contract.reward() + moneyBonus(player, contract);
+
+        Map<Quality, Integer> removedItems = takeScrollAndItemsOrRefuse(player, npcJob, contract);
+        if (removedItems.isEmpty()) {
             return;
         }
-        Map<Quality, Integer> removed = inventory.removeAtLeast(player, contract.material(), contract.minimalQuality(), contract.quantity());
-        if (removed.isEmpty()) {
-            inventory.giveScroll(player, contract);
-            messaging.sendDeliveryRefused(player, npcJob, MISSING_ITEMS, contract.quantity());
-            return;
-        }
-        int payout = 0;
-        boolean paid = false;
-        DeliveryRefusal refusal = INVALID_SCROLL;
-        try {
-            payout = contract.reward() + moneyBonus(player, contract);
-            paid = contracts.settle(contract.id(), player, payout);
-        } catch (PaymentFailedException e) {
-            refusal = PAYMENT_FAILED;
-        } finally {
-            if (!paid) {
-                inventory.giveBack(player, contract.material(), removed);
-                inventory.giveScroll(player, contract);
-            }
-        }
-        if (paid) {
-            messaging.sendDeliverySucceeded(player, npcJob, payout);
-        } else {
-            messaging.sendDeliveryRefused(player, npcJob, refusal, 0);
+        if (payOrRefuse(player, npcJob, contract, payout, removedItems)) {
+            contractMessagingRepository.sendDeliverySucceeded(player, npcJob, payout);
         }
     }
 
-    private Contract saveOrRefund(PlayerID player, int ticketsBefore, Contract draft) {
+    private Map<Quality, Integer> takeScrollAndItemsOrRefuse(PlayerID player, String npcJob, Contract contract) {
+        if (!playerInventoryRepository.removeScroll(player, contract.id())) {
+            contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
+            return Map.of();
+        }
+        Map<Quality, Integer> removedItems;
         try {
-            return contracts.save(draft);
+            removedItems = playerInventoryRepository.removeAtLeast(player, contract.material(),
+                    contract.minimalQuality(), contract.quantity());
         } catch (RuntimeException e) {
-            players.saveTickets(player, ticketsBefore);
+            playerInventoryRepository.giveScroll(player, contract);
             throw e;
         }
+        if (removedItems.isEmpty()) {
+            playerInventoryRepository.giveScroll(player, contract);
+            contractMessagingRepository.sendDeliveryRefused(player, npcJob, MISSING_ITEMS, contract.quantity());
+        }
+        return removedItems;
+    }
+
+    private boolean payOrRefuse(PlayerID player, String npcJob, Contract contract, int payout,
+                                Map<Quality, Integer> removedItems) {
+        boolean isPaid;
+        try {
+            isPaid = contractRepository.settle(contract.id(), player, payout);
+        } catch (PaymentFailedException e) {
+            giveBackToPlayer(player, contract, removedItems);
+            contractMessagingRepository.sendDeliveryRefused(player, npcJob, PAYMENT_FAILED, 0);
+            return false;
+        } catch (RuntimeException e) {
+            giveBackToPlayer(player, contract, removedItems);
+            throw e;
+        }
+        if (!isPaid) {
+            giveBackToPlayer(player, contract, removedItems);
+            contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
+        }
+        return isPaid;
+    }
+
+    private void giveBackToPlayer(PlayerID player, Contract contract, Map<Quality, Integer> removedItems) {
+        playerInventoryRepository.giveBack(player, contract.material(), removedItems);
+        playerInventoryRepository.giveScroll(player, contract);
     }
 }

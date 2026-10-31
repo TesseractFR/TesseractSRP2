@@ -28,102 +28,102 @@ import java.util.UUID;
 @org.springframework.stereotype.Component
 public class TesseractPlayerInventoryRepository implements PlayerInventoryRepository {
 
-    private final CustomItemService customItems;
-    private final YamlContractConfigRepository config;
+    private final CustomItemService customItemService;
+    private final YamlContractConfigRepository yamlContractConfigRepository;
 
-    public TesseractPlayerInventoryRepository(CustomItemService customItems, YamlContractConfigRepository config) {
-        this.customItems = customItems;
-        this.config = config;
+    public TesseractPlayerInventoryRepository(CustomItemService customItemService, YamlContractConfigRepository yamlContractConfigRepository) {
+        this.customItemService = customItemService;
+        this.yamlContractConfigRepository = yamlContractConfigRepository;
     }
 
     @Override
-    public int countAtLeast(PlayerID player, String material, Quality min) {
-        MaterialName name = new MaterialName(material);
-        if (!customItems.isCustomMaterial(name)) {
-            return customItems.getItemQuantity(player.value(), name, toCommon(Quality.POOR));
+    public int countAtLeast(PlayerID player, String material, Quality minimalQuality) {
+        MaterialName materialName = new MaterialName(material);
+        if (!customItemService.isCustomMaterial(materialName)) {
+            return customItemService.getItemQuantity(player.value(), materialName, toCommon(Quality.POOR));
         }
-        int total = 0;
-        for (Quality quality : qualitiesFrom(min)) {
-            total += customItems.getItemQuantity(player.value(), name, toCommon(quality));
+        int totalAmount = 0;
+        for (Quality quality : qualitiesFrom(minimalQuality)) {
+            totalAmount += customItemService.getItemQuantity(player.value(), materialName, toCommon(quality));
         }
-        return total;
+        return totalAmount;
     }
 
     @Override
-    public Map<Quality, Integer> removeAtLeast(PlayerID player, String material, Quality min, int amount) {
-        Map<Quality, Integer> removed = new EnumMap<>(Quality.class);
-        if (amount <= 0 || countAtLeast(player, material, min) < amount) {
-            return removed;
+    public Map<Quality, Integer> removeAtLeast(PlayerID player, String material, Quality minimalQuality, int amount) {
+        Map<Quality, Integer> removedItems = new EnumMap<>(Quality.class);
+        if (amount <= 0 || countAtLeast(player, material, minimalQuality) < amount) {
+            return removedItems;
         }
-        MaterialName name = new MaterialName(material);
-        UUID uuid = player.value();
-        Quality[] qualities = customItems.isCustomMaterial(name) ? qualitiesFrom(min) : new Quality[]{Quality.POOR};
-        int remaining = amount;
+        MaterialName materialName = new MaterialName(material);
+        UUID playerUuid = player.value();
+        Quality[] qualitiesToTake = customItemService.isCustomMaterial(materialName) ? qualitiesFrom(minimalQuality) : new Quality[]{Quality.POOR};
+        int remainingAmount = amount;
         try {
-            for (Quality quality : qualities) {
-                int taken = Math.min(customItems.getItemQuantity(uuid, name, toCommon(quality)), remaining);
-                if (taken > 0) {
-                    customItems.removeItem(uuid, name, toCommon(quality), taken);
-                    removed.put(quality, taken);
-                    remaining -= taken;
+            for (Quality quality : qualitiesToTake) {
+                int takenAmount = Math.min(customItemService.getItemQuantity(playerUuid, materialName, toCommon(quality)), remainingAmount);
+                if (takenAmount > 0) {
+                    customItemService.removeItem(playerUuid, materialName, toCommon(quality), takenAmount);
+                    removedItems.put(quality, takenAmount);
+                    remainingAmount -= takenAmount;
                 }
             }
         } catch (RuntimeException e) {
-            giveBack(player, material, removed);
+            giveBack(player, material, removedItems);
             throw e;
         }
-        if (remaining > 0) {
-            giveBack(player, material, removed);
+        if (remainingAmount > 0) {
+            giveBack(player, material, removedItems);
             return new EnumMap<>(Quality.class);
         }
-        return removed;
+        return removedItems;
     }
 
     @Override
-    public void giveBack(PlayerID player, String material, Map<Quality, Integer> items) {
-        MaterialName name = new MaterialName(material);
-        items.forEach((quality, amount) -> customItems.addItem(player.value(), name, toCommon(quality), amount));
+    public void giveBack(PlayerID player, String material, Map<Quality, Integer> itemsByQuality) {
+        MaterialName materialName = new MaterialName(material);
+        itemsByQuality.forEach((quality, amount) -> customItemService.addItem(player.value(), materialName, toCommon(quality), amount));
     }
 
     @Override
     public boolean canReceiveScroll(PlayerID player) {
-        Player online = Bukkit.getPlayer(player.value());
-        return online != null && online.getInventory().firstEmpty() != -1;
+        Player onlinePlayer = Bukkit.getPlayer(player.value());
+        return onlinePlayer != null && onlinePlayer.getInventory().firstEmpty() != -1;
     }
 
     @Override
     public boolean giveScroll(PlayerID player, Contract contract) {
-        Player online = Bukkit.getPlayer(player.value());
-        if (online == null || contract.id() == null) {
+        Player onlinePlayer = Bukkit.getPlayer(player.value());
+        if (onlinePlayer == null || contract.id() == null) {
             return false;
         }
-        Optional<ItemStack> base = ContractScrollItem.create();
-        if (base.isEmpty()) {
+        Optional<ItemStack> baseScroll = ContractScrollItem.create();
+        if (baseScroll.isEmpty()) {
             return false;
         }
-        ItemStack stack = base.get();
-        ItemMeta meta = stack.getItemMeta();
-        ContractScrollItem.writeContractId(meta, contract.id());
-        ContractScrollItem.writeExpiry(meta, contract.expiresAt());
-        meta.lore(lore(contract));
-        meta.setMaxStackSize(1);
-        stack.setItemMeta(meta);
-        return online.getInventory().addItem(stack).isEmpty();
+        ItemStack scrollItem = baseScroll.get();
+        ItemMeta scrollMeta = scrollItem.getItemMeta();
+        ContractScrollItem.writeContractId(scrollMeta, contract.id());
+        ContractScrollItem.writeExpiry(scrollMeta, contract.expiresAt());
+        scrollMeta.lore(lore(contract));
+        scrollMeta.setMaxStackSize(1);
+        scrollItem.setItemMeta(scrollMeta);
+        return onlinePlayer.getInventory().addItem(scrollItem).isEmpty();
     }
 
     @Override
     public boolean hasScroll(PlayerID player, long contractId) {
-        Player online = Bukkit.getPlayer(player.value());
-        return online != null && slotOf(online.getInventory(), contractId) >= 0;
+        Player onlinePlayer = Bukkit.getPlayer(player.value());
+        return onlinePlayer != null && slotOf(onlinePlayer.getInventory(), contractId) >= 0;
     }
 
     @Override
     public boolean removeScroll(PlayerID player, long contractId) {
-        Player online = Bukkit.getPlayer(player.value());
-        if (online == null) {
+        Player onlinePlayer = Bukkit.getPlayer(player.value());
+        if (onlinePlayer == null) {
             return false;
         }
-        PlayerInventory inventory = online.getInventory();
+        PlayerInventory inventory = onlinePlayer.getInventory();
         int slot = slotOf(inventory, contractId);
         if (slot < 0) {
             return false;
@@ -135,8 +135,8 @@ public class TesseractPlayerInventoryRepository implements PlayerInventoryReposi
     private static int slotOf(PlayerInventory inventory, long contractId) {
         ItemStack[] contents = inventory.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
-            OptionalLong id = ContractScrollItem.readContractId(contents[slot]);
-            if (id.isPresent() && id.getAsLong() == contractId) {
+            OptionalLong scrollContractId = ContractScrollItem.readContractId(contents[slot]);
+            if (scrollContractId.isPresent() && scrollContractId.getAsLong() == contractId) {
                 return slot;
             }
         }
@@ -144,14 +144,14 @@ public class TesseractPlayerInventoryRepository implements PlayerInventoryReposi
     }
 
     private List<Component> lore(Contract contract) {
-        List<Component> lines = new ArrayList<>(ContractDisplay.details(contract));
-        lines.add(config.getNpcName(contract.job()).map(ContractDisplay::footer).orElseGet(() -> ContractDisplay.footer(contract)));
-        return lines;
+        List<Component> loreLines = new ArrayList<>(ContractDisplay.details(contract));
+        loreLines.add(yamlContractConfigRepository.getNpcName(contract.job()).map(ContractDisplay::footer).orElseGet(() -> ContractDisplay.footer(contract)));
+        return loreLines;
     }
 
-    private static Quality[] qualitiesFrom(Quality min) {
-        Quality[] all = Quality.values();
-        return Arrays.copyOfRange(all, min.ordinal(), all.length);
+    private static Quality[] qualitiesFrom(Quality minimalQuality) {
+        Quality[] allQualities = Quality.values();
+        return Arrays.copyOfRange(allQualities, minimalQuality.ordinal(), allQualities.length);
     }
 
     private static onl.tesseract.srp.common.domain.model.enums.Quality toCommon(Quality quality) {

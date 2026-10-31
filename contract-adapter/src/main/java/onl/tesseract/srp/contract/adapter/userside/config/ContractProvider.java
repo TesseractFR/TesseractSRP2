@@ -21,21 +21,21 @@ import java.util.Random;
 public class ContractProvider {
 
     @Bean
-    public ContractGenerator contractGenerator(ContractConfigRepository config, ItemInfoRepository itemInfo) {
-        return new ContractGenerator(config, itemInfo, new Random());
+    public ContractGenerator contractGenerator(ContractConfigRepository contractConfigRepository, ItemInfoRepository itemInfoRepository) {
+        return new ContractGenerator(contractConfigRepository, itemInfoRepository, new Random());
     }
 
     @Bean
-    public ContractService contractService(ContractRepository contracts, PlayerInventoryRepository inventory, ContractGenerator generator,
-                                           PlayerInfoRepository players, ContractMessagingRepository messaging) {
-        return new ContractService(contracts, inventory, generator, players, messaging);
+    public ContractService contractService(ContractRepository contractRepository, PlayerInventoryRepository playerInventoryRepository, ContractGenerator contractGenerator,
+                                           PlayerInfoRepository playerInfoRepository, ContractMessagingRepository contractMessagingRepository) {
+        return new ContractService(contractRepository, playerInventoryRepository, contractGenerator, playerInfoRepository, contractMessagingRepository);
     }
 
     @Bean
-    public SmartInitializingSingleton contractStartup(ContractJobCatalog catalog, ContractExpirationTask expirationTask) {
+    public SmartInitializingSingleton contractStartup(ContractJobCatalog contractJobCatalog, ContractExpirationTask contractExpirationTask) {
         return () -> {
-            ServiceContainer.getInstance().registerService(ContractJobCatalog.class, catalog);
-            expirationTask.start();
+            ServiceContainer.getInstance().registerService(ContractJobCatalog.class, contractJobCatalog);
+            contractExpirationTask.start();
         };
     }
 }

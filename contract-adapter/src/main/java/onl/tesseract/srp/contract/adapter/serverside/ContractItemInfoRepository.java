@@ -27,32 +27,32 @@ import java.util.Set;
 public class ContractItemInfoRepository implements ItemInfoRepository {
 
     private final JobService jobService;
-    private final SkillConfigRepository skills;
-    private final CustomItemService customItems;
-    private final YamlContractConfigRepository config;
+    private final SkillConfigRepository skillConfigRepository;
+    private final CustomItemService customItemService;
+    private final YamlContractConfigRepository yamlContractConfigRepository;
 
-    public ContractItemInfoRepository(JobService jobService, SkillConfigRepository skills,
-                                      CustomItemService customItems, YamlContractConfigRepository config) {
+    public ContractItemInfoRepository(JobService jobService, SkillConfigRepository skillConfigRepository,
+                                      CustomItemService customItemService, YamlContractConfigRepository yamlContractConfigRepository) {
         this.jobService = jobService;
-        this.skills = skills;
-        this.customItems = customItems;
-        this.config = config;
+        this.skillConfigRepository = skillConfigRepository;
+        this.customItemService = customItemService;
+        this.yamlContractConfigRepository = yamlContractConfigRepository;
     }
 
     @Override
     public List<CatalogItem> getCatalogItems() {
-        List<CatalogItem> items = new ArrayList<>();
+        List<CatalogItem> catalogItems = new ArrayList<>();
         for (Job job : jobService.listJobs()) {
             for (String material : producedMaterials(job)) {
-                add(items, ContractType.HARVEST, job.jobName().value(), material);
+                add(catalogItems, ContractType.HARVEST, job.jobName().value(), material);
             }
         }
-        for (Skill skill : skills.getSkills().values()) {
+        for (Skill skill : skillConfigRepository.getSkills().values()) {
             for (String material : craftedMaterials(skill)) {
-                add(items, ContractType.CRAFT, skill.name().value(), material);
+                add(catalogItems, ContractType.CRAFT, skill.name().value(), material);
             }
         }
-        return items;
+        return catalogItems;
     }
 
     @Override
@@ -61,44 +61,44 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
         return 1.0;
     }
 
-    private void add(List<CatalogItem> items, ContractType type, String job, String material) {
+    private void add(List<CatalogItem> catalogItems, ContractType type, String job, String material) {
         if (getValue(material, Quality.POOR) <= 0) {
             return;
         }
         Rarity rarity = rarityOf(material);
-        double weight = config.getRarityWeight(rarity.name());
+        double weight = yamlContractConfigRepository.getRarityWeight(rarity.name());
         if (weight <= 0) {
             return;
         }
-        int quantity = (int) Math.max(1, Math.round(config.getQuantityByRarity(rarity.name())));
-        items.add(new CatalogItem(type, job, material, weight, quantity));
+        int quantity = (int) Math.max(1, Math.round(yamlContractConfigRepository.getQuantityByRarity(rarity.name())));
+        catalogItems.add(new CatalogItem(type, job, material, weight, quantity));
     }
 
     private Rarity rarityOf(String material) {
-        CustomMaterial custom = customItems.getCustomMaterial(new MaterialName(material));
-        return custom == null ? Rarity.COMMON : custom.rarity();
+        CustomMaterial customMaterial = customItemService.getCustomMaterial(new MaterialName(material));
+        return customMaterial == null ? Rarity.COMMON : customMaterial.rarity();
     }
 
     private static Set<String> producedMaterials(Job job) {
-        Set<String> distinct = new LinkedHashSet<>();
+        Set<String> distinctMaterials = new LinkedHashSet<>();
         if (job.sources() == null || job.sources().value() == null) {
-            return distinct;
+            return distinctMaterials;
         }
         for (List<Material> outputs : job.sources().value().values()) {
             for (Material material : outputs) {
-                distinct.add(material.value());
+                distinctMaterials.add(material.value());
             }
         }
-        return distinct;
+        return distinctMaterials;
     }
 
     private static Set<String> craftedMaterials(Skill skill) {
-        Set<String> distinct = new LinkedHashSet<>();
+        Set<String> distinctMaterials = new LinkedHashSet<>();
         for (SkillTier tier : skill.tiers().values()) {
             for (Recipe recipe : tier.recipes().values()) {
-                distinct.add(recipe.result().material().value());
+                distinctMaterials.add(recipe.result().material().value());
             }
         }
-        return distinct;
+        return distinctMaterials;
     }
 }

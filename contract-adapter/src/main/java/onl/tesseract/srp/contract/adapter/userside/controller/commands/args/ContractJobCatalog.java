@@ -12,17 +12,17 @@ import java.util.Optional;
 public class ContractJobCatalog {
 
     private final JobService jobService;
-    private final SkillConfigRepository skills;
+    private final SkillConfigRepository skillConfigRepository;
 
-    public ContractJobCatalog(JobService jobService, SkillConfigRepository skills) {
+    public ContractJobCatalog(JobService jobService, SkillConfigRepository skillConfigRepository) {
         this.jobService = jobService;
-        this.skills = skills;
+        this.skillConfigRepository = skillConfigRepository;
     }
 
     public List<String> names() {
         List<String> names = new ArrayList<>();
         jobService.listJobs().forEach(job -> names.add(job.jobName().value()));
-        skills.getSkills().values().forEach(skill -> names.add(skill.name().value()));
+        skillConfigRepository.getSkills().values().forEach(skill -> names.add(skill.name().value()));
         return names;
     }
 

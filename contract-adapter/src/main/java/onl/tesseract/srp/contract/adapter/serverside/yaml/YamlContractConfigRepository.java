@@ -13,51 +13,51 @@ import java.util.Optional;
 @Component
 public class YamlContractConfigRepository implements ContractConfigRepository {
 
-    private static final Path FILE = Path.of("plugins/Tesseract/contract/contracts.yml");
+    private static final Path CONFIG_FILE_PATH = Path.of("plugins/Tesseract/contract/contracts.yml");
 
-    private YamlConfiguration yaml = new YamlConfiguration();
+    private YamlConfiguration yamlConfiguration = new YamlConfiguration();
     private long loadedAt = -1;
 
     @Override
     public Duration getScrollTtl() {
-        return Duration.ofHours(yaml().getLong("scroll-lifetime-hours", 72));
+        return Duration.ofHours(currentYaml().getLong("scroll-lifetime-hours", 72));
     }
 
     public double getQuantityByRarity(String rarity) {
-        return yaml().getDouble("quantity-by-rarity." + rarity, 300);
+        return currentYaml().getDouble("quantity-by-rarity." + rarity, 300);
     }
 
     public double getRarityWeight(String rarity) {
-        return yaml().getDouble("rarity-weights." + rarity, 0);
+        return currentYaml().getDouble("rarity-weights." + rarity, 0);
     }
 
     public int getDailyTickets(String rank) {
-        return yaml().getInt("daily-tickets." + rank, 0);
+        return currentYaml().getInt("daily-tickets." + rank, 0);
     }
 
     public Optional<String> getNpcName(String job) {
-        ConfigurationSection names = yaml().getConfigurationSection("npc-names");
-        if (names == null) {
+        ConfigurationSection npcNames = currentYaml().getConfigurationSection("npc-names");
+        if (npcNames == null) {
             return Optional.empty();
         }
-        for (String key : names.getKeys(false)) {
+        for (String key : npcNames.getKeys(false)) {
             if (key.equalsIgnoreCase(job)) {
-                return Optional.ofNullable(names.getString(key)).filter(name -> !name.isBlank());
+                return Optional.ofNullable(npcNames.getString(key)).filter(name -> !name.isBlank());
             }
         }
         return Optional.empty();
     }
 
-    private synchronized YamlConfiguration yaml() {
-        File file = FILE.toFile();
-        if (!file.exists()) {
+    private synchronized YamlConfiguration currentYaml() {
+        File configFile = CONFIG_FILE_PATH.toFile();
+        if (!configFile.exists()) {
             return new YamlConfiguration();
         }
-        long modified = file.lastModified();
-        if (modified != loadedAt) {
-            yaml = YamlConfiguration.loadConfiguration(file);
-            loadedAt = modified;
+        long lastModified = configFile.lastModified();
+        if (lastModified != loadedAt) {
+            yamlConfiguration = YamlConfiguration.loadConfiguration(configFile);
+            loadedAt = lastModified;
         }
-        return yaml;
+        return yamlConfiguration;
     }
 }

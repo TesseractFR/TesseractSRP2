@@ -18,23 +18,23 @@ import java.util.OptionalInt;
 @Component
 public class ContractPlayerInfoRepository implements PlayerInfoRepository {
 
-    private final ContractTicketJpaRepository ticketJpaRepo;
+    private final ContractTicketJpaRepository contractTicketJpaRepository;
     private final PlayerService playerService;
     private final JobService jobService;
-    private final YamlContractConfigRepository config;
+    private final YamlContractConfigRepository yamlContractConfigRepository;
 
-    public ContractPlayerInfoRepository(ContractTicketJpaRepository ticketJpaRepo, PlayerService playerService, JobService jobService,
-                                        YamlContractConfigRepository config) {
-        this.ticketJpaRepo = ticketJpaRepo;
+    public ContractPlayerInfoRepository(ContractTicketJpaRepository contractTicketJpaRepository, PlayerService playerService, JobService jobService,
+                                        YamlContractConfigRepository yamlContractConfigRepository) {
+        this.contractTicketJpaRepository = contractTicketJpaRepository;
         this.playerService = playerService;
         this.jobService = jobService;
-        this.config = config;
+        this.yamlContractConfigRepository = yamlContractConfigRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public OptionalInt findTickets(PlayerID player) {
-        return ticketJpaRepo.findById(player.value())
+        return contractTicketJpaRepository.findById(player.value().toString())
                 .map(entity -> OptionalInt.of(entity.getTickets()))
                 .orElse(OptionalInt.empty());
     }
@@ -42,13 +42,13 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
     @Override
     @Transactional
     public void saveTickets(PlayerID player, int tickets) {
-        ticketJpaRepo.save(new ContractTicketEntity(player.value(), tickets));
+        contractTicketJpaRepository.save(new ContractTicketEntity(player.value().toString(), tickets));
     }
 
     @Override
     public int getDailyTickets(PlayerID player) {
         var rank = playerService.getPlayer(player.value()).getRank();
-        return rank == null ? 0 : config.getDailyTickets(rank.name());
+        return rank == null ? 0 : yamlContractConfigRepository.getDailyTickets(rank.name());
     }
 
     @Override

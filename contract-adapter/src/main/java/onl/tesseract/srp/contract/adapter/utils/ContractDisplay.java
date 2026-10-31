@@ -16,7 +16,7 @@ import java.util.Locale;
 
 public final class ContractDisplay {
 
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter EXPIRATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(ZoneId.systemDefault());
 
     private ContractDisplay() {
     }
@@ -25,27 +25,27 @@ public final class ContractDisplay {
         return details(contract, -1);
     }
 
-    public static List<Component> details(Contract contract, int bonus) {
-        boolean craft = contract.type() == ContractType.CRAFT;
+    public static List<Component> details(Contract contract, int jobBonus) {
+        boolean isCraft = contract.type() == ContractType.CRAFT;
         List<Component> lines = new ArrayList<>();
-        lines.add(line("Type : ", craft ? "Artisanat" : "Récolte", craft ? NamedTextColor.AQUA : NamedTextColor.GREEN));
-        lines.add(line(craft ? "Compétence : " : "Métier : ", capitalize(contract.job()), NamedTextColor.GOLD));
+        lines.add(line("Type : ", isCraft ? "Artisanat" : "Récolte", isCraft ? NamedTextColor.AQUA : NamedTextColor.GREEN));
+        lines.add(line(isCraft ? "Compétence : " : "Métier : ", capitalize(contract.job()), NamedTextColor.GOLD));
         lines.add(line("Demande : ", contract.quantity() + " × " + capitalize(contract.material()), NamedTextColor.YELLOW));
         lines.add(line("Qualité minimale : ", qualityName(contract.minimalQuality()), qualityColor(contract.minimalQuality())));
-        lines.add(line("Récompense : ", rewardText(contract, craft, bonus), NamedTextColor.GREEN));
-        lines.add(line("Expire le : ", DATE.format(contract.expiresAt()), NamedTextColor.RED));
+        lines.add(line("Récompense : ", rewardText(contract, isCraft, jobBonus), NamedTextColor.GREEN));
+        lines.add(line("Expire le : ", EXPIRATION_DATE_FORMAT.format(contract.expiresAt()), NamedTextColor.RED));
         return lines;
     }
 
-    private static String rewardText(Contract contract, boolean craft, int bonus) {
-        String base = contract.reward() + " lys";
-        if (craft) {
-            return base;
+    private static String rewardText(Contract contract, boolean isCraft, int jobBonus) {
+        String baseText = contract.reward() + " lys";
+        if (isCraft) {
+            return baseText;
         }
-        if (bonus < 0) {
-            return base + " + bonus métier";
+        if (jobBonus < 0) {
+            return baseText + " + bonus métier";
         }
-        return bonus > 0 ? base + " + " + bonus + " bonus métier" : base;
+        return jobBonus > 0 ? baseText + " + " + jobBonus + " bonus métier" : baseText;
     }
 
     public static Component footer(Contract contract) {
@@ -81,16 +81,16 @@ public final class ContractDisplay {
     }
 
     public static String capitalize(String raw) {
-        StringBuilder out = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         for (String word : raw.toLowerCase(Locale.ROOT).split("_")) {
             if (word.isEmpty()) {
                 continue;
             }
-            if (!out.isEmpty()) {
-                out.append(' ');
+            if (!result.isEmpty()) {
+                result.append(' ');
             }
-            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+            result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
         }
-        return out.toString();
+        return result.toString();
     }
 }
