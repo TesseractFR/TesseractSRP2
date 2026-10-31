@@ -104,6 +104,7 @@ public class TesseractPlayerInventoryRepository implements PlayerInventoryReposi
         ItemStack stack = base.get();
         ItemMeta meta = stack.getItemMeta();
         ContractScrollItem.writeContractId(meta, contract.id());
+        ContractScrollItem.writeExpiry(meta, contract.expiresAt());
         meta.lore(lore(contract));
         meta.setMaxStackSize(1);
         stack.setItemMeta(meta);

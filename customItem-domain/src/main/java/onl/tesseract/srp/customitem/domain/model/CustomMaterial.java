@@ -6,7 +6,6 @@ public record CustomMaterial(
         MaterialName name,
         MaterialName displayName,
         ItemTag itemTag,
-        Rarity rarity,
-        double value
+        Rarity rarity
 ) {
 }

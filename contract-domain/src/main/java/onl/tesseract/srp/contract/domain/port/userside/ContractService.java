@@ -4,9 +4,9 @@ import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
+import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
-import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInventoryRepository;
@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-import static onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository.DeliveryRefusal.*;
+import static onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal.*;
 
 public class ContractService {
 

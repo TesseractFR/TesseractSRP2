@@ -31,6 +31,10 @@ public class YamlContractConfigRepository implements ContractConfigRepository {
         return yaml().getDouble("rarity-weights." + rarity, 0);
     }
 
+    public int getDailyTickets(String rank) {
+        return yaml().getInt("daily-tickets." + rank, 0);
+    }
+
     public Optional<String> getNpcName(String job) {
         ConfigurationSection names = yaml().getConfigurationSection("npc-names");
         if (names == null) {

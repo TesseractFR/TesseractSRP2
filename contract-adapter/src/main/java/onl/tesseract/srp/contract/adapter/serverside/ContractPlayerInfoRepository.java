@@ -3,6 +3,7 @@ package onl.tesseract.srp.contract.adapter.serverside;
 import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.entity.ContractTicketEntity;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.repository.ContractTicketJpaRepository;
+import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
 import onl.tesseract.srp.job.domain.model.JobName;
@@ -20,11 +21,14 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
     private final ContractTicketJpaRepository ticketJpaRepo;
     private final PlayerService playerService;
     private final JobService jobService;
+    private final YamlContractConfigRepository config;
 
-    public ContractPlayerInfoRepository(ContractTicketJpaRepository ticketJpaRepo, PlayerService playerService, JobService jobService) {
+    public ContractPlayerInfoRepository(ContractTicketJpaRepository ticketJpaRepo, PlayerService playerService, JobService jobService,
+                                        YamlContractConfigRepository config) {
         this.ticketJpaRepo = ticketJpaRepo;
         this.playerService = playerService;
         this.jobService = jobService;
+        this.config = config;
     }
 
     @Override
@@ -44,7 +48,7 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
     @Override
     public int getDailyTickets(PlayerID player) {
         var rank = playerService.getPlayer(player.value()).getRank();
-        return rank == null ? 0 : rank.getDailyContractTickets();
+        return rank == null ? 0 : config.getDailyTickets(rank.name());
     }
 
     @Override
