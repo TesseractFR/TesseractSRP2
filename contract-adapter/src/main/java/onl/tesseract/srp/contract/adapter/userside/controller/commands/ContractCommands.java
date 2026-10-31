@@ -40,7 +40,7 @@ public class ContractCommands extends CommandContext {
             contractService.noScrollInHand(player, job);
             return;
         }
-        contractService.prepareDelivery(player, contractId.getAsLong(), job).ifPresent(contract -> new ContractDeliveryMenu(player, job, contract, contractService).open(sender));
+        contractService.checkDeliverable(player, contractId.getAsLong(), job).ifPresent(contract -> new ContractDeliveryMenu(player, job, contract, contractService).open(sender));
     }
 
     @Command(name = "tickets", description = "Voir ses tickets de contrat.")

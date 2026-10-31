@@ -8,8 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -17,8 +15,8 @@ import java.util.UUID;
 @Table(name = "t_contract_player_state")
 public class ContractTicketEntity {
     @Id
-    @Column(name = "player_id", columnDefinition = "BINARY(16)")
-    private UUID playerId;
+    @Column(name = "player_id", length = 36)
+    private String playerId;
 
     @Column(nullable = false)
     private int tickets;

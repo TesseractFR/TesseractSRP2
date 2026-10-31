@@ -13,7 +13,7 @@ Gérer les contrats : un joueur dépense un ticket quotidien pour acheter, chez 
 - `ContractService.buyScroll` vérifie le ticket et la place dans l’inventaire, génère le contrat, dépense le ticket puis sauvegarde le contrat (le ticket est rendu si la sauvegarde échoue) et remet le parchemin (sinon le contrat est supprimé et le ticket rendu).
 - `ContractService.deliver` vérifie dans l’ordre le contrat (`INVALID_SCROLL`), le PNJ (`WRONG_CLIENT`), l’expiration (`EXPIRED`, contrat supprimé), le parchemin porté et les items de qualité suffisante (`MISSING_ITEMS` ou `NOT_ENOUGH_QUALITY`). Il retire ensuite le parchemin et les items, appelle `ContractRepository.settle`, et rend le tout en cas de refus ou d’exception.
 - `ContractRepository.settle` supprime le contrat et paie le livreur en une seule transaction, côté adaptateur : faux si le contrat n’existe plus (double livraison), `ContractRepository.PaymentFailedException` si le paiement échoue, ce qui annule la suppression (`PAYMENT_FAILED`). La somme versée est la récompense de base plus, pour la récolte seulement, le bonus `MONEY` du livreur (`moneyBonus`).
-- `prepareDelivery` vérifie un parchemin avant la confirmation, `useScroll` détruit un parchemin sans contrat valide, `purgeExpired` supprime les contrats échus et `moneyBonus` donne le bonus affiché avant de livrer.
+- `checkDeliverable` vérifie un parchemin avant la confirmation, `useScroll` détruit un parchemin sans contrat valide, `purgeExpired` supprime les contrats échus et `moneyBonus` donne le bonus affiché avant de livrer.
 - Les messages passent tous par `ContractMessagingRepository` ; les refus de livraison utilisent `DeliveryRefusal` (dans `model.contract`).
 
 ## Interfaces et dépendances
@@ -34,4 +34,4 @@ Les services côté utilisateur sont `ContractService` (achat, livraison, parche
 
 ## Limites constatées
 
-Le domaine demande la valeur d’un item pour la qualité minimale du contrat ; l’adapter renvoie pour l’instant la valeur unique du matériau (la même quelle que soit la qualité) en attendant `getMonetaryValue`. Il n’y a aucun gain de tickets en dehors de la commande staff, aucun plafond de quantité et aucun test unitaire. `ContractService` ignore le résultat de `scrolls.give` quand il rend le parchemin : si l’inventaire est plein à ce moment, le parchemin est perdu et le contrat reste en base jusqu’à son expiration.
+Le domaine demande la valeur d’un item pour la qualité minimale du contrat ; l’adapter renvoie pour l’instant la valeur unique du matériau (la même quelle que soit la qualité) en attendant `getMonetaryValue`. Il n’y a aucun gain de tickets en dehors de la commande staff, aucun plafond de quantité et aucun test unitaire. `ContractService` ignore le résultat de `giveScroll` quand il rend le parchemin : si l’inventaire est plein à ce moment, le parchemin est perdu et le contrat reste en base jusqu’à son expiration.
