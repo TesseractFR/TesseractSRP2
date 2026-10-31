@@ -7,14 +7,14 @@ Gérer les contrats : un joueur dépense un ticket quotidien pour acheter, chez 
 ## Modèle et règles
 
 - Un `Contract` porte l’acheteur (`issuedTo`), le type (`HARVEST` ou `CRAFT`), le `job` (métier ou compétence dont le PNJ est le client), le matériau, la quantité (au moins 1), la qualité minimale, la récompense de base et les dates d’émission et d’expiration. Il n’a pas de propriétaire : celui qui livre touche la récompense. Un contrat livré ou expiré est supprimé.
-- Un `CatalogItem` (défini dans `ItemInfoRepository`) est un item qu’un contrat peut demander, avec son poids de tirage et sa quantité, tous deux donnés par la rareté. L’adapter le construit.
+- Un `CatalogItem` (dans `model.contract`) est un item qu’un contrat peut demander, avec son poids de tirage et sa quantité, tous deux donnés par la rareté. L’adapter le construit.
 - `ContractGenerator.generate` tire un item du catalogue selon son poids, une qualité minimale uniforme entre `POOR` et `EXCEPTIONAL`, puis fixe l’expiration (`scrollTtl`) et la récompense de base : valeur de l’item pour la qualité minimale × quantité, au moins 1. Le contenu ne dépend pas de l’acheteur et le parchemin est échangeable. Catalogue vide : aucun contrat.
 - `ContractService` gère aussi le stock de tickets : un joueur sans stock enregistré est nouveau et a son quota du grade, `renewDaily` remet le stock au quota à la première connexion du jour, `giveTicketsAsStaff` en ajoute sans plafond ; l’achat dépense un ticket et le rend en cas d’échec.
 - `ContractService.buyScroll` vérifie le ticket et la place dans l’inventaire, génère le contrat, dépense le ticket puis sauvegarde le contrat (le ticket est rendu si la sauvegarde échoue) et remet le parchemin (sinon le contrat est supprimé et le ticket rendu).
 - `ContractService.deliver` vérifie dans l’ordre le contrat (`INVALID_SCROLL`), le PNJ (`WRONG_CLIENT`), l’expiration (`EXPIRED`, contrat supprimé), le parchemin porté et les items de qualité suffisante (`MISSING_ITEMS` ou `NOT_ENOUGH_QUALITY`). Il retire ensuite le parchemin et les items, appelle `ContractRepository.settle`, et rend le tout en cas de refus ou d’exception.
 - `ContractRepository.settle` supprime le contrat et paie le livreur en une seule transaction, côté adaptateur : faux si le contrat n’existe plus (double livraison), `ContractRepository.PaymentFailedException` si le paiement échoue, ce qui annule la suppression (`PAYMENT_FAILED`). La somme versée est la récompense de base plus, pour la récolte seulement, le bonus `MONEY` du livreur (`moneyBonus`).
 - `prepareDelivery` vérifie un parchemin avant la confirmation, `useScroll` détruit un parchemin sans contrat valide, `purgeExpired` supprime les contrats échus et `moneyBonus` donne le bonus affiché avant de livrer.
-- Les messages passent tous par `ContractMessagingRepository` ; les refus de livraison utilisent `DeliveryRefusal` (défini dans ce port).
+- Les messages passent tous par `ContractMessagingRepository` ; les refus de livraison utilisent `DeliveryRefusal` (dans `model.contract`).
 
 ## Interfaces et dépendances
 

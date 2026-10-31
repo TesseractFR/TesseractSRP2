@@ -36,8 +36,7 @@ public class FileSystemCustumMaterialRepository implements CustumMaterialReposit
                     new MaterialName(key.toUpperCase()),
                     new MaterialName(configurationSection.getString("display_name")),
                     new ItemTag(configurationSection.getString("item_tag")),
-                    Rarity.valueOf(configurationSection.getString("rarity")),
-                    configurationSection.getDouble("value", 0)));
+                    Rarity.valueOf(configurationSection.getString("rarity"))));
         }
         return customMaterials;
     }

@@ -3,7 +3,7 @@ package onl.tesseract.srp.contract.adapter.serverside;
 import onl.tesseract.srp.contract.domain.model.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
-import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository.CatalogItem;
+import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
 import onl.tesseract.srp.customitem.domain.model.CustomMaterial;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
@@ -57,8 +57,8 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
 
     @Override
     public double getValue(String material, Quality quality) {
-        CustomMaterial custom = customItems.getCustomMaterial(new MaterialName(material));
-        return custom == null ? 0 : custom.value();
+        // TODO: remplacer par l'appel au service d'items (getMonetaryValue(matériau, qualité)) quand il existera
+        return 1.0;
     }
 
     private void add(List<CatalogItem> items, ContractType type, String job, String material) {

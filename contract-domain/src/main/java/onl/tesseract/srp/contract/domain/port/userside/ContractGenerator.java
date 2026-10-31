@@ -2,10 +2,10 @@ package onl.tesseract.srp.contract.domain.port.userside;
 
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
-import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository.CatalogItem;
 
 import java.time.Instant;
 import java.util.List;
