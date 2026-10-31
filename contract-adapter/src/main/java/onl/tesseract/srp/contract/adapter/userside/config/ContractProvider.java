@@ -6,9 +6,10 @@ import onl.tesseract.srp.contract.adapter.serverside.task.ContractExpirationTask
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
-import onl.tesseract.srp.contract.domain.port.serverside.PlayerInventoryRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.PlayerMaterialRepository;
 import onl.tesseract.srp.contract.domain.port.userside.ContractGenerator;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -26,9 +27,11 @@ public class ContractProvider {
     }
 
     @Bean
-    public ContractService contractService(ContractRepository contractRepository, PlayerInventoryRepository playerInventoryRepository, ContractGenerator contractGenerator,
+    public ContractService contractService(ContractRepository contractRepository, PlayerMaterialRepository playerMaterialRepository,
+                                           ContractScrollRepository contractScrollRepository, ContractGenerator contractGenerator,
                                            PlayerInfoRepository playerInfoRepository, ContractMessagingRepository contractMessagingRepository) {
-        return new ContractService(contractRepository, playerInventoryRepository, contractGenerator, playerInfoRepository, contractMessagingRepository);
+        return new ContractService(contractRepository, playerMaterialRepository, contractScrollRepository, contractGenerator,
+                playerInfoRepository, contractMessagingRepository);
     }
 
     @Bean

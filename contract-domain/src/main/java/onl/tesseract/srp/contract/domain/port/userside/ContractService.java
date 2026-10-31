@@ -8,8 +8,9 @@ import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
-import onl.tesseract.srp.contract.domain.port.serverside.PlayerInventoryRepository;
+import onl.tesseract.srp.contract.domain.port.serverside.PlayerMaterialRepository;
 
 import java.time.Instant;
 import java.util.Map;
@@ -20,16 +21,19 @@ import static onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal.*
 public class ContractService {
 
     private final ContractRepository contractRepository;
-    private final PlayerInventoryRepository playerInventoryRepository;
+    private final PlayerMaterialRepository playerMaterialRepository;
+    private final ContractScrollRepository contractScrollRepository;
     private final ContractGenerator contractGenerator;
     private final PlayerInfoRepository playerInfoRepository;
     private final ContractMessagingRepository contractMessagingRepository;
 
-    public ContractService(ContractRepository contractRepository, PlayerInventoryRepository playerInventoryRepository,
-                           ContractGenerator contractGenerator, PlayerInfoRepository playerInfoRepository,
+    public ContractService(ContractRepository contractRepository, PlayerMaterialRepository playerMaterialRepository,
+                           ContractScrollRepository contractScrollRepository, ContractGenerator contractGenerator,
+                           PlayerInfoRepository playerInfoRepository,
                            ContractMessagingRepository contractMessagingRepository) {
         this.contractRepository = contractRepository;
-        this.playerInventoryRepository = playerInventoryRepository;
+        this.playerMaterialRepository = playerMaterialRepository;
+        this.contractScrollRepository = contractScrollRepository;
         this.contractGenerator = contractGenerator;
         this.playerInfoRepository = playerInfoRepository;
         this.contractMessagingRepository = contractMessagingRepository;
@@ -40,7 +44,7 @@ public class ContractService {
             contractMessagingRepository.sendPurchaseNoTicket(player);
             return;
         }
-        if (!playerInventoryRepository.canReceiveScroll(player)) {
+        if (!contractScrollRepository.canReceive(player)) {
             contractMessagingRepository.sendPurchaseInventoryFull(player);
             return;
         }
@@ -53,7 +57,7 @@ public class ContractService {
         withdrawTicket(player);
         Contract savedContract = saveContractOrRefundTicket(player, draftContract.get());
 
-        if (!playerInventoryRepository.giveScroll(player, savedContract)) {
+        if (!giveScroll(player, savedContract)) {
             cancelPurchase(player, savedContract);
             contractMessagingRepository.sendPurchaseInventoryFull(player);
             return;
@@ -86,16 +90,20 @@ public class ContractService {
         }
         Contract contract = foundContract.get();
 
-        if (!playerInventoryRepository.hasScroll(player, contractId)) {
+        if (!contractScrollRepository.has(player, contractId)) {
             refuse(player, npcJob, contractId, INVALID_SCROLL);
             return;
         }
-        int itemsOwned = playerInventoryRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
+        int itemsOwned = playerMaterialRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
         if (itemsOwned < contract.quantity()) {
             refuseMissingItems(player, npcJob, contract, itemsOwned);
             return;
         }
         withdrawAndPay(player, npcJob, contract);
+    }
+
+    private boolean giveScroll(PlayerID player, Contract contract) {
+        return contractScrollRepository.give(player, contract, moneyBonus(player, contract) > 0);
     }
 
     public int moneyBonus(PlayerID deliverer, Contract contract) {
@@ -114,7 +122,7 @@ public class ContractService {
         boolean contractStillValid = contractRepository.findById(contractId)
                 .map(contract -> !contract.isExpired(Instant.now()))
                 .orElse(false);
-        if (!contractStillValid && playerInventoryRepository.removeScroll(player, contractId)) {
+        if (!contractStillValid && contractScrollRepository.remove(player, contractId)) {
             contractMessagingRepository.sendScrollDestroyed(player);
         }
     }
@@ -123,8 +131,13 @@ public class ContractService {
         return contractRepository.deleteExpired(Instant.now());
     }
 
+    public void reportExpiredScrolls(PlayerID player, int count) {
+        purgeExpired();
+        contractMessagingRepository.sendScrollsExpired(player, count);
+    }
+
     public int getDailyQuota(PlayerID player) {
-        return playerInfoRepository.getDailyTickets(player);
+        return playerInfoRepository.getDailyQuota(player);
     }
 
     public int getTickets(PlayerID player) {
@@ -189,7 +202,7 @@ public class ContractService {
     }
 
     private void refuseMissingItems(PlayerID player, String npcJob, Contract contract, int itemsOwned) {
-        int itemsOwnedAnyQuality = playerInventoryRepository.countAtLeast(player, contract.material(), Quality.POOR);
+        int itemsOwnedAnyQuality = playerMaterialRepository.countAtLeast(player, contract.material(), Quality.POOR);
         DeliveryRefusal refusalReason = itemsOwnedAnyQuality > itemsOwned ? NOT_ENOUGH_QUALITY : MISSING_ITEMS;
         contractMessagingRepository.sendDeliveryRefused(player, npcJob, refusalReason, contract.quantity() - itemsOwned);
     }
@@ -207,20 +220,20 @@ public class ContractService {
     }
 
     private Map<Quality, Integer> takeScrollAndItemsOrRefuse(PlayerID player, String npcJob, Contract contract) {
-        if (!playerInventoryRepository.removeScroll(player, contract.id())) {
+        if (!contractScrollRepository.remove(player, contract.id())) {
             contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
             return Map.of();
         }
         Map<Quality, Integer> removedItems;
         try {
-            removedItems = playerInventoryRepository.removeAtLeast(player, contract.material(),
+            removedItems = playerMaterialRepository.removeAtLeast(player, contract.material(),
                     contract.minimalQuality(), contract.quantity());
         } catch (RuntimeException e) {
-            playerInventoryRepository.giveScroll(player, contract);
+            giveScroll(player, contract);
             throw e;
         }
         if (removedItems.isEmpty()) {
-            playerInventoryRepository.giveScroll(player, contract);
+            giveScroll(player, contract);
             contractMessagingRepository.sendDeliveryRefused(player, npcJob, MISSING_ITEMS, contract.quantity());
         }
         return removedItems;
@@ -247,7 +260,7 @@ public class ContractService {
     }
 
     private void giveBackToPlayer(PlayerID player, Contract contract, Map<Quality, Integer> removedItems) {
-        playerInventoryRepository.giveBack(player, contract.material(), removedItems);
-        playerInventoryRepository.giveScroll(player, contract);
+        playerMaterialRepository.giveBack(player, contract.material(), removedItems);
+        giveScroll(player, contract);
     }
 }

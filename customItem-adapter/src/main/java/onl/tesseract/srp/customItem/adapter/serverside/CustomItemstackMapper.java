@@ -57,7 +57,11 @@ public class CustomItemstackMapper implements CustomItemRepository {
                 .append(Component.text(rarity.label(), rarity.color())));
         lore.add(Component.text("Qualité : ", NamedTextColor.GRAY)
                 .append(Component.text(quality.label(), quality.color())));
-        lore.add(Component.text("Valeur : " + moneyRepository.getValue(material.name(),customItem.quality()).value().stripTrailingZeros().toPlainString(), NamedTextColor.GOLD));
+        if (moneyRepository.hasValue(material.name())) {
+            String value = moneyRepository.getValue(material.name(), customItem.quality()).value().stripTrailingZeros().toPlainString();
+            lore.add(Component.text("Valeur : ", NamedTextColor.GRAY)
+                    .append(Component.text(value, NamedTextColor.GOLD)));
+        }
         itemStack.lore(lore);
         return itemStack;
     }

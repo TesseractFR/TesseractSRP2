@@ -1,5 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside;
 
+import lombok.extern.slf4j.Slf4j;
+import onl.tesseract.srp.contract.adapter.utils.QualityConverter;
 import onl.tesseract.srp.contract.domain.model.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
@@ -23,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Component
 public class ContractItemInfoRepository implements ItemInfoRepository {
 
@@ -57,12 +60,12 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
 
     @Override
     public double getValue(String material, Quality quality) {
-        // TODO: remplacer par l'appel au service d'items (getMonetaryValue(matériau, qualité)) quand il existera
-        return 1.0;
+        return customItemService.getMoneyValue(new MaterialName(material), QualityConverter.toCommon(quality)).value().doubleValue();
     }
 
     private void add(List<CatalogItem> catalogItems, ContractType type, String job, String material) {
-        if (getValue(material, Quality.POOR) <= 0) {
+        if (!customItemService.hasMoneyValue(new MaterialName(material))) {
+            log.warn("Material {} ignored for contracts: no money value in itemValue.yml", material);
             return;
         }
         Rarity rarity = rarityOf(material);

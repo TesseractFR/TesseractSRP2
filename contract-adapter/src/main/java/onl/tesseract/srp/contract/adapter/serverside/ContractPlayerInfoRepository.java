@@ -46,7 +46,7 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
     }
 
     @Override
-    public int getDailyTickets(PlayerID player) {
+    public int getDailyQuota(PlayerID player) {
         var rank = playerService.getPlayer(player.value()).getRank();
         return rank == null ? 0 : yamlContractConfigRepository.getDailyTickets(rank.name());
     }
