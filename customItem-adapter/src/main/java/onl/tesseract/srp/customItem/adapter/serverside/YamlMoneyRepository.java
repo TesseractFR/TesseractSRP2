@@ -20,6 +20,7 @@ public class YamlMoneyRepository implements MoneyRepository {
     private static final Path PATH = Path.of("plugins/Tesseract/itemValue.yml");
 
     private final HashMap<MaterialName, MoneyValue> values = new HashMap<>();
+    private final HashMap<Quality, MoneyValue> qualityRates = new HashMap<>();
 
     public YamlMoneyRepository() {
         loadValues();
@@ -34,6 +35,22 @@ public class YamlMoneyRepository implements MoneyRepository {
         loadValues(yaml, "Vanilla");
         loadValues(yaml, "Custom");
         loadCompositions(yaml);
+        loadQualityRates(yaml);
+    }
+
+    private void loadQualityRates(YamlConfiguration yaml) {
+        var section = yaml.getConfigurationSection("QualityRate");
+        if (section == null) {
+            return;
+        }
+        for (String key : section.getKeys(false)) {
+            Quality quality = Quality.valueOf(key.toUpperCase());
+            String rawValue = section.getString(key);
+            if (rawValue == null || rawValue.isBlank()) {
+                throw new IllegalArgumentException("Missing quality rate for " + key);
+            }
+            qualityRates.put(quality, new MoneyValue(new BigDecimal(rawValue)));
+        }
     }
 
     private void loadValues(YamlConfiguration yaml, String sectionName) {
@@ -103,6 +120,6 @@ public class YamlMoneyRepository implements MoneyRepository {
 
     @Override
     public MoneyValue getValue(MaterialName materialName, Quality quality) {
-        return values.get(new MaterialName(materialName.value().toUpperCase()));
+        return values.get(new MaterialName(materialName.value())).multiply(qualityRates.get(quality));
     }
 }

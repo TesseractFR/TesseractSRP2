@@ -10,4 +10,13 @@ public record MoneyValue(BigDecimal value) {
             throw new IllegalArgumentException("value must be positive");
         }
     }
+
+    public static MoneyValue of(int value) {
+        return new MoneyValue(BigDecimal.valueOf(value));
+    }
+
+
+    public MoneyValue multiply(MoneyValue moneyValue) {
+        return new MoneyValue(value.multiply(moneyValue.value()));
+    }
 }
