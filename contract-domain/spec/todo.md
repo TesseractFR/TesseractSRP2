@@ -2,8 +2,7 @@
 
 ## Valeur des items (en attente)
 
-- [ ] Brancher la valeur monétaire fournie par le service d'items : remplacer l'implémentation de `ItemInfoRepository.getValue` par `getMonetaryValue(matériau, qualité)` (le changement est dans l'adapter, pas dans le domaine).
-- [ ] S'assurer que chaque item récoltable ou fabriqué qui peut sortir d'un contrat a une valeur : un item sans valeur rapporte le minimum, 1 lys.
+- [ ] S'assurer que chaque item récoltable ou fabriqué qui peut sortir d'un contrat a un prix dans `itemValue.yml` : sans prix, `getCatalogItems` échoue et plus aucun achat n'est possible.
 
 ## Règles à décider
 
@@ -16,7 +15,7 @@
 
 ## Nettoyage
 
-- [ ] `ContractService` ignore le résultat de `giveScroll` quand il rend le parchemin (deux fois dans `takeScrollAndItemsOrRefuse`, une fois dans `giveBackToPlayer`) : si l'inventaire est plein à ce moment, le parchemin est perdu alors que le contrat reste en base jusqu'à son expiration. Pistes : le poser au sol, prévenir le joueur et supprimer le contrat, ou vérifier `canReceiveScroll` avant de retirer le parchemin.
+- [ ] `ContractService` ignore le résultat de `give` (`ContractScrollRepository`) quand il rend le parchemin (deux fois dans `takeScrollAndItemsOrRefuse`, une fois dans `giveBackToPlayer`) : si l'inventaire est plein à ce moment, le parchemin est perdu alors que le contrat reste en base jusqu'à son expiration. Pistes : le poser au sol, prévenir le joueur et supprimer le contrat, ou vérifier `canReceive` avant de retirer le parchemin.
 
 ## Tests
 
@@ -26,7 +25,6 @@
 ## Alignement avec les autres modules
 
 - [ ] Encapsuler `job` et `material` dans des types valeur (comme `Material`, `SkillName`, `Tier` dans `skill-domain`) plutôt que des `String`.
-- [ ] Sortir le parchemin physique de `PlayerInventoryRepository` (matériaux seulement dans `ItemRepository` de `skill-domain`) vers un port dédié.
 - [ ] `ContractService.noScrollInHand` ne fait que relayer un message : le traiter dans `checkDeliverable`.
 
 ## Après la mise en place

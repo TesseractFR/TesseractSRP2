@@ -24,7 +24,8 @@ contract-domain
     └── serverside                  ce dont le domaine a besoin (implémenté par l'adapter)
         ├── ContractRepository
         ├── PlayerInfoRepository
-        ├── PlayerInventoryRepository
+        ├── PlayerMaterialRepository
+        ├── ContractScrollRepository
         ├── ItemInfoRepository
         ├── ContractConfigRepository
         └── ContractMessagingRepository
@@ -44,18 +45,19 @@ flowchart LR
     subgraph ports[ports serverside]
         REPO[ContractRepository]
         PINFO[PlayerInfoRepository]
-        INV[PlayerInventoryRepository]
+        MAT[PlayerMaterialRepository]
+        SCR[ContractScrollRepository]
         IINFO[ItemInfoRepository]
         CFG[ContractConfigRepository]
         MSG[ContractMessagingRepository]
     end
     CMD --> SVC
     SVC --> GEN
-    SVC --> REPO & PINFO & INV & MSG
+    SVC --> REPO & PINFO & MAT & SCR & MSG
     GEN --> IINFO & CFG
 ```
 
-`ContractService` a 5 dépendances (contrats, inventaire, générateur, infos joueur, messagerie). `ContractGenerator` en a 3 (config, infos items, `Random`).
+`ContractService` a 6 dépendances (contrats, matériaux, parchemin, générateur, infos joueur, messagerie). `ContractGenerator` en a 3 (config, infos items, `Random`).
 
 ## 2. Modèle
 
@@ -104,16 +106,16 @@ Un item qu'un contrat peut demander : `type`, `job`, `material`, `weight` (poids
 | | `settle(id, deliverer, payout)` | **en une transaction** : supprime le contrat puis verse `payout`. `false` si le contrat n'existe plus ; lève `PaymentFailedException` si le paiement échoue, ce qui annule la suppression |
 | `PlayerInfoRepository` | `findTickets(player)` | `OptionalInt` vide si le joueur n'a pas de stock enregistré |
 | | `saveTickets(player, n)` | enregistre le stock |
-| | `getDailyTickets(player)` | quota quotidien de tickets selon son grade |
+| | `getDailyQuota(player)` | quota quotidien de tickets selon son grade |
 | | `getMoneyBonus(player, job, material)` | **taux** de bonus `MONEY` (0.25 = +25 %) |
-| `PlayerInventoryRepository` | `countAtLeast(player, material, minimalQuality)` | nombre d'items de qualité ≥ `minimalQuality` |
+| `PlayerMaterialRepository` | `countAtLeast(player, material, minimalQuality)` | nombre d'items de qualité ≥ `minimalQuality` |
 | | `removeAtLeast(player, material, minimalQuality, amount)` | retire `amount` items de qualité ≥ `minimalQuality`, de la plus basse à la plus haute, **tout ou rien** ; renvoie ce qui a été retiré par qualité, **map vide** si impossible |
 | | `giveBack(player, material, items)` | rend des items retirés |
-| | `canReceiveScroll(player)` | place disponible pour un parchemin |
-| | `giveScroll(player, contract)` | crée et remet le parchemin ; `false` si impossible |
-| | `hasScroll(player, id)` / `removeScroll(player, id)` | détecte / retire le parchemin portant cet id |
+| `ContractScrollRepository` | `canReceive(player)` | place disponible pour un parchemin |
+| | `give(player, contract, hasJobBonus)` | crée et remet le parchemin ; `hasJobBonus` = `moneyBonus(player, contract) > 0`, calculé pour le joueur qui le reçoit (affiche « + bonus métier » sans montant) ; `false` si impossible |
+| | `has(player, id)` / `remove(player, id)` | détecte / retire le parchemin portant cet id |
 | `ItemInfoRepository` | `getCatalogItems()` | liste des `CatalogItem` possibles |
-| | `getValue(material, quality)` | valeur d'un item en lys pour cette qualité |
+| | `getValue(material, quality)` | valeur d'un item en lys pour cette qualité ; toujours strictement positive |
 | `ContractConfigRepository` | `getScrollTtl()` | durée de vie d'un parchemin |
 | `ContractMessagingRepository` | `send…` | un envoi de message par situation (achat, livraison, parchemin, tickets, staff) |
 
@@ -125,14 +127,14 @@ Un item qu'un contrat peut demander : `type`, `job`, `material`, `weight` (poids
 2. **Tirage de l'item pondéré par `weight`** (`pickWeighted`) : somme des poids `total`, `r = random.nextDouble() * total`, puis on parcourt la liste en retranchant chaque poids jusqu'à passer sous 0. Repli sur le dernier élément en cas d'arrondi flottant. Plus le poids est grand, plus l'item sort souvent.
 3. **Qualité minimale uniforme** : `Quality.values()[random.nextInt(5)]`, soit 20 % chacune entre `POOR` et `EXCEPTIONAL`.
 4. `now = Instant.now()` (horloge système, **non injectable** : le générateur n'est donc pas testable à date fixe).
-5. **Récompense** : `max(1, round(itemInfo.getValue(material, minimalQuality) × quantity))`, convertie en `int`. Un item sans valeur rapporte donc 1 lys au minimum.
+5. **Récompense** : `max(1, round(itemInfo.getValue(material, minimalQuality) × quantity))`, convertie en `int`. Le `max(1, …)` garantit au moins 1 lys. Le prix d'un item est toujours strictement positif ; ce minimum ne joue que pour un item de très faible valeur dont l'arrondi donnerait 0.
 6. Construit le `Contract` (`id = null`, `issuedTo = buyer`, `issuedAt = now`, `expiresAt = now + getScrollTtl()`).
 
 Le contenu du contrat ne dépend pas de l'acheteur : seul `issuedTo` le mentionne.
 
 ## 5. `ContractService`
 
-Les champs portent le nom de leur type : `contractRepository`, `playerInventoryRepository`, `contractGenerator`, `playerInfoRepository`, `contractMessagingRepository`. Les méthodes publiques sont en haut du fichier, les méthodes privées en bas.
+Les champs portent le nom de leur type : `contractRepository`, `playerMaterialRepository`, `contractScrollRepository`, `contractGenerator`, `playerInfoRepository`, `contractMessagingRepository`. Les méthodes publiques sont en haut du fichier, les méthodes privées en bas.
 
 ### 5.1 Tickets
 
@@ -141,7 +143,7 @@ Un joueur sans ligne de tickets est **nouveau** : son stock effectif est son quo
 | Méthode | Comportement |
 |---|---|
 | `getTickets(player)` | `findTickets` ; à défaut le quota (`getDailyQuota`) |
-| `getDailyQuota(player)` | relaie `PlayerInfoRepository.getDailyTickets` |
+| `getDailyQuota(player)` | relaie `PlayerInfoRepository.getDailyQuota` |
 | `showTickets(player)` | envoie `sendTicketsShown(tickets, quota)` |
 | `renewDaily(player)` | si `getTickets != quota`, `saveTickets(quota)`. **Remet le stock au quota, même s'il était supérieur** (des tickets ajoutés par le staff au-delà du quota sont perdus au renouvellement). Appelée par l'adapter à la première connexion du jour ; le service ne vérifie pas lui-même la date |
 | `giveTicketsAsStaff(staff, target, amount)` | `amount <= 0` → `sendStaffInvalidAmount`. Sinon `addTickets(target, amount)` (pas de plafond) puis `sendStaffTicketsGiven`. Pour un joueur nouveau, on ajoute donc au quota |
@@ -155,7 +157,7 @@ Trois méthodes privées encapsulent le stock : `hasTicket(player)` (au moins 1 
 sequenceDiagram
     participant S as ContractService
     participant P as PlayerInfoRepository
-    participant I as PlayerInventoryRepository
+    participant SC as ContractScrollRepository
     participant G as ContractGenerator
     participant R as ContractRepository
     participant M as ContractMessagingRepository
@@ -163,7 +165,7 @@ sequenceDiagram
     alt pas de ticket
         S->>M: sendPurchaseNoTicket
     else
-        S->>I: canReceiveScroll
+        S->>SC: canReceive
         alt inventaire plein
             S->>M: sendPurchaseInventoryFull
         else
@@ -174,7 +176,7 @@ sequenceDiagram
                 S->>P: withdrawTicket
                 S->>R: save(contrat)
                 Note over S,R: si save lève une RuntimeException : addTickets(1) puis on relance l'exception
-                S->>I: giveScroll(contrat sauvegardé)
+                S->>SC: give(contrat sauvegardé)
                 alt échec de la remise
                     S->>R: delete(id)
                     S->>P: addTickets(1)
@@ -194,32 +196,34 @@ Ordre voulu : on **vérifie tout avant de dépenser** (ticket, place, contrat g�
 `npcJob` est le métier ou la compétence du PNJ à qui le joueur livre.
 
 1. **`checkDeliverable`** (voir 5.4). Vide → arrêt (le refus est déjà envoyé). La commande l'a déjà appelée avant d'ouvrir le menu ; on la rappelle car le contrat a pu changer avant la confirmation.
-2. `playerInventoryRepository.hasScroll(player, contractId)` ; sinon refus `INVALID_SCROLL`.
+2. `contractScrollRepository.has(player, contractId)` ; sinon refus `INVALID_SCROLL`.
 3. `itemsOwned = countAtLeast(material, minimalQuality)`. Si `itemsOwned < quantity`, `refuseMissingItems` choisit le motif : `NOT_ENOUGH_QUALITY` si le joueur a plus d'items toutes qualités confondues (`countAtLeast(material, POOR) > itemsOwned`), sinon `MISSING_ITEMS`. Le message reçoit `quantity - itemsOwned` comme nombre manquant. Rien n'est retiré.
 4. **`withdrawAndPay`** : calcule `payout = reward + moneyBonus` **avant** de toucher à l'inventaire (si ce calcul échoue, rien n'a été retiré), appelle `takeScrollAndItemsOrRefuse`, puis `payOrRefuse`, et envoie `sendDeliverySucceeded(payout)` seulement si le paiement a eu lieu.
 
 ```mermaid
 sequenceDiagram
     participant S as ContractService
-    participant I as PlayerInventoryRepository
+    participant I as PlayerMaterialRepository
+    participant SC as ContractScrollRepository
     participant R as ContractRepository
     participant M as ContractMessagingRepository
-    S->>I: removeScroll
+    S->>SC: remove
     alt introuvable
         S->>M: refus INVALID_SCROLL
     else
         S->>I: removeAtLeast(matériau, qualité min, quantité)
         alt exception
-            S->>I: giveScroll (rend le parchemin) puis relance l'exception
+            S->>SC: give (rend le parchemin) puis relance l'exception
         else map vide
-            S->>I: giveScroll (rend le parchemin)
+            S->>SC: give (rend le parchemin)
             S->>M: refus MISSING_ITEMS
         else
             S->>R: settle(id, joueur, payout)
             alt settle renvoie true
                 S->>M: sendDeliverySucceeded(payout)
             else false ou PaymentFailedException
-                S->>I: giveBack(items) puis giveScroll
+                S->>I: giveBack(items)
+                S->>SC: give (rend le parchemin)
                 S->>M: refus INVALID_SCROLL (false) ou PAYMENT_FAILED
             end
         end
@@ -230,8 +234,8 @@ Points précis :
 - **`takeScrollAndItemsOrRefuse`** retire le parchemin puis les items. Si le retrait du parchemin échoue, elle envoie `INVALID_SCROLL`. Si le retrait des items échoue (map vide) ou lève une exception, elle rend le parchemin ; dans le cas de la map vide elle envoie aussi `MISSING_ITEMS`. Elle renvoie les items retirés par qualité, ou une **map vide** quand le refus est déjà envoyé.
 - **`payOrRefuse`** appelle `settle` et renvoie `true` si le paiement a eu lieu. Dans les trois cas où il n'a pas eu lieu, elle rend les items et le parchemin avec `giveBackToPlayer` : `PaymentFailedException` (message `PAYMENT_FAILED`), `settle` renvoyant `false` (message `INVALID_SCROLL`), et toute autre `RuntimeException` (relancée après la restitution, sans message). Le message de succès est envoyé hors de cette méthode, donc une exception d'envoi ne peut pas annuler un paiement déjà fait.
 - `settle` renvoyant `false` signifie que le contrat n'existe plus (déjà livré par un autre parchemin dupliqué) : rien n'est versé.
-- **`giveBackToPlayer`** rend les items (`giveBack`) puis le parchemin (`giveScroll`).
-- Limite connue : le résultat de `giveScroll` est **ignoré** aux trois endroits où on rend le parchemin (deux dans `takeScrollAndItemsOrRefuse`, un dans `giveBackToPlayer`). Dans `buyScroll`, le résultat de `giveScroll` est bien testé. Si l'inventaire est plein à ce moment-là, le parchemin est perdu et le contrat reste en base jusqu'à expiration.
+- **`giveBackToPlayer`** rend les items (`giveBack`) puis le parchemin (`give`).
+- Limite connue : le résultat de `give` est **ignoré** aux trois endroits où on rend le parchemin (deux dans `takeScrollAndItemsOrRefuse`, un dans `giveBackToPlayer`). Dans `buyScroll`, le résultat de `give` est bien testé. Si l'inventaire est plein à ce moment-là, le parchemin est perdu et le contrat reste en base jusqu'à expiration.
 
 ### 5.4 `checkDeliverable(player, contractId, npcJob)`
 Vérifie le contrat **avant** la confirmation de l'interface. Ordre :
@@ -245,6 +249,7 @@ Vérifie le contrat **avant** la confirmation de l'interface. Ordre :
 - `noScrollInHand(player, npcJob)` : relaie `sendNoScrollInHand`.
 - `useScroll(player, contractId)` : appelé quand le joueur utilise (clic droit) un parchemin. Si le contrat n'existe plus **ou** est expiré (`contractStillValid` faux), retire le parchemin et envoie `sendScrollDestroyed`. Si le contrat est valide, ne fait rien.
 - `purgeExpired()` : `deleteExpired(now)`, renvoie le nombre de contrats supprimés.
+- `reportExpiredScrolls(player, count)` : `purgeExpired()` puis `sendScrollsExpired(player, count)`. Appelée par le nettoyage quand des parchemins expirés viennent d'être retirés de l'inventaire d'un joueur.
 
 ## 6. Qui supprime quoi (cycle de vie d'un contrat)
 

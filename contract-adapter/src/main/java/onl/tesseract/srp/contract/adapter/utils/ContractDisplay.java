@@ -18,11 +18,13 @@ public final class ContractDisplay {
 
     private static final DateTimeFormatter EXPIRATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(ZoneId.systemDefault());
 
+    private static final int UNKNOWN_BONUS = -1;
+
     private ContractDisplay() {
     }
 
-    public static List<Component> details(Contract contract) {
-        return details(contract, -1);
+    public static List<Component> scrollDetails(Contract contract, boolean hasJobBonus) {
+        return details(contract, hasJobBonus ? UNKNOWN_BONUS : 0);
     }
 
     public static List<Component> details(Contract contract, int jobBonus) {
@@ -42,7 +44,7 @@ public final class ContractDisplay {
         if (isCraft) {
             return baseText;
         }
-        if (jobBonus < 0) {
+        if (jobBonus == UNKNOWN_BONUS) {
             return baseText + " + bonus métier";
         }
         return jobBonus > 0 ? baseText + " + " + jobBonus + " bonus métier" : baseText;
