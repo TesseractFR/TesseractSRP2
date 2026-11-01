@@ -47,6 +47,7 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
         ItemMeta scrollMeta = scrollItem.getItemMeta();
         ContractScrollItem.writeContractId(scrollMeta, contract.id());
         ContractScrollItem.writeExpiry(scrollMeta, contract.expiresAt());
+        scrollMeta.displayName(ContractDisplay.title(contract));
         scrollMeta.lore(lore(contract, hasJobBonus));
         scrollMeta.setMaxStackSize(1);
         scrollItem.setItemMeta(scrollMeta);
@@ -87,6 +88,7 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
 
     private List<Component> lore(Contract contract, boolean hasJobBonus) {
         List<Component> loreLines = new ArrayList<>(ContractDisplay.scrollDetails(contract, hasJobBonus));
+        loreLines.add(Component.empty());
         loreLines.add(yamlContractConfigRepository.getNpcName(contract.job()).map(ContractDisplay::footer).orElseGet(() -> ContractDisplay.footer(contract)));
         return loreLines;
     }
