@@ -2,60 +2,82 @@ package onl.tesseract.srp.contract.adapter.userside.controller.menu;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
-import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
-import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
+import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
+import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
+import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
-public class ContractMerchantMenu extends Menu {
+import java.util.List;
+
+public class ContractMerchantMenu extends ItemAdderMenu {
+    private static final String BACKGROUND_ID = "tesseract:contract_merchant_menu";
+    private static final int TEXTURE_OFFSET = -8;
+    private static final int MAX_STACK_SIZE = 64;
 
     private static final int TICKETS = 11;
-    private static final int BUY = 15;
+    private static final int BUY = 13;
+    private static final int INFORMATION = 15;
 
     private final PlayerID playerId;
     private final ContractService contractService;
 
     public ContractMerchantMenu(PlayerID playerId, ContractService contractService) {
-        super(MenuSize.Three, Component.text("Marchand de contrats"), null);
+        super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
         this.contractService = contractService;
     }
 
     @Override
     public void placeButtons(Player viewer) {
-        addTickets();
-        addBuy(viewer);
-    }
-
-    private void addTickets() {
         int tickets = contractService.getTickets(playerId);
-        var lore = new ItemLoreBuilder().newline().append("Restants aujourd'hui : ", NamedTextColor.GRAY).append(String.valueOf(tickets), tickets > 0 ? NamedTextColor.GREEN : NamedTextColor.RED).newline().append("Quota par jour : ", NamedTextColor.GRAY).append(String.valueOf(contractService.getDailyQuota(playerId)), NamedTextColor.WHITE);
-        addButton(TICKETS, new ItemBuilder(Material.CLOCK).name("Tickets de contrat", NamedTextColor.GOLD).lore(lore.get()).build(), event -> {
-        });
+        addTickets(tickets);
+        addBuy(viewer, tickets);
+        addInformation();
     }
 
-    private void addBuy(Player viewer) {
-        var lore = new ItemLoreBuilder().newline().append("Coût : ", NamedTextColor.GRAY).append("1 ticket", NamedTextColor.GREEN).newline().newline().append("Clic : ", NamedTextColor.GOLD).append("Acheter un parchemin aléatoire", NamedTextColor.GRAY);
-        ItemStack icon = scrollIcon();
-        ItemMeta meta = icon.getItemMeta();
-        meta.displayName(Component.text("Acheter un parchemin", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.get());
-        icon.setItemMeta(meta);
+    private void addTickets(int tickets) {
+        ItemStack icon = new ItemBuilder(Material.NAME_TAG).name("Tes tickets", NamedTextColor.GOLD)
+                .lore(List.of(ContractDisplay.line("Restants aujourd'hui : ", String.valueOf(tickets), tickets > 0 ? NamedTextColor.GREEN : NamedTextColor.RED),
+                        ContractDisplay.line("Quota par jour : ", String.valueOf(contractService.getDailyQuota(playerId)), NamedTextColor.WHITE))).build();
+        icon.setAmount(Math.clamp(tickets, 1, MAX_STACK_SIZE));
+        addButton(TICKETS, icon);
+    }
+
+    private void addBuy(Player viewer, int tickets) {
+        ItemStack icon = ContractScrollItem.create().orElseGet(() -> new ItemStack(Material.PAPER));
+        icon.editMeta(meta -> {
+            meta.displayName(ContractDisplay.text("Acheter un parchemin", NamedTextColor.GOLD));
+            meta.lore(List.of(ContractDisplay.text("Un contrat tiré au hasard,", NamedTextColor.GRAY),
+                    ContractDisplay.text("récolte ou artisanat", NamedTextColor.GRAY),
+                    Component.empty(),
+                    ContractDisplay.line("Coût : ", "1 ticket", tickets > 0 ? NamedTextColor.GREEN : NamedTextColor.RED),
+                    Component.empty(),
+                    tickets > 0
+                            ? ContractDisplay.text("» Clique pour acheter", NamedTextColor.YELLOW)
+                            : ContractDisplay.text("Plus de ticket aujourd'hui", NamedTextColor.RED)));
+        });
         addButton(BUY, icon, event -> {
             contractService.buyScroll(playerId);
             new ContractMerchantMenu(playerId, contractService).open(viewer);
         });
     }
 
-    private ItemStack scrollIcon() {
-        return ContractScrollItem.create().orElseGet(() -> new ItemStack(Material.PAPER));
+    private void addInformation() {
+        ItemStack icon = getCustomButtonItemStack(CustomMenuButton.MENU_INFORMATION_BUTTON);
+        icon.editMeta(meta -> {
+            meta.displayName(ContractDisplay.text("Informations", NamedTextColor.GOLD));
+            meta.lore(List.of(ContractDisplay.text("• Ton quota de tickets se renouvelle chaque jour", NamedTextColor.GRAY),
+                    ContractDisplay.text("• Apporte le parchemin et les matériaux au PNJ indiqué", NamedTextColor.GRAY),
+                    ContractDisplay.text("• Tout se livre en une seule fois, n'oublie rien", NamedTextColor.GRAY),
+                    ContractDisplay.text("• Un parchemin expiré disparaît de ton inventaire", NamedTextColor.GRAY)));
+        });
+        addButton(INFORMATION, icon);
     }
 }

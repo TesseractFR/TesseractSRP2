@@ -1,12 +1,9 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.menu;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
-import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
-import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
+import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
 import onl.tesseract.srp.contract.domain.model.PlayerID;
@@ -16,12 +13,14 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
+import java.util.List;
 
-public class ContractDeliveryMenu extends Menu {
+public class ContractDeliveryMenu extends ItemAdderMenu {
+    private static final String BACKGROUND_ID = "tesseract:contract_delivery_menu";
+    private static final int TEXTURE_OFFSET = -8;
 
-    private static final int INFO = 11;
-    private static final int CONFIRM = 14;
+    private static final int CONFIRM = 11;
+    private static final int INFO = 13;
     private static final int CANCEL = 15;
 
     private final PlayerID playerId;
@@ -30,7 +29,7 @@ public class ContractDeliveryMenu extends Menu {
     private final ContractService contractService;
 
     public ContractDeliveryMenu(PlayerID playerId, String npcJob, Contract contract, ContractService contractService) {
-        super(MenuSize.Three, Component.text("Livrer un contrat"), null);
+        super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
         this.npcJob = npcJob;
         this.contract = contract;
@@ -39,37 +38,31 @@ public class ContractDeliveryMenu extends Menu {
 
     @Override
     public void placeButtons(Player viewer) {
-        addInfo();
         addConfirm();
+        addInfo();
         addCancel();
     }
 
     private void addInfo() {
-        ItemStack icon = scrollIcon();
+        ItemStack icon = ContractScrollItem.create().orElseGet(() -> new ItemStack(Material.PAPER));
         icon.editMeta(meta -> {
-            meta.displayName(Component.text("Contrat", NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
-            var lines = new ArrayList<Component>();
-            lines.add(Component.empty());
-            lines.addAll(ContractDisplay.details(contract, contractService.moneyBonus(playerId, contract)));
-            meta.lore(lines);
+            meta.displayName(ContractDisplay.title(contract));
+            meta.lore(ContractDisplay.deliveryDetails(contract, contractService.moneyBonus(playerId, contract), contractService.countOwnedItems(playerId, contract)));
         });
-        addButton(INFO, icon, event -> {
-        });
+        addButton(INFO, icon);
     }
 
     private void addConfirm() {
-        var lore = new ItemLoreBuilder().newline().append("Les items demandés sont retirés de ton inventaire,", NamedTextColor.GRAY).newline().append("et la récompense est versée tout de suite.", NamedTextColor.GRAY);
-        addButton(CONFIRM, new ItemBuilder(Material.LIME_CONCRETE).name("Confirmer la livraison", NamedTextColor.GREEN).lore(lore.get()).build(), event -> {
+        addButton(CONFIRM, new ItemBuilder(Material.LIME_CONCRETE).name("Confirmer la livraison", NamedTextColor.GREEN)
+                .lore(List.of(ContractDisplay.text("Les items sont retirés de ton inventaire", NamedTextColor.GRAY),
+                        ContractDisplay.text("La récompense est versée aussitôt", NamedTextColor.GRAY))).build(), event -> {
             close();
             contractService.deliver(playerId, contract.id(), npcJob);
         });
     }
 
     private void addCancel() {
-        addButton(CANCEL, new ItemBuilder(Material.RED_CONCRETE).name("Annuler", NamedTextColor.RED).build(), event -> close());
-    }
-
-    private ItemStack scrollIcon() {
-        return ContractScrollItem.create().orElseGet(() -> new ItemStack(Material.PAPER));
+        addButton(CANCEL, new ItemBuilder(Material.RED_CONCRETE).name("Annuler", NamedTextColor.RED)
+                .lore(List.of(ContractDisplay.text("Tu gardes ton parchemin", NamedTextColor.GRAY))).build(), event -> close());
     }
 }
