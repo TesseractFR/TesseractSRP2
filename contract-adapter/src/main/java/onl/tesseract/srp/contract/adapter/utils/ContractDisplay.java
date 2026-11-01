@@ -4,7 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.adapter.utils.QualityAdapter;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 
@@ -29,11 +29,12 @@ public final class ContractDisplay {
 
     public static List<Component> details(Contract contract, int jobBonus) {
         boolean isCraft = contract.type() == ContractType.CRAFT;
+        QualityAdapter minimalQuality = QualityAdapter.from(QualityConverter.toCommon(contract.minimalQuality()));
         List<Component> lines = new ArrayList<>();
         lines.add(line("Type : ", isCraft ? "Artisanat" : "Récolte", isCraft ? NamedTextColor.AQUA : NamedTextColor.GREEN));
         lines.add(line(isCraft ? "Compétence : " : "Métier : ", capitalize(contract.job()), NamedTextColor.GOLD));
         lines.add(line("Demande : ", contract.quantity() + " × " + capitalize(contract.material()), NamedTextColor.YELLOW));
-        lines.add(line("Qualité minimale : ", qualityName(contract.minimalQuality()), qualityColor(contract.minimalQuality())));
+        lines.add(line("Qualité minimale : ", minimalQuality.label(), minimalQuality.color()));
         lines.add(line("Récompense : ", rewardText(contract, isCraft, jobBonus), NamedTextColor.GREEN));
         lines.add(line("Expire le : ", EXPIRATION_DATE_FORMAT.format(contract.expiresAt()), NamedTextColor.RED));
         return lines;
@@ -60,26 +61,6 @@ public final class ContractDisplay {
 
     private static Component line(String label, String value, TextColor color) {
         return Component.text(label, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false).append(Component.text(value, color));
-    }
-
-    private static TextColor qualityColor(Quality quality) {
-        return switch (quality) {
-            case POOR -> NamedTextColor.GRAY;
-            case NORMAL -> NamedTextColor.WHITE;
-            case GOOD -> NamedTextColor.GREEN;
-            case VERY_GOOD -> NamedTextColor.AQUA;
-            case EXCEPTIONAL -> NamedTextColor.LIGHT_PURPLE;
-        };
-    }
-
-    private static String qualityName(Quality quality) {
-        return switch (quality) {
-            case POOR -> "Pauvre";
-            case NORMAL -> "Normale";
-            case GOOD -> "Bonne";
-            case VERY_GOOD -> "Très bonne";
-            case EXCEPTIONAL -> "Exceptionnelle";
-        };
     }
 
     public static String capitalize(String raw) {

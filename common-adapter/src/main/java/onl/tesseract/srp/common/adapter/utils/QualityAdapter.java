@@ -1,11 +1,11 @@
-package onl.tesseract.srp.customItem.adapter.serverside;
+package onl.tesseract.srp.common.adapter.utils;
 
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 import java.util.Arrays;
 
-enum QualityAdapter {
+public enum QualityAdapter {
     POOR(Quality.POOR, "Médiocre", NamedTextColor.RED),
     NORMAL(Quality.NORMAL, "Normale", NamedTextColor.WHITE),
     GOOD(Quality.GOOD, "Bonne", NamedTextColor.GREEN),
@@ -22,18 +22,18 @@ enum QualityAdapter {
         this.color = color;
     }
 
-    static QualityAdapter from(Quality quality) {
+    public static QualityAdapter from(Quality quality) {
         return Arrays.stream(QualityAdapter.values())
                 .filter(adapter -> adapter.quality == quality)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unsupported quality: " + quality));
     }
 
-    String label() {
+    public String label() {
         return label;
     }
 
-    NamedTextColor color() {
+    public NamedTextColor color() {
         return color;
     }
 }
