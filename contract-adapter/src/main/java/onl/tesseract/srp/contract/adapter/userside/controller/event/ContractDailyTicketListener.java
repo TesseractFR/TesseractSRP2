@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
 import onl.tesseract.core.dailyConnection.event.PlayerServerDailyConnectionEvent;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,6 +18,6 @@ public class ContractDailyTicketListener implements Listener {
 
     @EventHandler
     public void onDailyConnection(PlayerServerDailyConnectionEvent event) {
-        contractService.renewDaily(new PlayerID(event.getPlayerID()));
+        contractService.renewDaily(new PlayerId(event.getPlayerID()));
     }
 }

@@ -1,6 +1,6 @@
 package onl.tesseract.srp.contract.domain.port.serverside;
 
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 
 import java.time.Instant;
@@ -12,6 +12,6 @@ public interface ContractRepository {
     void delete(long id);
     int deleteExpired(Instant now);
 
-    boolean settle(long contractId, PlayerID deliverer, int payout);
+    boolean settle(long contractId, PlayerId deliverer, int payout);
 
 }

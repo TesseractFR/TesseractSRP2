@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -54,6 +54,6 @@ public class ContractScrollListener implements Listener {
             return;
         }
         event.setUseItemInHand(Event.Result.DENY);
-        contractService.useScroll(new PlayerID(player.getUniqueId()), contractId.getAsLong());
+        contractService.useScroll(new PlayerId(player.getUniqueId()), contractId.getAsLong());
     }
 }

@@ -1,12 +1,12 @@
 package onl.tesseract.srp.contract.domain.port.serverside;
 
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 
 import java.util.OptionalInt;
 
 public interface PlayerInfoRepository {
-    OptionalInt findTickets(PlayerID player);
-    void saveTickets(PlayerID player, int tickets);
-    int getDailyQuota(PlayerID player);
-    double getMoneyBonus(PlayerID player, String job, String material);
+    OptionalInt findTickets(PlayerId player);
+    void saveTickets(PlayerId player, int tickets);
+    int getDailyQuota(PlayerId player);
+    double getMoneyBonus(PlayerId player, String job, String material);
 }
