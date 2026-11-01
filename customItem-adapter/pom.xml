@@ -28,6 +28,12 @@
     <dependencies>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>common-adapter</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>customItem-domain</artifactId>
             <scope>provided</scope>
         </dependency>

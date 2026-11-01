@@ -200,7 +200,7 @@ La date de l'item est une **copie** : modifier `expires_at` en base ne change pa
 - `details(contract, bonus)` / `scrollDetails(contract, hasJobBonus)` : lignes de lore (type, métier ou compétence, demande, qualité minimale colorée, récompense, date d'expiration au format `dd/MM HH:mm` dans le fuseau du serveur). Pour la récompense : artisanat → montant seul ; récolte → montant + `N bonus métier` seulement si `bonus > 0` (menu de livraison, bonus réel du livreur). Sur le parchemin, `scrollDetails` ajoute « + bonus métier » sans montant seulement si le joueur qui reçoit le parchemin a un bonus au moment où il le reçoit ; ce texte est figé sur l'item.
 - `footer(contract)` / `footer(npcName)` : « Apporte-le à … » (avec « PNJ du métier » ou « PNJ de la compétence » quand le nom du PNJ n'est pas configuré).
 - `capitalize(raw)` : `FER_BRUT` → « Fer Brut ».
-- Noms français et couleurs des 5 qualités.
+- Noms français et couleurs des qualités : ceux de `QualityAdapter` (`common-adapter`), partagés avec les items custom.
 
 ### `ContractChatFormats` (utils)
 Préfixe `[Contrat]` (`CONTRACT_CHAT_FORMAT`) et ses variantes `_ERROR` et `_SUCCESS`.
