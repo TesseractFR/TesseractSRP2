@@ -196,8 +196,9 @@ Méthodes : `create()` (item ItemsAdder, `Optional.empty()` s'il n'existe pas), 
 La date de l'item est une **copie** : modifier `expires_at` en base ne change pas le parchemin déjà remis.
 
 ### `ContractDisplay` (utils)
-- `details(contract, bonus)` / `scrollDetails(contract, hasJobBonus)` : lignes de lore (type, métier ou compétence, demande, qualité minimale colorée, récompense, date d'expiration au format `dd/MM HH:mm` dans le fuseau du serveur). Pour la récompense : artisanat → montant seul ; récolte → montant + `N bonus métier` seulement si `bonus > 0` (menu de livraison, bonus réel du livreur). Sur le parchemin, `scrollDetails` ajoute « + bonus métier » sans montant seulement si le joueur qui reçoit le parchemin a un bonus au moment où il le reçoit ; ce texte est figé sur l'item.
-- `footer(contract)` / `footer(npcName)` : « Apporte-le à … » (avec « PNJ du métier » ou « PNJ de la compétence » quand le nom du PNJ n'est pas configuré).
+- `title(contract)` : nom du parchemin, « Contrat · Titane ».
+- `deliveryDetails(contract, bonus, ownedItemCount)` / `scrollDetails(contract, hasJobBonus)` : lignes de lore, sans jauge puisque le contrat se livre d'un coup : type et métier ou compétence, partie « À livrer » (quantité, qualité minimale colorée et, dans le menu de livraison, items possédés à la qualité demandée, en vert s'il y en a assez et en rouge sinon), partie « Récompense » (gain, puis bonus métier sur une récolte : montant calculé dans le menu de livraison, simple mention sur le parchemin s'il y a un bonus), date d'expiration au format `dd/MM HH:mm` dans le fuseau du serveur.
+- `footer(contract)` / `footer(npcName)` : « » Apporte-le à … » (avec « PNJ du métier » ou « PNJ de la compétence » quand le nom du PNJ n'est pas configuré).
 - `capitalize(raw)` : `FER_BRUT` → « Fer Brut ».
 - Noms français et couleurs des qualités : ceux de `QualityAdapter` (`common-adapter`), partagés avec les items custom.
 
@@ -219,8 +220,8 @@ Préfixe `[Contrat]` (`CONTRACT_CHAT_FORMAT`) et ses variantes `_ERROR` et `_SUC
 Les PNJ sont créés ailleurs et exécutent ces commandes comme le joueur ; le module ne lit rien sur le PNJ.
 
 ### 7.2 Menus
-- **`ContractMerchantMenu`** (3 lignes) : slot 11 = tickets restants et quota (lecture seule) ; slot 15 = « Acheter un parchemin ». Un clic sur l'achat appelle `buyScroll` **puis rouvre un nouveau menu** pour rafraîchir les tickets.
-- **`ContractDeliveryMenu`** (3 lignes) : slot 11 = détail du contrat avec le bonus calculé par `moneyBonus` ; slot 14 = « Confirmer » (ferme le menu puis `deliver(player, contract.id(), npcJob)`) ; slot 15 = « Annuler » (ferme).
+- **`ContractMerchantMenu`** (`ItemAdderMenu`, 3 lignes, fond `tesseract:contract_merchant_menu` déclaré dans `configs/gui/guis.yml` d'ItemsAdder) : slot 11 = tickets restants et quota, la pile affiche le nombre de tickets ; slot 13 = « Acheter un parchemin » ; slot 15 = informations. Un clic sur l'achat appelle `buyScroll` **puis rouvre un nouveau menu** pour rafraîchir les tickets.
+- **`ContractDeliveryMenu`** (`ItemAdderMenu`, 3 lignes, fond `tesseract:contract_delivery_menu`) : slot 11 = « Confirmer » (ferme le menu puis `deliver(player, contract.id(), npcJob)`) ; slot 13 = détail du contrat avec le bonus calculé par `moneyBonus` ; slot 15 = « Annuler » (ferme).
 
 ### 7.3 Événements
 - **`ContractScrollListener`** : `BlockPlaceEvent` annulé pour un parchemin ; `PrepareItemCraftEvent` vide le résultat si un ingrédient est un parchemin ; `PlayerInteractEvent` (clic droit, main principale uniquement) : refuse l'usage normal de l'item (`setUseItemInHand(DENY)`) puis `discardScrollIfInvalid`.
