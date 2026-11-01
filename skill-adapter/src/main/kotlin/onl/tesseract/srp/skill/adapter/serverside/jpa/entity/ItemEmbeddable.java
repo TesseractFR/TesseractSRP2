@@ -5,7 +5,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import onl.tesseract.srp.skill.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 @Embeddable
 @Data

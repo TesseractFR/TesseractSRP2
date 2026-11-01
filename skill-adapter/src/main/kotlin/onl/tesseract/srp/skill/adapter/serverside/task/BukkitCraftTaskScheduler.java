@@ -1,6 +1,6 @@
 package onl.tesseract.srp.skill.adapter.serverside.task;
 
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
 import onl.tesseract.srp.skill.domain.port.serverside.CraftTaskScheduler;
@@ -17,14 +17,14 @@ import java.util.Optional;
 @Component
 public class BukkitCraftTaskScheduler implements CraftTaskScheduler {
     private final Plugin plugin;
-    private final Map<PlayerID, Map<SkillName, CraftTasks>> activeTasks = new HashMap<>();
+    private final Map<PlayerId, Map<SkillName, CraftTasks>> activeTasks = new HashMap<>();
 
     public BukkitCraftTaskScheduler(Plugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void schedule(PlayerID player, SkillName skill, CraftTask craftTask, CraftingService craftingService) {
+    public void schedule(PlayerId player, SkillName skill, CraftTask craftTask, CraftingService craftingService) {
         var runnable = new CraftRunnable(player, skill, craftTask, craftingService);
         var ticks = (craftTask.getUnitDuration().toMillis() / 50);
         var task = runnable.runTaskTimer(plugin, ticks, ticks);
@@ -38,7 +38,7 @@ public class BukkitCraftTaskScheduler implements CraftTaskScheduler {
     }
 
     @Override
-    public void cancel(PlayerID playerId, SkillName name) {
+    public void cancel(PlayerId playerId, SkillName name) {
         if (!activeTasks.containsKey(playerId)) {
             return;
         }

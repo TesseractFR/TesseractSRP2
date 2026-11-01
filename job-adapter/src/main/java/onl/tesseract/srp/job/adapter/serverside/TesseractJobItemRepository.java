@@ -4,7 +4,7 @@ import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.job.domain.model.Material;
-import onl.tesseract.srp.job.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.job.domain.port.serverside.ItemRepository;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ public class TesseractJobItemRepository implements ItemRepository {
     }
 
     @Override
-    public void giveItem(@NotNull PlayerID playerID, Material material, int quantity, Quality quality) {
+    public void giveItem(@NotNull PlayerId playerID, Material material, int quantity, Quality quality) {
         customItemService.addItem(playerID.value(),
                 new MaterialName(material.value()),
                 Quality.valueOf(quality.name()), quantity);

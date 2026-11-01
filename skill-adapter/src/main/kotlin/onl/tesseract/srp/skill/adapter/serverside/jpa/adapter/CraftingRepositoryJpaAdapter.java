@@ -5,7 +5,7 @@ import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.craft.CraftBonusEmb
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.craft.CraftingEntity;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.craft.RecipeEmbeddable;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.repository.CraftingJpaRepository;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
 import onl.tesseract.srp.skill.domain.model.crafting.QueuedRecipe;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
@@ -25,7 +25,7 @@ public class CraftingRepositoryJpaAdapter implements CraftingRepository {
     }
 
     @Override
-    public void removeActiveTask(PlayerID player, SkillName skillName) {
+    public void removeActiveTask(PlayerId player, SkillName skillName) {
         craftingJpaRepository.deleteByPlayerSkillAndQueueOrder(
             new PlayerSkillEmbeddable(player.value(), skillName.value()),
             0
@@ -33,7 +33,7 @@ public class CraftingRepositoryJpaAdapter implements CraftingRepository {
     }
 
     @Override
-    public void saveActiveTask(PlayerID player, SkillName skill, CraftTask task) {
+    public void saveActiveTask(PlayerId player, SkillName skill, CraftTask task) {
         PlayerSkillEmbeddable playerSkill = new PlayerSkillEmbeddable(player.value(), skill.value());
         
         // Delete existing active task for this player/skill (queueOrder = 0)
@@ -59,7 +59,7 @@ public class CraftingRepositoryJpaAdapter implements CraftingRepository {
     }
 
     @Override
-    public void saveQueuedRecipe(PlayerID player, SkillName skill, Queue<QueuedRecipe> queuedRecipes) {
+    public void saveQueuedRecipe(PlayerId player, SkillName skill, Queue<QueuedRecipe> queuedRecipes) {
         if (queuedRecipes == null || queuedRecipes.isEmpty()) {
             return;
         }

@@ -5,7 +5,7 @@ import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobPlayerProgressionE
 import onl.tesseract.srp.job.adapter.serverside.jpa.entity.JobPlayerTalentProgressionEntity;
 import onl.tesseract.srp.job.adapter.serverside.jpa.repository.JobPlayerProgressionJpaRepository;
 import onl.tesseract.srp.job.domain.model.JobName;
-import onl.tesseract.srp.job.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.job.domain.model.PlayerJobProgression;
 import onl.tesseract.srp.job.domain.model.talent.TalentName;
 import onl.tesseract.srp.job.domain.port.serverside.JobPlayerProgressionRepository;
@@ -25,7 +25,7 @@ public class JobPlayerProgressionRepositoryJpaAdapter implements JobPlayerProgre
 
     @Override
     @Cacheable(cacheNames = "playerJobProgression")
-    public PlayerJobProgression getPlayerJobProgression(PlayerID player, JobName jobName) {
+    public PlayerJobProgression getPlayerJobProgression(PlayerId player, JobName jobName) {
         return jobPlayerProgressionJpaRepository.findById(new JobPlayerProgressionEntityKey(player.value(), jobName.value()))
                 .map(this::toDomainModel)
                 .orElse(new PlayerJobProgression(jobName));

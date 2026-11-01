@@ -8,7 +8,7 @@ import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
 import onl.tesseract.srp.skill.domain.model.crafting.QueuedRecipe;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;
@@ -140,7 +140,7 @@ public class SkillMainMenu extends ItemAdderMenu {
                 PENDING_RECIPE_7_INDEX,
                 PENDING_RECIPE_8_INDEX
         );
-        List<QueuedRecipe> queue = craftingService.getQueue(new PlayerID(viewer.getUniqueId()), skill.name()).stream().toList();
+        List<QueuedRecipe> queue = craftingService.getQueue(new PlayerId(viewer.getUniqueId()), skill.name()).stream().toList();
 
         for (int i = 0; i < pendingSlots.size(); i++) {
             int slot = pendingSlots.get(i);
@@ -179,7 +179,7 @@ public class SkillMainMenu extends ItemAdderMenu {
     }
 
     private void addCurrentRecipeButton(Player viewer) {
-        CraftTask task = craftingService.getActiveTask(new PlayerID(viewer.getUniqueId()), skill.name());
+        CraftTask task = craftingService.getActiveTask(new PlayerId(viewer.getUniqueId()), skill.name());
         ItemStack item;
         if (task != null) {
             try {
@@ -218,7 +218,7 @@ public class SkillMainMenu extends ItemAdderMenu {
     }
 
     private void addItemToCollectButton(Player viewer) {
-        PlayerID playerID = new PlayerID(viewer.getUniqueId());
+        PlayerId playerID = new PlayerId(viewer.getUniqueId());
         boolean hasItems = craftingService.hasLootCache(playerID, skill.name());
         ItemStack item;
         if (hasItems) {

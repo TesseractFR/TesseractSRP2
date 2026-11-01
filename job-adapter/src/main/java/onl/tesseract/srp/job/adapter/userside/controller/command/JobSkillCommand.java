@@ -3,7 +3,7 @@ package onl.tesseract.srp.job.adapter.userside.controller.command;
 import onl.tesseract.commandBuilder.CommandContext;
 import onl.tesseract.commandBuilder.annotation.Command;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
-import onl.tesseract.srp.job.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.job.domain.port.userside.JobPlayerProgressionService;
 import onl.tesseract.srp.job.domain.port.userside.JobService;
 import onl.tesseract.srp.job.domain.port.userside.JobTalentTreeService;
@@ -31,7 +31,7 @@ public class JobSkillCommand extends CommandContext {
                 "Compétences de métier",
                 jobService,
                 (viewer, job) -> new JobSkillMenu(
-                        new PlayerID(viewer.getUniqueId()),
+                        new PlayerId(viewer.getUniqueId()),
                         job,
                         jobTalentTreeService,
                         jobPlayerProgressionService

@@ -1,6 +1,6 @@
 package onl.tesseract.srp.skill.domain.port.serverside;
 
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
 import onl.tesseract.srp.skill.domain.model.crafting.QueuedRecipe;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
@@ -13,7 +13,7 @@ public interface CraftingRepository {
      * @param player Le joueur
      * @param skillName Le skill
      */
-    void removeActiveTask(PlayerID player, SkillName skillName);
+    void removeActiveTask(PlayerId player, SkillName skillName);
 
     /**
      * Sauvegarde la tâche active pour un joueur/skill
@@ -21,7 +21,7 @@ public interface CraftingRepository {
      * @param skill Le skill
      * @param task La tâche active
      */
-    void saveActiveTask(PlayerID player, SkillName skill, CraftTask task);
+    void saveActiveTask(PlayerId player, SkillName skill, CraftTask task);
 
     /**
      * Sauvegarde les recettes en queue pour un joueur/skill
@@ -29,5 +29,5 @@ public interface CraftingRepository {
      * @param skill Le skill
      * @param queuedRecipes Les recettes en attente
      */
-    void saveQueuedRecipe(PlayerID player, SkillName skill, Queue<QueuedRecipe> queuedRecipes);
+    void saveQueuedRecipe(PlayerId player, SkillName skill, Queue<QueuedRecipe> queuedRecipes);
 }

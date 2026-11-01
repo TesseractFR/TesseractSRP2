@@ -8,8 +8,8 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
-import onl.tesseract.srp.skill.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.skill.domain.model.skill.Skill;
 import onl.tesseract.srp.skill.domain.model.station.StatType;
 import onl.tesseract.srp.skill.domain.model.station.Station;
@@ -86,7 +86,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
     }
 
     private void addIngredientQualityButton(Player viewer) {
-        Quality current = craftingService.getMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name());
+        Quality current = craftingService.getMaximumIngredientQuality(new PlayerId(viewer.getUniqueId()), skill.name());
         boolean maxed = current == Quality.EXCEPTIONAL;
         Quality next = maxed ? current : current.next();
         ItemStack item = new ItemStack(Material.AMETHYST_SHARD);
@@ -102,7 +102,7 @@ public class SkillUpgradeMenu extends ItemAdderMenu {
         }
         addButton(INGREDIENT_QUALITY_BUTTON_INDEX, item, p -> {
             if (maxed) return;
-            craftingService.upgradeMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name());
+            craftingService.upgradeMaximumIngredientQuality(new PlayerId(viewer.getUniqueId()), skill.name());
             viewer.sendMessage(Component.text("✓ Qualité " + next.name() + " débloquée !", NamedTextColor.GREEN));
             new SkillUpgradeMenu(skill, itemGateway, craftingService, stationService, guildService, station, previous).open(viewer);
         });

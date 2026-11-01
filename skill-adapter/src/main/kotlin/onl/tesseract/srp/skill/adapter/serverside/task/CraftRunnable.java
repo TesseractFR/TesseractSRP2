@@ -1,6 +1,6 @@
 package onl.tesseract.srp.skill.adapter.serverside.task;
 
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
 import onl.tesseract.srp.skill.domain.port.userside.CraftingService;
@@ -8,12 +8,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class CraftRunnable extends BukkitRunnable {
 
-    private final PlayerID playerUUID;
+    private final PlayerId playerUUID;
     private final SkillName skill;
     private final CraftTask craftTask;
     private final CraftingService craftingService;
 
-    public CraftRunnable(PlayerID playerUUID, SkillName skill, CraftTask craftTask, CraftingService craftingService) {
+    public CraftRunnable(PlayerId playerUUID, SkillName skill, CraftTask craftTask, CraftingService craftingService) {
         this.playerUUID = playerUUID;
         this.skill = skill;
         this.craftTask = craftTask;

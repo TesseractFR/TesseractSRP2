@@ -1,5 +1,6 @@
 package onl.tesseract.srp.job.domain.port.userside;
 
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.job.domain.model.*;
 import onl.tesseract.srp.job.domain.model.source.Source;
@@ -47,7 +48,7 @@ public class JobService {
      *
      * @param source       la source frappée
      */
-    public void process(PlayerID playerID, Source source) {
+    public void process(PlayerId playerID, Source source) {
         if (source == null) return;
         if (sourceJobs.isEmpty()) {
             listJobs();
@@ -75,7 +76,7 @@ public class JobService {
 
     }
 
-    public Double getBonusValue(JobName jobName, PlayerID playerID, Material item, Bonus bonus) {
+    public Double getBonusValue(JobName jobName, PlayerId playerID, Material item, Bonus bonus) {
         Job job = jobs.get(jobName);
         if (job == null) return 0.0;
         AtomicReference<Double> result = new AtomicReference<>(0.0);

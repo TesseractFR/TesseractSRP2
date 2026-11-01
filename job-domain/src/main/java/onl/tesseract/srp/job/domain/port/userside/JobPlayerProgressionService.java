@@ -2,7 +2,7 @@ package onl.tesseract.srp.job.domain.port.userside;
 
 import lombok.NonNull;
 import onl.tesseract.srp.job.domain.model.JobName;
-import onl.tesseract.srp.job.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.job.domain.model.PlayerJobProgression;
 import onl.tesseract.srp.job.domain.model.talent.Talent;
 import onl.tesseract.srp.job.domain.model.talent.TalentName;
@@ -16,7 +16,7 @@ public class JobPlayerProgressionService {
     }
 
 
-    public boolean isAvailable(PlayerID playerID,JobName jobName,Talent talent) {
+    public boolean isAvailable(PlayerId playerID,JobName jobName,Talent talent) {
         if(talent.parents().isEmpty())return true;
         for(TalentName parent : talent.parents()) {
             if(getTalentLevel(playerID, jobName, parent) <= 0) {
@@ -26,11 +26,11 @@ public class JobPlayerProgressionService {
         return true;
     }
 
-    public int getTalentLevel(PlayerID playerID, JobName job, TalentName talentName) {
+    public int getTalentLevel(PlayerId playerID, JobName job, TalentName talentName) {
         return getJobProgression(playerID, job).getTalentLevel(talentName);
     }
 
-    public int getTalentCost(PlayerID playerID, JobName job, Talent talent) {
+    public int getTalentCost(PlayerId playerID, JobName job, Talent talent) {
         int talentLevel = getTalentLevel(playerID, job, talent.name());
         if(talentLevel >= talent.maxLevel()) {
             throw new IllegalStateException("Pas d'amélioration possible");
@@ -38,16 +38,16 @@ public class JobPlayerProgressionService {
         return talent.pricePerLevel().get(talentLevel+1);
     }
 
-    public boolean canBuyUpgrade(PlayerID playerID, JobName jobName, Talent talent){
+    public boolean canBuyUpgrade(PlayerId playerID, JobName jobName, Talent talent){
         return getTalentCost(playerID, jobName, talent) <= getJobProgression(playerID, jobName).availableTalentPoint();
     }
 
 
-    private PlayerJobProgression getJobProgression(PlayerID playerID, JobName jobName) {
+    private PlayerJobProgression getJobProgression(PlayerId playerID, JobName jobName) {
         return jobPlayerProgressionRepository.getPlayerJobProgression(playerID, jobName);
     }
 
-    public boolean upgradeSkill(@NonNull PlayerID playerID, Talent skill) {
+    public boolean upgradeSkill(@NonNull PlayerId playerID, Talent skill) {
         return false;
     }
 }

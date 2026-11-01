@@ -1,7 +1,7 @@
 package onl.tesseract.srp.skill.domain.port.userside;
 
-import onl.tesseract.srp.skill.domain.model.PlayerID;
-import onl.tesseract.srp.skill.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.skill.domain.model.bonus.Bonus;
 import onl.tesseract.srp.skill.domain.model.bonus.CraftingBonus;
 import onl.tesseract.srp.skill.domain.model.bonus.StationBonus;
@@ -25,9 +25,9 @@ public class CraftingService {
     private final CraftTaskScheduler craftTaskScheduler;
     private final MessagingRepository messagingRepository;
     private final PlayerSkillUpgradeRepository playerSkillUpgradeRepository;
-    private final Map<PlayerID, PlayerLootCache> playersLootCache = new HashMap<>();
-    private final Map<PlayerID, PerSkillTask> activeTasks = new HashMap<>();
-    private final Map<PlayerID, PerSkillQueue> queues = new HashMap<>();
+    private final Map<PlayerId, PlayerLootCache> playersLootCache = new HashMap<>();
+    private final Map<PlayerId, PerSkillTask> activeTasks = new HashMap<>();
+    private final Map<PlayerId, PerSkillQueue> queues = new HashMap<>();
 
     public CraftingService(SkillResultCacheRepository skillResultCacheRepository, CraftingRepository craftingRepository, ItemRepository itemRepository, CraftTaskScheduler craftTaskScheduler, MessagingRepository messagingRepository, PlayerSkillUpgradeRepository playerSkillUpgradeRepository) {
         this.skillResultCacheRepository = skillResultCacheRepository;
@@ -45,21 +45,21 @@ public class CraftingService {
         playersLootCache.putAll(skillResultCacheRepository.findAll());
     }
 
-    public LootCache getLootCache(@NonNull PlayerID playerID,@NonNull SkillName skillName) {
+    public LootCache getLootCache(@NonNull PlayerId playerID,@NonNull SkillName skillName) {
         playersLootCache.putIfAbsent(playerID, new PlayerLootCache(new HashMap<>()));
         PlayerLootCache plc = playersLootCache.get(playerID);
         plc.lootCaches().putIfAbsent(skillName, new LootCache());
         return plc.lootCaches().get(skillName);
     }
 
-    public Queue<QueuedRecipe> getQueue(@NonNull PlayerID playerID, @NonNull SkillName skillName) {
+    public Queue<QueuedRecipe> getQueue(@NonNull PlayerId playerID, @NonNull SkillName skillName) {
         queues.putIfAbsent(playerID, new PerSkillQueue(new HashMap<>()));
         PerSkillQueue perSkillQueue = queues.get(playerID);
         perSkillQueue.queuedRecipes().putIfAbsent(skillName, new ArrayDeque<>());
         return perSkillQueue.queuedRecipes().get(skillName);
     }
 
-    public void collectCraftResults(@NonNull PlayerID playerID, @NonNull SkillName skillName) {
+    public void collectCraftResults(@NonNull PlayerId playerID, @NonNull SkillName skillName) {
         LootCache lootCache = getLootCache(playerID, skillName);
         if(lootCache.done().isEmpty() && lootCache.garbage().isEmpty()) {
             return;
@@ -80,7 +80,7 @@ public class CraftingService {
     }
 
 
-    public void processCraftStep(PlayerID player, SkillName skill, CraftTask task) {
+    public void processCraftStep(PlayerId player, SkillName skill, CraftTask task) {
         if (task.getQueuedRecipe().getQuantity() <= 0) {
             finishTask(player, skill, task);
         }
@@ -106,11 +106,11 @@ public class CraftingService {
         }
     }
 
-    private void savePlayerCache(PlayerID player, SkillName skill) {
+    private void savePlayerCache(PlayerId player, SkillName skill) {
         skillResultCacheRepository.save(player,skill, getLootCache(player, skill));
     }
 
-    private void finishTask(PlayerID player, SkillName skill, CraftTask task) {
+    private void finishTask(PlayerId player, SkillName skill, CraftTask task) {
         craftTaskScheduler.cancel(player, skill);
         craftingRepository.removeActiveTask(player, skill);
         //On retire la task de la liste active
@@ -128,7 +128,7 @@ public class CraftingService {
         saveTasks(player, skill);
     }
 
-    private void saveTasks(PlayerID player, SkillName skill) {
+    private void saveTasks(PlayerId player, SkillName skill) {
         activeTasks.computeIfPresent(player, (playerId, skillMap) -> {
             skillMap.tasks().computeIfPresent(skill, (skillName, task) -> {
                 craftingRepository.saveActiveTask(player, skill, task);
@@ -146,7 +146,7 @@ public class CraftingService {
         });
     }
 
-    private void startTask(PlayerID player,SkillName skill,QueuedRecipe queuedRecipe){
+    private void startTask(PlayerId player,SkillName skill,QueuedRecipe queuedRecipe){
         Duration reducedDuration = getAdjustedDuration(queuedRecipe.getRecipe(), queuedRecipe.getBonus().craftingStationBonus());
         CraftTask craftTask = new CraftTask(queuedRecipe,reducedDuration);
         activeTasks.get(player).tasks().put(skill, craftTask);
@@ -162,11 +162,11 @@ public class CraftingService {
                 recipe.duration().toMillis() * (1 - stationBonus.timeReduction().value())));
     }
 
-    public Quality getMaximumIngredientQuality(PlayerID player, SkillName skill) {
+    public Quality getMaximumIngredientQuality(PlayerId player, SkillName skill) {
         return playerSkillUpgradeRepository.getMaximumIngredientQuality(player, skill);
     }
 
-    public Quality upgradeMaximumIngredientQuality(PlayerID player, SkillName skill) {
+    public Quality upgradeMaximumIngredientQuality(PlayerId player, SkillName skill) {
         Quality current = getMaximumIngredientQuality(player, skill);
         if (current == Quality.EXCEPTIONAL) return current;
         Quality next = current.next();
@@ -174,7 +174,7 @@ public class CraftingService {
         return next;
     }
 
-    public int getMaxCraft(Recipe recipe, PlayerID player, Quality quality) {
+    public int getMaxCraft(Recipe recipe, PlayerId player, Quality quality) {
         int maxCraft = Integer.MAX_VALUE;
         for (RecipeComponent component : recipe.components().values()) {
             int owned = itemRepository.getItemNumber(player, component.material(), quality);
@@ -184,7 +184,7 @@ public class CraftingService {
         return Math.min(maxCraft, getMaxStackSize(recipe));
     }
 
-    public void startCraft(PlayerID player, SkillName skill, Recipe recipe, int quantity, Quality quality, Station station) {
+    public void startCraft(PlayerId player, SkillName skill, Recipe recipe, int quantity, Quality quality, Station station) {
         if (!quality.isAtMost(getMaximumIngredientQuality(player, skill))) return;
         // Tier check
         if (recipe.tier().value() > station.getStatLevel(StatType.TIER)) {
@@ -226,12 +226,12 @@ public class CraftingService {
         saveTasks(player, skill);
     }
 
-    public boolean hasLootCache(PlayerID player, SkillName name) {
+    public boolean hasLootCache(PlayerId player, SkillName name) {
         LootCache lootCache = getLootCache(player, name);
         return !lootCache.garbage().isEmpty() || !lootCache.done().isEmpty();
     }
 
-    public CraftTask getActiveTask(@NonNull PlayerID playerID, SkillName name) {
+    public CraftTask getActiveTask(@NonNull PlayerId playerID, SkillName name) {
         activeTasks.putIfAbsent(playerID, new PerSkillTask(new HashMap<>()));
         return activeTasks.get(playerID).tasks().get(name);
     }

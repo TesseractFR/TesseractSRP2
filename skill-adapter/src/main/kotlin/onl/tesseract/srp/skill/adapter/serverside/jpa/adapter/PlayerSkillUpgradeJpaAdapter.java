@@ -3,8 +3,8 @@ package onl.tesseract.srp.skill.adapter.serverside.jpa.adapter;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.PlayerSkillEmbeddable;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.PlayerSkillUpgradeEntity;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.repository.PlayerSkillUpgradeJpaRepository;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
-import onl.tesseract.srp.skill.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.skill.domain.model.skill.SkillName;
 import onl.tesseract.srp.skill.domain.port.serverside.PlayerSkillUpgradeRepository;
 import org.springframework.stereotype.Component;
@@ -17,19 +17,19 @@ public class PlayerSkillUpgradeJpaAdapter implements PlayerSkillUpgradeRepositor
         this.repository = repository;
     }
 
-    private PlayerSkillEmbeddable key(PlayerID player, SkillName skill) {
+    private PlayerSkillEmbeddable key(PlayerId player, SkillName skill) {
         return new PlayerSkillEmbeddable(player.value(), skill.value());
     }
 
     @Override
-    public Quality getMaximumIngredientQuality(PlayerID player, SkillName skill) {
+    public Quality getMaximumIngredientQuality(PlayerId player, SkillName skill) {
         return repository.findById(key(player, skill))
                 .map(entity -> Quality.values()[Math.max(0, Math.min(entity.getMaxIngredientQuality(), Quality.values().length - 1))])
                 .orElse(Quality.POOR);
     }
 
     @Override
-    public void saveMaximumIngredientQuality(PlayerID player, SkillName skill, Quality quality) {
+    public void saveMaximumIngredientQuality(PlayerId player, SkillName skill, Quality quality) {
         PlayerSkillEmbeddable key = key(player, skill);
         repository.save(repository.findById(key)
                 .map(entity -> {

@@ -8,7 +8,7 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.srp.common.adapter.userside.menu.BiMenu;
 import onl.tesseract.srp.job.domain.model.Job;
-import onl.tesseract.srp.job.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.job.domain.model.talent.Talent;
 import onl.tesseract.srp.job.domain.model.talenttree.Arrow;
 import onl.tesseract.srp.job.domain.model.talenttree.CellType;
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public class JobSkillMenu extends BiMenu {
     private static final Logger LOGGER = LoggerFactory.getLogger(JobSkillMenu.class);
 
-    private final PlayerID playerID;
+    private final PlayerId playerID;
     private final Job job;
     private final JobTalentTreeService jobTalentTreeService;
     private final JobPlayerProgressionService jobPlayerProgressionService;
@@ -33,7 +33,7 @@ public class JobSkillMenu extends BiMenu {
     private TalentTree menuConfig;
     private int scroll;
 
-    public JobSkillMenu(PlayerID playerID,
+    public JobSkillMenu(PlayerId playerID,
                         Job job,
                         JobTalentTreeService jobTalentTreeService,
                         JobPlayerProgressionService jobPlayerProgressionService) {

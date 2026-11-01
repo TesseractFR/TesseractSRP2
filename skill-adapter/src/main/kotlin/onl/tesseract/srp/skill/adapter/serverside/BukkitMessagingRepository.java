@@ -2,7 +2,7 @@ package onl.tesseract.srp.skill.adapter.serverside;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.recipe.Tier;
 import onl.tesseract.srp.skill.domain.port.serverside.MessagingRepository;
 import org.bukkit.Bukkit;
@@ -13,7 +13,7 @@ import java.util.Optional;
 @org.springframework.stereotype.Component
 public class BukkitMessagingRepository implements MessagingRepository {
     @Override
-    public void sendInsuffisantTableTier(PlayerID player, Tier tier) {
+    public void sendInsuffisantTableTier(PlayerId player, Tier tier) {
         getPlayer(player).ifPresent(p -> p.sendMessage(Component
                 .text("Le niveau de cette table est insuffisant pour cette recette ! (Tier requis : "
                         + tier.value() + ")", NamedTextColor.RED)));
@@ -21,24 +21,24 @@ public class BukkitMessagingRepository implements MessagingRepository {
     }
 
     @Override
-    public void sendInsuffisantComponent(PlayerID player) {
+    public void sendInsuffisantComponent(PlayerId player) {
         getPlayer(player).ifPresent(p ->
                 p.sendMessage(Component.text("Vous n'avez pas assez de ressources !", NamedTextColor.RED)));
     }
 
     @Override
-    public void sendCraftStarted(PlayerID player) {
+    public void sendCraftStarted(PlayerId player) {
         getPlayer(player).ifPresent(p ->
                 p.sendMessage(Component.text("§aFabrication lancée !", NamedTextColor.GREEN)));
     }
 
     @Override
-    public void sendCraftQueued(PlayerID player) {
+    public void sendCraftQueued(PlayerId player) {
         getPlayer(player).ifPresent(p ->
                 p.sendMessage(Component.text("§aRecette ajoutée à la file d'attente !", NamedTextColor.GREEN)));
     }
 
-    private Optional<Player> getPlayer(PlayerID player) {
+    private Optional<Player> getPlayer(PlayerId player) {
         return Optional.ofNullable(Bukkit.getPlayer(player.value()));
     }
 }

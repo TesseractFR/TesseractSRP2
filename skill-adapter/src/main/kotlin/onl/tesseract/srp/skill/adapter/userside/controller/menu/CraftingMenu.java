@@ -10,7 +10,7 @@ import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.recipe.IngredientSlot;
 import onl.tesseract.srp.skill.domain.model.recipe.Material;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;
@@ -96,7 +96,7 @@ public class CraftingMenu extends ItemAdderMenu {
     }
 
     private void addQualitySelector(Player viewer) {
-        Quality maximum = Quality.valueOf(craftingService.getMaximumIngredientQuality(new PlayerID(viewer.getUniqueId()), skill.name()).name());
+        Quality maximum = Quality.valueOf(craftingService.getMaximumIngredientQuality(new PlayerId(viewer.getUniqueId()), skill.name()).name());
         Quality[] qualities = Arrays.stream(Quality.values()).filter(q -> q.ordinal() <= maximum.ordinal()).toArray(Quality[]::new);
         ItemStack item = new ItemStack(org.bukkit.Material.AMETHYST_SHARD);
         item.editMeta(meta -> {
@@ -343,8 +343,8 @@ public class CraftingMenu extends ItemAdderMenu {
         addButton(LAUNCH_BUTTON_INDEX, item, (InventoryClickEvent event) -> {
             if (!canLaunch) return;
             Player player = (Player) event.getWhoClicked();
-            craftingService.startCraft(new PlayerID(player.getUniqueId()), skill.name(), activeRecipe, quantityToCraft,
-                    onl.tesseract.srp.skill.domain.model.Quality.valueOf(selectedQuality.name()), station);
+            craftingService.startCraft(new PlayerId(player.getUniqueId()), skill.name(), activeRecipe, quantityToCraft,
+                    onl.tesseract.srp.common.domain.model.enums.Quality.valueOf(selectedQuality.name()), station);
             new SkillMainMenu(skill, station , craftingService, customItemService, guildService, stationService, this).open(viewer);
         });
     }
@@ -354,7 +354,7 @@ public class CraftingMenu extends ItemAdderMenu {
     }
 
     private int getMaxCraft(Player viewer) {
-        return craftingService.getMaxCraft(activeRecipe, new PlayerID(viewer.getUniqueId()),
-                onl.tesseract.srp.skill.domain.model.Quality.valueOf(selectedQuality.name()));
+        return craftingService.getMaxCraft(activeRecipe, new PlayerId(viewer.getUniqueId()),
+                onl.tesseract.srp.common.domain.model.enums.Quality.valueOf(selectedQuality.name()));
     }
 }

@@ -3,7 +3,7 @@ package onl.tesseract.srp.skill.adapter.serverside.jpa.adapter;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.ItemEmbeddable;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.entity.PlayerSkillEmbeddable;
 import onl.tesseract.srp.skill.adapter.serverside.jpa.repository.SkillResultCacheJpaRepository;
-import onl.tesseract.srp.skill.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftElement;
 import onl.tesseract.srp.skill.domain.model.crafting.LootCache;
 import onl.tesseract.srp.skill.domain.model.crafting.PlayerLootCache;
@@ -26,10 +26,10 @@ public class SkillResultCacheRepositoryJpaAdapter implements SkillResultCacheRep
     }
 
     @Override
-    public Map<PlayerID, PlayerLootCache> findAll() {
-        Map<PlayerID, PlayerLootCache> result = new HashMap<>();
+    public Map<PlayerId, PlayerLootCache> findAll() {
+        Map<PlayerId, PlayerLootCache> result = new HashMap<>();
         skillResultCacheJpaRepository.findAll().forEach(entity -> {
-            PlayerID playerID = new PlayerID(entity.getPlayerSkill().getPlayerUuid());
+            PlayerId playerID = new PlayerId(entity.getPlayerSkill().getPlayerUuid());
             result.putIfAbsent(playerID, new PlayerLootCache(new HashMap<>()));
 
             result.get(playerID).lootCaches().put(
@@ -41,17 +41,17 @@ public class SkillResultCacheRepositoryJpaAdapter implements SkillResultCacheRep
     }
 
     @Override
-    public void delete(@NotNull PlayerID playerID, @NotNull SkillName skillName) {
+    public void delete(@NotNull PlayerId playerID, @NotNull SkillName skillName) {
 
         skillResultCacheJpaRepository.deleteByPlayerSkill(mapPlayerSkill(playerID, skillName));
     }
 
     @Override
-    public void save(PlayerID player, SkillName skill, LootCache lootCache) {
+    public void save(PlayerId player, SkillName skill, LootCache lootCache) {
 
     }
 
-    private PlayerSkillEmbeddable mapPlayerSkill(PlayerID playerID, SkillName skillName) {
+    private PlayerSkillEmbeddable mapPlayerSkill(PlayerId playerID, SkillName skillName) {
         PlayerSkillEmbeddable playerSkill = new PlayerSkillEmbeddable(playerID.value(), skillName.value());
         return playerSkill;
     }
