@@ -94,7 +94,7 @@ public class ContractService {
             refuse(player, npcJob, contractId, INVALID_SCROLL);
             return;
         }
-        int itemsOwned = playerMaterialRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
+        int itemsOwned = countOwnedItems(player, contract);
         if (itemsOwned < contract.quantity()) {
             refuseMissingItems(player, npcJob, contract, itemsOwned);
             return;
@@ -104,6 +104,10 @@ public class ContractService {
 
     private boolean giveScroll(PlayerID player, Contract contract) {
         return contractScrollRepository.give(player, contract, moneyBonus(player, contract) > 0);
+    }
+
+    public int countOwnedItems(PlayerID player, Contract contract) {
+        return playerMaterialRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
     }
 
     public int moneyBonus(PlayerID deliverer, Contract contract) {

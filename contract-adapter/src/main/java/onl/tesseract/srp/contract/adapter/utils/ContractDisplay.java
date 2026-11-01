@@ -13,42 +13,52 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 
 public final class ContractDisplay {
 
     private static final DateTimeFormatter EXPIRATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(ZoneId.systemDefault());
 
     private static final int UNKNOWN_BONUS = -1;
+    private static final String BULLET = "• ";
 
     private ContractDisplay() {
     }
 
     public static List<Component> scrollDetails(Contract contract, boolean hasJobBonus) {
-        return details(contract, hasJobBonus ? UNKNOWN_BONUS : 0);
+        return describe(contract, hasJobBonus ? UNKNOWN_BONUS : 0, OptionalInt.empty());
     }
 
-    public static List<Component> details(Contract contract, int jobBonus) {
+    public static List<Component> deliveryDetails(Contract contract, int jobBonus, int ownedItemCount) {
+        return describe(contract, jobBonus, OptionalInt.of(ownedItemCount));
+    }
+
+    private static List<Component> describe(Contract contract, int jobBonus, OptionalInt ownedItemCount) {
         boolean isCraft = contract.type() == ContractType.CRAFT;
         QualityAdapter minimalQuality = QualityAdapter.from(QualityConverter.toCommon(contract.minimalQuality()));
         List<Component> lines = new ArrayList<>();
-        lines.add(line("Type : ", isCraft ? "Artisanat" : "Récolte", isCraft ? NamedTextColor.AQUA : NamedTextColor.GREEN));
-        lines.add(line(isCraft ? "Compétence : " : "Métier : ", capitalize(contract.job()), NamedTextColor.GOLD));
-        lines.add(line("Demande : ", contract.quantity() + " × " + capitalize(contract.material()), NamedTextColor.YELLOW));
-        lines.add(line("Qualité minimale : ", minimalQuality.label(), minimalQuality.color()));
-        lines.add(line("Récompense : ", rewardText(contract, isCraft, jobBonus), NamedTextColor.GREEN));
+        lines.add(text((isCraft ? "Artisanat" : "Récolte") + " · " + capitalize(contract.job()), NamedTextColor.DARK_GRAY));
+        lines.add(Component.empty());
+        lines.add(text("À livrer", NamedTextColor.GOLD));
+        lines.add(line(BULLET + "Quantité : ", String.valueOf(contract.quantity()), NamedTextColor.WHITE));
+        lines.add(line(BULLET + "Qualité minimale : ", minimalQuality.label(), minimalQuality.color()));
+        ownedItemCount.ifPresent(count -> lines.add(line(BULLET + "Dans ton inventaire : ", count + " / " + contract.quantity(),
+                count >= contract.quantity() ? NamedTextColor.GREEN : NamedTextColor.RED)));
+        lines.add(Component.empty());
+        lines.add(text("Récompense", NamedTextColor.GOLD));
+        lines.add(line(BULLET + "Gain : ", contract.reward() + " lys", NamedTextColor.GREEN));
+        if (!isCraft && jobBonus == UNKNOWN_BONUS) {
+            lines.add(text(BULLET + "+ bonus métier", NamedTextColor.GREEN));
+        } else if (!isCraft && jobBonus > 0) {
+            lines.add(line(BULLET + "Bonus métier : ", "+" + jobBonus + " lys", NamedTextColor.GREEN));
+        }
+        lines.add(Component.empty());
         lines.add(line("Expire le : ", EXPIRATION_DATE_FORMAT.format(contract.expiresAt()), NamedTextColor.RED));
         return lines;
     }
 
-    private static String rewardText(Contract contract, boolean isCraft, int jobBonus) {
-        String baseText = contract.reward() + " lys";
-        if (isCraft) {
-            return baseText;
-        }
-        if (jobBonus == UNKNOWN_BONUS) {
-            return baseText + " + bonus métier";
-        }
-        return jobBonus > 0 ? baseText + " + " + jobBonus + " bonus métier" : baseText;
+    public static Component title(Contract contract) {
+        return text("Contrat · " + capitalize(contract.material()), NamedTextColor.GOLD);
     }
 
     public static Component footer(Contract contract) {
@@ -56,10 +66,14 @@ public final class ContractDisplay {
     }
 
     public static Component footer(String npcName) {
-        return Component.text("Apporte-le à " + npcName + ".", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.ITALIC, true);
+        return text("» Apporte-le à " + npcName, NamedTextColor.YELLOW);
     }
 
-    private static Component line(String label, String value, TextColor color) {
+    public static Component text(String content, TextColor color) {
+        return Component.text(content, color).decoration(TextDecoration.ITALIC, false);
+    }
+
+    public static Component line(String label, String value, TextColor color) {
         return Component.text(label, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false).append(Component.text(value, color));
     }
 
