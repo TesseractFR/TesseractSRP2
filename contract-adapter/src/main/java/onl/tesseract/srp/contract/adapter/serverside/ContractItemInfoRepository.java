@@ -2,7 +2,7 @@ package onl.tesseract.srp.contract.adapter.serverside;
 
 import lombok.extern.slf4j.Slf4j;
 import onl.tesseract.srp.contract.adapter.utils.QualityConverter;
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;

@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.adapter;
 
 import onl.tesseract.srp.common.domain.port.userside.PlayerService;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
@@ -50,7 +50,7 @@ public class ContractJpaRepositoryAdapter implements ContractRepository {
 
     @Override
     @Transactional
-    public boolean settle(long contractId, PlayerID deliverer, int payout) {
+    public boolean settle(long contractId, PlayerId deliverer, int payout) {
         if (contractJpaRepository.deleteByIdCounting(contractId) == 0) {
             return false;
         }

@@ -4,7 +4,7 @@ import net.kyori.adventure.text.Component;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollRepository;
 import org.bukkit.Bukkit;
@@ -28,13 +28,13 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
     }
 
     @Override
-    public boolean canReceive(PlayerID player) {
+    public boolean canReceive(PlayerId player) {
         Player onlinePlayer = Bukkit.getPlayer(player.value());
         return onlinePlayer != null && onlinePlayer.getInventory().firstEmpty() != -1;
     }
 
     @Override
-    public boolean give(PlayerID player, Contract contract, boolean hasJobBonus) {
+    public boolean give(PlayerId player, Contract contract, boolean hasJobBonus) {
         Player onlinePlayer = Bukkit.getPlayer(player.value());
         if (onlinePlayer == null || contract.id() == null) {
             return false;
@@ -55,13 +55,13 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
     }
 
     @Override
-    public boolean has(PlayerID player, long contractId) {
+    public boolean has(PlayerId player, long contractId) {
         Player onlinePlayer = Bukkit.getPlayer(player.value());
         return onlinePlayer != null && slotOf(onlinePlayer.getInventory(), contractId) >= 0;
     }
 
     @Override
-    public boolean remove(PlayerID player, long contractId) {
+    public boolean remove(PlayerId player, long contractId) {
         Player onlinePlayer = Bukkit.getPlayer(player.value());
         if (onlinePlayer == null) {
             return false;

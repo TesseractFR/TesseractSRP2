@@ -4,7 +4,7 @@ import onl.tesseract.srp.common.domain.port.userside.PlayerService;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.entity.ContractTicketEntity;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.repository.ContractTicketJpaRepository;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.Material;
@@ -33,7 +33,7 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public OptionalInt findTickets(PlayerID player) {
+    public OptionalInt findTickets(PlayerId player) {
         return contractTicketJpaRepository.findById(player.value().toString())
                 .map(entity -> OptionalInt.of(entity.getTickets()))
                 .orElse(OptionalInt.empty());
@@ -41,21 +41,21 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
 
     @Override
     @Transactional
-    public void saveTickets(PlayerID player, int tickets) {
+    public void saveTickets(PlayerId player, int tickets) {
         contractTicketJpaRepository.save(new ContractTicketEntity(player.value().toString(), tickets));
     }
 
     @Override
-    public int getDailyQuota(PlayerID player) {
+    public int getDailyQuota(PlayerId player) {
         var rank = playerService.getPlayer(player.value()).getRank();
         return rank == null ? 0 : yamlContractConfigRepository.getDailyTickets(rank.name());
     }
 
     @Override
-    public double getMoneyBonus(PlayerID player, String job, String material) {
+    public double getMoneyBonus(PlayerId player, String job, String material) {
         return jobService.getBonusValue(
                 new JobName(job),
-                new onl.tesseract.srp.job.domain.model.PlayerID(player.value()),
+                new PlayerId(player.value()),
                 new Material(material),
                 Bonus.MONEY);
     }
