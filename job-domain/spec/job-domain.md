@@ -17,7 +17,7 @@ Modéliser les métiers, leurs sources de récolte et produits, la progression d
 
 ## Interfaces et dépendances
 
-Les ports serveur couvrent la lecture des métiers, des progressions, des arbres, des missions et des objets. Les services côté utilisateur sont `JobService`, `JobPlayerProgressionService` et `JobTalentTreeService`.
+Les ports serveur couvrent la lecture des métiers, des progressions, des arbres et des objets. Les services côté utilisateur sont `JobService`, `JobPlayerProgressionService` et `JobTalentTreeService`.
 
 ## Critères d’acceptation
 
@@ -33,7 +33,7 @@ Les ports serveur couvrent la lecture des métiers, des progressions, des arbres
 
 ## Détails complémentaires du modèle de métier
 
-- `JobMission` stocke un objectif de livraison sous la forme ID, UUID joueur, métier, matériau, quantité demandée, qualité minimale, quantité déjà livrée et récompense. `MissionDepositResult` exprime la quantité livrée et le reste. Le modèle record ne porte pas à lui seul de validation ou d’algorithme de dépôt.
+- Les missions de livraison (ancien `JobMission`, `MissionDepositResult`) ont été **retirées** de ce module : elles sont remplacées par le module `contrat` (`contrat-domain.md`).
 - `Source` est un couple matériau/type; `SourceType` distingue la nature de la source. `Sources` mappe chaque source vers une liste de matériaux de sortie et retourne la liste associée (ou `null` si absente). `Products` est un ensemble séparé de matériaux déclarés comme produits.
 - `Talent` contient son identifiant, le bonus, l’objet/matériau visé, les valeurs par niveau, les prérequis, le niveau maximal et le coût par niveau. `getValue(level)` fournit la valeur de bonus au niveau demandé. `Talents.get(material, bonus)` filtre les talents à la fois par matériau et type de bonus.
 - `TalentTree` contient une matrice de `CellType`; `SkillCell` référence un talent, `RootCell` la racine et `Arrow` une orientation/connexion rendue via `ArrowType` et ses données de modèle d’objet.

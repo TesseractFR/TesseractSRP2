@@ -5,6 +5,7 @@ import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.serverside.MoneyRepository;
+import onl.tesseract.srp.customItem.adapter.serverside.exception.MissingMoneyConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.springframework.stereotype.Component;
 
@@ -120,6 +121,23 @@ public class YamlMoneyRepository implements MoneyRepository {
 
     @Override
     public MoneyValue getValue(MaterialName materialName, Quality quality) {
-        return values.get(new MaterialName(materialName.value())).multiply(qualityRates.get(quality));
+        MoneyValue value = values.get(materialName);
+        if (value == null) {
+            throw new MissingMoneyConfigurationException(
+                    "Aucune valeur monétaire n’est définie dans itemValue.yml pour le matériau "
+                            + materialName.value() + ".");
+        }
+        MoneyValue rate = qualityRates.get(quality);
+        if (rate == null) {
+            throw new MissingMoneyConfigurationException(
+                    "Aucun taux de qualité n’est défini dans itemValue.yml pour la qualité "
+                            + quality + ".");
+        }
+        return value.multiply(rate);
+    }
+
+    @Override
+    public boolean hasValue(MaterialName materialName) {
+        return values.containsKey(materialName);
     }
 }

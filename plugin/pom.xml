@@ -129,6 +129,14 @@
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>contract-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>contract-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>territory-adapter</artifactId>
             <version>${revision}</version>
         </dependency>

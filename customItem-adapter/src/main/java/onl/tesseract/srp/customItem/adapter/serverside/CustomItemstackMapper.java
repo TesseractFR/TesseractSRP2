@@ -3,6 +3,7 @@ package onl.tesseract.srp.customItem.adapter.serverside;
 
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider;
 import onl.tesseract.lib.util.Pair;
+import onl.tesseract.srp.common.adapter.utils.QualityAdapter;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.customitem.domain.model.*;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustomItemRepository;
@@ -57,7 +58,11 @@ public class CustomItemstackMapper implements CustomItemRepository {
                 .append(Component.text(rarity.label(), rarity.color())));
         lore.add(Component.text("Qualité : ", NamedTextColor.GRAY)
                 .append(Component.text(quality.label(), quality.color())));
-        lore.add(Component.text("Valeur : " + moneyRepository.getValue(material.name(),customItem.quality()).value().stripTrailingZeros().toPlainString(), NamedTextColor.GOLD));
+        if (moneyRepository.hasValue(material.name())) {
+            String value = moneyRepository.getValue(material.name(), customItem.quality()).value().stripTrailingZeros().toPlainString();
+            lore.add(Component.text("Valeur : ", NamedTextColor.GRAY)
+                    .append(Component.text(value, NamedTextColor.GOLD)));
+        }
         itemStack.lore(lore);
         return itemStack;
     }
