@@ -1,6 +1,6 @@
 package onl.tesseract.srp.contract.adapter.utils;
 
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 public final class QualityConverter {
 

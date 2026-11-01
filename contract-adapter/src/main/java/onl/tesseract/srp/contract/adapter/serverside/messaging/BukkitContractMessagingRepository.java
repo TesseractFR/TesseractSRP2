@@ -5,7 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
@@ -30,24 +30,24 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
         this.yamlContractConfigRepository = yamlContractConfigRepository;
     }
 
-    private void send(PlayerID playerId, Component message) {
+    private void send(PlayerId playerId, Component message) {
         Player player = Bukkit.getPlayer(playerId.value());
         if (player != null) player.sendMessage(message);
     }
 
-    private void error(PlayerID playerId, String text) {
+    private void error(PlayerId playerId, String text) {
         send(playerId, CONTRACT_CHAT_ERROR.append(Component.text(text)));
     }
 
-    private void success(PlayerID playerId, String text) {
+    private void success(PlayerId playerId, String text) {
         send(playerId, CONTRACT_CHAT_SUCCESS.append(Component.text(text)));
     }
 
-    private void info(PlayerID playerId, String text) {
+    private void info(PlayerId playerId, String text) {
         send(playerId, CONTRACT_CHAT_FORMAT.append(Component.text(text)));
     }
 
-    private void npcSays(PlayerID playerId, String npcJob, Component line) {
+    private void npcSays(PlayerId playerId, String npcJob, Component line) {
         String name = yamlContractConfigRepository.getNpcName(npcJob).orElseGet(() -> ContractDisplay.capitalize(npcJob));
         send(playerId, Component.empty()
                 .append(Component.text(name, NamedTextColor.GOLD, TextDecoration.BOLD))
@@ -63,23 +63,23 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
         return lines[ThreadLocalRandom.current().nextInt(lines.length)];
     }
 
-    private String nameOf(PlayerID playerId) {
+    private String nameOf(PlayerId playerId) {
         String name = Bukkit.getOfflinePlayer(playerId.value()).getName();
         return name != null ? name : "?";
     }
 
     // achat
-    @Override public void sendPurchaseSucceeded(PlayerID player, Contract contract, int ticketsLeft) {
+    @Override public void sendPurchaseSucceeded(PlayerId player, Contract contract, int ticketsLeft) {
         success(player, "Parchemin acheté : " + contract.quantity() + " × " + contract.material() + " (" + contract.job()
                 + "), qualité minimale " + contract.minimalQuality().name() + ", récompense " + contract.reward()
                 + " Lys"
                 + ". Tickets restants : " + ticketsLeft + ".");
     }
-    @Override public void sendPurchaseNoTicket(PlayerID player) { error(player, "Tu n'as plus de ticket de contrat aujourd'hui."); }
-    @Override public void sendPurchaseInventoryFull(PlayerID player) { error(player, "Ton inventaire est plein."); }
-    @Override public void sendPurchaseNoContractAvailable(PlayerID player) { error(player, "Aucun contrat n'est disponible pour le moment."); }
+    @Override public void sendPurchaseNoTicket(PlayerId player) { error(player, "Tu n'as plus de ticket de contrat aujourd'hui."); }
+    @Override public void sendPurchaseInventoryFull(PlayerId player) { error(player, "Ton inventaire est plein."); }
+    @Override public void sendPurchaseNoContractAvailable(PlayerId player) { error(player, "Aucun contrat n'est disponible pour le moment."); }
     // livraison : dialogues du PNJ, plusieurs répliques par cas, tirées au hasard
-    @Override public void sendDeliverySucceeded(PlayerID player, String npcJob, int reward) {
+    @Override public void sendDeliverySucceeded(PlayerId player, String npcJob, int reward) {
         String lys = reward + " Lys";
         npcSays(player, npcJob, pick(
                 Component.text("Parfait, c'est exactement ce qu'il me fallait ! Voilà tes ", NamedTextColor.WHITE)
@@ -89,7 +89,7 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
                 Component.text("Livraison reçue ! ", NamedTextColor.WHITE)
                         .append(Component.text(lys, NamedTextColor.GOLD)).append(Component.text(" pour toi, dépense-les bien.", NamedTextColor.WHITE))));
     }
-    @Override public void sendDeliveryRefused(PlayerID player, String npcJob, DeliveryRefusal reason, int missing) {
+    @Override public void sendDeliveryRefused(PlayerId player, String npcJob, DeliveryRefusal reason, int missing) {
         switch (reason) {
             case WRONG_CLIENT -> wrongClient(player, npcJob);
             case INVALID_SCROLL -> invalidScroll(player, npcJob);
@@ -99,38 +99,38 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
             case PAYMENT_FAILED -> paymentFailed(player, npcJob);
         }
     }
-    private void wrongClient(PlayerID player, String npcJob) {
+    private void wrongClient(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Ce parchemin n'est pas pour moi ! Va voir un collègue, je ne suis pas un bureau des objets trouvés."),
                 text("Ce contrat n'est pas pour mon métier. Tu t'es trompé de PNJ, ça arrive aux meilleurs."),
                 text("Je lis bien... non, ce n'est pas mon nom dessus. Essaie ailleurs.")));
     }
-    private void invalidScroll(PlayerID player, String npcJob) {
+    private void invalidScroll(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Ce parchemin est tout froissé, il ne vaut plus rien. Je ne peux rien en faire."),
                 text("Ce papier n'a plus aucune valeur, même pour allumer mon feu.")));
     }
-    private void expired(PlayerID player, String npcJob) {
+    private void expired(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Trop tard ! Ce contrat a expiré, même le papier a l'air fatigué."),
                 text("Tu arrives après la bataille : le délai est dépassé.")));
     }
-    private void missingItems(PlayerID player, String npcJob, int missing) {
+    private void missingItems(PlayerId player, String npcJob, int missing) {
         npcSays(player, npcJob, pick(
                 text("Il m'en manque encore " + missing + ". Je sais compter, tu sais."),
                 text("Encore " + missing + " à rapporter. Retourne en chercher, je t'attends.")));
     }
-    private void notEnoughQuality(PlayerID player, String npcJob, int missing) {
+    private void notEnoughQuality(PlayerId player, String npcJob, int missing) {
         npcSays(player, npcJob, pick(
                 text("La qualité n'est pas au rendez-vous : il me manque " + missing + " pièce(s) du niveau demandé. Je ne suis pas si facile."),
                 text("Tu as de quoi faire du bon travail, mais pas assez de qualité : encore " + missing + " du niveau demandé.")));
     }
-    private void paymentFailed(PlayerID player, String npcJob) {
+    private void paymentFailed(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Mes caisses ont un petit souci, je te rends tes affaires. Reviens plus tard !"),
                 text("Je n'arrive pas à te payer, reprends tes affaires et réessaie dans un moment.")));
     }
-    @Override public void sendNoScrollInHand(PlayerID player, String npcJob) {
+    @Override public void sendNoScrollInHand(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Je n'ai pas de contrat en cours avec toi. Reviens avec un parchemin, ça m'aiderait."),
                 text("Tu veux me livrer quoi, de l'air ? Montre-moi un parchemin."),
@@ -138,23 +138,23 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
     }
 
     // parchemin et tickets
-    @Override public void sendScrollDestroyed(PlayerID player) { error(player, "Ce parchemin n'est plus valable : il a été détruit."); }
-    @Override public void sendScrollsExpired(PlayerID player, int count) {
+    @Override public void sendScrollDestroyed(PlayerId player) { error(player, "Ce parchemin n'est plus valable : il a été détruit."); }
+    @Override public void sendScrollsExpired(PlayerId player, int count) {
         error(player, count == 1
                 ? "Un de tes parchemins de contrat a expiré : il a été supprimé de ton inventaire."
                 : count + " de tes parchemins de contrat ont expiré : ils ont été supprimés de ton inventaire.");
     }
-    @Override public void sendTicketsShown(PlayerID player, int tickets, int dailyQuota) {
+    @Override public void sendTicketsShown(PlayerId player, int tickets, int dailyQuota) {
         info(player, "Tickets de contrat : " + tickets + " (quota par jour : " + dailyQuota + ").");
     }
-    @Override public void sendStaffInvalidAmount(PlayerID staff) {
+    @Override public void sendStaffInvalidAmount(PlayerId staff) {
         send(staff, STAFF_CHAT_ERROR.append(Component.text("Le montant doit être strictement positif.")));
     }
-    @Override public void sendStaffTicketsGiven(PlayerID staff, PlayerID target, int amount) {
+    @Override public void sendStaffTicketsGiven(PlayerId staff, PlayerId target, int amount) {
         send(staff, STAFF_CHAT_SUCCESS.append(Component.text("Opération effectuée - " + amount
                 + " ticket(s) de contrat ajouté(s) à " + nameOf(target))));
     }
-    @Override public void sendStaffTicketsShown(PlayerID staff, PlayerID target, int tickets, int dailyQuota) {
+    @Override public void sendStaffTicketsShown(PlayerId staff, PlayerId target, int tickets, int dailyQuota) {
         send(staff, STAFF_CHAT_FORMAT.append(Component.text(nameOf(target) + " : " + tickets
                 + " ticket(s) (quota par jour : " + dailyQuota + ")")));
     }

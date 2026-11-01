@@ -6,7 +6,7 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.Material;
@@ -23,12 +23,12 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
     private static final int INFO = 13;
     private static final int CANCEL = 15;
 
-    private final PlayerID playerId;
+    private final PlayerId playerId;
     private final String npcJob;
     private final Contract contract;
     private final ContractService contractService;
 
-    public ContractDeliveryMenu(PlayerID playerId, String npcJob, Contract contract, ContractService contractService) {
+    public ContractDeliveryMenu(PlayerId playerId, String npcJob, Contract contract, ContractService contractService) {
         super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
         this.npcJob = npcJob;

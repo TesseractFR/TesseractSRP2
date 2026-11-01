@@ -1,6 +1,6 @@
 package onl.tesseract.srp.contract.domain.port.serverside;
 
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 
 import java.util.List;
