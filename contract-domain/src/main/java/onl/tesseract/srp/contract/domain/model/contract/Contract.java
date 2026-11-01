@@ -1,12 +1,12 @@
 package onl.tesseract.srp.contract.domain.model.contract;
 
 import lombok.NonNull;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 import java.time.Instant;
 
-public record Contract(Long id, @NonNull PlayerID issuedTo, @NonNull ContractType type, @NonNull String job,
+public record Contract(Long id, @NonNull PlayerId issuedTo, @NonNull ContractType type, @NonNull String job,
                        @NonNull String material, int quantity, @NonNull Quality minimalQuality, int reward,
                        @NonNull Instant issuedAt, @NonNull Instant expiresAt) {
 

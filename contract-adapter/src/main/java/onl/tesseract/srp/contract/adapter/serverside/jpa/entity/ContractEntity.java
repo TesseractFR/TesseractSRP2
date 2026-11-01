@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.entity;
 
-import onl.tesseract.srp.contract.domain.model.PlayerID;
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import jakarta.persistence.*;
@@ -60,7 +60,7 @@ public class ContractEntity {
     }
 
     public Contract toDomain() {
-        return new Contract(id, new PlayerID(UUID.fromString(issuedTo)), type, job, material, quantity, minimalQuality, reward,
+        return new Contract(id, new PlayerId(UUID.fromString(issuedTo)), type, job, material, quantity, minimalQuality, reward,
                 issuedAt, expiresAt);
     }
 }

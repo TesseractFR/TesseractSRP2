@@ -61,8 +61,8 @@ flowchart LR
 
 ## 2. Modèle
 
-### `PlayerID`
-Record d'un `UUID`. Le constructeur lève `IllegalArgumentException` si l'UUID est `null`. Le module a son propre `PlayerID` (il ne réutilise pas celui de `job-domain`) pour ne dépendre d'aucun autre module SRP ; l'adapter convertit.
+### `PlayerId`
+Record d'un `UUID`. Le constructeur lève `IllegalArgumentException` si l'UUID est `null`. Le module a son propre `PlayerId` (il ne réutilise pas celui de `job-domain`) pour ne dépendre d'aucun autre module SRP ; l'adapter convertit.
 
 ### `Quality`
 `POOR < NORMAL < GOOD < VERY_GOOD < EXCEPTIONAL`. **L'ordre de déclaration compte** : le code utilise `ordinal()` et `values()` pour « toutes les qualités à partir de X » (adapter) et pour tirer une qualité au hasard (générateur). Ne pas réordonner les valeurs.
@@ -71,7 +71,7 @@ Record d'un `UUID`. Le constructeur lève `IllegalArgumentException` si l'UUID e
 | Champ | Type | Sens |
 |---|---|---|
 | `id` | `Long` | `null` tant que le contrat n'est pas sauvegardé ; attribué par `ContractRepository.save` |
-| `issuedTo` | `PlayerID` | l'acheteur. Information seulement : **n'importe quel porteur du parchemin peut livrer** et touche la récompense |
+| `issuedTo` | `PlayerId` | l'acheteur. Information seulement : **n'importe quel porteur du parchemin peut livrer** et touche la récompense |
 | `type` | `ContractType` | `HARVEST` (métier) ou `CRAFT` (compétence) |
 | `job` | `String` | nom du métier (récolte) ou de la compétence (craft) dont le PNJ est le client |
 | `material` | `String` | nom du matériau demandé |
@@ -121,7 +121,7 @@ Un item qu'un contrat peut demander : `type`, `job`, `material`, `weight` (poids
 
 ## 4. `ContractGenerator`
 
-`generate(PlayerID buyer)` renvoie un `Optional<Contract>` :
+`generate(PlayerId buyer)` renvoie un `Optional<Contract>` :
 
 1. `itemInfo.getCatalogItems()` ; liste vide → `Optional.empty()`.
 2. **Tirage de l'item pondéré par `weight`** (`pickWeighted`) : somme des poids `total`, `r = random.nextDouble() * total`, puis on parcourt la liste en retranchant chaque poids jusqu'à passer sous 0. Repli sur le dernier élément en cas d'arrondi flottant. Plus le poids est grand, plus l'item sort souvent.

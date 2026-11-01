@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -38,7 +38,7 @@ public class ContractScrollCleanupListener implements Listener {
         if (ContractScrollItem.isExpired(droppedItem.getItemStack(), Instant.now())) {
             event.setCancelled(true);
             droppedItem.remove();
-            contractService.reportExpiredScrolls(new PlayerID(player.getUniqueId()), 1);
+            contractService.reportExpiredScrolls(new PlayerId(player.getUniqueId()), 1);
         }
     }
 
@@ -55,7 +55,7 @@ public class ContractScrollCleanupListener implements Listener {
     private void cleanPlayer(Player player) {
         int removedCount = removeExpiredScrolls(player.getInventory());
         if (removedCount > 0) {
-            contractService.reportExpiredScrolls(new PlayerID(player.getUniqueId()), removedCount);
+            contractService.reportExpiredScrolls(new PlayerId(player.getUniqueId()), removedCount);
         }
     }
 

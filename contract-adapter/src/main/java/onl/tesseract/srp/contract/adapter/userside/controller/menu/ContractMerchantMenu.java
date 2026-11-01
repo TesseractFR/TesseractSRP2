@@ -8,7 +8,7 @@ import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
-import onl.tesseract.srp.contract.domain.model.PlayerID;
+import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -25,10 +25,10 @@ public class ContractMerchantMenu extends ItemAdderMenu {
     private static final int BUY = 13;
     private static final int INFORMATION = 15;
 
-    private final PlayerID playerId;
+    private final PlayerId playerId;
     private final ContractService contractService;
 
-    public ContractMerchantMenu(PlayerID playerId, ContractService contractService) {
+    public ContractMerchantMenu(PlayerId playerId, ContractService contractService) {
         super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
         this.contractService = contractService;

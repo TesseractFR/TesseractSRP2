@@ -145,7 +145,7 @@ La valeur dépend de la qualité : `YamlMoneyRepository.getValue` multiplie le p
 - `findTickets` : lit `ContractTicketEntity` par UUID converti en texte ; `OptionalInt.empty()` si absente (joueur nouveau pour le domaine).
 - `saveTickets` : `contractTicketJpaRepository.save(new ContractTicketEntity(uuid.toString(), tickets))` : crée la ligne ou la remplace.
 - `getDailyQuota` : `playerService.getPlayer(uuid).getRank()` ; grade `null` → 0 ; sinon `yamlContractConfigRepository.getDailyTickets(rank.name())`. **La clé du YAML est `rank.name()`**, donc dépend de la casse de l'enum (`Survivant`, pas `SURVIVANT`).
-- `getMoneyBonus(player, job, material)` : `jobService.getBonusValue(new JobName(job), <PlayerID de job-domain>, new Material(material), Bonus.MONEY)`. Renvoie un **taux**.
+- `getMoneyBonus(player, job, material)` : `jobService.getBonusValue(new JobName(job), <PlayerId de job-domain>, new Material(material), Bonus.MONEY)`. Renvoie un **taux**.
 
 ### 5.3 `TesseractPlayerMaterialRepository` (→ `PlayerMaterialRepository`)
 

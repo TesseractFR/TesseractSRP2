@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.domain.port.userside;
 
-import onl.tesseract.srp.contract.domain.model.PlayerID;
-import onl.tesseract.srp.contract.domain.model.Quality;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
@@ -23,7 +23,7 @@ public class ContractGenerator {
         this.random = random;
     }
 
-    public Optional<Contract> generate(PlayerID buyer) {
+    public Optional<Contract> generate(PlayerId buyer) {
         List<CatalogItem> catalogItems = itemInfoRepository.getCatalogItems();
         if (catalogItems.isEmpty()) {
             return Optional.empty();
