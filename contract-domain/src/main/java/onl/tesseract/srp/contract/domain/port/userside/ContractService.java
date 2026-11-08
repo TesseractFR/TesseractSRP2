@@ -69,7 +69,7 @@ public class ContractService {
             contractMessagingRepository.sendPurchaseNoTicket(player);
             return;
         }
-        if (!contractScrollRepository.canReceive(player)) {
+        if (!contractScrollRepository.canReceiveScroll(player)) {
             contractMessagingRepository.sendPurchaseInventoryFull(player);
             return;
         }
@@ -132,7 +132,7 @@ public class ContractService {
         }
         Contract contract = foundContract.get();
 
-        if (!contractScrollRepository.has(player, contractId)) {
+        if (!contractScrollRepository.hasScroll(player, contractId)) {
             refuse(player, npcJob, contractId, INVALID_SCROLL);
             return;
         }
@@ -153,7 +153,7 @@ public class ContractService {
      * @return {@code true} si le parchemin a été ajouté
      */
     private boolean giveScroll(PlayerId player, Contract contract) {
-        return contractScrollRepository.give(player, contract, moneyBonus(player, contract) > 0);
+        return contractScrollRepository.giveScroll(player, contract, moneyBonus(player, contract) > 0);
     }
 
     /**
@@ -198,7 +198,7 @@ public class ContractService {
         boolean contractStillValid = contractRepository.findById(contractId)
                 .map(contract -> !contract.isExpired(Instant.now()))
                 .orElse(false);
-        if (!contractStillValid && contractScrollRepository.remove(player, contractId)) {
+        if (!contractStillValid && contractScrollRepository.removeScroll(player, contractId)) {
             contractMessagingRepository.sendScrollDestroyed(player);
         }
     }
@@ -365,7 +365,7 @@ public class ContractService {
      * @return quantités de matériaux retirées par qualité, ou une map vide si le retrait échoue
      */
     private Map<Quality, Integer> takeScrollAndItemsOrRefuse(PlayerId player, String npcJob, Contract contract) {
-        if (!contractScrollRepository.remove(player, contract.id())) {
+        if (!contractScrollRepository.removeScroll(player, contract.id())) {
             contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
             return Map.of();
         }
