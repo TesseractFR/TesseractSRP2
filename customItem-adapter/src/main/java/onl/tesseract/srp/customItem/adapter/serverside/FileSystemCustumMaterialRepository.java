@@ -2,7 +2,7 @@ package onl.tesseract.srp.customItem.adapter.serverside;
 
 import onl.tesseract.srp.common.domain.model.ItemTag;
 import onl.tesseract.srp.customitem.domain.model.CustomMaterial;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.model.Rarity;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustumMaterialRepository;
 import org.bukkit.configuration.ConfigurationSection;

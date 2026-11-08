@@ -1,7 +1,7 @@
 package onl.tesseract.srp.customItem.adapter.serverside;
 
 import onl.tesseract.srp.customitem.domain.model.CustomItem;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.serverside.InventoryRepository;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

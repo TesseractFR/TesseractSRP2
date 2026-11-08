@@ -3,7 +3,7 @@ package onl.tesseract.srp.customItem.adapter.serverside;
 import lombok.extern.slf4j.Slf4j;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.serverside.MoneyRepository;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.springframework.stereotype.Component;
