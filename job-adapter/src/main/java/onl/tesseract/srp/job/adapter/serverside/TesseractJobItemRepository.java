@@ -1,7 +1,7 @@
 package onl.tesseract.srp.job.adapter.serverside;
 
 import onl.tesseract.srp.common.domain.model.enums.Quality;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.job.domain.model.Material;
 import onl.tesseract.srp.common.domain.model.PlayerId;

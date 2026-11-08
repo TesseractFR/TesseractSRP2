@@ -6,7 +6,7 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.service.ServiceContainer;
 import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.skill.domain.model.crafting.CraftTask;

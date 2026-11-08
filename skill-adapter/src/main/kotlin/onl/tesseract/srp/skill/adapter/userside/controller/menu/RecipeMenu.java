@@ -6,7 +6,7 @@ import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderBiMenu;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.skill.domain.model.recipe.IngredientSlot;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;

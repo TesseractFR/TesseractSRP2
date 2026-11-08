@@ -4,6 +4,7 @@ package onl.tesseract.srp.customItem.adapter.serverside;
 import onl.tesseract.lib.persistantcontainer.NamedspacedKeyProvider;
 import onl.tesseract.lib.util.Pair;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.customitem.domain.model.*;
 import onl.tesseract.srp.customitem.domain.port.serverside.CustomItemRepository;
 import net.kyori.adventure.text.Component;

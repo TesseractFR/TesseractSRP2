@@ -1,6 +1,6 @@
 package onl.tesseract.srp.domain.item;
 
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
