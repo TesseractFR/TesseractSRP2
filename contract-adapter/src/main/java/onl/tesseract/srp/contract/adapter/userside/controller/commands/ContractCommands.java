@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/** Définit les commandes joueur pour acheter, livrer et consulter les tickets de contrat. */
 @Component
 @Command(name = "contract", playerOnly = true)
 public class ContractCommands extends CommandContext {

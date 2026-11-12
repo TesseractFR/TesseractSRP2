@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Random;
 
+/** Assemble les services du domaine et démarre les composants nécessaires au module contrat. */
 @Configuration
 public class ContractProvider {
 

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 
+/** Adapte les opérations de persistance JPA au port {@link ContractRepository}. */
 @Component
 public class ContractJpaRepositoryAdapter implements ContractRepository {
 

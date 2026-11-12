@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+/** Retire les parchemins expirés des inventaires lors des connexions, ouvertures et ramassages. */
 @Component
 public class ContractScrollCleanupListener implements Listener {
 

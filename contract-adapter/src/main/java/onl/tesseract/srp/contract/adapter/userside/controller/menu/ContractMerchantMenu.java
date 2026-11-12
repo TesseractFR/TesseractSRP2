@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 
 import static onl.tesseract.srp.contract.adapter.utils.ContractConstantes.BULLET;
 
+/** Menu du marchand permettant de consulter les tickets et d'acheter un parchemin de contrat. */
 public class ContractMerchantMenu extends ItemAdderMenu {
     private static final String BACKGROUND_ID = "tesseract:contract_merchant_menu";
     private static final int TEXTURE_OFFSET = -8;
