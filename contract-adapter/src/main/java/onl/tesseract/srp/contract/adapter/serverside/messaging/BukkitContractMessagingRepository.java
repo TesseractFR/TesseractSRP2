@@ -4,11 +4,10 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
-import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -48,7 +47,7 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
     }
 
     private void npcSays(PlayerId playerId, String npcJob, Component line) {
-        String name = yamlContractConfigRepository.getNpcName(npcJob).orElseGet(() -> ContractDisplay.capitalize(npcJob));
+        String name = yamlContractConfigRepository.getNpcName(npcJob).orElseGet(() -> StringUtils.capitalize(npcJob));
         send(playerId, Component.empty()
                 .append(Component.text(name, NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.text(" » ", NamedTextColor.DARK_GRAY))
@@ -89,43 +88,33 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
                 Component.text("Livraison reçue ! ", NamedTextColor.WHITE)
                         .append(Component.text(lys, NamedTextColor.GOLD)).append(Component.text(" pour toi, dépense-les bien.", NamedTextColor.WHITE))));
     }
-    @Override public void sendDeliveryRefused(PlayerId player, String npcJob, DeliveryRefusal reason, int missing) {
-        switch (reason) {
-            case WRONG_CLIENT -> wrongClient(player, npcJob);
-            case INVALID_SCROLL -> invalidScroll(player, npcJob);
-            case EXPIRED -> expired(player, npcJob);
-            case MISSING_ITEMS -> missingItems(player, npcJob, missing);
-            case NOT_ENOUGH_QUALITY -> notEnoughQuality(player, npcJob, missing);
-            case PAYMENT_FAILED -> paymentFailed(player, npcJob);
-        }
-    }
-    private void wrongClient(PlayerId player, String npcJob) {
+    @Override public void sendDeliveryWrongClient(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Ce parchemin n'est pas pour moi ! Va voir un collègue, je ne suis pas un bureau des objets trouvés."),
                 text("Ce contrat n'est pas pour mon métier. Tu t'es trompé de PNJ, ça arrive aux meilleurs."),
                 text("Je lis bien... non, ce n'est pas mon nom dessus. Essaie ailleurs.")));
     }
-    private void invalidScroll(PlayerId player, String npcJob) {
+    @Override public void sendDeliveryInvalidScroll(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Ce parchemin est tout froissé, il ne vaut plus rien. Je ne peux rien en faire."),
                 text("Ce papier n'a plus aucune valeur, même pour allumer mon feu.")));
     }
-    private void expired(PlayerId player, String npcJob) {
+    @Override public void sendDeliveryExpired(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Trop tard ! Ce contrat a expiré, même le papier a l'air fatigué."),
                 text("Tu arrives après la bataille : le délai est dépassé.")));
     }
-    private void missingItems(PlayerId player, String npcJob, int missing) {
+    @Override public void sendDeliveryMissingItems(PlayerId player, String npcJob, int missing) {
         npcSays(player, npcJob, pick(
                 text("Il m'en manque encore " + missing + ". Je sais compter, tu sais."),
                 text("Encore " + missing + " à rapporter. Retourne en chercher, je t'attends.")));
     }
-    private void notEnoughQuality(PlayerId player, String npcJob, int missing) {
+    @Override public void sendDeliveryNotEnoughQuality(PlayerId player, String npcJob, int missing) {
         npcSays(player, npcJob, pick(
                 text("La qualité n'est pas au rendez-vous : il me manque " + missing + " pièce(s) du niveau demandé. Je ne suis pas si facile."),
                 text("Tu as de quoi faire du bon travail, mais pas assez de qualité : encore " + missing + " du niveau demandé.")));
     }
-    private void paymentFailed(PlayerId player, String npcJob) {
+    @Override public void sendDeliveryPaymentFailed(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Mes caisses ont un petit souci, je te rends tes affaires. Reviens plus tard !"),
                 text("Je n'arrive pas à te payer, reprends tes affaires et réessaie dans un moment.")));

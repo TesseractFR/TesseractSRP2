@@ -1,6 +1,8 @@
 package onl.tesseract.srp.contract.adapter.serverside;
 
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.common.domain.port.userside.PlayerService;
+import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.entity.ContractTicketEntity;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.repository.ContractTicketJpaRepository;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.OptionalInt;
+import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 
 @Component
 public class ContractPlayerInfoRepository implements PlayerInfoRepository {
@@ -52,11 +55,18 @@ public class ContractPlayerInfoRepository implements PlayerInfoRepository {
     }
 
     @Override
-    public double getMoneyBonus(PlayerId player, String job, String material) {
+    public double getMoneyBonus(PlayerId player, String job, MaterialName material) {
         return jobService.getBonusValue(
                 new JobName(job),
                 new PlayerId(player.value()),
-                new Material(material),
+                new Material(material.value()),
                 Bonus.MONEY);
+    }
+
+    @Override
+    public void giveMoney(PlayerId player, MoneyValue amount) {
+        if (!playerService.adjustMoney(player.value(), amount.value().intValueExact())) {
+            throw new PaymentFailedException();
+        }
     }
 }

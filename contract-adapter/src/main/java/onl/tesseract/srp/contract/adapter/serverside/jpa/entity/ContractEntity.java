@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.entity;
 
-import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import jakarta.persistence.*;
@@ -10,7 +10,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Data
@@ -21,9 +20,6 @@ public class ContractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "issued_to", nullable = false, length = 36)
-    private String issuedTo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,9 +41,6 @@ public class ContractEntity {
     @Column(nullable = false)
     private int reward;
 
-    @Column(nullable = false)
-    private Instant issuedAt;
-
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
@@ -55,12 +48,12 @@ public class ContractEntity {
     private long version;
 
     public static ContractEntity fromDomain(Contract contract) {
-        return new ContractEntity(contract.id(), contract.issuedTo().value().toString(), contract.type(), contract.job(), contract.material(), contract.quantity(),
-                contract.minimalQuality(), contract.reward(), contract.issuedAt(), contract.expiresAt(), 0L);
+        return new ContractEntity(contract.id(), contract.type(), contract.job(), contract.material().value(), contract.quantity(),
+                contract.minimalQuality(), contract.reward(), contract.expiresAt(), 0L);
     }
 
     public Contract toDomain() {
-        return new Contract(id, new PlayerId(UUID.fromString(issuedTo)), type, job, material, quantity, minimalQuality, reward,
-                issuedAt, expiresAt);
+        return new Contract(id, type, job, new MaterialName(material), quantity, minimalQuality, reward,
+                expiresAt);
     }
 }

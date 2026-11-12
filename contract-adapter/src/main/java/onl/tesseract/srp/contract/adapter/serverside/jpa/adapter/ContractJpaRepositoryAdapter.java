@@ -1,9 +1,6 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.adapter;
 
-import onl.tesseract.srp.common.domain.port.userside.PlayerService;
-import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.entity.ContractEntity;
 import onl.tesseract.srp.contract.adapter.serverside.jpa.repository.ContractJpaRepository;
@@ -17,11 +14,8 @@ import java.util.Optional;
 public class ContractJpaRepositoryAdapter implements ContractRepository {
 
     private final ContractJpaRepository contractJpaRepository;
-    private final PlayerService playerService;
-
-    public ContractJpaRepositoryAdapter(ContractJpaRepository contractJpaRepository, PlayerService playerService) {
+    public ContractJpaRepositoryAdapter(ContractJpaRepository contractJpaRepository) {
         this.contractJpaRepository = contractJpaRepository;
-        this.playerService = playerService;
     }
 
     @Override
@@ -39,7 +33,7 @@ public class ContractJpaRepositoryAdapter implements ContractRepository {
     @Override
     @Transactional
     public void delete(long id) {
-        contractJpaRepository.deleteByIdCounting(id);
+        contractJpaRepository.deleteById(id);
     }
 
     @Override
@@ -48,15 +42,4 @@ public class ContractJpaRepositoryAdapter implements ContractRepository {
         return contractJpaRepository.deleteExpired(now);
     }
 
-    @Override
-    @Transactional
-    public boolean settle(long contractId, PlayerId deliverer, int payout) {
-        if (contractJpaRepository.deleteByIdCounting(contractId) == 0) {
-            return false;
-        }
-        if (!playerService.adjustMoney(deliverer.value(), payout)) {
-            throw new PaymentFailedException();
-        }
-        return true;
-    }
 }

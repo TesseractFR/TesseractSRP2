@@ -1,6 +1,8 @@
 package onl.tesseract.srp.contract.domain.port.serverside;
 
 import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.model.MoneyValue;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 
 import java.util.OptionalInt;
 
@@ -13,5 +15,8 @@ public interface PlayerInfoRepository {
     /** Retourne le quota quotidien de tickets du joueur. */
     int getDailyQuota(PlayerId player);
     /** Retourne le taux de bonus lié au métier et au matériau pour le joueur. */
-    double getMoneyBonus(PlayerId player, String job, String material);
+    double getMoneyBonus(PlayerId player, String job, MaterialName material);
+
+    /** Verse un montant au joueur indiqué. */
+    void giveMoney(PlayerId player, MoneyValue amount);
 }

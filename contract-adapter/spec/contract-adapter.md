@@ -25,7 +25,7 @@ onl.tesseract.srp.contract.adapter
 │   └── controller
 │       ├── commands/ContractCommands (+ args/ContractJobArg, ContractJobCatalog)
 │       ├── menu/ContractMerchantMenu, ContractDeliveryMenu
-│       └── event/ContractScrollListener, ContractScrollCleanupListener, ContractDailyTicketListener
+│       └── event/ContractScrollCleanupListener, ContractDailyTicketListener
 └── utils/ContractDisplay, ContractScrollItem, ContractChatFormats, QualityConverter
 ```
 
@@ -37,7 +37,6 @@ flowchart TD
     CMD --> MENU[ContractMerchantMenu / ContractDeliveryMenu]
     CMD --> SVC[ContractService]
     MENU --> SVC
-    EV1[ContractScrollListener] --> SVC
     EV2[ContractDailyTicketListener] --> SVC
     EV3[ContractScrollCleanupListener] --> SVC
     EV3 --> MSGP[ContractMessagingRepository]
@@ -92,16 +91,15 @@ Les tables sont créées automatiquement. Les anciennes colonnes (`discovery_giv
 
 ### Requêtes `ContractJpaRepository`
 Deux requêtes `DELETE` JPQL, avec `@Modifying(flushAutomatically = true, clearAutomatically = true)` (le contexte est vidé après chaque suppression pour ne pas garder d'entité périmée) :
-- `deleteByIdCounting(id)` : `delete ... where id = :id`, renvoie le nombre de lignes supprimées (0 ou 1) ;
 - `deleteExpired(now)` : `delete ... where expiresAt <= :now`, renvoie le nombre supprimé.
 
 ### `ContractJpaRepositoryAdapter` (→ `ContractRepository`)
 Toutes les méthodes sont `@Transactional` (lecture seule pour `findById`).
 - `save` : `jpaRepo.save(fromDomain(...))` puis `toDomain()` sur l'entité enregistrée (donc avec son id).
 - `findById` : `Optional` converti en domaine.
-- `delete` : `deleteByIdCounting` (le nombre est ignoré).
+- `delete` : délègue à `JpaRepository.deleteById`.
 - `deleteExpired` : renvoie le nombre de lignes.
-- **`settle(contractId, deliverer, payout)`** : 1) `deleteByIdCounting(contractId)` ; si 0 ligne, renvoie `false` (contrat déjà livré ou supprimé) ; 2) `playerService.adjustMoney(uuid, payout)` ; si refusé, lève `PaymentFailedException`, ce qui **annule la transaction et donc la suppression** ; 3) renvoie `true`. C'est le `DELETE` qui compte les lignes qui empêche deux livraisons simultanées du même contrat d'être payées : la seconde supprime 0 ligne.
+- Le règlement de la livraison est coordonné par `ContractService` à partir des ports de persistance, inventaire et paiement ; `ContractRepository` ne fournit pas d'opération transactionnelle `settle`.
 
 `ContractTicketJpaRepository` est un `JpaRepository<ContractTicketEntity, String>` sans requête propre.
 
@@ -165,7 +163,7 @@ Utilise `CustomItemService` uniquement (pas de Bukkit, pas de config YAML) :
 
 Bukkit, joueur **en ligne** obligatoire. Utilise `ContractScrollItem`, `ContractDisplay` et `YamlContractConfigRepository` (nom du PNJ pour le pied de page du lore) :
 - `canReceive` : joueur en ligne et `firstEmpty() != -1`.
-- `give(player, contract)` : `false` si le joueur est hors ligne, si le contrat n'a pas d'id ou si l'item ItemsAdder est introuvable. Sinon, sur l'item de base (`ContractScrollItem.create()`) : écrit l'**id du contrat** et la **date d'expiration** dans les données persistantes, définit le lore (`ContractDisplay.details` + pied de page avec le nom du PNJ ou, à défaut, « PNJ du métier » / « PNJ de la compétence »), force `maxStackSize = 1`, puis `addItem(...)`. Renvoie `true` si l'item a tenu dans l'inventaire.
+- `give(player, contract)` : `false` si le joueur est hors ligne, si le contrat n'a pas d'id ou si l'item ItemsAdder est introuvable. Sinon, sur l'item de base (`ContractScrollItem.create()`) : écrit l'**id du contrat** et la **date d'expiration** dans les données persistantes, définit le lore (`ContractDisplay.scrollDetails` + pied de page avec le nom du PNJ ou, à défaut, « PNJ du métier » / « PNJ de la compétence »), force `maxStackSize = 1`, puis `addItem(...)`. Renvoie `true` si l'item a tenu dans l'inventaire.
 - `has` / `remove` : parcourent `getContents()` et repèrent le slot dont l'item porte cet id (`slotOf`). `remove` met ce slot à `null`. Joueur hors ligne → `false`.
 
 ### 5.5 `BukkitContractMessagingRepository` (→ `ContractMessagingRepository`)
@@ -179,7 +177,7 @@ Tous les textes du module sont ici. `send(...)` ne fait rien si le joueur est ho
 | Staff | préfixes `STAFF_CHAT_*` de `SrpChatFormats` |
 
 Messages notables :
-- `sendDeliveryRefused` aiguille selon `DeliveryRefusal` vers une méthode par cause ; `missing` n'est utilisé que pour `MISSING_ITEMS` et `NOT_ENOUGH_QUALITY`.
+- Les refus de livraison disposent chacun d'une méthode dédiée : client incorrect, parchemin invalide, contrat expiré, objets manquants, qualité insuffisante et échec du paiement. Le nombre manquant n'est transmis que pour les deux cas liés aux objets.
 - `sendScrollDestroyed` : un parchemin détruit à l'utilisation (invalide).
 - `sendScrollsExpired(count)` : « un / N de tes parchemins ont expiré… » (singulier et pluriel), envoyé par le nettoyage.
 - `sendPurchaseSucceeded` : détail du contrat acheté (sans bonus métier, qui dépend du joueur qui livre).
@@ -197,7 +195,7 @@ Méthodes : `create()` (item ItemsAdder, `Optional.empty()` s'il n'existe pas), 
 La date de l'item est une **copie** : modifier `expires_at` en base ne change pas le parchemin déjà remis.
 
 ### `ContractDisplay` (utils)
-- `details(contract, bonus)` / `scrollDetails(contract, hasJobBonus)` : lignes de lore (type, métier ou compétence, demande, qualité minimale colorée, récompense, date d'expiration au format `dd/MM HH:mm` dans le fuseau du serveur). Pour la récompense : artisanat → montant seul ; récolte → montant + `N bonus métier` seulement si `bonus > 0` (menu de livraison, bonus réel du livreur). Sur le parchemin, `scrollDetails` ajoute « + bonus métier » sans montant seulement si le joueur qui reçoit le parchemin a un bonus au moment où il le reçoit ; ce texte est figé sur l'item.
+- `scrollDetails(contract)` produit le détail affiché sur le parchemin. Le lore de l'aperçu dans `ContractDeliveryMenu` est assemblé par la classe du menu.
 - `footer(contract)` / `footer(npcName)` : « Apporte-le à … » (avec « PNJ du métier » ou « PNJ de la compétence » quand le nom du PNJ n'est pas configuré).
 - `capitalize(raw)` : `FER_BRUT` → « Fer Brut ».
 - Noms français et couleurs des qualités : ceux de `QualityAdapter` (`common-adapter`), partagés avec les items custom.
@@ -221,10 +219,9 @@ Les PNJ sont créés ailleurs et exécutent ces commandes comme le joueur ; le m
 
 ### 7.2 Menus
 - **`ContractMerchantMenu`** (3 lignes) : slot 11 = tickets restants et quota (lecture seule) ; slot 15 = « Acheter un parchemin ». Un clic sur l'achat appelle `buyScroll` **puis rouvre un nouveau menu** pour rafraîchir les tickets.
-- **`ContractDeliveryMenu`** (3 lignes) : slot 11 = détail du contrat avec le bonus calculé par `moneyBonus` ; slot 14 = « Confirmer » (ferme le menu puis `deliver(player, contract.id(), npcJob)`) ; slot 15 = « Annuler » (ferme).
+- **`ContractDeliveryMenu`** (3 lignes) : slot 11 = « Confirmer » (ferme le menu puis `deliver(player, contract.id(), npcJob)`) ; slot 13 = aperçu du contrat dont le lore est créé par la classe du menu ; slot 15 = « Annuler » (ferme).
 
 ### 7.3 Événements
-- **`ContractScrollListener`** : `BlockPlaceEvent` annulé pour un parchemin ; `PrepareItemCraftEvent` vide le résultat si un ingrédient est un parchemin ; `PlayerInteractEvent` (clic droit, main principale uniquement) : refuse l'usage normal de l'item (`setUseItemInHand(DENY)`) puis `discardScrollIfInvalid`.
 - **`ContractDailyTicketListener`** : sur `PlayerServerDailyConnectionEvent` (module `core`, première connexion du jour), appelle `renewDaily`.
 - **`ContractScrollCleanupListener`** : retire les parchemins expirés, sans interroger la base pour décider (la date est dans l'item). Voir §8.
 
