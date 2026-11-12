@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.OptionalInt;
 import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 
+/**
+ * Adapte les soldes de tickets, quotas, bonus de métier et paiements aux services joueur,
+ * métier et à la persistance JPA.
+ */
 @Component
 public class ContractPlayerInfoRepository implements PlayerInfoRepository {
 

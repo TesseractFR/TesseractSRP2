@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.springframework.stereotype.Component;
 
+/** Réinitialise le solde de tickets lorsqu'un joueur se connecte pour une nouvelle journée serveur. */
 @Component
 public class ContractDailyTicketListener implements Listener {
 

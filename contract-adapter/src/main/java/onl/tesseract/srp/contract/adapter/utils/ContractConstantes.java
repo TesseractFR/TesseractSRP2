@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+/** Constantes et ressources Bukkit communes aux interfaces et parchemins de contrat. */
 public interface ContractConstantes {
     String MENU_CONTRACT_SCROLL_BUTTON = "tesseract:contract_scroll";
     NamespacedKey CONTRACT_ID_KEY = NamespacedKey.fromString("srp:contract_id");

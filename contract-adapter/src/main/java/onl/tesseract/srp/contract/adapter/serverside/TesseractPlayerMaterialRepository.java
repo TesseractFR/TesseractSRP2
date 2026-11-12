@@ -11,6 +11,9 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Consulte et retire les matériaux admissibles dans l'inventaire via {@code CustomItemService}.
+ */
 @org.springframework.stereotype.Component
 public class TesseractPlayerMaterialRepository implements PlayerMaterialRepository {
 
@@ -34,7 +37,6 @@ public class TesseractPlayerMaterialRepository implements PlayerMaterialReposito
 
     @Override
     public void removeAtLeast(PlayerId player, MaterialName material, Quality minimalQuality, int amount) {
-        Map<Quality, Integer> removedItems = new EnumMap<>(Quality.class);
         if (amount <= 0 || countAtLeast(player, material, minimalQuality) < amount) {
             return;
         }
@@ -45,7 +47,6 @@ public class TesseractPlayerMaterialRepository implements PlayerMaterialReposito
             int takenAmount = Math.min(customItemService.getItemQuantity(playerUuid, material, quality), remainingAmount);
             if (takenAmount > 0) {
                 customItemService.removeItem(playerUuid, material, quality, takenAmount);
-                removedItems.put(quality, takenAmount);
                 remainingAmount -= takenAmount;
             }
         }

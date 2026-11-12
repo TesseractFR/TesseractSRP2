@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static onl.tesseract.srp.contract.adapter.utils.ContractConstantes.*;
-
-
+/**
+ * Implémente le stockage des parchemins dans les inventaires Bukkit des joueurs.
+ * Les parchemins sont identifiés par l'id du contrat enregistré dans leurs données persistantes.
+ */
 @org.springframework.stereotype.Component
 public class BukkitContractScrollRepository implements ContractScrollRepository {
     private final YamlContractConfigRepository yamlContractConfigRepository;

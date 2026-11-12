@@ -5,6 +5,7 @@ import onl.tesseract.commandBuilder.CommandArgumentBuilderSteps;
 import onl.tesseract.commandBuilder.CommandArgumentException;
 import onl.tesseract.lib.service.ServiceContainer;
 
+/** Résout et complète les arguments de commande correspondant à un métier ou une compétence. */
 public class ContractJobArg extends CommandArgument<String> {
 
     public ContractJobArg(String name) {

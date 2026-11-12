@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/** Fournit les noms canoniques des métiers et compétences utilisables avec les contrats. */
 @Component
 public class ContractJobCatalog {
 

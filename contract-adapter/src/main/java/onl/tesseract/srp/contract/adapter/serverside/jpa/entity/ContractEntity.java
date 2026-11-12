@@ -16,6 +16,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "t_contracts", indexes = @Index(name = "idx_contracts_expires_at", columnList = "expires_at"))
+/** Entité JPA représentant un contrat persisté dans la table {@code t_contracts}. */
 public class ContractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
+/** Lit la configuration des contrats depuis le fichier YAML du serveur et recharge ses changements. */
 @Component
 public class YamlContractConfigRepository implements ContractConfigRepository {
 
