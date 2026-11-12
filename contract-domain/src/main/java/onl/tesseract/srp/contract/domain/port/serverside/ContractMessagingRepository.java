@@ -2,7 +2,6 @@ package onl.tesseract.srp.contract.domain.port.serverside;
 
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
 
 /** Port d'envoi des messages liés aux contrats et aux tickets. */
 public interface ContractMessagingRepository {
@@ -18,8 +17,18 @@ public interface ContractMessagingRepository {
     // livraison : c'est le PNJ (métier ou compétence) qui parle, d'où le paramètre npcJob
     /** Annonce au joueur la réussite de la livraison et le montant versé. */
     void sendDeliverySucceeded(PlayerId player, String npcJob, int reward);
-    /** Informe le joueur du refus, de son motif et du nombre d'unités manquantes. */
-    void sendDeliveryRefused(PlayerId player, String npcJob, DeliveryRefusal reason, int missing);
+    /** Informe le joueur que le contrat vise un autre métier. */
+    void sendDeliveryWrongClient(PlayerId player, String npcJob);
+    /** Informe le joueur que le parchemin est invalide. */
+    void sendDeliveryInvalidScroll(PlayerId player, String npcJob);
+    /** Informe le joueur que le contrat a expiré. */
+    void sendDeliveryExpired(PlayerId player, String npcJob);
+    /** Informe le joueur du nombre d'objets manquants. */
+    void sendDeliveryMissingItems(PlayerId player, String npcJob, int missing);
+    /** Informe le joueur du nombre d'objets de qualité requise manquants. */
+    void sendDeliveryNotEnoughQuality(PlayerId player, String npcJob, int missing);
+    /** Informe le joueur que le paiement a échoué. */
+    void sendDeliveryPaymentFailed(PlayerId player, String npcJob);
     /** Informe le joueur qu'il doit tenir un parchemin pour interagir avec le PNJ. */
     void sendNoScrollInHand(PlayerId player, String npcJob);
 

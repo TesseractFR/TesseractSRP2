@@ -12,10 +12,6 @@ import java.time.Instant;
 @Repository
 public interface ContractJpaRepository extends JpaRepository<ContractEntity, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("delete from ContractEntity c where c.id = :id")
-    int deleteByIdCounting(@Param("id") Long id);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from ContractEntity c where c.expiresAt <= :now")
     int deleteExpired(@Param("now") Instant now);
 }

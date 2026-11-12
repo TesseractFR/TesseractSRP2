@@ -43,9 +43,8 @@ public class ContractGenerator {
         CatalogItem catalogItem = pickWeighted(catalogItems);
         Quality[] allQualities = Quality.values();
         Quality minimalQuality = allQualities[random.nextInt(allQualities.length)];
-        Instant issuedAt = Instant.now();
-        return Optional.of(new Contract(null, buyer, catalogItem.type(), catalogItem.job(), catalogItem.material(), catalogItem.quantity(), minimalQuality,
-                reward(catalogItem, minimalQuality), issuedAt, issuedAt.plus(contractConfigRepository.getScrollTtl())));
+        return Optional.of(new Contract(null, catalogItem.type(), catalogItem.job(), catalogItem.material(), catalogItem.quantity(), minimalQuality,
+                reward(catalogItem, minimalQuality), Instant.now().plus(contractConfigRepository.getScrollTtl())));
     }
 
     /** Calcule la récompense à partir de la valeur unitaire et de la quantité. */
