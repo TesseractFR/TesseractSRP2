@@ -1,7 +1,9 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
-import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
+import onl.tesseract.srp.contract.adapter.utils.ContractConstantes;
+import onl.tesseract.srp.contract.adapter.utils.ContractItemUtils;
 import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -11,9 +13,10 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.util.Optional;
 
 @Component
 public class ContractScrollCleanupListener implements Listener {
@@ -34,10 +37,17 @@ public class ContractScrollCleanupListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        Item droppedItem = event.getItem();
-        if (ContractScrollItem.isExpired(droppedItem.getItemStack(), Instant.now())) {
+        Item itemEntity = event.getItem();
+        ItemStack droppedItem = itemEntity.getItemStack();
+        if(!droppedItem.getType().equals(ContractConstantes.BASE_SCROLL.getType())) {
+            return;
+        }
+
+        Optional<Long> contractId = ContractItemUtils.readContractId(droppedItem);
+        if (contractId.isPresent() && contractService.getContract(contractId.get())
+                .map(Contract::isExpired).orElse(false)) {
             event.setCancelled(true);
-            droppedItem.remove();
+            itemEntity.remove();
             contractService.reportExpiredScrolls(new PlayerId(player.getUniqueId()), 1);
         }
     }
@@ -59,15 +69,28 @@ public class ContractScrollCleanupListener implements Listener {
         }
     }
 
-    private static int removeExpiredScrolls(Inventory inventory) {
-        Instant now = Instant.now();
+    private int removeExpiredScrolls(Inventory inventory) {
         int removedCount = 0;
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            if (ContractScrollItem.isExpired(inventory.getItem(slot), now)) {
+            ItemStack itemStack = inventory.getItem(slot);
+            if(itemStack == null) {
+                continue;
+            }
+            if(itemStack.getType() != ContractConstantes.BASE_SCROLL.getType()) {
+                continue;
+            }
+            Optional<Long> contractId = ContractItemUtils.readContractId(itemStack);
+            if(contractId.isEmpty()) {
+                continue;
+            }
+            Optional<Contract> contract = contractService.getContract(contractId.get());
+            if(contract.isPresent() && contract.get().isExpired()) {
                 inventory.setItem(slot, null);
                 removedCount++;
             }
         }
         return removedCount;
     }
+
+
 }

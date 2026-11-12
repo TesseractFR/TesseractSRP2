@@ -4,7 +4,7 @@ import onl.tesseract.commandBuilder.CommandContext;
 import onl.tesseract.commandBuilder.annotation.Argument;
 import onl.tesseract.commandBuilder.annotation.Command;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
-import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
+import onl.tesseract.srp.contract.adapter.utils.ContractItemUtils;
 import onl.tesseract.srp.contract.adapter.userside.controller.commands.args.ContractJobArg;
 import onl.tesseract.srp.contract.adapter.userside.controller.menu.ContractDeliveryMenu;
 import onl.tesseract.srp.contract.adapter.userside.controller.menu.ContractMerchantMenu;
@@ -13,7 +13,7 @@ import onl.tesseract.srp.contract.domain.port.userside.ContractService;
 import org.bukkit.entity.Player;
 import org.springframework.stereotype.Component;
 
-import java.util.OptionalLong;
+import java.util.Optional;
 
 @Component
 @Command(name = "contract", playerOnly = true)
@@ -35,12 +35,13 @@ public class ContractCommands extends CommandContext {
     public void deliver(Player sender, @Argument("metier") ContractJobArg jobArg) {
         PlayerId player = new PlayerId(sender.getUniqueId());
         String job = jobArg.get();
-        OptionalLong contractId = ContractScrollItem.readContractId(sender.getInventory().getItemInMainHand());
+        Optional<Long> contractId = ContractItemUtils.readContractId(sender.getInventory().getItemInMainHand());
         if (contractId.isEmpty()) {
             contractService.noScrollInHand(player, job);
             return;
         }
-        contractService.checkDeliverable(player, contractId.getAsLong(), job).ifPresent(contract -> new ContractDeliveryMenu(player, job, contract, contractService).open(sender));
+        contractService.getContract(contractId.get())
+                .ifPresent(contract -> new ContractDeliveryMenu(player, job, contract, contractService).open(sender));
     }
 
     @Command(name = "tickets", description = "Voir ses tickets de contrat.")

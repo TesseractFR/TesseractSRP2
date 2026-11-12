@@ -1,9 +1,10 @@
 package onl.tesseract.srp.contract.domain.model.contract;
 
 import lombok.NonNull;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 
 /** Élément du catalogue utilisé pour générer des contrats selon une pondération. */
-public record CatalogItem(@NonNull ContractType type, @NonNull String job, @NonNull String material, double weight,
+public record CatalogItem(@NonNull ContractType type, @NonNull String job, @NonNull MaterialName material, double weight,
                           int quantity) {
     /** Vérifie que le poids est strictement positif et la quantité au moins égale à un. */
     public CatalogItem {

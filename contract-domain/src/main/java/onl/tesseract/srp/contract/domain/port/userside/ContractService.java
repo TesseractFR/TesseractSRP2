@@ -1,11 +1,9 @@
 package onl.tesseract.srp.contract.domain.port.userside;
 
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.common.domain.model.enums.Quality;
+import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
-import onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal;
-import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractMessagingRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollRepository;
@@ -13,10 +11,7 @@ import onl.tesseract.srp.contract.domain.port.serverside.PlayerInfoRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerMaterialRepository;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
-
-import static onl.tesseract.srp.contract.domain.model.contract.DeliveryRefusal.*;
 
 /**
  * Coordonne les opérations liées aux contrats proposées aux joueurs : achat,
@@ -90,31 +85,9 @@ public class ContractService {
         contractMessagingRepository.sendPurchaseSucceeded(player, savedContract, getTickets(player));
     }
 
-    /**
-     * Vérifie qu'un contrat existe, vise le métier du PNJ et n'est pas expiré.
-     * En cas de refus, le joueur est informé.
-     *
-     * @param player joueur qui présente le contrat
-     * @param contractId identifiant du contrat
-     * @param npcJob métier du PNJ sollicité
-     * @return le contrat s'il peut être livré, sinon un résultat vide
-     */
-    public Optional<Contract> checkDeliverable(PlayerId player, long contractId, String npcJob) {
-        Optional<Contract> foundContract = contractRepository.findById(contractId);
-        if (foundContract.isEmpty()) {
-            refuse(player, npcJob, contractId, INVALID_SCROLL);
-            return Optional.empty();
-        }
-        Contract contract = foundContract.get();
-        if (!contract.isForJob(npcJob)) {
-            refuse(player, npcJob, contractId, WRONG_CLIENT);
-            return Optional.empty();
-        }
-        if (contract.isExpired(Instant.now())) {
-            refuse(player, npcJob, contractId, EXPIRED);
-            return Optional.empty();
-        }
-        return foundContract;
+    /** Recherche un contrat par son identifiant dans le dépôt. */
+    public Optional<Contract> getContract(long contractId) {
+        return contractRepository.findById(contractId);
     }
 
     /**
@@ -126,22 +99,37 @@ public class ContractService {
      * @param npcJob métier du PNJ destinataire
      */
     public void deliver(PlayerId player, long contractId, String npcJob) {
-        Optional<Contract> foundContract = checkDeliverable(player, contractId, npcJob);
+        //On récupère le contrat
+        Optional<Contract> foundContract = getContract(contractId);
         if (foundContract.isEmpty()) {
+            contractMessagingRepository.sendDeliveryInvalidScroll(player, npcJob);
             return;
         }
         Contract contract = foundContract.get();
-
+        //On vérifie qu'il est valide
+        if(contract.isExpired()){
+            contractRepository.delete(contractId);
+            contractMessagingRepository.sendDeliveryExpired(player, npcJob);
+            return;
+        }
+        if(!contract.isForJob(npcJob)){
+            contractMessagingRepository.sendDeliveryWrongClient(player, npcJob);
+            return;
+        }
+        //Le contract est valide on peut l'accepter
+        // On vérifie que le joueur a LE scroll en main
         if (!contractScrollRepository.hasScroll(player, contractId)) {
-            refuse(player, npcJob, contractId, INVALID_SCROLL);
+            contractMessagingRepository.sendNoScrollInHand(player, npcJob);
             return;
         }
-        int itemsOwned = countOwnedItems(player, contract);
-        if (itemsOwned < contract.quantity()) {
-            refuseMissingItems(player, npcJob, contract, itemsOwned);
+        // On vérifie si il a les items requis
+        if (!checkContractItems(player, contract)) {
+            refuseMissingItems(player, npcJob, contract);
             return;
         }
-        withdrawAndPay(player, npcJob, contract);
+        withdrawScroll(player,contractId);
+        withdrawContractItems(player,contract);
+        giveMoney(player,contract.reward());
     }
 
     /**
@@ -165,6 +153,12 @@ public class ContractService {
      */
     public int countOwnedItems(PlayerId player, Contract contract) {
         return playerMaterialRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
+    }
+
+    /** Vérifie que le joueur possède la quantité requise et signale le motif en cas d'échec. */
+    private boolean checkContractItems(PlayerId player, Contract contract) {
+        int itemsOwned = countOwnedItems(player, contract);
+        return itemsOwned >= contract.quantity();
     }
 
     /**
@@ -196,9 +190,9 @@ public class ContractService {
      */
     public void useScroll(PlayerId player, long contractId) {
         boolean contractStillValid = contractRepository.findById(contractId)
-                .map(contract -> !contract.isExpired(Instant.now()))
+                .map(contract -> !contract.isExpired())
                 .orElse(false);
-        if (!contractStillValid && contractScrollRepository.removeScroll(player, contractId)) {
+        if (!contractStillValid && withdrawScroll(player, contractId)) {
             contractMessagingRepository.sendScrollDestroyed(player);
         }
     }
@@ -313,111 +307,33 @@ public class ContractService {
     }
 
     /**
-     * Signale le refus de livraison et supprime le contrat du dépôt s'il est expiré.
-     *
-     * @param player joueur concerné
-     * @param npcJob métier du PNJ sollicité
-     * @param contractId identifiant du contrat refusé
-     * @param refusalReason motif du refus
-     */
-    private void refuse(PlayerId player, String npcJob, long contractId, DeliveryRefusal refusalReason) {
-        if (refusalReason == EXPIRED) {
-            contractRepository.delete(contractId);
-        }
-        contractMessagingRepository.sendDeliveryRefused(player, npcJob, refusalReason, 0);
-    }
-
-    /**
-     * Détermine si les matériaux manquent en quantité ou en qualité, puis
      * informe le joueur du motif et du nombre d'unités manquantes.
      *
      * @param player joueur concerné
      * @param npcJob métier du PNJ sollicité
      * @param contract contrat à livrer
-     * @param itemsOwned nombre d'unités possédées à la qualité minimale requise
      */
-    private void refuseMissingItems(PlayerId player, String npcJob, Contract contract, int itemsOwned) {
-        int itemsOwnedAnyQuality = playerMaterialRepository.countAtLeast(player, contract.material(), Quality.POOR);
-        DeliveryRefusal refusalReason = itemsOwnedAnyQuality > itemsOwned ? NOT_ENOUGH_QUALITY : MISSING_ITEMS;
-        contractMessagingRepository.sendDeliveryRefused(player, npcJob, refusalReason, contract.quantity() - itemsOwned);
+    private void refuseMissingItems(PlayerId player, String npcJob, Contract contract) {
+        int itemsOwned = playerMaterialRepository.countAtLeast(player, contract.material(), contract.minimalQuality());
+        int missing = contract.quantity() - itemsOwned;
+        contractMessagingRepository.sendDeliveryMissingItems(player, npcJob, missing);
     }
 
-    /** Retire le parchemin et les matériaux, règle la récompense, puis annonce le résultat. */
-    private void withdrawAndPay(PlayerId player, String npcJob, Contract contract) {
-        int payout = contract.reward() + moneyBonus(player, contract);
+    /** Verse la récompense au joueur via le port d'informations des joueurs. */
+    private void giveMoney(PlayerId player, int amount) {
+        playerInfoRepository.giveMoney(player, MoneyValue.of(amount));
+    }
 
-        Map<Quality, Integer> removedItems = takeScrollAndItemsOrRefuse(player, npcJob, contract);
-        if (removedItems.isEmpty()) {
-            return;
-        }
-        if (payOrRefuse(player, npcJob, contract, payout, removedItems)) {
-            contractMessagingRepository.sendDeliverySucceeded(player, npcJob, payout);
-        }
+    /** Retire du joueur le parchemin associé au contrat indiqué. */
+    private boolean withdrawScroll(PlayerId player, long contractId) {
+        return contractScrollRepository.removeScroll(player, contractId);
     }
 
     /**
-     * Retire le parchemin puis les matériaux requis. En cas d'échec du retrait
-     * des matériaux, le parchemin est rendu au joueur.
-     *
-     * @param player joueur qui livre le contrat
-     * @param npcJob métier du PNJ sollicité
-     * @param contract contrat à traiter
-     * @return quantités de matériaux retirées par qualité, ou une map vide si le retrait échoue
+     * Retire les matériaux du contrat au joueur et retourne les quantités retirées par qualité.
      */
-    private Map<Quality, Integer> takeScrollAndItemsOrRefuse(PlayerId player, String npcJob, Contract contract) {
-        if (!contractScrollRepository.removeScroll(player, contract.id())) {
-            contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
-            return Map.of();
-        }
-        Map<Quality, Integer> removedItems;
-        try {
-            removedItems = playerMaterialRepository.removeAtLeast(player, contract.material(),
-                    contract.minimalQuality(), contract.quantity());
-        } catch (RuntimeException e) {
-            giveScroll(player, contract);
-            throw e;
-        }
-        if (removedItems.isEmpty()) {
-            giveScroll(player, contract);
-            contractMessagingRepository.sendDeliveryRefused(player, npcJob, MISSING_ITEMS, contract.quantity());
-        }
-        return removedItems;
-    }
-
-    /**
-     * Tente de régler la récompense. Si le règlement échoue ou si le contrat
-     * n'est plus valide, restitue les matériaux et le parchemin.
-     *
-     * @param player joueur à payer
-     * @param npcJob métier du PNJ sollicité
-     * @param contract contrat à régler
-     * @param payout montant total à verser
-     * @param removedItems matériaux retirés, regroupés par qualité
-     * @return {@code true} si le règlement a réussi
-     */
-    private boolean payOrRefuse(PlayerId player, String npcJob, Contract contract, int payout,
-                                Map<Quality, Integer> removedItems) {
-        boolean isPaid;
-        try {
-            isPaid = contractRepository.settle(contract.id(), player, payout);
-        } catch (PaymentFailedException e) {
-            giveBackToPlayer(player, contract, removedItems);
-            contractMessagingRepository.sendDeliveryRefused(player, npcJob, PAYMENT_FAILED, 0);
-            return false;
-        } catch (RuntimeException e) {
-            giveBackToPlayer(player, contract, removedItems);
-            throw e;
-        }
-        if (!isPaid) {
-            giveBackToPlayer(player, contract, removedItems);
-            contractMessagingRepository.sendDeliveryRefused(player, npcJob, INVALID_SCROLL, 0);
-        }
-        return isPaid;
-    }
-
-    /** Restitue au joueur les matériaux retirés et le parchemin du contrat. */
-    private void giveBackToPlayer(PlayerId player, Contract contract, Map<Quality, Integer> removedItems) {
-        playerMaterialRepository.giveBack(player, contract.material(), removedItems);
-        giveScroll(player, contract);
+    private void withdrawContractItems(PlayerId player, Contract contract) {
+        playerMaterialRepository.removeAtLeast(player, contract.material(),
+                contract.minimalQuality(), contract.quantity());
     }
 }

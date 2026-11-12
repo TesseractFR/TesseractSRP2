@@ -1,14 +1,13 @@
 package onl.tesseract.srp.contract.adapter.serverside;
 
 import lombok.extern.slf4j.Slf4j;
-import onl.tesseract.srp.contract.adapter.utils.QualityConverter;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.serverside.ItemInfoRepository;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.YamlContractConfigRepository;
 import onl.tesseract.srp.customitem.domain.model.CustomMaterial;
-import onl.tesseract.srp.customitem.domain.model.MaterialName;
 import onl.tesseract.srp.customitem.domain.model.Rarity;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.job.domain.model.Job;
@@ -46,12 +45,12 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
     public List<CatalogItem> getCatalogItems() {
         List<CatalogItem> catalogItems = new ArrayList<>();
         for (Job job : jobService.listJobs()) {
-            for (String material : producedMaterials(job)) {
+            for (MaterialName material : producedMaterials(job)) {
                 add(catalogItems, ContractType.HARVEST, job.jobName().value(), material);
             }
         }
         for (Skill skill : skillConfigRepository.getSkills().values()) {
-            for (String material : craftedMaterials(skill)) {
+            for (MaterialName material : craftedMaterials(skill)) {
                 add(catalogItems, ContractType.CRAFT, skill.name().value(), material);
             }
         }
@@ -59,12 +58,12 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
     }
 
     @Override
-    public double getValue(String material, Quality quality) {
-        return customItemService.getMoneyValue(new MaterialName(material), QualityConverter.toCommon(quality)).value().doubleValue();
+    public double getValue(MaterialName material, Quality quality) {
+        return customItemService.getMoneyValue(material, quality).value().doubleValue();
     }
 
-    private void add(List<CatalogItem> catalogItems, ContractType type, String job, String material) {
-        if (!customItemService.hasMoneyValue(new MaterialName(material))) {
+    private void add(List<CatalogItem> catalogItems, ContractType type, String job, MaterialName material) {
+        if (!customItemService.hasMoneyValue(material)) {
             log.warn("Material {} ignored for contracts: no money value in itemValue.yml", material);
             return;
         }
@@ -77,29 +76,29 @@ public class ContractItemInfoRepository implements ItemInfoRepository {
         catalogItems.add(new CatalogItem(type, job, material, weight, quantity));
     }
 
-    private Rarity rarityOf(String material) {
-        CustomMaterial customMaterial = customItemService.getCustomMaterial(new MaterialName(material));
+    private Rarity rarityOf(MaterialName material) {
+        CustomMaterial customMaterial = customItemService.getCustomMaterial(material);
         return customMaterial == null ? Rarity.COMMON : customMaterial.rarity();
     }
 
-    private static Set<String> producedMaterials(Job job) {
-        Set<String> distinctMaterials = new LinkedHashSet<>();
+    private static Set<MaterialName> producedMaterials(Job job) {
+        Set<MaterialName> distinctMaterials = new LinkedHashSet<>();
         if (job.sources() == null || job.sources().value() == null) {
             return distinctMaterials;
         }
         for (List<Material> outputs : job.sources().value().values()) {
             for (Material material : outputs) {
-                distinctMaterials.add(material.value());
+                distinctMaterials.add(new MaterialName(material.value()));
             }
         }
         return distinctMaterials;
     }
 
-    private static Set<String> craftedMaterials(Skill skill) {
-        Set<String> distinctMaterials = new LinkedHashSet<>();
+    private static Set<MaterialName> craftedMaterials(Skill skill) {
+        Set<MaterialName> distinctMaterials = new LinkedHashSet<>();
         for (SkillTier tier : skill.tiers().values()) {
             for (Recipe recipe : tier.recipes().values()) {
-                distinctMaterials.add(recipe.result().material().value());
+                distinctMaterials.add(new MaterialName(recipe.result().material().value()));
             }
         }
         return distinctMaterials;

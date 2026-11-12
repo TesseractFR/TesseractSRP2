@@ -1,20 +1,27 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.menu;
 
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
+import onl.tesseract.lib.itembuilder.ItemLoreBuilder;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
-import onl.tesseract.srp.contract.adapter.utils.ContractDisplay;
-import onl.tesseract.srp.contract.adapter.utils.ContractScrollItem;
+import onl.tesseract.srp.common.adapter.utils.QualityAdapter;
+import onl.tesseract.srp.contract.adapter.utils.ContractConstantes;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
+import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.userside.ContractService;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
+import static onl.tesseract.srp.contract.adapter.utils.ContractConstantes.*;
+
+/** Menu de confirmation de livraison ; il prépare les boutons et le lore de l'aperçu du contrat. */
 public class ContractDeliveryMenu extends ItemAdderMenu {
     private static final String BACKGROUND_ID = "tesseract:contract_delivery_menu";
     private static final int TEXTURE_OFFSET = -8;
@@ -43,26 +50,55 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
         addCancel();
     }
 
+    /** Crée l'icône d'aperçu du contrat et son lore pour le menu de livraison. */
     private void addInfo() {
-        ItemStack icon = ContractScrollItem.create().orElseGet(() -> new ItemStack(Material.PAPER));
-        icon.editMeta(meta -> {
-            meta.displayName(ContractDisplay.title(contract));
-            meta.lore(ContractDisplay.deliveryDetails(contract, contractService.moneyBonus(playerId, contract), contractService.countOwnedItems(playerId, contract)));
-        });
-        addButton(INFO, icon);
+        ItemStack scrollItem = new ItemBuilder(ContractConstantes.BASE_SCROLL)
+                .lore(lore(contractService.countOwnedItems(playerId, contract)))
+                .name(Component.text("Contrat · " + StringUtils.capitalize(contract.material().value()), NamedTextColor.GOLD))
+                .maxStackSize(1)
+                .build();
+        addButton(INFO, scrollItem);
     }
 
     private void addConfirm() {
-        addButton(CONFIRM, new ItemBuilder(Material.LIME_CONCRETE).name("Confirmer la livraison", NamedTextColor.GREEN)
-                .lore(List.of(ContractDisplay.text("Les items sont retirés de ton inventaire", NamedTextColor.GRAY),
-                        ContractDisplay.text("La récompense est versée aussitôt", NamedTextColor.GRAY))).build(), event -> {
+        addButton(CONFIRM, new ItemBuilder(Material.LIME_CONCRETE)
+                .name("Confirmer la livraison", NamedTextColor.GREEN)
+                .lore(new ItemLoreBuilder()
+                        .append("Les items sont retirés de ton inventaire", NamedTextColor.GRAY)
+                        .newline()
+                        .append("La récompense est versée aussitôt", NamedTextColor.GRAY)
+                        .get())
+                .build(), event -> {
             close();
             contractService.deliver(playerId, contract.id(), npcJob);
         });
     }
 
     private void addCancel() {
-        addButton(CANCEL, new ItemBuilder(Material.RED_CONCRETE).name("Annuler", NamedTextColor.RED)
-                .lore(List.of(ContractDisplay.text("Tu gardes ton parchemin", NamedTextColor.GRAY))).build(), event -> close());
+        addButton(CANCEL, new ItemBuilder(Material.RED_CONCRETE)
+                .name("Annuler", NamedTextColor.RED)
+                .lore(new ItemLoreBuilder().append("Tu gardes ton parchemin", NamedTextColor.GRAY).get())
+                .build(), event -> close());
+    }
+
+    private List<Component> lore(int count) {
+        boolean isCraft = contract.type() == ContractType.CRAFT;
+        QualityAdapter minimalQuality = QualityAdapter.from(contract.minimalQuality());
+        ItemLoreBuilder itemLoreBuilder = new ItemLoreBuilder()
+                .append((isCraft ? "Artisanat" : "Récolte") + " · " + StringUtils.capitalize(contract.job()), NamedTextColor.DARK_GRAY)
+                .newline()
+                .append("À livrer", NamedTextColor.GOLD)
+                .append(BULLET + "Quantité : " + contract.quantity(), NamedTextColor.WHITE)
+                .append(BULLET + "Qualité minimale : " +  minimalQuality.label(), minimalQuality.color())
+                .append(BULLET + "Dans ton inventaire : " + count + " / " + contract.quantity(),
+                        count >= contract.quantity() ? NamedTextColor.GREEN : NamedTextColor.RED)
+                .newline()
+                .append("Récompense", NamedTextColor.GOLD)
+                .append(BULLET + "Gain : " + contract.reward() + " lys", NamedTextColor.GREEN)
+                .append(BULLET + "Bonus métier : +" + contractService.moneyBonus(playerId,contract) + " lys", NamedTextColor.GREEN)
+                .newline()
+                .append("Expire le : " + EXPIRATION_DATE_FORMAT.format(contract.expiresAt()), NamedTextColor.RED);
+
+        return itemLoreBuilder.get();
     }
 }
