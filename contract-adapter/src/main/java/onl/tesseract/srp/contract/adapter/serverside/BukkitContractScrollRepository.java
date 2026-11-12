@@ -60,7 +60,7 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
     @Override
     public boolean hasScroll(PlayerId player, long contractId) {
         Player onlinePlayer = Bukkit.getPlayer(player.value());
-        return onlinePlayer != null && slotOf(onlinePlayer.getInventory(), contractId) >= 0;
+        return onlinePlayer != null && getSlot(onlinePlayer.getInventory(), contractId).isPresent();
     }
 
     @Override
@@ -70,23 +70,24 @@ public class BukkitContractScrollRepository implements ContractScrollRepository 
             return false;
         }
         PlayerInventory inventory = onlinePlayer.getInventory();
-        int slot = slotOf(inventory, contractId);
-        if (slot < 0) {
+        Optional<Integer> slot = getSlot(inventory, contractId);
+
+        if (slot.isEmpty()) {
             return false;
         }
-        inventory.setItem(slot, null);
+        inventory.setItem(slot.get(), null);
         return true;
     }
 
-    private static int slotOf(PlayerInventory inventory, long contractId) {
+    private static Optional<Integer> getSlot(PlayerInventory inventory, long contractId) {
         ItemStack[] contents = inventory.getContents();
         for (int slot = 0; slot < contents.length; slot++) {
             Optional<Long> scrollContractId = ContractItemUtils.readContractId(contents[slot]);
             if (scrollContractId.isPresent() && scrollContractId.get() == contractId) {
-                return slot;
+                return Optional.of(slot);
             }
         }
-        return -1;
+        return Optional.empty();
     }
 
     private List<Component> lore(Contract contract) {
