@@ -26,6 +26,10 @@ import java.util.Set;
 
 @Slf4j
 @Component
+/**
+ * Construit le catalogue des matériaux contractuels à partir des métiers, recettes,
+ * raretés et valeurs monétaires disponibles dans les autres modules.
+ */
 public class ContractItemInfoRepository implements ItemInfoRepository {
 
     private final JobService jobService;

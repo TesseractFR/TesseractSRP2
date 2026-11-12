@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "t_contract_player_state")
+/** Entité JPA qui stocke le solde de tickets d'un joueur. */
 public class ContractTicketEntity {
     @Id
     @Column(name = "player_id", length = 36)

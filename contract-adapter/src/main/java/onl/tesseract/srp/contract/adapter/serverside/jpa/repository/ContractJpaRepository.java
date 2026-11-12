@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 
+/** Accès Spring Data aux contrats et suppression en masse des contrats expirés. */
 @Repository
 public interface ContractJpaRepository extends JpaRepository<ContractEntity, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)

@@ -20,6 +20,7 @@ import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_ERROR;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_FORMAT;
 import static onl.tesseract.srp.common.adapter.SrpChatFormats.STAFF_CHAT_SUCCESS;
 
+/** Envoie aux joueurs les messages de contrat au moyen des composants Adventure et de Bukkit. */
 @org.springframework.stereotype.Component
 public class BukkitContractMessagingRepository implements ContractMessagingRepository {
 
