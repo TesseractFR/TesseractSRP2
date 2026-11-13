@@ -6,10 +6,7 @@ import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerMaterialRepository;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Consulte et retire les matériaux admissibles dans l'inventaire via {@code CustomItemService}.
@@ -37,23 +34,30 @@ public class TesseractPlayerMaterialRepository implements PlayerMaterialReposito
 
     @Override
     public void removeAtLeast(PlayerId player, MaterialName material, Quality minimalQuality, int amount) {
-        if (amount <= 0 || countAtLeast(player, material, minimalQuality) < amount) {
-            return;
+        int reallyOwned = countAtLeast(player, material, minimalQuality);
+        if(amount > reallyOwned) {
+            throw new IllegalStateException("Player has less items than requested");
         }
         UUID playerUuid = player.value();
-        Quality[] qualitiesToTake = customItemService.isCustomMaterial(material) ? qualitiesFrom(minimalQuality) : new Quality[]{Quality.POOR};
         int remainingAmount = amount;
-        for (Quality quality : qualitiesToTake) {
-            int takenAmount = Math.min(customItemService.getItemQuantity(playerUuid, material, quality), remainingAmount);
-            if (takenAmount > 0) {
-                customItemService.removeItem(playerUuid, material, quality, takenAmount);
-                remainingAmount -= takenAmount;
-            }
+        for(Quality quality : qualitiesFrom(minimalQuality)) {
+            int toTake = Math.min(customItemService.getItemQuantity(playerUuid, material, quality), remainingAmount);
+            customItemService.removeItem(playerUuid, material, quality, toTake);
+            remainingAmount -= toTake;
         }
     }
 
-    private static Quality[] qualitiesFrom(Quality minimalQuality) {
-        Quality[] allQualities = Quality.values();
-        return Arrays.copyOfRange(allQualities, minimalQuality.ordinal(), allQualities.length);
+    /**
+     * Retourne les qualités qui respectent la qualité minimale demandée, triées
+     * par ordinal croissant.
+     *
+     * @param minimalQuality qualité minimale à prendre en compte
+     * @return les qualités admissibles, de l'ordinal le plus petit au plus grand
+     */
+    private static List<Quality> qualitiesFrom(Quality minimalQuality) {
+        return Arrays.stream(Quality.values())
+                .filter(it->it.isAtMost(minimalQuality))
+                .sorted(Comparator.comparingInt(Quality::ordinal))
+                .toList();
     }
 }

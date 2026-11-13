@@ -25,10 +25,7 @@ public interface ContractMessagingRepository {
     void sendDeliveryExpired(PlayerId player, String npcJob);
     /** Informe le joueur du nombre d'objets manquants. */
     void sendDeliveryMissingItems(PlayerId player, String npcJob, int missing);
-    /** Informe le joueur du nombre d'objets de qualité requise manquants. */
-    void sendDeliveryNotEnoughQuality(PlayerId player, String npcJob, int missing);
-    /** Informe le joueur que le paiement a échoué. */
-    void sendDeliveryPaymentFailed(PlayerId player, String npcJob);
+
     /** Informe le joueur qu'il doit tenir un parchemin pour interagir avec le PNJ. */
     void sendNoScrollInHand(PlayerId player, String npcJob);
 
