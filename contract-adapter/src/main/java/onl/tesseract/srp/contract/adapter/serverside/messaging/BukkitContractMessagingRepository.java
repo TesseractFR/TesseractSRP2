@@ -110,16 +110,7 @@ public class BukkitContractMessagingRepository implements ContractMessagingRepos
                 text("Il m'en manque encore " + missing + ". Je sais compter, tu sais."),
                 text("Encore " + missing + " à rapporter. Retourne en chercher, je t'attends.")));
     }
-    @Override public void sendDeliveryNotEnoughQuality(PlayerId player, String npcJob, int missing) {
-        npcSays(player, npcJob, pick(
-                text("La qualité n'est pas au rendez-vous : il me manque " + missing + " pièce(s) du niveau demandé. Je ne suis pas si facile."),
-                text("Tu as de quoi faire du bon travail, mais pas assez de qualité : encore " + missing + " du niveau demandé.")));
-    }
-    @Override public void sendDeliveryPaymentFailed(PlayerId player, String npcJob) {
-        npcSays(player, npcJob, pick(
-                text("Mes caisses ont un petit souci, je te rends tes affaires. Reviens plus tard !"),
-                text("Je n'arrive pas à te payer, reprends tes affaires et réessaie dans un moment.")));
-    }
+
     @Override public void sendNoScrollInHand(PlayerId player, String npcJob) {
         npcSays(player, npcJob, pick(
                 text("Je n'ai pas de contrat en cours avec toi. Reviens avec un parchemin, ça m'aiderait."),
