@@ -1,0 +1,32 @@
+scroll-lifetime-hours: 72
+
+quantity-by-rarity:
+  COMMON: 600
+  SPECIAL: 300
+  RARE: 120
+  EPIC: 40
+  LEGENDARY: 10
+
+rarity-weights:
+  COMMON: 100
+  SPECIAL: 50
+  RARE: 20
+  EPIC: 5
+  LEGENDARY: 1
+
+daily-tickets:
+  Survivant: 2
+  Explorateur: 3
+  Aventurier: 4
+  Noble: 5
+  Baron: 6
+  Seigneur: 7
+  Vicomte: 8
+  Comte: 8
+  Duc: 9
+  Roi: 9
+  Empereur: 10
+
+npc-names:
+  fonte: Fondeur
+  mineur: Mineur

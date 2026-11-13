@@ -89,4 +89,8 @@ public class CustomItemService {
     public MoneyValue getMoneyValue(MaterialName materialName,Quality quality) {
         return moneyRepository.getValue(materialName, quality);
     }
+
+    public boolean hasMoneyValue(MaterialName materialName) {
+        return moneyRepository.hasValue(materialName);
+    }
 }

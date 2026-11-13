@@ -23,6 +23,8 @@
         <module>job-adapter</module>
         <module>skill-adapter</module>
         <module>plugin</module>
+        <module>contract-domain</module>
+        <module>contract-adapter</module>
     </modules>
 
     <properties>
@@ -191,6 +193,16 @@
             <dependency>
                 <groupId>onl.tesseract.srp</groupId>
                 <artifactId>territory-adapter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>contract-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>contract-adapter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

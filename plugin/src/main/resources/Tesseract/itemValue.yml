@@ -3,7 +3,8 @@ Vanilla:
   IRON_ORE: 2.0
   COAL: 1.0
 
-Custom: {}
+Custom:
+  TITANE: 5.0
 
 CustomComposed:
   STEEL:

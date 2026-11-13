@@ -13,6 +13,7 @@ import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
     GuildStaffCommand.class,
     IlluminationPointStaffCommand.class,
     ElytraStaffCommand.class,
+    ContractStaffCommand.class
 })
 public class SrpStaffCommand extends CommandContext {
     public SrpStaffCommand(SrpCommandInstanceProvider commandInstanceProvider) {
