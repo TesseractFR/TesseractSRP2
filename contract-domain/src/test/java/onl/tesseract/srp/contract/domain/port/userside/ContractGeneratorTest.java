@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ContractGeneratorTest {
@@ -34,6 +36,8 @@ class ContractGeneratorTest {
             new MaterialName("wheat"), 1, 10);
     private static final CatalogItem SWORD = new CatalogItem(ContractType.CRAFT, new ContractClient("smith"),
             new MaterialName("sword"), 3, 2);
+    private static final CatalogItem FIFTY_WHEAT = new CatalogItem(ContractType.HARVEST, new ContractClient("farmer"),
+            new MaterialName("wheat"), 1, 50);
 
     private ContractConfigRepository contractConfigRepository;
     private ContractCatalogRepository contractCatalogRepository;
@@ -137,5 +141,73 @@ class ContractGeneratorTest {
 
         // then
         assertEquals(NOW.plus(Duration.ofHours(72)), draft.expiresAt());
+    }
+
+    @Test
+    void generate_keepsBaseQuantityWhenVarianceIsZero() {
+        // given
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then
+        assertEquals(10, draft.quantity());
+        verify(random, never()).nextInt(anyInt(), anyInt());
+    }
+
+    @Test
+    void generate_drawsQuantityWithinVarianceBounds() {
+        // given : base 50, variance 50 % donne [25 ; 75]
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(FIFTY_WHEAT));
+        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(50.0);
+        when(random.nextInt(25, 76)).thenReturn(63);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then
+        assertEquals(63, draft.quantity());
+    }
+
+    @Test
+    void generate_computesRewardFromDrawnQuantity() {
+        // given
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(FIFTY_WHEAT));
+        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(50.0);
+        when(random.nextInt(25, 76)).thenReturn(30);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 5 × 30
+        assertEquals(0, BigDecimal.valueOf(150).compareTo(draft.reward().value()));
+    }
+
+    @Test
+    void generate_quantityIsAtLeastOneWhenVarianceExceedsHundredPercent() {
+        // given : base 10, variance 150 % donne [1 ; 25]
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(150.0);
+        when(random.nextInt(1, 26)).thenReturn(1);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then
+        assertEquals(1, draft.quantity());
+    }
+
+    @Test
+    void generate_ignoresNegativeVariance() {
+        // given
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(-20.0);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then
+        assertEquals(10, draft.quantity());
     }
 }

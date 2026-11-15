@@ -92,9 +92,10 @@ Le générateur reçoit `ContractConfigRepository`, `ContractCatalogRepository`,
 
 1. Il lit le catalogue par `findAllCatalogItems()`. Si le catalogue est vide, il renvoie `Optional.empty()`.
 2. Il tire un élément proportionnellement à son poids (`pickWeighted`). Le dernier élément sert de repli si les arrondis empêchent la sélection.
-3. Il tire une qualité minimale uniformément parmi `Quality.values()`.
-4. La récompense vaut `getUnitValue(matériau, qualité minimale) × quantité`, arrondie à l'unité (`HALF_UP`), avec un minimum de 1.
-5. L'expiration vaut `clock.instant() + getScrollLifetime()`.
+3. Il tire la quantité (`drawQuantity`) uniformément entre `round(base × (1 − v))` et `round(base × (1 + v))`, bornes comprises, avec `v = getQuantityVariancePercent() / 100` et la quantité de base de l'élément de catalogue. La borne basse vaut au moins 1, un taux négatif compte pour zéro, et si les deux bornes sont égales aucun tirage n'a lieu. Exemple : base 50 et variance 50 donnent [25 ; 75].
+4. Il tire une qualité minimale uniformément parmi `Quality.values()`.
+5. La récompense vaut `getUnitValue(matériau, qualité minimale) × quantité tirée`, arrondie à l'unité (`HALF_UP`), avec un minimum de 1.
+6. L'expiration vaut `clock.instant() + getScrollLifetime()`.
 
 Le contenu ne dépend pas de l'acheteur.
 
@@ -172,7 +173,7 @@ Le service reçoit `ContractRepository` et une `Clock`.
 | `PlayerMaterialPort` | `countAtLeast`, `removeAtLeast` | matériaux du joueur à une qualité minimale ; le retrait lève `NotEnoughMaterialException` si le stock manque |
 | `ContractScrollPort` | `canReceiveScroll`, `giveScroll`, `hasScroll`, `removeScroll` | parchemin physique ; `false` si le joueur est hors ligne |
 | `ContractCatalogRepository` | `findAllCatalogItems`, `getUnitValue(material, quality)` | catalogue et valeur unitaire d'un matériau |
-| `ContractConfigRepository` | `getScrollLifetime` | durée de vie d'un parchemin |
+| `ContractConfigRepository` | `getScrollLifetime`, `getQuantityVariancePercent` | durée de vie d'un parchemin, écart maximal de quantité en % |
 
 ## 6. Cycle de vie d'un contrat
 
@@ -198,7 +199,7 @@ Chaque règle métier a un test JUnit 5 + Mockito dans `src/test`, nommé `metho
 | Classe de test | Tests | Sujet |
 |---|---|---|
 | `ContractModelTest` | 15 | validation des records, `isExpiredAt`, `isFor`, `computeMoneyBonus` |
-| `ContractGeneratorTest` | 7 | tirage pondéré, récompense, expiration, catalogue vide |
+| `ContractGeneratorTest` | 12 | tirage pondéré, quantité et variance, récompense, expiration, catalogue vide |
 | `ContractPurchaseServiceTest` | 6 | achat, refus, remboursement du ticket |
 | `ContractDeliveryServiceTest` | 12 | ordre des refus, retraits, suppression, bonus du livreur |
 | `ContractTicketServiceTest` | 10 | solde, quota, dépense, don staff, renouvellement |

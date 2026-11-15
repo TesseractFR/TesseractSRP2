@@ -11,7 +11,7 @@
 - [ ] Retirer des tickets en staff : `ContractTicketService.withdrawTicket` existe mais n'est pas exposé par une commande, et il ne vérifie pas que le solde reste positif.
 - [ ] `renewDaily` ramène au quota un solde supérieur (tickets donnés par le staff perdus le lendemain) : confirmer que c'est voulu.
 - [ ] Borne maximale de quantité : aucune aujourd'hui, un contrat peut demander plusieurs centaines d'items.
-- [ ] Quantité des contrats d'artisanat : elle vient de `quantity-by-rarity`, comme la récolte ; vérifier l'équilibre.
+- [ ] Quantité des contrats d'artisanat : elle vient de `quantity-by-rarity` et de `quantity-variance-percent`, comme la récolte ; vérifier l'équilibre.
 
 ## Après la mise en place
 
