@@ -2,6 +2,7 @@ package onl.tesseract.srp.contract.domain.port.userside;
 
 import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
+import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.domain.model.contract.ContractDraft;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractCatalogRepository;
@@ -36,7 +37,8 @@ public class ContractGenerator {
     }
 
     /**
-     * Tire un élément du catalogue selon son poids et une qualité minimale au hasard.
+     * Tire un élément du catalogue selon son poids, une quantité autour de sa quantité de base et une
+     * qualité minimale au hasard.
      *
      * @return le contrat généré, ou {@link Optional#empty()} si le catalogue est vide
      */
@@ -46,17 +48,32 @@ public class ContractGenerator {
             return Optional.empty();
         }
         CatalogItem catalogItem = pickWeighted(catalogItems);
+        int quantity = drawQuantity(catalogItem.quantity());
         Quality[] allQualities = Quality.values();
         Quality minimalQuality = allQualities[random.nextInt(allQualities.length)];
         return Optional.of(new ContractDraft(catalogItem.type(), catalogItem.client(), catalogItem.material(),
-                catalogItem.quantity(), minimalQuality, computeReward(catalogItem, minimalQuality),
+                quantity, minimalQuality, computeReward(catalogItem.material(), quantity, minimalQuality),
                 clock.instant().plus(contractConfigRepository.getScrollLifetime())));
     }
 
+    /**
+     * Tire uniformément la quantité entre {@code base × (1 − taux)} et {@code base × (1 + taux)}, bornes
+     * arrondies à l'unité et comprises, avec un minimum de un. Un taux négatif compte pour zéro.
+     */
+    private int drawQuantity(int baseQuantity) {
+        double varianceRate = Math.max(0, contractConfigRepository.getQuantityVariancePercent()) / 100;
+        int minimalQuantity = (int) Math.max(1, Math.round(baseQuantity * (1 - varianceRate)));
+        int maximalQuantity = (int) Math.max(minimalQuantity, Math.round(baseQuantity * (1 + varianceRate)));
+        if (minimalQuantity == maximalQuantity) {
+            return minimalQuantity;
+        }
+        return random.nextInt(minimalQuantity, maximalQuantity + 1);
+    }
+
     /** La récompense vaut la valeur des matériaux demandés, arrondie à l'unité, avec un minimum d'un lys. */
-    private MoneyValue computeReward(CatalogItem catalogItem, Quality minimalQuality) {
-        BigDecimal unitValue = contractCatalogRepository.getUnitValue(catalogItem.material(), minimalQuality).value();
-        BigDecimal reward = unitValue.multiply(BigDecimal.valueOf(catalogItem.quantity()))
+    private MoneyValue computeReward(MaterialName material, int quantity, Quality minimalQuality) {
+        BigDecimal unitValue = contractCatalogRepository.getUnitValue(material, minimalQuality).value();
+        BigDecimal reward = unitValue.multiply(BigDecimal.valueOf(quantity))
                 .setScale(0, RoundingMode.HALF_UP)
                 .max(BigDecimal.ONE);
         return new MoneyValue(reward);

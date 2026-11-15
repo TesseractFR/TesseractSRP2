@@ -27,6 +27,11 @@ public class YamlContractConfigRepository implements ContractConfigRepository, C
     }
 
     @Override
+    public double getQuantityVariancePercent() {
+        return currentYaml().getDouble("quantity-variance-percent", 0);
+    }
+
+    @Override
     public double getQuantityByRarity(String rarityName) {
         return currentYaml().getDouble("quantity-by-rarity." + rarityName, 300);
     }

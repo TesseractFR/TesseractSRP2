@@ -7,6 +7,9 @@ quantity-by-rarity:
   EPIC: 40
   LEGENDARY: 10
 
+# Écart maximal en % autour de la quantité de base : 50 sur une base de 600 donne entre 300 et 900.
+quantity-variance-percent: 50
+
 rarity-weights:
   COMMON: 100
   SPECIAL: 50
