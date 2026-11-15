@@ -7,7 +7,7 @@ import onl.tesseract.lib.command.argument.PlayerArg;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.adapter.userside.controller.message.ContractMessageFormatter;
 import onl.tesseract.srp.contract.domain.model.exception.ContractException;
-import onl.tesseract.srp.contract.domain.port.userside.ContractTicketUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractTicketService;
 import org.bukkit.entity.Player;
 
 @org.springframework.stereotype.Component
@@ -19,11 +19,11 @@ public class ContractStaffCommand {
     @org.springframework.stereotype.Component
     @Command(name = "tickets", description = "Gérer les tickets de contrat d'un joueur")
     public static class TicketsCommand {
-        private final ContractTicketUseCase contractTicketUseCase;
+        private final ContractTicketService contractTicketService;
         private final ContractMessageFormatter contractMessageFormatter;
 
-        public TicketsCommand(ContractTicketUseCase contractTicketUseCase, ContractMessageFormatter contractMessageFormatter) {
-            this.contractTicketUseCase = contractTicketUseCase;
+        public TicketsCommand(ContractTicketService contractTicketService, ContractMessageFormatter contractMessageFormatter) {
+            this.contractTicketService = contractTicketService;
             this.contractMessageFormatter = contractMessageFormatter;
         }
 
@@ -33,7 +33,7 @@ public class ContractStaffCommand {
             Player target = playerArg.get();
             int amount = amountArg.get();
             try {
-                contractTicketUseCase.giveTickets(new PlayerId(target.getUniqueId()), amount);
+                contractTicketService.giveTickets(new PlayerId(target.getUniqueId()), amount);
                 sender.sendMessage(contractMessageFormatter.formatStaffTicketsGiven(target.getName(), amount));
             } catch (ContractException refusal) {
                 sender.sendMessage(contractMessageFormatter.formatRefusal(refusal));
@@ -45,7 +45,7 @@ public class ContractStaffCommand {
             Player target = playerArg.get();
             PlayerId targetId = new PlayerId(target.getUniqueId());
             sender.sendMessage(contractMessageFormatter.formatStaffTickets(target.getName(),
-                    contractTicketUseCase.getTickets(targetId), contractTicketUseCase.getDailyQuota(targetId)));
+                    contractTicketService.getTickets(targetId), contractTicketService.getDailyQuota(targetId)));
         }
     }
 }

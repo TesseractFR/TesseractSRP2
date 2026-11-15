@@ -12,8 +12,11 @@ import onl.tesseract.srp.contract.domain.port.serverside.DailyTicketQuotaPort;
 import onl.tesseract.srp.contract.domain.port.serverside.JobMoneyBonusPort;
 import onl.tesseract.srp.contract.domain.port.serverside.PaymentPort;
 import onl.tesseract.srp.contract.domain.port.serverside.PlayerMaterialPort;
+import onl.tesseract.srp.contract.domain.port.userside.ContractDeliveryService;
+import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationService;
 import onl.tesseract.srp.contract.domain.port.userside.ContractGenerator;
-import onl.tesseract.srp.contract.domain.port.userside.ContractService;
+import onl.tesseract.srp.contract.domain.port.userside.ContractPurchaseService;
+import onl.tesseract.srp.contract.domain.port.userside.ContractTicketService;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,27 +24,46 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Clock;
 import java.util.Random;
 
-/**
- * Assemble le service du domaine contrat et démarre les composants du module. Le bean
- * {@link ContractService} répond aussi à l'injection de chacune de ses interfaces de cas d'usage.
- */
+/** Assemble les services du domaine contrat, un par cas d'usage, et démarre les composants du module. */
 @Configuration
 public class ContractProvider {
+
+    private static final Clock CLOCK = Clock.systemUTC();
 
     @Bean
     public ContractGenerator contractGenerator(ContractConfigRepository contractConfigRepository,
                                                ContractCatalogRepository contractCatalogRepository) {
-        return new ContractGenerator(contractConfigRepository, contractCatalogRepository, new Random(), Clock.systemUTC());
+        return new ContractGenerator(contractConfigRepository, contractCatalogRepository, new Random(), CLOCK);
     }
 
     @Bean
-    public ContractService contractService(ContractRepository contractRepository, ContractGenerator contractGenerator,
-                                           ContractScrollPort contractScrollPort, PlayerMaterialPort playerMaterialPort,
-                                           ContractTicketRepository contractTicketRepository,
-                                           DailyTicketQuotaPort dailyTicketQuotaPort, JobMoneyBonusPort jobMoneyBonusPort,
-                                           PaymentPort paymentPort) {
-        return new ContractService(contractRepository, contractGenerator, contractScrollPort, playerMaterialPort,
-                contractTicketRepository, dailyTicketQuotaPort, jobMoneyBonusPort, paymentPort, Clock.systemUTC());
+    public ContractTicketService contractTicketService(ContractTicketRepository contractTicketRepository,
+                                                       DailyTicketQuotaPort dailyTicketQuotaPort) {
+        return new ContractTicketService(contractTicketRepository, dailyTicketQuotaPort);
+    }
+
+    @Bean
+    public ContractPurchaseService contractPurchaseService(ContractRepository contractRepository,
+                                                           ContractGenerator contractGenerator,
+                                                           ContractScrollPort contractScrollPort,
+                                                           ContractTicketService contractTicketService,
+                                                           JobMoneyBonusPort jobMoneyBonusPort) {
+        return new ContractPurchaseService(contractRepository, contractGenerator, contractScrollPort,
+                contractTicketService, jobMoneyBonusPort);
+    }
+
+    @Bean
+    public ContractDeliveryService contractDeliveryService(ContractRepository contractRepository,
+                                                           ContractScrollPort contractScrollPort,
+                                                           PlayerMaterialPort playerMaterialPort,
+                                                           JobMoneyBonusPort jobMoneyBonusPort, PaymentPort paymentPort) {
+        return new ContractDeliveryService(contractRepository, contractScrollPort, playerMaterialPort, jobMoneyBonusPort,
+                paymentPort, CLOCK);
+    }
+
+    @Bean
+    public ContractExpirationService contractExpirationService(ContractRepository contractRepository) {
+        return new ContractExpirationService(contractRepository, CLOCK);
     }
 
     @Bean

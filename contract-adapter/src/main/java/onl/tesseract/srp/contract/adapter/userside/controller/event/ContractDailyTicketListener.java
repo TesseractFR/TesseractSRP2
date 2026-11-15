@@ -2,7 +2,7 @@ package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
 import onl.tesseract.core.dailyConnection.event.PlayerServerDailyConnectionEvent;
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.contract.domain.port.userside.ContractTicketUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractTicketService;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.springframework.stereotype.Component;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ContractDailyTicketListener implements Listener {
 
-    private final ContractTicketUseCase contractTicketUseCase;
+    private final ContractTicketService contractTicketService;
 
-    public ContractDailyTicketListener(ContractTicketUseCase contractTicketUseCase) {
-        this.contractTicketUseCase = contractTicketUseCase;
+    public ContractDailyTicketListener(ContractTicketService contractTicketService) {
+        this.contractTicketService = contractTicketService;
     }
 
     @EventHandler
     public void onDailyConnection(PlayerServerDailyConnectionEvent event) {
-        contractTicketUseCase.renewDaily(new PlayerId(event.getPlayerID()));
+        contractTicketService.renewDaily(new PlayerId(event.getPlayerID()));
     }
 }
