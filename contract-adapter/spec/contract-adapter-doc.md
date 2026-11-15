@@ -1,91 +1,346 @@
 # Documentation du code — `contract-adapter`
 
-Ce document décrit les adaptateurs et l'interface joueur dans leur état actuel. La spec `contract-adapter.md` décrit l'intention fonctionnelle.
+Ce document décrit ce que fait le code actuel : chaque classe, ses appels et ses cas particuliers. La spec `contract-adapter.md` décrit l'intention. La documentation du domaine (`contract-domain/spec`) décrit les services, les ports et les exceptions métier dont il est question ici.
 
-Le module implémente les ports `serverside` de `contract-domain` et expose `ContractService` via Spring, Bukkit et ItemsAdder. Les identifiants et types communs (`PlayerId`, `MaterialName`, `Quality`) viennent de `common-domain`.
+## 1. Carte du module
 
-## Assemblage Spring
+```
+onl.tesseract.srp.contract.adapter
+├── scroll/                      ContractScrollItems, ContractScrollReader
+├── serverside/                  implémentations des ports du domaine
+│   ├── catalog/                 JobSkillContractCatalogRepository   → ContractCatalogRepository
+│   ├── job/                     JobServiceMoneyBonusPort            → JobMoneyBonusPort
+│   ├── jpa/                     JpaContractRepository               → ContractRepository
+│   │   ├── ContractMapper
+│   │   ├── entity/              ContractEntity, ContractTicketEntity
+│   │   └── repository/          ContractJpaRepository, ContractTicketJpaRepository (Spring Data)
+│   ├── material/                CustomItemPlayerMaterialPort        → PlayerMaterialPort
+│   ├── payment/                 PlayerServicePaymentPort            → PaymentPort
+│   ├── scroll/                  BukkitContractScrollPort            → ContractScrollPort
+│   ├── skill/                   SkillCatalogPort, SkillConfigSkillCatalogPort (dette A-1)
+│   ├── ticket/                  JpaContractTicketRepository         → ContractTicketRepository
+│   │                            YamlDailyTicketQuotaPort            → DailyTicketQuotaPort
+│   └── yaml/                    YamlContractConfigRepository        → ContractConfigRepository
+│                                + ContractNpcNameConfig, ContractRarityConfig, DailyTicketConfig
+└── userside/
+    ├── config/                  ContractProvider
+    └── controller/
+        ├── commands/            ContractCommand, args/ContractJobArgument, args/ContractJobCatalog
+        ├── event/               ContractDailyTicketListener, ContractScrollCleanupListener
+        ├── menu/                ContractMerchantMenu, ContractDeliveryMenu
+        ├── message/             ContractMessageFormatter, ContractChatFormats
+        └── task/                ContractExpirationTask
+```
 
-`ContractProvider` construit `ContractGenerator` avec un `Random`, puis `ContractService` à partir des ports. Son bean `contractStartup`, un `SmartInitializingSingleton`, enregistre `ContractJobCatalog` dans le `ServiceContainer` et lance `ContractExpirationTask` après l'initialisation des beans.
+Schéma des appels :
 
-## Persistance : JPA
+```mermaid
+flowchart TD
+    JOUEUR[Joueur / PNJ] --> CMD[ContractCommand]
+    CMD --> MM[ContractMerchantMenu]
+    CMD --> DM[ContractDeliveryMenu]
+    MM --> PUR[ContractPurchaseService]
+    MM --> TIC[ContractTicketService]
+    DM --> DEL[ContractDeliveryService]
+    CMD --> DEL
+    CMD --> TIC
+    DAILY[ContractDailyTicketListener] --> TIC
+    CLEAN[ContractScrollCleanupListener] --> EXP[ContractExpirationService]
+    TASK[ContractExpirationTask] --> EXP
+    STAFF[ContractStaffCommand, module plugin] --> TIC
+    PUR --> GEN[ContractGenerator]
+    PUR --> TIC
+    GEN --> CAT[JobSkillContractCatalogRepository]
+    GEN --> CFG[YamlContractConfigRepository]
+    PUR --> JPA[JpaContractRepository]
+    PUR --> SCR[BukkitContractScrollPort]
+    DEL --> JPA
+    DEL --> SCR
+    DEL --> MAT[CustomItemPlayerMaterialPort]
+    DEL --> BON[JobServiceMoneyBonusPort]
+    DEL --> PAY[PlayerServicePaymentPort]
+    EXP --> JPA
+    TIC --> TREP[JpaContractTicketRepository]
+    TIC --> QUOTA[YamlDailyTicketQuotaPort]
+```
 
-- `ContractEntity` mappe `t_contracts` : type, job, matériau (texte), quantité, qualité minimale, récompense, expiration, id auto-généré et version optimiste. L'index `idx_contracts_expires_at` couvre `expires_at`.
-- `fromDomain` et `toDomain` convertissent l'entité et le record `Contract` ; le matériau texte est converti en `MaterialName`.
-- `ContractTicketEntity` stocke le solde dans `t_contract_player_state`, indexé par l'UUID texte du joueur.
-- `ContractJpaRepositoryAdapter` fournit `save`, `findById`, `delete` et `deleteExpired`. Les opérations sont transactionnelles, la recherche est en lecture seule. `deleteExpired(now)` délègue la requête de suppression en masse au repository JPA.
+Les menus, la commande et les listeners passent tous leurs textes par `ContractMessageFormatter`.
 
-Le port de contrat n'a pas d'opération `settle` : la livraison du domaine n'utilise pas de transaction atomique entre base, inventaire et paiement.
+## 2. Assemblage : `ContractProvider`
 
-## Configuration YAML
+`ContractProvider` est une `@Configuration` Spring. Les adapters sont des `@Component`. Spring les injecte dans les beans du domaine par type de port, avec un seul candidat par port. Le domaine n'a aucune annotation Spring : c'est ce fichier qui en fait des beans.
 
-`YamlContractConfigRepository` lit `plugins/Tesseract/contract/contracts.yml`. Chaque accès recharge la configuration lorsque la date de modification du fichier change. Si le fichier est absent, les méthodes utilisent leurs valeurs par défaut.
+- Une horloge partagée `Clock.systemUTC()` est passée à `ContractGenerator`, `ContractDeliveryService` et `ContractExpirationService`.
+- `contractGenerator` : `ContractConfigRepository`, `ContractCatalogRepository`, un `new Random()` et l'horloge.
+- `contractTicketService` : `ContractTicketRepository`, `DailyTicketQuotaPort`.
+- `contractPurchaseService` : `ContractRepository`, `ContractGenerator`, `ContractScrollPort`, `ContractTicketService`.
+- `contractDeliveryService` : `ContractRepository`, `ContractScrollPort`, `PlayerMaterialPort`, `JobMoneyBonusPort`, `PaymentPort` et l'horloge.
+- `contractExpirationService` : `ContractRepository` et l'horloge.
+- `contractStartup` est un `SmartInitializingSingleton` exécuté une fois tous les beans créés. Il enregistre `ContractJobCatalog` dans le `ServiceContainer`, ce dont `ContractJobArgument` a besoin parce qu'il n'est pas un bean Spring. Puis il démarre `ContractExpirationTask`.
+
+## 3. Persistance (JPA)
+
+### Tables
+
+`ContractEntity` correspond à la table `t_contracts` :
+
+| Colonne | Type | Remarque |
+|---|---|---|
+| `id` | `Long`, clé auto (`IDENTITY`) | attribuée à l'insertion |
+| `type` | enum en texte | `HARVEST` ou `CRAFT` |
+| `job` | texte | nom du destinataire (`ContractClient`) |
+| `material` | texte | |
+| `quantity` | entier | |
+| `minimalQuality` | enum en texte | `Quality` de common-domain |
+| `reward` | entier | récompense de base en lys |
+| `expires_at` | `Instant` | indexée (`idx_contracts_expires_at`) |
+| `version` | `long`, `@Version` | verrou optimiste |
+
+`ContractTicketEntity` correspond à `t_contract_player_state` (nom hérité d'un ancien modèle) : `player_id` (UUID en texte, 36 caractères, clé) et `tickets`.
+
+Les tables sont créées automatiquement. Les colonnes des anciens modèles qui subsistent en base (par exemple `issued_to`, `issuedAt`, `discovery_given`, `tier`, `tickets_day`, `delivered_count`) et la table `t_job_missions` sont à supprimer à la main.
+
+### Conversion : `ContractMapper`
+
+- `toEntity(ContractDraft)` crée une entité sans identifiant. La récompense est convertie par `intValueExact()`, qui lève une exception si elle n'est pas entière.
+- `toDomain(ContractEntity)` recrée le `Contract` avec son `ContractId`, son `ContractClient`, son `MaterialName` et un `MoneyValue`.
+
+L'entité ne sert qu'à créer des contrats : aucun contrat n'est mis à jour en base.
+
+### `JpaContractRepository` (→ `ContractRepository`)
+
+Toutes les méthodes sont `@Transactional`, en lecture seule pour `findById`.
+
+- `create` : enregistre l'entité issue du brouillon et renvoie le contrat avec l'identifiant attribué.
+- `findById` : `Optional` converti en domaine.
+- `delete` : `deleteById`.
+- `deleteExpired(now)` : requête JPQL `delete ... where expiresAt <= :now`, avec `@Modifying(flushAutomatically = true, clearAutomatically = true)` pour ne garder aucune entité périmée dans le contexte. Renvoie le nombre de lignes supprimées.
+
+### `JpaContractTicketRepository` (→ `ContractTicketRepository`)
+
+- `findTickets` : lit la ligne par UUID en texte. `OptionalInt.empty()` si elle n'existe pas : le joueur est nouveau pour le domaine.
+- `saveTickets` : crée ou remplace la ligne.
+
+## 4. Configuration : `YamlContractConfigRepository`
+
+La classe lit `plugins/Tesseract/contract/contracts.yml`, avec un chemin relatif au dossier du serveur. Elle implémente le port du domaine `ContractConfigRepository` et trois interfaces internes à l'adapter, pour que chaque consommateur ne voie que ce qu'il utilise :
+
+- `ContractRarityConfig`, pour le catalogue ;
+- `DailyTicketConfig`, pour le quota ;
+- `ContractNpcNameConfig`, pour le parchemin et les messages.
+
+Chaque lecture passe par `currentYaml()`, une méthode synchronisée qui compare la date de modification du fichier à celle du dernier chargement et relit le fichier si elle a changé. Si le fichier est absent, la configuration est vide et les valeurs par défaut s'appliquent. Aucune valeur n'est validée.
 
 | Méthode | Clé | Défaut |
 |---|---|---|
-| `getScrollTtl()` | `scroll-lifetime-hours` | 72 heures |
-| `getQuantityByRarity(rarity)` | `quantity-by-rarity.<RARITY>` | 300 |
-| `getRarityWeight(rarity)` | `rarity-weights.<RARITY>` | 0 |
-| `getDailyTickets(rank)` | `daily-tickets.<RANK>` | 0 |
-| `getNpcName(job)` | `npc-names.<JOB>` | absent |
+| `getScrollLifetime()` | `scroll-lifetime-hours` | 72 heures |
+| `getQuantityByRarity(rareté)` | `quantity-by-rarity.<RARETÉ>` | 300 |
+| `getRarityWeight(rareté)` | `rarity-weights.<RARETÉ>` | 0 |
+| `getDailyTickets(grade)` | `daily-tickets.<grade>` | 0 |
+| `findNpcName(client)` | `npc-names.<métier>` | vide |
 
-La recherche du nom de PNJ ignore la casse et ignore les noms vides.
+`findNpcName` cherche la clé sans tenir compte de la casse et ignore une valeur vide ou blanche.
 
-## Adaptateurs `serverside`
+## 5. Adapters des ports
 
-### Catalogue et valeurs : `ContractItemInfoRepository`
+### 5.1 Catalogue : `JobSkillContractCatalogRepository` (→ `ContractCatalogRepository`)
 
-À chaque `getCatalogItems()`, le repository parcourt les métiers de `JobService` et les compétences de `SkillConfigRepository`. Il collecte les matériaux produits ou fabriqués, sans doublons au sein de chaque métier ou compétence. Les matériaux sans valeur monétaire sont ignorés avec un avertissement. Pour les autres, il lit la rareté, le poids et la quantité depuis la configuration ; un poids inférieur ou égal à zéro exclut l'entrée. `getValue(material, quality)` lit directement la valeur monétaire du `CustomItemService`.
+`findAllCatalogItems()` reconstruit le catalogue à chaque appel, donc à chaque achat :
 
-### Tickets et paiement : `ContractPlayerInfoRepository`
+1. Pour chaque métier de `JobService.listJobs()`, chaque matériau produit par ses sources (dédoublonné au sein du métier) devient un `CatalogItem` `HARVEST` dont le client est le métier.
+2. Pour chaque compétence de `SkillCatalogPort.findAllSkills()`, le résultat de chaque recette de chaque palier (dédoublonné au sein de la compétence) devient un `CatalogItem` `CRAFT`.
 
-Les tickets sont lus et enregistrés dans `ContractTicketEntity`. Le quota est déterminé par le grade du joueur et `daily-tickets` ; un joueur sans grade obtient un quota nul. Le bonus monétaire est fourni par `JobService` sous forme de taux. `giveMoney` délègue le versement au service joueur et traduit un refus de paiement en `PaymentFailedException`.
+Un matériau produit par deux métiers apparaît donc deux fois.
 
-### Inventaire de matériaux : `TesseractPlayerMaterialRepository`
+Avant l'ajout d'un item :
 
-`countAtLeast` additionne les quantités de qualité minimale ou supérieure pour les matériaux custom. Pour un matériau non custom, il compte la qualité `POOR`. `removeAtLeast` commence par vérifier le stock suffisant, puis retire des qualités admissibles de la plus basse à la plus haute ; pour un matériau non custom, il retire en qualité `POOR`. La méthode ne renvoie pas de résultat et ne restaure pas les retraits en cas d'erreur intermédiaire.
+- s'il n'a pas de valeur dans `itemValue.yml` (`CustomItemService.hasMoneyValue`), il est ignoré avec un avertissement ;
+- sa rareté vient de `CustomItemService.getCustomMaterial`, ou vaut `COMMON` s'il n'est pas déclaré ;
+- un poids de rareté inférieur ou égal à zéro l'exclut ;
+- sa quantité vaut `max(1, round(quantity-by-rarity))`.
 
-### Parchemins : `BukkitContractScrollRepository`
+`getUnitValue(material, quality)` renvoie `CustomItemService.getMoneyValue`. Cette valeur dépend de la qualité : le prix de base est multiplié par le coefficient de la section `QualityRate` de `itemValue.yml`.
 
-Les opérations exigent un joueur en ligne. `canReceiveScroll` vérifie un emplacement vide. `giveScroll` construit l'item de base `ContractConstantes.BASE_SCROLL`, écrit l'id de contrat et la date d'expiration dans les données persistantes, ajoute le lore et le nom, impose une taille de pile de 1 et remet l'item. Il renvoie `false` si le joueur est hors ligne, si le contrat n'a pas d'id ou si l'inventaire ne peut pas recevoir l'item. Le paramètre `hasJobBonus` n'est actuellement pas utilisé.
+`SkillCatalogPort` isole la dette A-1. Son implémentation `SkillConfigSkillCatalogPort` lit `SkillConfigRepository` de skill-domain, en attendant que skill-domain expose la liste des compétences par un service.
 
-`hasScroll` et `removeScroll` parcourent l'inventaire complet et identifient le parchemin par son id persistant. `ContractItemUtils` lit cet id ; la date d'expiration persistée est formatée par le lore mais le nettoyage actuel vérifie l'expiration du contrat en base.
+### 5.2 Quota : `YamlDailyTicketQuotaPort` (→ `DailyTicketQuotaPort`)
 
-### Messagerie : `BukkitContractMessagingRepository`
+Le quota est lu dans `daily-tickets.<rank.name()>` à partir du grade donné par `PlayerService.getPlayer(...).getRank()`. Un joueur sans grade a un quota nul. La clé du YAML suit la casse de l'enum du grade (`Survivant`, pas `SURVIVANT`).
 
-Ce repository centralise les messages de contrat et les envoie au joueur en ligne. Il gère les achats, les refus et réussites de livraison, les tickets, les actions staff, l'usage d'un parchemin détruit et le signalement de parchemins expirés.
+### 5.3 Bonus : `JobServiceMoneyBonusPort` (→ `JobMoneyBonusPort`)
 
-## Interface joueur
+Le port appelle `JobService.getBonusValue(JobName, PlayerId, Material, Bonus.MONEY)` et renvoie un taux, ou 0 si le service ne renvoie rien. C'est le domaine qui transforme ce taux en montant (`Contract.computeMoneyBonus`).
 
-### Commandes
+### 5.4 Paiement : `PlayerServicePaymentPort` (→ `PaymentPort`)
 
-`ContractCommands` expose `/contract` aux joueurs :
+Le port appelle `PlayerService.adjustMoney(uuid, montant)` avec le montant converti par `intValueExact()`. Si le versement est refusé, il journalise une erreur avec le joueur et le montant, pour que le staff puisse dédommager le joueur, puis lève `PaymentFailedException`. Les matériaux et le parchemin sont déjà retirés à ce moment-là.
 
-- `merchant` ouvre `ContractMerchantMenu` ;
-- `deliver <metier>` lit l'id du parchemin tenu en main principale, puis ouvre `ContractDeliveryMenu` si le contrat existe ; sans id, appelle `noScrollInHand` ;
-- `tickets` affiche le solde et le quota.
+### 5.5 Matériaux : `CustomItemPlayerMaterialPort` (→ `PlayerMaterialPort`)
 
-`ContractJobArg` résout le texte de l'argument via `ContractJobCatalog`. Le catalogue contient les métiers et compétences et fournit les noms canoniques ainsi que leur complétion.
+Ce port utilise uniquement `CustomItemService`.
 
-### Menus
+- `countAtLeast(player, material, minimalQuality)` additionne les quantités de chaque qualité, de la qualité minimale jusqu'à `EXCEPTIONAL`. Les matériaux non custom ne sont plus traités à part.
+- `removeAtLeast(player, material, minimalQuality, quantity)`, en deux temps :
+  - si le joueur n'en possède pas assez, la méthode lève `NotEnoughMaterialException` sans rien retirer ;
+  - sinon, elle retire en commençant par la qualité admissible la plus basse et en montant jusqu'à atteindre la quantité.
 
-- `ContractMerchantMenu` affiche les tickets et permet d'acheter un parchemin. Après l'achat, il rouvre le menu pour rafraîchir le solde.
-- `ContractDeliveryMenu` affiche les détails et le nombre d'objets admissibles, puis appelle `deliver` lors de la confirmation. Le lore est construit directement par le menu avec `QualityAdapter`.
+  Une erreur en cours de retrait n'est pas compensée.
 
-### Événements
+### 5.6 Parchemin : `BukkitContractScrollPort` (→ `ContractScrollPort`)
 
-- `ContractDailyTicketListener` appelle `renewDaily` à la première connexion quotidienne (`PlayerServerDailyConnectionEvent`).
-- `ContractScrollCleanupListener` nettoie les parchemins expirés à la connexion et à l'ouverture d'un inventaire. Il lit l'id sur chaque parchemin candidat, puis consulte le contrat en base. Lors d'un ramassage, il annule et supprime un parchemin expiré au sol, puis appelle `reportExpiredScrolls`. Le nettoyage d'un inventaire ouvert appelle `purgeExpired` si des items ont été retirés ; celui de l'inventaire du joueur signale le nombre au joueur et purge également.
+Toutes les opérations exigent un joueur en ligne. Pour un joueur hors ligne, elles renvoient `false`.
 
-Le nettoyage ne parcourt pas les contenus de boîtes shulker portées, et les parchemins sans id ou dont le contrat n'est plus en base ne sont pas identifiés comme expirés par cette logique.
+- `canReceiveScroll` : l'inventaire a un emplacement vide.
+- `giveScroll(player, contract)` part de l'item de base (`ContractScrollItems.BASE_SCROLL`).
+  - Le nom est « Contrat · <matériau> ».
+  - Le lore contient le type et le destinataire, la quantité, la qualité minimale, le gain, la date d'expiration, puis « » Apporte-le à <PNJ> ».
+  - Il écrit dans les données persistantes l'identifiant du contrat et sa date d'expiration, et impose une taille de pile de 1.
+  - Il renvoie `true` si l'item a tenu dans l'inventaire.
+- `hasScroll` et `removeScroll` parcourent l'inventaire et repèrent le premier emplacement dont le parchemin porte cet identifiant. `removeScroll` vide cet emplacement.
 
-## Purge périodique : `ContractExpirationTask`
+## 6. Le parchemin
 
-`start()` planifie `run()` toutes les `20 × 60 × 10` ticks, soit dix minutes, avec un délai initial égal à la même période. Chaque exécution appelle `ContractService.purgeExpired()`. Le nombre supprimé est écrit dans le journal au niveau `INFO` uniquement s'il est supérieur à zéro.
+- `ContractScrollItems` regroupe les ressources Bukkit des parchemins :
+  - l'item ItemsAdder `tesseract:contract_scroll` (`BASE_SCROLL`) ;
+  - les clés persistantes `srp:contract_id` et `srp:contract_expires_at`, en `LONG` ;
+  - le format de date `dd/MM HH:mm` dans le fuseau du serveur, et la puce `• ` ;
+  - `hasScrollType`, qui compare le type Bukkit d'un item à celui de l'item de base.
+- `ContractScrollReader.readContractId(item)` renvoie l'identifiant de contrat porté par un item, ou `Optional.empty()` s'il n'en porte pas ou s'il est `null`.
 
-## Éléments utilitaires
+La base fait foi : seul l'identifiant sert à retrouver le contrat. La date d'expiration écrite dans l'item n'est lue par aucun code.
 
-- `ContractConstantes` centralise l'item de base du parchemin, ses clés de données persistantes, les symboles et le format de date.
-- `ContractItemUtils` lit l'id du contrat à partir des métadonnées persistantes de l'item.
-- `ContractChatFormats` fournit les formats de message du module contrat.
-- `QualityAdapter` fournit libellés et couleurs d'affichage. Il consomme directement `common-domain.Quality` ; aucun `QualityConverter` n'est nécessaire.
+## 7. Entrées joueur
+
+### 7.1 Commande : `ContractCommand` (`/contract`, joueur uniquement)
+
+- `merchant` (`openMerchantMenu`) : ouvre `ContractMerchantMenu`.
+- `deliver <métier>` (`deliverHeldScroll`) lit l'identifiant sur l'item en main principale.
+  - Sans identifiant, le PNJ répond par `formatNpcNoScrollInHand`.
+  - Si le contrat est introuvable, il répond par `formatNpcInvalidScroll`.
+  - Sinon, la commande ouvre `ContractDeliveryMenu`. Le contrat peut encore être expiré ou destiné à un autre PNJ : c'est `deliver` qui refusera à la confirmation.
+- `tickets` (`showTickets`) : affiche le solde et le quota.
+
+`ContractJobArgument` résout le texte saisi en `ContractClient` grâce à `ContractJobCatalog.findByName`, sans tenir compte de la casse. Il renvoie le nom tel que le catalogue l'écrit, ce qui garantit que la comparaison `Contract.isFor`, sensible à la casse, fonctionne. La complétion utilise `findAllNames()`, c'est-à-dire les métiers puis les compétences. Un nom inconnu produit « Métier X introuvable ».
+
+### 7.2 Menus
+
+Les deux menus sont des `ItemAdderMenu` de trois lignes, avec une texture de fond.
+
+- `ContractMerchantMenu` :
+  - Emplacement 11 : les tickets restants et le quota. La taille de la pile reflète le solde, entre 1 et 64.
+  - Emplacement 13 : « Acheter un parchemin ». Le clic appelle `buyScroll`, envoie le succès ou le refus traduit, puis rouvre un nouveau menu pour rafraîchir le solde.
+  - Emplacement 15 : les informations sur le fonctionnement.
+- `ContractDeliveryMenu` :
+  - Emplacement 11 : « Confirmer la livraison ». Le clic ferme le menu, puis appelle `deliver(joueur, id, PNJ)`. La réussite donne `formatNpcDeliverySucceeded`, un refus donne `formatNpcRefusal`.
+  - Emplacement 13 : l'aperçu du contrat. Il reprend le détail du parchemin et y ajoute ce que le joueur possède (`countOwnedItems`, en vert s'il en a assez, en rouge sinon) et son bonus de métier (`findMoneyBonus`, 0 s'il n'en a pas).
+  - Emplacement 15 : « Annuler », qui ferme le menu.
+
+### 7.3 Messages : `ContractMessageFormatter`
+
+C'est le seul endroit où se trouvent les textes du module.
+
+| Famille | Format |
+|---|---|
+| Achat, tickets, parchemins expirés, refus génériques | préfixe `[Contrat]` de `ContractChatFormats`, en gris, rouge pour les erreurs ou vert pour les succès |
+| Livraison | réplique du PNJ : nom en or et en gras, « » », puis une réplique tirée au hasard. Le nom vient de `findNpcName`, ou à défaut du nom du métier avec sa première lettre en majuscule |
+| Staff | préfixes `STAFF_CHAT_*` de `SrpChatFormats` |
+
+- `formatRefusal` traduit chaque `ContractException` par un `switch` exhaustif, rendu possible par la hiérarchie scellée. Ajouter une exception sans la traduire fait échouer la compilation.
+- `formatNpcRefusal` fait parler le PNJ pour les refus propres à la livraison : contrat introuvable, mauvais destinataire, contrat expiré, parchemin absent, matériaux manquants. Les autres refus passent par `formatRefusal`.
+
+### 7.4 Événements
+
+- `ContractDailyTicketListener` appelle `ContractTicketService.renewDaily` sur `PlayerServerDailyConnectionEvent`, la première connexion du jour, émise par le module `core`.
+- `ContractScrollCleanupListener` est décrit au §8.
+
+### 7.5 Tâche : `ContractExpirationTask`
+
+`start()` programme `run()` toutes les 12 000 ticks, soit dix minutes. Le premier passage a donc lieu dix minutes après le démarrage. `run()` appelle `purgeExpired()` et journalise le nombre supprimé au niveau `INFO`, seulement s'il est positif. La tâche ne tourne que lorsque le serveur est allumé.
+
+## 8. Retrait des parchemins invalides : `ContractScrollCleanupListener`
+
+Un item est un parchemin invalide quand trois conditions sont réunies :
+
+- il a le type de l'item de base ;
+- il porte un identifiant de contrat ;
+- `ContractExpirationService.isScrollValid` renvoie `false` pour cet identifiant, parce que le contrat est absent de la base ou a expiré.
+
+| Événement | Action |
+|---|---|
+| `PlayerJoinEvent` | retire les parchemins invalides de l'inventaire du joueur |
+| `InventoryOpenEvent` (tout inventaire : coffre, tonneau, shulker posé, menu…) | les retire du conteneur ouvert, puis de l'inventaire du joueur |
+| `EntityPickupItemEvent` (joueur) | si l'item au sol est un parchemin invalide, annule le ramassage et supprime l'entité |
+
+Si au moins un parchemin a été retiré de l'inventaire d'un joueur, ou au ramassage, le listener appelle `purgeExpired()` puis envoie `formatScrollsExpired(nombre)`. Les retraits dans un conteneur ne déclenchent ni purge ni message.
+
+Chaque parchemin examiné coûte une lecture en base (`findById`).
+
+Limites :
+
+- le contenu d'une boîte de shulker portée dans l'inventaire n'est pas inspecté ;
+- un parchemin qui devient invalide pendant que le joueur joue n'est retiré qu'à sa prochaine connexion ou ouverture d'inventaire, ou quand il le ramasse.
+
+## 9. Flux complets
+
+### Achat
+
+```mermaid
+sequenceDiagram
+    participant J as Joueur
+    participant MM as ContractMerchantMenu
+    participant P as ContractPurchaseService
+    participant T as ContractTicketService
+    participant G as ContractGenerator
+    participant DB as JpaContractRepository
+    participant SCR as BukkitContractScrollPort
+    J->>MM: clic sur « Acheter »
+    MM->>P: buyScroll(joueur)
+    P->>T: hasTicket
+    P->>SCR: canReceiveScroll
+    P->>G: generate (catalogue reconstruit)
+    P->>T: withdrawTicket
+    P->>DB: create (identifiant attribué)
+    P->>SCR: giveScroll (en cas d'échec : delete + refundTicket)
+    P-->>MM: contrat ou ContractException
+    MM-->>J: message de succès ou refus traduit
+    MM->>MM: rouvre le menu
+```
+
+### Livraison
+
+```mermaid
+sequenceDiagram
+    participant J as Joueur (via PNJ)
+    participant C as ContractCommand
+    participant DM as ContractDeliveryMenu
+    participant D as ContractDeliveryService
+    participant SCR as BukkitContractScrollPort
+    participant MAT as CustomItemPlayerMaterialPort
+    participant DB as JpaContractRepository
+    participant PAY as PlayerServicePaymentPort
+    J->>C: /contract deliver <métier> (parchemin en main)
+    C->>D: findContract(id)
+    C->>DM: ouvre le menu (sinon réplique « parchemin invalide »)
+    J->>DM: confirmer
+    DM->>D: deliver(joueur, id, PNJ)
+    D->>D: vérifie existence, expiration, destinataire, parchemin, matériaux
+    D->>SCR: removeScroll
+    D->>MAT: removeAtLeast
+    D->>DB: delete
+    D->>PAY: pay (récompense + bonus du livreur)
+    D-->>DM: montant versé ou ContractException
+    DM-->>J: réplique du PNJ
+```
+
+### Renouvellement quotidien
+
+`PlayerServerDailyConnectionEvent` → `ContractDailyTicketListener` → `ContractTicketService.renewDaily` → `YamlDailyTicketQuotaPort.getDailyQuota` (grade → `daily-tickets`) → `JpaContractTicketRepository.saveTickets`.
+
+## 10. Points d'attention connus
+
+- Un matériau sans valeur dans `itemValue.yml` est exclu du catalogue. Il faut surveiller les avertissements au démarrage des achats.
+- La livraison n'est pas atomique : un échec du paiement après le retrait des objets est journalisé en erreur et demande une intervention du staff.
+- Le pied de page du parchemin sans nom de PNJ configuré affiche « PNJ du métier » ou « PNJ de la compétence », sans le préfixe « » Apporte-le à ».
+- La date d'expiration écrite dans l'item n'est plus lue. Elle pourrait être retirée, ou servir à éviter une lecture en base lors du nettoyage.
+- Tout le module (Bukkit, JPA) s'exécute sur le thread principal du serveur.
+- Dette A-1 : `SkillConfigSkillCatalogPort` dépend du repository de skill-domain.
