@@ -25,10 +25,6 @@ public class CustomItemPlayerMaterialPort implements PlayerMaterialPort {
 
     @Override
     public int countAtLeast(PlayerId player, MaterialName material, Quality minimalQuality) {
-        // Un matériau vanilla n'a pas de qualité : il est toujours rangé en POOR.
-        if (!customItemService.isCustomMaterial(material)) {
-            return customItemService.getItemQuantity(player.value(), material, Quality.POOR);
-        }
         int totalQuantity = 0;
         for (Quality quality : findAllQualitiesFrom(minimalQuality)) {
             totalQuantity += customItemService.getItemQuantity(player.value(), material, quality);
