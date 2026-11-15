@@ -1,10 +1,9 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.event;
 
-import onl.tesseract.srp.contract.adapter.utils.ContractConstantes;
-import onl.tesseract.srp.contract.adapter.utils.ContractItemUtils;
-import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.port.userside.ContractService;
+import onl.tesseract.srp.contract.adapter.scroll.ContractScrollItems;
+import onl.tesseract.srp.contract.adapter.scroll.ContractScrollReader;
+import onl.tesseract.srp.contract.adapter.userside.controller.message.ContractMessageFormatter;
+import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationUseCase;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,19 +17,25 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-/** Retire les parchemins expirés des inventaires lors des connexions, ouvertures et ramassages. */
+/**
+ * Retire les parchemins devenus invalides lors des connexions, ouvertures d'inventaire et ramassages.
+ * La validité d'un parchemin est décidée par le domaine.
+ */
 @Component
 public class ContractScrollCleanupListener implements Listener {
 
-    private final ContractService contractService;
+    private final ContractExpirationUseCase contractExpirationUseCase;
+    private final ContractMessageFormatter contractMessageFormatter;
 
-    public ContractScrollCleanupListener(ContractService contractService) {
-        this.contractService = contractService;
+    public ContractScrollCleanupListener(ContractExpirationUseCase contractExpirationUseCase,
+                                         ContractMessageFormatter contractMessageFormatter) {
+        this.contractExpirationUseCase = contractExpirationUseCase;
+        this.contractMessageFormatter = contractMessageFormatter;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        cleanPlayer(event.getPlayer());
+        removeInvalidScrolls(event.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -39,53 +44,37 @@ public class ContractScrollCleanupListener implements Listener {
             return;
         }
         Item itemEntity = event.getItem();
-        ItemStack droppedItem = itemEntity.getItemStack();
-        if(!droppedItem.getType().equals(ContractConstantes.BASE_SCROLL.getType())) {
-            return;
-        }
-
-        Optional<Long> contractId = ContractItemUtils.readContractId(droppedItem);
-        if (contractId.isPresent() && contractService.getContract(contractId.get())
-                .map(Contract::isExpired).orElse(false)) {
+        if (isInvalidScroll(itemEntity.getItemStack())) {
             event.setCancelled(true);
             itemEntity.remove();
-            contractService.reportExpiredScrolls(new PlayerId(player.getUniqueId()), 1);
+            notifyExpiredScrolls(player, 1);
         }
     }
 
     @EventHandler
     public void onOpen(InventoryOpenEvent event) {
-        if (removeExpiredScrolls(event.getInventory()) > 0) {
-            contractService.purgeExpired();
-        }
+        removeInvalidScrolls(event.getInventory());
         if (event.getPlayer() instanceof Player player) {
-            cleanPlayer(player);
+            removeInvalidScrolls(player);
         }
     }
 
-    private void cleanPlayer(Player player) {
-        int removedCount = removeExpiredScrolls(player.getInventory());
+    private void removeInvalidScrolls(Player player) {
+        int removedCount = removeInvalidScrolls(player.getInventory());
         if (removedCount > 0) {
-            contractService.reportExpiredScrolls(new PlayerId(player.getUniqueId()), removedCount);
+            notifyExpiredScrolls(player, removedCount);
         }
     }
 
-    private int removeExpiredScrolls(Inventory inventory) {
+    private void notifyExpiredScrolls(Player player, int count) {
+        contractExpirationUseCase.purgeExpired();
+        player.sendMessage(contractMessageFormatter.formatScrollsExpired(count));
+    }
+
+    private int removeInvalidScrolls(Inventory inventory) {
         int removedCount = 0;
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            ItemStack itemStack = inventory.getItem(slot);
-            if(itemStack == null) {
-                continue;
-            }
-            if(itemStack.getType() != ContractConstantes.BASE_SCROLL.getType()) {
-                continue;
-            }
-            Optional<Long> contractId = ContractItemUtils.readContractId(itemStack);
-            if(contractId.isEmpty()) {
-                continue;
-            }
-            Optional<Contract> contract = contractService.getContract(contractId.get());
-            if(contract.isPresent() && contract.get().isExpired()) {
+            if (isInvalidScroll(inventory.getItem(slot))) {
                 inventory.setItem(slot, null);
                 removedCount++;
             }
@@ -93,5 +82,11 @@ public class ContractScrollCleanupListener implements Listener {
         return removedCount;
     }
 
-
+    private boolean isInvalidScroll(ItemStack itemStack) {
+        return Optional.ofNullable(itemStack)
+                .filter(ContractScrollItems::hasScrollType)
+                .flatMap(ContractScrollReader::readContractId)
+                .map(contractId -> !contractExpirationUseCase.isScrollValid(contractId))
+                .orElse(false);
+    }
 }
