@@ -48,7 +48,7 @@ public class ContractGenerator {
             return Optional.empty();
         }
         CatalogItem catalogItem = pickWeighted(catalogItems);
-        int quantity = drawQuantity(catalogItem.quantity());
+        int quantity = drawQuantity(catalogItem);
         Quality[] allQualities = Quality.values();
         Quality minimalQuality = allQualities[random.nextInt(allQualities.length)];
         return Optional.of(new ContractDraft(catalogItem.type(), catalogItem.client(), catalogItem.material(),
@@ -57,11 +57,13 @@ public class ContractGenerator {
     }
 
     /**
-     * Tire uniformément la quantité entre {@code base × (1 − taux)} et {@code base × (1 + taux)}, bornes
-     * arrondies à l'unité et comprises, avec un minimum de un. Un taux négatif compte pour zéro.
+     * Tire uniformément la quantité entre {@code base × (1 − variance)} et {@code base × (1 + variance)},
+     * bornes arrondies à l'unité et comprises, avec un minimum de un. La base et la variance viennent
+     * de l'élément de catalogue.
      */
-    private int drawQuantity(int baseQuantity) {
-        double varianceRate = Math.max(0, contractConfigRepository.getQuantityVariancePercent()) / 100;
+    private int drawQuantity(CatalogItem catalogItem) {
+        int baseQuantity = catalogItem.quantity();
+        double varianceRate = catalogItem.quantityVariancePercent() / 100;
         int minimalQuantity = (int) Math.max(1, Math.round(baseQuantity * (1 - varianceRate)));
         int maximalQuantity = (int) Math.max(minimalQuantity, Math.round(baseQuantity * (1 + varianceRate)));
         if (minimalQuantity == maximalQuantity) {

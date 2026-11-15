@@ -33,11 +33,11 @@ class ContractGeneratorTest {
 
     private static final Instant NOW = Instant.parse("2026-11-15T12:00:00Z");
     private static final CatalogItem WHEAT = new CatalogItem(ContractType.HARVEST, new ContractClient("farmer"),
-            new MaterialName("wheat"), 1, 10);
+            new MaterialName("wheat"), 1, 10, 0);
     private static final CatalogItem SWORD = new CatalogItem(ContractType.CRAFT, new ContractClient("smith"),
-            new MaterialName("sword"), 3, 2);
+            new MaterialName("sword"), 3, 2, 0);
     private static final CatalogItem FIFTY_WHEAT = new CatalogItem(ContractType.HARVEST, new ContractClient("farmer"),
-            new MaterialName("wheat"), 1, 50);
+            new MaterialName("wheat"), 1, 50, 50);
 
     private ContractConfigRepository contractConfigRepository;
     private ContractCatalogRepository contractCatalogRepository;
@@ -160,7 +160,6 @@ class ContractGeneratorTest {
     void generate_drawsQuantityWithinVarianceBounds() {
         // given : base 50, variance 50 % donne [25 ; 75]
         when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(FIFTY_WHEAT));
-        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(50.0);
         when(random.nextInt(25, 76)).thenReturn(63);
 
         // when
@@ -174,7 +173,6 @@ class ContractGeneratorTest {
     void generate_computesRewardFromDrawnQuantity() {
         // given
         when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(FIFTY_WHEAT));
-        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(50.0);
         when(random.nextInt(25, 76)).thenReturn(30);
 
         // when
@@ -187,8 +185,8 @@ class ContractGeneratorTest {
     @Test
     void generate_quantityIsAtLeastOneWhenVarianceExceedsHundredPercent() {
         // given : base 10, variance 150 % donne [1 ; 25]
-        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
-        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(150.0);
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(new CatalogItem(ContractType.HARVEST,
+                new ContractClient("farmer"), new MaterialName("wheat"), 1, 10, 150)));
         when(random.nextInt(1, 26)).thenReturn(1);
 
         // when
@@ -196,18 +194,5 @@ class ContractGeneratorTest {
 
         // then
         assertEquals(1, draft.quantity());
-    }
-
-    @Test
-    void generate_ignoresNegativeVariance() {
-        // given
-        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
-        when(contractConfigRepository.getQuantityVariancePercent()).thenReturn(-20.0);
-
-        // when
-        ContractDraft draft = contractGenerator.generate().orElseThrow();
-
-        // then
-        assertEquals(10, draft.quantity());
     }
 }
