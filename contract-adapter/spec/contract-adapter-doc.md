@@ -135,6 +135,7 @@ Chaque lecture passe par `currentYaml()`, une méthode synchronisée qui compare
 |---|---|---|
 | `getScrollLifetime()` | `scroll-lifetime-hours` | 72 heures |
 | `getQuantityByRarity(rareté)` | `quantity-by-rarity.<RARETÉ>` | 300 |
+| `getQuantityVariancePercent()` | `quantity-variance-percent` | 0 |
 | `getRarityWeight(rareté)` | `rarity-weights.<RARETÉ>` | 0 |
 | `getDailyTickets(grade)` | `daily-tickets.<grade>` | 0 |
 | `findNpcName(client)` | `npc-names.<métier>` | vide |
@@ -157,7 +158,7 @@ Avant l'ajout d'un item :
 - s'il n'a pas de valeur dans `itemValue.yml` (`CustomItemService.hasMoneyValue`), il est ignoré avec un avertissement ;
 - sa rareté vient de `CustomItemService.getCustomMaterial`, ou vaut `COMMON` s'il n'est pas déclaré ;
 - un poids de rareté inférieur ou égal à zéro l'exclut ;
-- sa quantité vaut `max(1, round(quantity-by-rarity))`.
+- sa quantité de base vaut `max(1, round(quantity-by-rarity))`. Le générateur du domaine tire ensuite la quantité réelle autour de cette base, selon `quantity-variance-percent`.
 
 `getUnitValue(material, quality)` renvoie `CustomItemService.getMoneyValue`. Cette valeur dépend de la qualité : le prix de base est multiplié par le coefficient de la section `QualityRate` de `itemValue.yml`.
 
