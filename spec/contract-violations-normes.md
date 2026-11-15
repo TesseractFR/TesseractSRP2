@@ -5,6 +5,8 @@ Périmètre : 15 fichiers Java dans `contract-domain` et 23 dans `contract-adapt
 
 La cartographie vient de **graphify** (`graphify update`, extraction AST sans LLM) : 447 nœuds et 1 173 arêtes, dont 9 `implements`, 6 `inherits` et 291 `imports`. Chaque constat a ensuite été vérifié à la lecture du code.
 
+> **État au 15/11/2026 : 34 violations sur 35 corrigées, plus les 3 bugs.** Seule A-1 reste ouverte, comme dette assumée. Les sections 1 à 6 décrivent l'état **avant** correction. Le détail des corrections est en section 7.
+
 ---
 
 ## 1. Cartographie
@@ -178,3 +180,53 @@ Ces points ne relèvent pas des normes, mais ce sont des bugs probables :
 4. Introduire les exceptions métier et alléger `ContractMessagingRepository` (D-3, D-7, D-12, R-1).
 5. Découper `ContractService` et `PlayerInfoRepository` (D-5, D-6, A-7).
 6. Renommer et réorganiser les classes (A-2, A-4, A-5, A-11, A-12, D-8, D-9), puis traiter les points mineurs.
+
+---
+
+## 7. Corrections appliquées
+
+### Décisions de conception
+
+| Sujet | Décision |
+| --- | --- |
+| Service | Un seul `ContractService`, qui implémente 4 interfaces : `ContractPurchaseUseCase`, `ContractDeliveryUseCase`, `ContractTicketUseCase`, `ContractExpirationUseCase`. La convention `<Agrégat><Responsabilité>UseCase` est ajoutée à CONTRIBUTING.md et CLAUDE.md. |
+| Refus métier | Une exception par cas, toutes sous la classe scellée `ContractException`. `ContractMessageFormatter`, côté adapter, les traduit avec un `switch` exhaustif. |
+| Messages de succès | Envoyés par les adapters userside à partir du résultat renvoyé par le service. `ContractMessagingRepository` est supprimé. |
+| Contrat non enregistré | Record `ContractDraft`. `ContractRepository.create(draft)` renvoie un `Contract` dont le `ContractId` est obligatoire. |
+| Ports joueur | `PlayerInfoRepository` est découpé en `ContractTicketRepository`, `DailyTicketQuotaPort`, `JobMoneyBonusPort` et `PaymentPort`. |
+| Value objects | `ContractId`, `ContractClient` (métier ou compétence), `MoneyValue` pour la récompense et le bonus. |
+| Livraison | Retrait du parchemin et des items, suppression du contrat, puis paiement de la récompense et du bonus du livreur. Un échec de paiement est journalisé en erreur par `PlayerServicePaymentPort`, et le joueur reçoit un message. |
+| Autres domaines | Aucun changement dans skill-domain ni customItem-domain. |
+
+### Statut par violation
+
+| # | Statut | Correction |
+| --- | --- | --- |
+| D-1 | ✅ | 49 tests JUnit 5 + Mockito (`ContractModelTest`, `ContractGeneratorTest`, `ContractServiceTest`). |
+| D-2, A-3 | ✅ | Plus aucun `Optional.get()` : remplacés par `orElseThrow`, `flatMap`, `filter` et `ifPresentOrElse`. |
+| D-3, D-7, D-12 | ✅ | Exceptions porteuses de données. Messagerie retirée du domaine. |
+| D-4, A-9 | ✅ | `findContract`, `findScrollSlot`. |
+| D-5 | ✅ | Interfaces UseCase (décision ci-dessus). |
+| D-6, A-7 | ✅ | 4 ports et 4 implémentations dédiées. |
+| D-8 | ✅ | `ContractScrollPort`, `PlayerMaterialPort`. |
+| D-9 | ✅ | `ContractCatalogRepository.findAllCatalogItems`. |
+| D-10, D-11 | ✅ | `ContractId`, `ContractClient`, `MoneyValue`, `ContractDraft`. |
+| D-13 à D-17 | ✅ | Commentaires et Javadoc revus. Renommages : `computeReward`, `findMoneyBonus`, `hasEnoughItems`, `getScrollLifetime`. |
+| A-1 | ⏳ dette | Isolé derrière `SkillCatalogPort`, dont la seule implémentation est `SkillConfigSkillCatalogPort`. À corriger dès que `SkillService` expose `findAllSkills()`. |
+| A-2, A-4 | ✅ | `JpaContractRepository` + `ContractMapper`. L'entité ne connaît plus le domaine. |
+| A-5 | ✅ | `CustomItemPlayerMaterialPort`, `JobSkillContractCatalogRepository`, `JpaContractTicketRepository`, `YamlDailyTicketQuotaPort`, `JobServiceMoneyBonusPort`, `PlayerServicePaymentPort`, `BukkitContractScrollPort`. |
+| A-6 | ✅ | Interfaces `ContractNpcNameConfig`, `ContractRarityConfig` et `DailyTicketConfig`, implémentées par `YamlContractConfigRepository`. |
+| A-8 | ✅ | `Optional.ofNullable` à chaque appel Bukkit, `PlayerService`, `JobService` ou `CustomItemService` qui peut renvoyer `null`. |
+| A-10 | ✅ | `NotEnoughMaterialException`. |
+| A-11, A-12 | ✅ | Package `utils` supprimé. Les classes deviennent `scroll/ContractScrollItems` (classe finale), `scroll/ContractScrollReader` et `userside/controller/message/ContractChatFormats`. |
+| A-13 | ✅ | Le listener délègue à `isScrollValid`, et le menu à `hasEnoughItems`. |
+| A-14 à A-18 | ✅ | Javadoc placée avant les annotations. `ContractJobArgument`, `ContractCommand`, méthodes renommées avec un verbe. `ContractExpirationTask` déplacée dans `userside`. |
+| R-1 | ✅ | Le bonus du livreur est versé (conforme à la spec), le message de succès est envoyé, et un échec de paiement est journalisé. |
+| R-2 | ✅ | Les contrats ne sont plus jamais mis à jour, seulement créés et supprimés. `@Version` est géré par JPA. |
+| R-3 | ✅ | `Clock` injectée dans `ContractService` et `ContractGenerator`. |
+
+### Changements de comportement à vérifier en jeu
+
+- Un parchemin dont le contrat n'existe plus est maintenant détruit par le listener. Avant, seuls les contrats encore présents et expirés étaient concernés, et les parchemins des contrats purgés restaient dans les inventaires.
+- `/contract deliver` avec un parchemin inconnu affiche maintenant la réplique « parchemin invalide ». Avant, il ne se passait rien.
+- Le contrat est supprimé de la base après la livraison.
