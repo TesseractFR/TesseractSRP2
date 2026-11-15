@@ -6,6 +6,7 @@ import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.contract.adapter.serverside.skill.SkillCatalogPort;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.ContractRarityConfig;
+import onl.tesseract.srp.contract.adapter.serverside.yaml.RarityQuantity;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
@@ -84,8 +85,9 @@ public class JobSkillContractCatalogRepository implements ContractCatalogReposit
         if (weight <= 0) {
             return;
         }
-        int quantity = (int) Math.max(1, Math.round(contractRarityConfig.getQuantityByRarity(rarityName)));
-        catalogItems.add(new CatalogItem(type, client, material, weight, quantity));
+        RarityQuantity rarityQuantity = contractRarityConfig.getRarityQuantity(rarityName);
+        int quantity = (int) Math.max(1, Math.round(rarityQuantity.quantity()));
+        catalogItems.add(new CatalogItem(type, client, material, weight, quantity, rarityQuantity.variancePercent()));
     }
 
     private Rarity resolveRarity(MaterialName material) {

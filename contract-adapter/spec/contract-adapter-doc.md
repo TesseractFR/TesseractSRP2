@@ -129,13 +129,14 @@ La classe lit `plugins/Tesseract/contract/contracts.yml`, avec un chemin relatif
 - `DailyTicketConfig`, pour le quota ;
 - `ContractNpcNameConfig`, pour le parchemin et les messages.
 
-Chaque lecture passe par `currentYaml()`, une méthode synchronisée qui compare la date de modification du fichier à celle du dernier chargement et relit le fichier si elle a changé. Si le fichier est absent, la configuration est vide et les valeurs par défaut s'appliquent. Aucune valeur n'est validée.
+Le fichier est lu une seule fois, dans le constructeur du bean, et converti en un record `ContractConfig` (durée de vie, tables par rareté, par grade et par destinataire). Chaque getter lit ce record : une modification du fichier demande un redémarrage. Si le fichier est absent, la configuration par défaut `ContractConfig.DEFAULT` s'applique. Les records valident leurs valeurs (durée de vie strictement positive, quantité de rareté strictement positive, variance positive ou nulle) : une valeur invalide empêche le démarrage du plugin.
+
+Chaque rareté de `quantity-by-rarity` est lue en `RarityQuantity(quantity, variancePercent)`, sous la forme `{ quantity: 600, variance: 50 }`. L'ancienne forme, un simple nombre, reste acceptée avec une variance nulle.
 
 | Méthode | Clé | Défaut |
 |---|---|---|
 | `getScrollLifetime()` | `scroll-lifetime-hours` | 72 heures |
-| `getQuantityByRarity(rareté)` | `quantity-by-rarity.<RARETÉ>` | 300 |
-| `getQuantityVariancePercent()` | `quantity-variance-percent` | 0 |
+| `getRarityQuantity(rareté)` | `quantity-by-rarity.<RARETÉ>.quantity` et `.variance` | 300, variance 0 |
 | `getRarityWeight(rareté)` | `rarity-weights.<RARETÉ>` | 0 |
 | `getDailyTickets(grade)` | `daily-tickets.<grade>` | 0 |
 | `findNpcName(client)` | `npc-names.<métier>` | vide |
@@ -158,7 +159,7 @@ Avant l'ajout d'un item :
 - s'il n'a pas de valeur dans `itemValue.yml` (`CustomItemService.hasMoneyValue`), il est ignoré avec un avertissement ;
 - sa rareté vient de `CustomItemService.getCustomMaterial`, ou vaut `COMMON` s'il n'est pas déclaré ;
 - un poids de rareté inférieur ou égal à zéro l'exclut ;
-- sa quantité de base vaut `max(1, round(quantity-by-rarity))`. Le générateur du domaine tire ensuite la quantité réelle autour de cette base, selon `quantity-variance-percent`.
+- sa quantité de base vaut `max(1, round(quantity))` et sa variance celle de sa rareté. Le générateur du domaine tire ensuite la quantité réelle autour de cette base.
 
 `getUnitValue(material, quality)` renvoie `CustomItemService.getMoneyValue`. Cette valeur dépend de la qualité : le prix de base est multiplié par le coefficient de la section `QualityRate` de `itemValue.yml`.
 

@@ -73,13 +73,19 @@ class ContractModelTest {
     @Test
     void catalogItem_throwsWhenWeightIsNotStrictlyPositive() {
         assertThrows(IllegalArgumentException.class,
-                () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 0, 10));
+                () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 0, 10, 0));
     }
 
     @Test
     void catalogItem_throwsWhenQuantityIsBelowOne() {
         assertThrows(IllegalArgumentException.class,
-                () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 1, 0));
+                () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 1, 0, 0));
+    }
+
+    @Test
+    void catalogItem_throwsWhenQuantityVarianceIsNegative() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 1, 10, -1));
     }
 
     @Test

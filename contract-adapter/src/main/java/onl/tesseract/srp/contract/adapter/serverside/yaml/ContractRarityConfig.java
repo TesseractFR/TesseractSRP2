@@ -5,6 +5,6 @@ public interface ContractRarityConfig {
     /** @return poids de tirage des matériaux de cette rareté, zéro pour les exclure */
     double getRarityWeight(String rarityName);
 
-    /** @return quantité demandée par contrat pour les matériaux de cette rareté */
-    double getQuantityByRarity(String rarityName);
+    /** @return quantité de base et variance demandées par contrat pour les matériaux de cette rareté */
+    RarityQuantity getRarityQuantity(String rarityName);
 }

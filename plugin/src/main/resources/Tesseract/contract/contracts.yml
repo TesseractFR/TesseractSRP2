@@ -1,14 +1,13 @@
 scroll-lifetime-hours: 72
 
+# Quantité de base demandée par contrat et écart maximal autour d'elle, en % :
+# quantity 600 et variance 50 donnent une quantité entre 300 et 900.
 quantity-by-rarity:
-  COMMON: 600
-  SPECIAL: 300
-  RARE: 120
-  EPIC: 40
-  LEGENDARY: 10
-
-# Écart maximal en % autour de la quantité de base : 50 sur une base de 600 donne entre 300 et 900.
-quantity-variance-percent: 50
+  COMMON: { quantity: 600, variance: 50 }
+  SPECIAL: { quantity: 300, variance: 50 }
+  RARE: { quantity: 120, variance: 50 }
+  EPIC: { quantity: 40, variance: 50 }
+  LEGENDARY: { quantity: 10, variance: 50 }
 
 rarity-weights:
   COMMON: 100
