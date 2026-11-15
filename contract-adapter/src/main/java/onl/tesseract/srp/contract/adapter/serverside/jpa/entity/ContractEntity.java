@@ -1,22 +1,27 @@
 package onl.tesseract.srp.contract.adapter.serverside.jpa.entity;
 
-import onl.tesseract.srp.common.domain.model.enums.Quality;
-import onl.tesseract.srp.common.domain.model.item.MaterialName;
-import onl.tesseract.srp.contract.domain.model.contract.Contract;
-import onl.tesseract.srp.contract.domain.model.contract.ContractType;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
+import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 
 import java.time.Instant;
 
+/** Entité JPA représentant un contrat persisté dans la table {@code t_contracts}. */
 @Entity
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "t_contracts", indexes = @Index(name = "idx_contracts_expires_at", columnList = "expires_at"))
-/** Entité JPA représentant un contrat persisté dans la table {@code t_contracts}. */
 public class ContractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,14 +52,4 @@ public class ContractEntity {
 
     @Version
     private long version;
-
-    public static ContractEntity fromDomain(Contract contract) {
-        return new ContractEntity(contract.id(), contract.type(), contract.job(), contract.material().value(), contract.quantity(),
-                contract.minimalQuality(), contract.reward(), contract.expiresAt(), 0L);
-    }
-
-    public Contract toDomain() {
-        return new Contract(id, type, job, new MaterialName(material), quantity, minimalQuality, reward,
-                expiresAt);
-    }
 }
