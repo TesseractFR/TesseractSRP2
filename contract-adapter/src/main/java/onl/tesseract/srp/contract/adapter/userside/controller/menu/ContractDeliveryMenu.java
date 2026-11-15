@@ -14,7 +14,7 @@ import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.model.exception.ContractException;
-import onl.tesseract.srp.contract.domain.port.userside.ContractDeliveryUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractDeliveryService;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -38,17 +38,17 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
     private final PlayerId playerId;
     private final ContractClient npc;
     private final Contract contract;
-    private final ContractDeliveryUseCase contractDeliveryUseCase;
+    private final ContractDeliveryService contractDeliveryService;
     private final ContractMessageFormatter contractMessageFormatter;
 
     public ContractDeliveryMenu(PlayerId playerId, ContractClient npc, Contract contract,
-                                ContractDeliveryUseCase contractDeliveryUseCase,
+                                ContractDeliveryService contractDeliveryService,
                                 ContractMessageFormatter contractMessageFormatter) {
         super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
         this.npc = npc;
         this.contract = contract;
-        this.contractDeliveryUseCase = contractDeliveryUseCase;
+        this.contractDeliveryService = contractDeliveryService;
         this.contractMessageFormatter = contractMessageFormatter;
     }
 
@@ -84,7 +84,7 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
 
     private void deliver(Player viewer) {
         try {
-            MoneyValue payment = contractDeliveryUseCase.deliver(playerId, contract.id(), npc);
+            MoneyValue payment = contractDeliveryService.deliver(playerId, contract.id(), npc);
             viewer.sendMessage(contractMessageFormatter.formatNpcDeliverySucceeded(npc, payment));
         } catch (ContractException refusal) {
             viewer.sendMessage(contractMessageFormatter.formatNpcRefusal(npc, refusal));
@@ -101,9 +101,9 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
     private List<Component> buildLore() {
         boolean isCraft = contract.type() == ContractType.CRAFT;
         QualityAdapter minimalQuality = QualityAdapter.from(contract.minimalQuality());
-        int ownedQuantity = contractDeliveryUseCase.countOwnedItems(playerId, contract);
-        boolean hasEnoughItems = contractDeliveryUseCase.hasEnoughItems(playerId, contract);
-        String moneyBonus = contractDeliveryUseCase.findMoneyBonus(playerId, contract)
+        int ownedQuantity = contractDeliveryService.countOwnedItems(playerId, contract);
+        boolean hasEnoughItems = contractDeliveryService.hasEnoughItems(playerId, contract);
+        String moneyBonus = contractDeliveryService.findMoneyBonus(playerId, contract)
                 .map(bonus -> bonus.value().toPlainString())
                 .orElse("0");
         return new ItemLoreBuilder()

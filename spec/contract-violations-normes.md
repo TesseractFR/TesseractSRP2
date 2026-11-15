@@ -189,7 +189,7 @@ Ces points ne relèvent pas des normes, mais ce sont des bugs probables :
 
 | Sujet | Décision |
 | --- | --- |
-| Service | Un seul `ContractService`, qui implémente 4 interfaces : `ContractPurchaseUseCase`, `ContractDeliveryUseCase`, `ContractTicketUseCase`, `ContractExpirationUseCase`. La convention `<Agrégat><Responsabilité>UseCase` est ajoutée à CONTRIBUTING.md et CLAUDE.md. |
+| Service | Un service concret par cas d'usage, sans interface : `ContractPurchaseService`, `ContractDeliveryService`, `ContractTicketService`, `ContractExpirationService`. L'achat s'appuie sur `ContractTicketService`. La règle du bonus, partagée par l'achat et la livraison, vit dans le modèle (`Contract.computeMoneyBonus`). CONTRIBUTING.md et CLAUDE.md sont mis à jour en ce sens. |
 | Refus métier | Une exception par cas, toutes sous la classe scellée `ContractException`. `ContractMessageFormatter`, côté adapter, les traduit avec un `switch` exhaustif. |
 | Messages de succès | Envoyés par les adapters userside à partir du résultat renvoyé par le service. `ContractMessagingRepository` est supprimé. |
 | Contrat non enregistré | Record `ContractDraft`. `ContractRepository.create(draft)` renvoie un `Contract` dont le `ContractId` est obligatoire. |
@@ -202,11 +202,11 @@ Ces points ne relèvent pas des normes, mais ce sont des bugs probables :
 
 | # | Statut | Correction |
 | --- | --- | --- |
-| D-1 | ✅ | 49 tests JUnit 5 + Mockito (`ContractModelTest`, `ContractGeneratorTest`, `ContractServiceTest`). |
+| D-1 | ✅ | 55 tests JUnit 5 + Mockito : un fichier par service, plus `ContractModelTest` et `ContractGeneratorTest`. |
 | D-2, A-3 | ✅ | Plus aucun `Optional.get()` : remplacés par `orElseThrow`, `flatMap`, `filter` et `ifPresentOrElse`. |
 | D-3, D-7, D-12 | ✅ | Exceptions porteuses de données. Messagerie retirée du domaine. |
 | D-4, A-9 | ✅ | `findContract`, `findScrollSlot`. |
-| D-5 | ✅ | Interfaces UseCase (décision ci-dessus). |
+| D-5 | ✅ | `ContractService` découpé en quatre services, un par cas d'usage (décision ci-dessus). |
 | D-6, A-7 | ✅ | 4 ports et 4 implémentations dédiées. |
 | D-8 | ✅ | `ContractScrollPort`, `PlayerMaterialPort`. |
 | D-9 | ✅ | `ContractCatalogRepository.findAllCatalogItems`. |
@@ -223,7 +223,7 @@ Ces points ne relèvent pas des normes, mais ce sont des bugs probables :
 | A-14 à A-18 | ✅ | Javadoc placée avant les annotations. `ContractJobArgument`, `ContractCommand`, méthodes renommées avec un verbe. `ContractExpirationTask` déplacée dans `userside`. |
 | R-1 | ✅ | Le bonus du livreur est versé (conforme à la spec), le message de succès est envoyé, et un échec de paiement est journalisé. |
 | R-2 | ✅ | Les contrats ne sont plus jamais mis à jour, seulement créés et supprimés. `@Version` est géré par JPA. |
-| R-3 | ✅ | `Clock` injectée dans `ContractService` et `ContractGenerator`. |
+| R-3 | ✅ | `Clock` injectée dans `ContractDeliveryService`, `ContractExpirationService` et `ContractGenerator`. |
 
 ### Changements de comportement à vérifier en jeu
 
