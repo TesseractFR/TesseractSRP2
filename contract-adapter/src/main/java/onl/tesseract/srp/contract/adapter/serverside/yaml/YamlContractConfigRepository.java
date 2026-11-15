@@ -6,70 +6,95 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
-/** Lit la configuration des contrats depuis le fichier YAML du serveur et recharge ses changements. */
+/**
+ * Charge une fois, à la création du bean, la configuration des contrats depuis le fichier YAML du
+ * serveur dans un {@link ContractConfig}. Une modification du fichier demande un redémarrage.
+ */
 @Component
 public class YamlContractConfigRepository implements ContractConfigRepository, ContractNpcNameConfig,
         ContractRarityConfig, DailyTicketConfig {
 
     private static final Path CONFIG_FILE_PATH = Path.of("plugins/Tesseract/contract/contracts.yml");
 
-    private YamlConfiguration yamlConfiguration = new YamlConfiguration();
-    private long loadedAt = -1;
+    private final ContractConfig contractConfig;
+
+    public YamlContractConfigRepository() {
+        this.contractConfig = load(CONFIG_FILE_PATH);
+    }
 
     @Override
     public Duration getScrollLifetime() {
-        return Duration.ofHours(currentYaml().getLong("scroll-lifetime-hours", 72));
+        return contractConfig.scrollLifetime();
     }
 
     @Override
-    public double getQuantityVariancePercent() {
-        return currentYaml().getDouble("quantity-variance-percent", 0);
-    }
-
-    @Override
-    public double getQuantityByRarity(String rarityName) {
-        return currentYaml().getDouble("quantity-by-rarity." + rarityName, 300);
+    public RarityQuantity getRarityQuantity(String rarityName) {
+        return contractConfig.getRarityQuantity(rarityName);
     }
 
     @Override
     public double getRarityWeight(String rarityName) {
-        return currentYaml().getDouble("rarity-weights." + rarityName, 0);
+        return contractConfig.getRarityWeight(rarityName);
     }
 
     @Override
     public int getDailyTickets(String rankName) {
-        return currentYaml().getInt("daily-tickets." + rankName, 0);
+        return contractConfig.getDailyTickets(rankName);
     }
 
     @Override
     public Optional<String> findNpcName(ContractClient client) {
-        return Optional.ofNullable(currentYaml().getConfigurationSection("npc-names"))
-                .flatMap(npcNames -> findIgnoringCase(npcNames, client.name()));
+        return contractConfig.findNpcName(client.name());
     }
 
-    private static Optional<String> findIgnoringCase(ConfigurationSection section, String key) {
-        return section.getKeys(false).stream()
-                .filter(candidate -> candidate.equalsIgnoreCase(key))
-                .findFirst()
-                .flatMap(candidate -> Optional.ofNullable(section.getString(candidate)))
-                .filter(name -> !name.isBlank());
+    /** Fichier absent : configuration par défaut. Une valeur invalide empêche le démarrage. */
+    private static ContractConfig load(Path configFilePath) {
+        if (!Files.exists(configFilePath)) {
+            return ContractConfig.DEFAULT;
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(configFilePath.toFile());
+        Map<String, String> npcNames = new HashMap<>();
+        readSection(yaml, "npc-names", ConfigurationSection::getString).forEach((client, npcName) -> {
+            if (npcName != null && !npcName.isBlank()) {
+                npcNames.put(client.toLowerCase(Locale.ROOT), npcName);
+            }
+        });
+        return new ContractConfig(
+                Duration.ofHours(yaml.getLong("scroll-lifetime-hours", ContractConfig.DEFAULT_SCROLL_LIFETIME.toHours())),
+                readSection(yaml, "quantity-by-rarity", YamlContractConfigRepository::readRarityQuantity),
+                readSection(yaml, "rarity-weights", ConfigurationSection::getDouble),
+                readSection(yaml, "daily-tickets", ConfigurationSection::getInt),
+                npcNames);
     }
 
-    private synchronized YamlConfiguration currentYaml() {
-        File configFile = CONFIG_FILE_PATH.toFile();
-        if (!configFile.exists()) {
-            return new YamlConfiguration();
-        }
-        long lastModified = configFile.lastModified();
-        if (lastModified != loadedAt) {
-            yamlConfiguration = YamlConfiguration.loadConfiguration(configFile);
-            loadedAt = lastModified;
-        }
-        return yamlConfiguration;
+    /**
+     * Lit une rareté sous la forme {@code { quantity: 600, variance: 50 }}, ou sous l'ancienne forme
+     * d'un simple nombre, qui donne une variance nulle.
+     */
+    private static RarityQuantity readRarityQuantity(ConfigurationSection section, String rarityName) {
+        double defaultQuantity = RarityQuantity.DEFAULT.quantity();
+        return Optional.ofNullable(section.getConfigurationSection(rarityName))
+                .map(rarity -> new RarityQuantity(rarity.getDouble("quantity", defaultQuantity),
+                        rarity.getDouble("variance", 0)))
+                .orElseGet(() -> new RarityQuantity(section.getDouble(rarityName, defaultQuantity), 0));
+    }
+
+    /** @return les valeurs de la section indexées par clé, table vide si la section est absente */
+    private static <T> Map<String, T> readSection(ConfigurationSection yaml, String sectionName,
+                                                  BiFunction<ConfigurationSection, String, T> valueReader) {
+        Map<String, T> values = new HashMap<>();
+        Optional.ofNullable(yaml.getConfigurationSection(sectionName))
+                .ifPresent(section -> section.getKeys(false)
+                        .forEach(key -> values.put(key, valueReader.apply(section, key))));
+        return values;
     }
 }
