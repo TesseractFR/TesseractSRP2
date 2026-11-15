@@ -5,7 +5,10 @@ import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.common.domain.model.item.MaterialName;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Optional;
 
 /** Contrat enregistré, décrivant les matériaux à livrer, leur destinataire et leur récompense. */
 public record Contract(@NonNull ContractId id, @NonNull ContractType type, @NonNull ContractClient client,
@@ -27,5 +30,22 @@ public record Contract(@NonNull ContractId id, @NonNull ContractType type, @NonN
     /** @return {@code true} si le contrat doit être livré au destinataire fourni */
     public boolean isFor(ContractClient candidate) {
         return client.equals(candidate);
+    }
+
+    /**
+     * Calcule le bonus de métier sur la récompense. Seuls les contrats de récolte en donnent, et un
+     * taux négatif compte pour zéro.
+     *
+     * @param bonusRate taux de bonus du joueur (0,05 pour 5 %)
+     * @return le bonus arrondi à l'unité, ou {@link Optional#empty()} s'il est nul
+     */
+    public Optional<MoneyValue> computeMoneyBonus(double bonusRate) {
+        if (type != ContractType.HARVEST || bonusRate <= 0) {
+            return Optional.empty();
+        }
+        BigDecimal bonus = reward.value()
+                .multiply(BigDecimal.valueOf(bonusRate))
+                .setScale(0, RoundingMode.HALF_UP);
+        return bonus.signum() > 0 ? Optional.of(new MoneyValue(bonus)) : Optional.empty();
     }
 }

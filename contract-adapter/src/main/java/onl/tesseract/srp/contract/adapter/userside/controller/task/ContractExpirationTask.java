@@ -1,6 +1,6 @@
 package onl.tesseract.srp.contract.adapter.userside.controller.task;
 
-import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationService;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.springframework.stereotype.Component;
@@ -14,11 +14,11 @@ import java.util.logging.Level;
 @Component
 public class ContractExpirationTask implements Runnable {
     private static final long PERIOD_TICKS = 20L * 60 * 10;
-    private final ContractExpirationUseCase contractExpirationUseCase;
+    private final ContractExpirationService contractExpirationService;
     private final Plugin plugin;
 
-    public ContractExpirationTask(ContractExpirationUseCase contractExpirationUseCase, Plugin plugin) {
-        this.contractExpirationUseCase = contractExpirationUseCase;
+    public ContractExpirationTask(ContractExpirationService contractExpirationService, Plugin plugin) {
+        this.contractExpirationService = contractExpirationService;
         this.plugin = plugin;
     }
 
@@ -29,7 +29,7 @@ public class ContractExpirationTask implements Runnable {
 
     @Override
     public void run() {
-        int purgedCount = contractExpirationUseCase.purgeExpired();
+        int purgedCount = contractExpirationService.purgeExpired();
         if (purgedCount > 0) {
             plugin.getLogger().log(Level.INFO, "[contract] {0} contrat(s) expiré(s) supprimé(s).", purgedCount);
         }

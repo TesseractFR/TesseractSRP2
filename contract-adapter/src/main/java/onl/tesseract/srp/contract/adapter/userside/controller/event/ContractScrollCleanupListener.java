@@ -3,7 +3,7 @@ package onl.tesseract.srp.contract.adapter.userside.controller.event;
 import onl.tesseract.srp.contract.adapter.scroll.ContractScrollItems;
 import onl.tesseract.srp.contract.adapter.scroll.ContractScrollReader;
 import onl.tesseract.srp.contract.adapter.userside.controller.message.ContractMessageFormatter;
-import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractExpirationService;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -24,12 +24,12 @@ import java.util.Optional;
 @Component
 public class ContractScrollCleanupListener implements Listener {
 
-    private final ContractExpirationUseCase contractExpirationUseCase;
+    private final ContractExpirationService contractExpirationService;
     private final ContractMessageFormatter contractMessageFormatter;
 
-    public ContractScrollCleanupListener(ContractExpirationUseCase contractExpirationUseCase,
+    public ContractScrollCleanupListener(ContractExpirationService contractExpirationService,
                                          ContractMessageFormatter contractMessageFormatter) {
-        this.contractExpirationUseCase = contractExpirationUseCase;
+        this.contractExpirationService = contractExpirationService;
         this.contractMessageFormatter = contractMessageFormatter;
     }
 
@@ -67,7 +67,7 @@ public class ContractScrollCleanupListener implements Listener {
     }
 
     private void notifyExpiredScrolls(Player player, int count) {
-        contractExpirationUseCase.purgeExpired();
+        contractExpirationService.purgeExpired();
         player.sendMessage(contractMessageFormatter.formatScrollsExpired(count));
     }
 
@@ -86,7 +86,7 @@ public class ContractScrollCleanupListener implements Listener {
         return Optional.ofNullable(itemStack)
                 .filter(ContractScrollItems::hasScrollType)
                 .flatMap(ContractScrollReader::readContractId)
-                .map(contractId -> !contractExpirationUseCase.isScrollValid(contractId))
+                .map(contractId -> !contractExpirationService.isScrollValid(contractId))
                 .orElse(false);
     }
 }

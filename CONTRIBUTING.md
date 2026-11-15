@@ -41,7 +41,7 @@ onl.tesseract.srp.<feature>.domain
 │   ├── event          événements du domaine
 │   └── exception      exceptions métier
 └── port
-    ├── userside       services et interfaces de cas d'usage appelés par les adapters (commandes, menus, listeners)
+    ├── userside       services appelés par les adapters, un par cas d'usage, (commandes, menus, listeners)
     └── serverside     interfaces implémentées par les adapters (persistance, Bukkit, config)
 ```
 
@@ -56,7 +56,7 @@ onl.tesseract.srp.<feature>.domain
 
 | Principe | Ce qu'on attend concrètement |
 | --- | --- |
-| **S**: responsabilité unique | Un seul service par agrégat (`GuildService`, `CampementService`). Quand il couvre plusieurs sujets, on ne le découpe pas en plusieurs classes : il implémente une interface de cas d'usage par responsabilité (`GuildMembershipUseCase`, `GuildBankUseCase`), et chaque adapter n'injecte que l'interface dont il a besoin. Un listener ne traite qu'un type de sujet. |
+| **S**: responsabilité unique | Un service par cas d'usage, nommé d'après l'agrégat et la responsabilité (`GuildMembershipService`, `GuildBankService`). Un service est une classe concrète, sans interface : les adapters l'injectent directement. Un service peut s'appuyer sur un autre service du même domaine. Une règle métier partagée par plusieurs services vit dans le modèle, pas dans un service. Un listener ne traite qu'un type de sujet. |
 | **O**: ouvert/fermé | On ajoute un comportement par une nouvelle implémentation ou une entrée de config, pas par un `switch` de plus dans une classe existante. Ce qui s'équilibre (taux, prix, niveaux) est en configuration. |
 | **L**: substitution de Liskov | Toute implémentation d'un port respecte son contrat, y compris sur `Optional` et les exceptions. Si le port dit `find…` renvoie `Optional.empty()`, l'adapter ne lève pas d'exception à la place. |
 | **I**: ségrégation des interfaces | Des ports petits et ciblés. On ne crée pas un `PlayerPort` fourre-tout, mais `TeleportationPort` ou `PlayerInventoryPort`. |
@@ -88,8 +88,7 @@ Les classes fourre-tout `*Utils` et `*Helper` sont à éviter : leur nom ne dit 
 | --- | --- | --- |
 | Agrégat, entité métier | Nom métier | `Guild`, `Campement` |
 | Value object | Nom métier, `record` | `PlayerId`, `MoneyValue` |
-| Service (port userside) | `<Agrégat>Service` | `GuildService` |
-| Interface de cas d'usage (port userside) | `<Agrégat><Responsabilité>UseCase`, implémentée par le service de l'agrégat | `GuildBankUseCase` |
+| Service (port userside) | `<Agrégat><Responsabilité>Service`, classe concrète sans interface | `GuildBankService`, `ContractPurchaseService` |
 | Port serverside de persistance | `<Agrégat>Repository` | `CraftingRepository` |
 | Autre port serverside | `<Capacité>Port` | `TeleportationPort` |
 | Implémentation d'un port | `<Techno><Port>`, **jamais `Impl`** | `JpaCraftingRepository`, `YamlMoneyRepository`, `BukkitTeleportationPort` |

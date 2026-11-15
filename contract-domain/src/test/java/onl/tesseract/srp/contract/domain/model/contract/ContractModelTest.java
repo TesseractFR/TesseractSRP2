@@ -5,8 +5,10 @@ import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,5 +80,35 @@ class ContractModelTest {
     void catalogItem_throwsWhenQuantityIsBelowOne() {
         assertThrows(IllegalArgumentException.class,
                 () -> new CatalogItem(ContractType.HARVEST, FARMER, new MaterialName("wheat"), 1, 0));
+    }
+
+    @Test
+    void computeMoneyBonus_returnsRoundedBonusForHarvest() {
+        // when : 50 × 4,4 % = 2,2
+        MoneyValue bonus = contract().computeMoneyBonus(0.044).orElseThrow();
+
+        // then
+        assertEquals(0, BigDecimal.valueOf(2).compareTo(bonus.value()));
+    }
+
+    @Test
+    void computeMoneyBonus_returnsEmptyForCraft() {
+        // given
+        Contract craftContract = new Contract(new ContractId(1), ContractType.CRAFT, FARMER, new MaterialName("sword"), 1,
+                Quality.POOR, MoneyValue.of(50), EXPIRES_AT);
+
+        // when / then
+        assertTrue(craftContract.computeMoneyBonus(0.5).isEmpty());
+    }
+
+    @Test
+    void computeMoneyBonus_returnsEmptyWhenRateIsNegative() {
+        assertTrue(contract().computeMoneyBonus(-0.5).isEmpty());
+    }
+
+    @Test
+    void computeMoneyBonus_returnsEmptyWhenBonusRoundsToZero() {
+        // when : 50 × 0,8 % = 0,4
+        assertTrue(contract().computeMoneyBonus(0.008).isEmpty());
     }
 }

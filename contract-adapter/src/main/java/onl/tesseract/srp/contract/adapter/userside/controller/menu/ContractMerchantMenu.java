@@ -10,8 +10,8 @@ import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.contract.adapter.userside.controller.message.ContractMessageFormatter;
 import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.exception.ContractException;
-import onl.tesseract.srp.contract.domain.port.userside.ContractPurchaseUseCase;
-import onl.tesseract.srp.contract.domain.port.userside.ContractTicketUseCase;
+import onl.tesseract.srp.contract.domain.port.userside.ContractPurchaseService;
+import onl.tesseract.srp.contract.domain.port.userside.ContractTicketService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -30,23 +30,23 @@ public class ContractMerchantMenu extends ItemAdderMenu {
     private static final int INFORMATION_SLOT = 15;
 
     private final PlayerId playerId;
-    private final ContractPurchaseUseCase contractPurchaseUseCase;
-    private final ContractTicketUseCase contractTicketUseCase;
+    private final ContractPurchaseService contractPurchaseService;
+    private final ContractTicketService contractTicketService;
     private final ContractMessageFormatter contractMessageFormatter;
 
-    public ContractMerchantMenu(PlayerId playerId, ContractPurchaseUseCase contractPurchaseUseCase,
-                                ContractTicketUseCase contractTicketUseCase,
+    public ContractMerchantMenu(PlayerId playerId, ContractPurchaseService contractPurchaseService,
+                                ContractTicketService contractTicketService,
                                 ContractMessageFormatter contractMessageFormatter) {
         super(MenuSize.Three, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.playerId = playerId;
-        this.contractPurchaseUseCase = contractPurchaseUseCase;
-        this.contractTicketUseCase = contractTicketUseCase;
+        this.contractPurchaseService = contractPurchaseService;
+        this.contractTicketService = contractTicketService;
         this.contractMessageFormatter = contractMessageFormatter;
     }
 
     @Override
     public void placeButtons(Player viewer) {
-        int tickets = contractTicketUseCase.getTickets(playerId);
+        int tickets = contractTicketService.getTickets(playerId);
         addTicketsButton(tickets);
         addBuyButton(viewer, tickets);
         addInformationButton();
@@ -58,7 +58,7 @@ public class ContractMerchantMenu extends ItemAdderMenu {
                 .lore(new ItemLoreBuilder()
                         .append("Restants aujourd'hui : " + tickets, tickets > 0 ? NamedTextColor.GREEN : NamedTextColor.RED)
                         .newline()
-                        .append("Quota par jour : " + contractTicketUseCase.getDailyQuota(playerId), NamedTextColor.WHITE)
+                        .append("Quota par jour : " + contractTicketService.getDailyQuota(playerId), NamedTextColor.WHITE)
                         .get())
                 .amount(Math.clamp(tickets, 1, MAX_STACK_SIZE))
                 .build();
@@ -82,16 +82,16 @@ public class ContractMerchantMenu extends ItemAdderMenu {
                 .build();
         addButton(BUY_SLOT, icon, event -> {
             buyScroll(viewer);
-            new ContractMerchantMenu(playerId, contractPurchaseUseCase, contractTicketUseCase, contractMessageFormatter)
+            new ContractMerchantMenu(playerId, contractPurchaseService, contractTicketService, contractMessageFormatter)
                     .open(viewer);
         });
     }
 
     private void buyScroll(Player viewer) {
         try {
-            Contract contract = contractPurchaseUseCase.buyScroll(playerId);
+            Contract contract = contractPurchaseService.buyScroll(playerId);
             viewer.sendMessage(contractMessageFormatter.formatPurchaseSucceeded(contract,
-                    contractTicketUseCase.getTickets(playerId)));
+                    contractTicketService.getTickets(playerId)));
         } catch (ContractException refusal) {
             viewer.sendMessage(contractMessageFormatter.formatRefusal(refusal));
         }
