@@ -8,7 +8,6 @@ import onl.tesseract.srp.contract.domain.model.exception.NoContractTicketLeftExc
 import onl.tesseract.srp.contract.domain.model.exception.ScrollInventoryFullException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollPort;
-import onl.tesseract.srp.contract.domain.port.serverside.JobMoneyBonusPort;
 
 /** Fait acheter des parchemins de contrat aux joueurs contre des tickets. */
 public class ContractPurchaseService {
@@ -17,16 +16,13 @@ public class ContractPurchaseService {
     private final ContractGenerator contractGenerator;
     private final ContractScrollPort contractScrollPort;
     private final ContractTicketService contractTicketService;
-    private final JobMoneyBonusPort jobMoneyBonusPort;
 
     public ContractPurchaseService(ContractRepository contractRepository, ContractGenerator contractGenerator,
-                                   ContractScrollPort contractScrollPort, ContractTicketService contractTicketService,
-                                   JobMoneyBonusPort jobMoneyBonusPort) {
+                                   ContractScrollPort contractScrollPort, ContractTicketService contractTicketService) {
         this.contractRepository = contractRepository;
         this.contractGenerator = contractGenerator;
         this.contractScrollPort = contractScrollPort;
         this.contractTicketService = contractTicketService;
-        this.jobMoneyBonusPort = jobMoneyBonusPort;
     }
 
     /**
@@ -50,7 +46,7 @@ public class ContractPurchaseService {
 
         contractTicketService.withdrawTicket(buyer);
         Contract contract = createContractOrRefundTicket(buyer, draft);
-        if (!contractScrollPort.giveScroll(buyer, contract, hasJobBonus(buyer, contract))) {
+        if (!contractScrollPort.giveScroll(buyer, contract)) {
             contractRepository.delete(contract.id());
             contractTicketService.refundTicket(buyer);
             throw new ScrollInventoryFullException(buyer);
@@ -66,10 +62,5 @@ public class ContractPurchaseService {
             contractTicketService.refundTicket(buyer);
             throw e;
         }
-    }
-
-    private boolean hasJobBonus(PlayerId buyer, Contract contract) {
-        double bonusRate = jobMoneyBonusPort.getMoneyBonusRate(buyer, contract.client(), contract.material());
-        return contract.computeMoneyBonus(bonusRate).isPresent();
     }
 }

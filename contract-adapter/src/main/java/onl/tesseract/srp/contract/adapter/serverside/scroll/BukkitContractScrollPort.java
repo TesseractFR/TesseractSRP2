@@ -49,7 +49,7 @@ public class BukkitContractScrollPort implements ContractScrollPort {
     }
 
     @Override
-    public boolean giveScroll(PlayerId player, Contract contract, boolean hasJobBonus) {
+    public boolean giveScroll(PlayerId player, Contract contract) {
         return findOnlinePlayer(player)
                 .map(onlinePlayer -> onlinePlayer.getInventory().addItem(buildScroll(contract)).isEmpty())
                 .orElse(false);

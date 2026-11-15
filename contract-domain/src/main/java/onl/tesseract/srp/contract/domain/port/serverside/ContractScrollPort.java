@@ -14,10 +14,9 @@ public interface ContractScrollPort {
     /**
      * Crée et remet au joueur le parchemin du contrat.
      *
-     * @param hasJobBonus indique, pour la présentation du parchemin, si le contrat ouvre droit à un bonus de métier
      * @return {@code true} si le parchemin a été remis, {@code false} si le joueur est hors ligne ou son inventaire plein
      */
-    boolean giveScroll(PlayerId player, Contract contract, boolean hasJobBonus);
+    boolean giveScroll(PlayerId player, Contract contract);
 
     /** @return {@code true} si le joueur en ligne possède le parchemin du contrat */
     boolean hasScroll(PlayerId player, ContractId contractId);
