@@ -46,10 +46,9 @@ public class ContractProvider {
     public ContractPurchaseService contractPurchaseService(ContractRepository contractRepository,
                                                            ContractGenerator contractGenerator,
                                                            ContractScrollPort contractScrollPort,
-                                                           ContractTicketService contractTicketService,
-                                                           JobMoneyBonusPort jobMoneyBonusPort) {
+                                                           ContractTicketService contractTicketService) {
         return new ContractPurchaseService(contractRepository, contractGenerator, contractScrollPort,
-                contractTicketService, jobMoneyBonusPort);
+                contractTicketService);
     }
 
     @Bean

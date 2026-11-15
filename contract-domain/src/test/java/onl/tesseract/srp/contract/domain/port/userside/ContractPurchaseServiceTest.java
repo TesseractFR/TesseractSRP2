@@ -14,7 +14,6 @@ import onl.tesseract.srp.contract.domain.model.exception.NoContractTicketLeftExc
 import onl.tesseract.srp.contract.domain.model.exception.ScrollInventoryFullException;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractScrollPort;
-import onl.tesseract.srp.contract.domain.port.serverside.JobMoneyBonusPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,7 +50,6 @@ class ContractPurchaseServiceTest {
     private ContractGenerator contractGenerator;
     private ContractScrollPort contractScrollPort;
     private ContractTicketService contractTicketService;
-    private JobMoneyBonusPort jobMoneyBonusPort;
     private ContractPurchaseService contractPurchaseService;
 
     @BeforeEach
@@ -61,16 +58,15 @@ class ContractPurchaseServiceTest {
         contractGenerator = mock(ContractGenerator.class);
         contractScrollPort = mock(ContractScrollPort.class);
         contractTicketService = mock(ContractTicketService.class);
-        jobMoneyBonusPort = mock(JobMoneyBonusPort.class);
         contractPurchaseService = new ContractPurchaseService(contractRepository, contractGenerator, contractScrollPort,
-                contractTicketService, jobMoneyBonusPort);
+                contractTicketService);
 
         when(contractTicketService.hasTicket(PLAYER)).thenReturn(true);
         when(contractScrollPort.canReceiveScroll(PLAYER)).thenReturn(true);
         when(contractGenerator.generate()).thenReturn(Optional.of(new ContractDraft(ContractType.HARVEST, FARMER, WHEAT,
                 10, Quality.POOR, MoneyValue.of(100), NOW.plusSeconds(3600))));
         when(contractRepository.create(any())).thenReturn(validHarvestContract());
-        when(contractScrollPort.giveScroll(any(), any(), anyBoolean())).thenReturn(true);
+        when(contractScrollPort.giveScroll(any(), any())).thenReturn(true);
     }
 
     @Test
@@ -82,7 +78,7 @@ class ContractPurchaseServiceTest {
         assertEquals(CONTRACT_ID, contract.id());
         verify(contractTicketService).withdrawTicket(PLAYER);
         verify(contractTicketService, never()).refundTicket(any());
-        verify(contractScrollPort).giveScroll(PLAYER, contract, false);
+        verify(contractScrollPort).giveScroll(PLAYER, contract);
     }
 
     @Test
@@ -133,23 +129,11 @@ class ContractPurchaseServiceTest {
     @Test
     void buyScroll_cancelsPurchaseWhenScrollCannotBeGiven() {
         // given
-        when(contractScrollPort.giveScroll(any(), any(), anyBoolean())).thenReturn(false);
+        when(contractScrollPort.giveScroll(any(), any())).thenReturn(false);
 
         // when / then
         assertThrows(ScrollInventoryFullException.class, () -> contractPurchaseService.buyScroll(PLAYER));
         verify(contractRepository).delete(CONTRACT_ID);
         verify(contractTicketService).refundTicket(PLAYER);
-    }
-
-    @Test
-    void buyScroll_marksScrollWhenBuyerHasJobBonus() {
-        // given
-        when(jobMoneyBonusPort.getMoneyBonusRate(PLAYER, FARMER, WHEAT)).thenReturn(0.05);
-
-        // when
-        Contract contract = contractPurchaseService.buyScroll(PLAYER);
-
-        // then
-        verify(contractScrollPort).giveScroll(PLAYER, contract, true);
     }
 }
