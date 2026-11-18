@@ -35,6 +35,9 @@
         <springboot.version>4.1.0-RC1</springboot.version>
         <springboot-context.version>7.1.0-M1</springboot-context.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
+        <sonar.organization>tesseractfr</sonar.organization>
+        <sonar.projectKey>TesseractFR_TesseractSRP2</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencyManagement>
