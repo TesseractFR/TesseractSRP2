@@ -108,17 +108,22 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
                 .orElse("0");
         return new ItemLoreBuilder()
                 .append((isCraft ? "Artisanat" : "Récolte") + " · " + StringUtils.capitalize(contract.client().name()), NamedTextColor.DARK_GRAY)
-                .newline()
+                .newline(2)
                 .append("À livrer", NamedTextColor.GOLD)
+                .newline()
                 .append(BULLET + "Quantité : " + contract.quantity(), NamedTextColor.WHITE)
+                .newline()
                 .append(BULLET + "Qualité minimale : " + minimalQuality.label(), minimalQuality.color())
+                .newline()
                 .append(BULLET + "Dans ton inventaire : " + ownedQuantity + " / " + contract.quantity(),
                         hasEnoughItems ? NamedTextColor.GREEN : NamedTextColor.RED)
-                .newline()
+                .newline(2)
                 .append("Récompense", NamedTextColor.GOLD)
-                .append(BULLET + "Gain : " + contract.reward().value() + " lys", NamedTextColor.GREEN)
-                .append(BULLET + "Bonus métier : +" + moneyBonus + " lys", NamedTextColor.GREEN)
                 .newline()
+                .append(BULLET + "Gain : " + contract.reward().value() + " lys", NamedTextColor.GREEN)
+                .newline()
+                .append(BULLET + "Bonus métier : +" + moneyBonus + " lys", NamedTextColor.GREEN)
+                .newline(2)
                 .append("Expire le : " + EXPIRATION_DATE_FORMAT.format(contract.expiresAt()), NamedTextColor.RED)
                 .get();
     }
