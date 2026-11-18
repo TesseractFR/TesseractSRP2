@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
           cache: 'maven'
       - name: Cache SonarQube packages
         uses: actions/cache@v4
@@ -50,4 +50,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           PACKAGES_USERNAME: ${{ secrets.PACKAGES_USERNAME }}
           PACKAGES_ACCESS_TOKEN: ${{ secrets.PACKAGES_ACCESS_TOKEN }}
-        run: ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=TesseractFR_TesseractSRP2 -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml
+        run: ./mvnw verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=TesseractFR_TesseractSRP2 -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml
