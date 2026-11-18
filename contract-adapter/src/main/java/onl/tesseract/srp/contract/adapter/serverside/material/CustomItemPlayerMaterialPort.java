@@ -50,7 +50,7 @@ public class CustomItemPlayerMaterialPort implements PlayerMaterialPort {
     /** @return les qualités au moins égales à la qualité minimale, de la plus basse à la plus haute */
     private static List<Quality> findAllQualitiesFrom(Quality minimalQuality) {
         return Arrays.stream(Quality.values())
-                .filter(quality -> quality.isAtMost(minimalQuality))
+                .filter(quality -> quality.isAtLeast(minimalQuality))
                 .sorted(Comparator.comparingInt(Quality::ordinal))
                 .toList();
     }
