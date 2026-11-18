@@ -14,4 +14,8 @@ public enum Quality {
     public boolean isAtMost(Quality maximum) {
         return ordinal() <= maximum.ordinal();
     }
+
+    public boolean isAtLeast(Quality minimum) {
+        return ordinal() >= minimum.ordinal();
+    }
 }
