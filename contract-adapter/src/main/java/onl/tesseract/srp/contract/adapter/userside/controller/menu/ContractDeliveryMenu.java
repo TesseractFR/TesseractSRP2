@@ -113,7 +113,8 @@ public class ContractDeliveryMenu extends ItemAdderMenu {
                 .newline()
                 .append(BULLET + "Quantité : " + contract.quantity(), NamedTextColor.WHITE)
                 .newline()
-                .append(BULLET + "Qualité minimale : " + minimalQuality.label(), minimalQuality.color())
+                .append(BULLET + "Qualité minimale : ",NamedTextColor.WHITE)
+                .append(minimalQuality.label(), minimalQuality.color())
                 .newline()
                 .append(BULLET + "Dans ton inventaire : " + ownedQuantity + " / " + contract.quantity(),
                         hasEnoughItems ? NamedTextColor.GREEN : NamedTextColor.RED)
