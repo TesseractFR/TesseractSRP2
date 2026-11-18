@@ -113,9 +113,9 @@
         </dependency>
 
         <dependency>
-            <groupId>dev.lone</groupId>
-            <artifactId>api-itemsadder</artifactId>
-            <version>4.0.10</version>
+            <groupId>beer.devs</groupId>
+            <artifactId>itemsadder-api</artifactId>
+            <version>4.0.17</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
