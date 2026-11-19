@@ -6,6 +6,7 @@ import onl.tesseract.srp.common.domain.model.item.MaterialName;
 import onl.tesseract.srp.contract.domain.model.contract.CatalogItem;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
 import onl.tesseract.srp.contract.domain.model.contract.ContractDraft;
+import onl.tesseract.srp.contract.domain.model.contract.ContractQualityWeights;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractCatalogRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
@@ -18,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.random.RandomGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,6 +54,7 @@ class ContractGeneratorTest {
         contractGenerator = new ContractGenerator(contractConfigRepository, contractCatalogRepository, random,
                 Clock.fixed(NOW, ZoneOffset.UTC));
         when(contractConfigRepository.getScrollLifetime()).thenReturn(Duration.ofHours(72));
+        when(contractConfigRepository.getQualityWeights()).thenReturn(ContractQualityWeights.DEFAULT);
         when(contractCatalogRepository.getUnitValue(any(), any())).thenReturn(MoneyValue.of(5));
         when(random.nextInt(anyInt())).thenReturn(0);
     }
@@ -119,16 +122,44 @@ class ContractGeneratorTest {
     }
 
     @Test
-    void generate_drawsMinimalQualityAtRandom() {
-        // given
+    void generate_drawsLowestQualityWhenQualityDrawIsLow() {
+        // given : premier tirage pour l'élément du catalogue, second pour la qualité
         when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
-        when(random.nextInt(Quality.values().length)).thenReturn(Quality.values().length - 1);
+        when(random.nextDouble()).thenReturn(0.0, 0.1);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 0,1 × 100 = 10, dans la part [0 ; 30[ de POOR
+        assertEquals(Quality.POOR, draft.minimalQuality());
+    }
+
+    @Test
+    void generate_drawsHighestQualityWhenQualityDrawIsAtTheTop() {
+        // given : premier tirage pour l'élément du catalogue, second pour la qualité
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(random.nextDouble()).thenReturn(0.0, 0.99);
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 0,99 × 100 = 99, dans la part [95 ; 100[ d'EXCEPTIONAL
+        assertEquals(Quality.EXCEPTIONAL, draft.minimalQuality());
+    }
+
+    @Test
+    void generate_drawsQualityFromConfiguredWeights() {
+        // given : seule GOOD est tirable
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(contractConfigRepository.getQualityWeights())
+                .thenReturn(new ContractQualityWeights(Map.of(Quality.GOOD, 1.0)));
+        when(random.nextDouble()).thenReturn(0.0, 0.99);
 
         // when
         ContractDraft draft = contractGenerator.generate().orElseThrow();
 
         // then
-        assertEquals(Quality.values()[Quality.values().length - 1], draft.minimalQuality());
+        assertEquals(Quality.GOOD, draft.minimalQuality());
     }
 
     @Test

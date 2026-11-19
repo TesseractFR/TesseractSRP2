@@ -16,6 +16,15 @@ rarity-weights:
   EPIC: 5
   LEGENDARY: 1
 
+# Poids de tirage de la qualité minimale demandée par un contrat : plus le poids est bas, plus la
+# qualité est rare. Une qualité absente n'est jamais tirée ; section absente : 30/35/20/10/5.
+quality-weights:
+  POOR: 30
+  NORMAL: 35
+  GOOD: 20
+  VERY_GOOD: 10
+  EXCEPTIONAL: 5
+
 daily-tickets:
   Survivant: 2
   Explorateur: 3

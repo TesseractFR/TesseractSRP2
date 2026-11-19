@@ -1,6 +1,8 @@
 package onl.tesseract.srp.contract.adapter.serverside.yaml;
 
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
+import onl.tesseract.srp.contract.domain.model.contract.ContractQualityWeights;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +37,11 @@ public class YamlContractConfigRepository implements ContractConfigRepository, C
     @Override
     public Duration getScrollLifetime() {
         return contractConfig.scrollLifetime();
+    }
+
+    @Override
+    public ContractQualityWeights getQualityWeights() {
+        return contractConfig.qualityWeights();
     }
 
     @Override
@@ -72,8 +80,24 @@ public class YamlContractConfigRepository implements ContractConfigRepository, C
                 Duration.ofHours(yaml.getLong("scroll-lifetime-hours", ContractConfig.DEFAULT_SCROLL_LIFETIME.toHours())),
                 readSection(yaml, "quantity-by-rarity", YamlContractConfigRepository::readRarityQuantity),
                 readSection(yaml, "rarity-weights", ConfigurationSection::getDouble),
+                readQualityWeights(yaml),
                 readSection(yaml, "daily-tickets", ConfigurationSection::getInt),
                 npcNames);
+    }
+
+    /**
+     * Lit la section {@code quality-weights}, indexée par nom de qualité. Section absente : poids par défaut.
+     * Une qualité absente de la section a un poids nul ; un nom de qualité inconnu empêche le démarrage.
+     */
+    private static ContractQualityWeights readQualityWeights(ConfigurationSection yaml) {
+        Map<String, Double> weightsByName = readSection(yaml, "quality-weights", ConfigurationSection::getDouble);
+        if (weightsByName.isEmpty()) {
+            return ContractQualityWeights.DEFAULT;
+        }
+        Map<Quality, Double> weights = new EnumMap<>(Quality.class);
+        weightsByName.forEach((qualityName, weight) ->
+                weights.put(Quality.valueOf(qualityName.toUpperCase(Locale.ROOT)), weight));
+        return new ContractQualityWeights(weights);
     }
 
     /**

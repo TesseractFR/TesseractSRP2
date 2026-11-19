@@ -1,5 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside.yaml;
 
+import onl.tesseract.srp.contract.domain.model.contract.ContractQualityWeights;
+
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
@@ -14,22 +16,26 @@ import java.util.Optional;
  * @param scrollLifetime   durée de vie d'un parchemin, strictement positive
  * @param quantityByRarity quantité de base et variance par rareté
  * @param rarityWeights    poids de tirage par rareté
+ * @param qualityWeights   poids de tirage de la qualité minimale des contrats
  * @param dailyTickets     quota quotidien par grade
  * @param npcNames         nom affiché du PNJ par destinataire, clés en minuscules
  */
 public record ContractConfig(Duration scrollLifetime, Map<String, RarityQuantity> quantityByRarity,
-                             Map<String, Double> rarityWeights, Map<String, Integer> dailyTickets,
+                             Map<String, Double> rarityWeights, ContractQualityWeights qualityWeights,
+                             Map<String, Integer> dailyTickets,
                              Map<String, String> npcNames) {
 
     public static final Duration DEFAULT_SCROLL_LIFETIME = Duration.ofHours(72);
 
     /** Configuration utilisée quand le fichier est absent : toutes les valeurs par défaut. */
     public static final ContractConfig DEFAULT =
-            new ContractConfig(DEFAULT_SCROLL_LIFETIME, Map.of(), Map.of(), Map.of(), Map.of());
+            new ContractConfig(DEFAULT_SCROLL_LIFETIME, Map.of(), Map.of(), ContractQualityWeights.DEFAULT, Map.of(),
+                    Map.of());
 
     /** Vérifie la durée de vie et fige les tables. */
     public ContractConfig {
         Objects.requireNonNull(scrollLifetime, "scrollLifetime");
+        Objects.requireNonNull(qualityWeights, "qualityWeights");
         if (scrollLifetime.isNegative() || scrollLifetime.isZero()) {
             throw new IllegalArgumentException("La durée de vie d'un parchemin doit être strictement positive : " + scrollLifetime);
         }
