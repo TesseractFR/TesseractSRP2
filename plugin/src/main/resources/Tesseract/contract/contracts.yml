@@ -9,6 +9,16 @@ quantity-by-rarity:
   EPIC: { quantity: 40, variance: 50 }
   LEGENDARY: { quantity: 10, variance: 50 }
 
+# Coefficient appliqué à la quantité tirée selon la qualité minimale demandée, arrondi à l'unité
+# avec un minimum de 1 : plus la qualité est haute, moins on demande d'items. Une qualité absente
+# vaut 1. Exemple : 600 items tirés et EXCEPTIONAL à 0.25 donnent 150 items.
+quantity-rate-by-quality:
+  POOR: 1.0
+  NORMAL: 0.8
+  GOOD: 0.6
+  VERY_GOOD: 0.4
+  EXCEPTIONAL: 0.25
+
 rarity-weights:
   COMMON: 100
   SPECIAL: 50

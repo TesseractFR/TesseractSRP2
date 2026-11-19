@@ -129,13 +129,14 @@ La classe lit `plugins/Tesseract/contract/contracts.yml`, avec un chemin relatif
 - `DailyTicketConfig`, pour le quota ;
 - `ContractNpcNameConfig`, pour le parchemin et les messages.
 
-Le fichier est lu une seule fois, dans le constructeur du bean, et converti en un record `ContractConfig` (durée de vie, tables par rareté, par grade et par destinataire). Chaque getter lit ce record : une modification du fichier demande un redémarrage. Si le fichier est absent, la configuration par défaut `ContractConfig.DEFAULT` s'applique. Les records valident leurs valeurs (durée de vie strictement positive, quantité de rareté strictement positive, variance positive ou nulle) : une valeur invalide empêche le démarrage du plugin.
+Le fichier est lu une seule fois, dans le constructeur du bean, et converti en un record `ContractConfig` (durée de vie, tables par rareté, par grade et par destinataire). Chaque getter lit ce record : une modification du fichier demande un redémarrage. Si le fichier est absent, la configuration par défaut `ContractConfig.DEFAULT` s'applique. Les records valident leurs valeurs (durée de vie strictement positive, quantité de rareté strictement positive, variance positive ou nulle, coefficient de quantité strictement positif) : une valeur invalide empêche le démarrage du plugin.
 
 Chaque rareté de `quantity-by-rarity` est lue en `RarityQuantity(quantity, variancePercent)`, sous la forme `{ quantity: 600, variance: 50 }`. L'ancienne forme, un simple nombre, reste acceptée avec une variance nulle.
 
 | Méthode | Clé | Défaut |
 |---|---|---|
 | `getScrollLifetime()` | `scroll-lifetime-hours` | 72 heures |
+| `getQuantityRate(qualité)` | `quantity-rate-by-quality.<QUALITÉ>` | 1 |
 | `getRarityQuantity(rareté)` | `quantity-by-rarity.<RARETÉ>.quantity` et `.variance` | 300, variance 0 |
 | `getRarityWeight(rareté)` | `rarity-weights.<RARETÉ>` | 0 |
 | `getDailyTickets(grade)` | `daily-tickets.<grade>` | 0 |

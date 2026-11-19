@@ -49,6 +49,7 @@ Les value objects sont des `record` validés dans leur constructeur. Un champ `@
 | `ContractClient` | `String name` : métier (récolte) ou compétence (artisanat) dont le PNJ accepte la livraison | non nul et non blanc |
 | `ContractType` | enum `HARVEST` ou `CRAFT` | |
 | `CatalogItem` | type, client, matériau, poids, quantité de base, variance de quantité en % | poids strictement positif, quantité au moins 1, variance positive ou nulle |
+| `QuantityRate` | coefficient de quantité d'une qualité | strictement positif ; `applyTo` arrondit et renvoie au moins 1 |
 | `ContractDraft` | type, client, matériau, quantité, qualité minimale, récompense, expiration | quantité au moins 1 |
 
 `ContractDraft` est un contrat généré mais pas encore enregistré, donc sans identifiant. C'est `ContractRepository.create` qui le transforme en `Contract`.
@@ -92,10 +93,11 @@ Le générateur reçoit `ContractConfigRepository`, `ContractCatalogRepository`,
 
 1. Il lit le catalogue par `findAllCatalogItems()`. Si le catalogue est vide, il renvoie `Optional.empty()`.
 2. Il tire un élément proportionnellement à son poids (`pickWeighted`). Le dernier élément sert de repli si les arrondis empêchent la sélection.
-3. Il tire la quantité (`drawQuantity`) uniformément entre `round(base × (1 − v))` et `round(base × (1 + v))`, bornes comprises, où la base et `v = quantityVariancePercent / 100` viennent de l'élément de catalogue, donc de la rareté du matériau. La borne basse vaut au moins 1, et si les deux bornes sont égales aucun tirage n'a lieu. Exemple : base 50 et variance 50 donnent [25 ; 75].
-4. Il tire une qualité minimale uniformément parmi `Quality.values()`.
-5. La récompense vaut `getUnitValue(matériau, qualité minimale) × quantité tirée`, arrondie à l'unité (`HALF_UP`), avec un minimum de 1.
-6. L'expiration vaut `clock.instant() + getScrollLifetime()`.
+3. Il tire une qualité minimale selon les poids de qualité configurés : `getQualityWeights().pick(random.nextDouble())` (`ContractQualityWeights`).
+4. Il tire la quantité (`drawQuantity`) uniformément entre `round(base × (1 − v))` et `round(base × (1 + v))`, bornes comprises, où la base et `v = quantityVariancePercent / 100` viennent de l'élément de catalogue, donc de la rareté du matériau. La borne basse vaut au moins 1, et si les deux bornes sont égales aucun tirage n'a lieu. Exemple : base 50 et variance 50 donnent [25 ; 75].
+5. Il multiplie cette quantité par le coefficient de la qualité minimale (`getQuantityRate`, `QuantityRate.applyTo`), arrondi à l'unité la plus proche, avec un minimum de 1 : la quantité demandée baisse quand la qualité monte. Exemple : 63 tirés avec un coefficient 0,6 donnent 38.
+6. La récompense vaut `getUnitValue(matériau, qualité minimale) × quantité finale`, arrondie à l'unité (`HALF_UP`), avec un minimum de 1.
+7. L'expiration vaut `clock.instant() + getScrollLifetime()`.
 
 Le contenu ne dépend pas de l'acheteur.
 
@@ -199,7 +201,8 @@ Chaque règle métier a un test JUnit 5 + Mockito dans `src/test`, nommé `metho
 | Classe de test | Tests | Sujet |
 |---|---|---|
 | `ContractModelTest` | 16 | validation des records, `isExpiredAt`, `isFor`, `computeMoneyBonus` |
-| `ContractGeneratorTest` | 11 | tirage pondéré, quantité et variance, récompense, expiration, catalogue vide |
+| `QuantityRateTest` | 7 | validation du coefficient, `applyTo` (arrondi, minimum 1) |
+| `ContractGeneratorTest` | 16 | tirage pondéré, quantité et variance, coefficient de quantité par qualité, récompense, expiration, catalogue vide |
 | `ContractPurchaseServiceTest` | 6 | achat, refus, remboursement du ticket |
 | `ContractDeliveryServiceTest` | 12 | ordre des refus, retraits, suppression, bonus du livreur |
 | `ContractTicketServiceTest` | 10 | solde, quota, dépense, don staff, renouvellement |

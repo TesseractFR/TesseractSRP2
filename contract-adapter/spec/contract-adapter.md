@@ -56,6 +56,7 @@ Le fichier `plugins/Tesseract/contract/contracts.yml` est lu une fois au démarr
 | `scroll-lifetime-hours` | durée de vie d'un parchemin, figée à l'achat | 72 |
 | `quantity-by-rarity.<RARETÉ>.quantity` | quantité de base demandée par contrat | 300 |
 | `quantity-by-rarity.<RARETÉ>.variance` | écart maximal en % autour de la quantité de base (50 : base 50 → [25 ; 75]) | 0 |
+| `quantity-rate-by-quality.<QUALITÉ>` | coefficient appliqué à la quantité selon la qualité minimale, arrondi et au moins 1 (`EXCEPTIONAL: 0.25` : 600 → 150) | 1 |
 | `rarity-weights.<RARETÉ>` | poids de tirage, 0 exclut la rareté | 0 |
 | `daily-tickets.<Grade>` | quota quotidien du grade | 0 |
 | `npc-names.<métier>` | nom affiché du PNJ destinataire | nom du métier, première lettre en majuscule |

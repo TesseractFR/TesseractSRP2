@@ -3,6 +3,7 @@ package onl.tesseract.srp.contract.adapter.serverside.yaml;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
 import onl.tesseract.srp.contract.domain.model.contract.ContractQualityWeights;
+import onl.tesseract.srp.contract.domain.model.contract.QuantityRate;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -45,6 +46,11 @@ public class YamlContractConfigRepository implements ContractConfigRepository, C
     }
 
     @Override
+    public QuantityRate getQuantityRate(Quality minimalQuality) {
+        return new QuantityRate(contractConfig.getQuantityRate(minimalQuality.name()));
+    }
+
+    @Override
     public RarityQuantity getRarityQuantity(String rarityName) {
         return contractConfig.getRarityQuantity(rarityName);
     }
@@ -79,6 +85,7 @@ public class YamlContractConfigRepository implements ContractConfigRepository, C
         return new ContractConfig(
                 Duration.ofHours(yaml.getLong("scroll-lifetime-hours", ContractConfig.DEFAULT_SCROLL_LIFETIME.toHours())),
                 readSection(yaml, "quantity-by-rarity", YamlContractConfigRepository::readRarityQuantity),
+                readSection(yaml, "quantity-rate-by-quality", ConfigurationSection::getDouble),
                 readSection(yaml, "rarity-weights", ConfigurationSection::getDouble),
                 readQualityWeights(yaml),
                 readSection(yaml, "daily-tickets", ConfigurationSection::getInt),

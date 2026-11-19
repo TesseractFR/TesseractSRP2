@@ -8,6 +8,7 @@ import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
 import onl.tesseract.srp.contract.domain.model.contract.ContractDraft;
 import onl.tesseract.srp.contract.domain.model.contract.ContractQualityWeights;
 import onl.tesseract.srp.contract.domain.model.contract.ContractType;
+import onl.tesseract.srp.contract.domain.model.contract.QuantityRate;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractCatalogRepository;
 import onl.tesseract.srp.contract.domain.port.serverside.ContractConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,7 @@ class ContractGeneratorTest {
                 Clock.fixed(NOW, ZoneOffset.UTC));
         when(contractConfigRepository.getScrollLifetime()).thenReturn(Duration.ofHours(72));
         when(contractConfigRepository.getQualityWeights()).thenReturn(ContractQualityWeights.DEFAULT);
+        when(contractConfigRepository.getQuantityRate(any())).thenReturn(QuantityRate.NEUTRAL);
         when(contractCatalogRepository.getUnitValue(any(), any())).thenReturn(MoneyValue.of(5));
         when(random.nextInt(anyInt())).thenReturn(0);
     }
@@ -225,5 +227,46 @@ class ContractGeneratorTest {
 
         // then
         assertEquals(1, draft.quantity());
+    }
+
+    @Test
+    void generate_appliesQuantityRateOfDrawnQuality() {
+        // given : second tirage à 0,99, donc qualité EXCEPTIONAL, coefficient 0,25 sur une base de 10
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(random.nextDouble()).thenReturn(0.0, 0.99);
+        when(contractConfigRepository.getQuantityRate(Quality.EXCEPTIONAL)).thenReturn(new QuantityRate(0.25));
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 10 × 0,25 = 2,5 arrondi à 3
+        assertEquals(3, draft.quantity());
+    }
+
+    @Test
+    void generate_computesRewardFromReducedQuantity() {
+        // given
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(WHEAT));
+        when(contractConfigRepository.getQuantityRate(Quality.POOR)).thenReturn(new QuantityRate(0.5));
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 5 × (10 × 0,5)
+        assertEquals(0, BigDecimal.valueOf(25).compareTo(draft.reward().value()));
+    }
+
+    @Test
+    void generate_appliesQuantityRateAfterVarianceDraw() {
+        // given : 63 tiré dans [25 ; 75], coefficient 0,6
+        when(contractCatalogRepository.findAllCatalogItems()).thenReturn(List.of(FIFTY_WHEAT));
+        when(random.nextInt(25, 76)).thenReturn(63);
+        when(contractConfigRepository.getQuantityRate(Quality.POOR)).thenReturn(new QuantityRate(0.6));
+
+        // when
+        ContractDraft draft = contractGenerator.generate().orElseThrow();
+
+        // then : 63 × 0,6 = 37,8 arrondi à 38
+        assertEquals(38, draft.quantity());
     }
 }

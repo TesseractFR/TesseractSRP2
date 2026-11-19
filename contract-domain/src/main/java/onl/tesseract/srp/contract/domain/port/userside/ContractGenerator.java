@@ -23,7 +23,8 @@ public class ContractGenerator {
     private final Clock clock;
 
     /**
-     * @param contractConfigRepository fournit la durée de validité des parchemins et les poids de qualité
+     * @param contractConfigRepository fournit la durée de validité des parchemins, les poids de qualité et
+     *                                 le coefficient de quantité par qualité
      * @param contractCatalogRepository fournit les éléments du catalogue et leur valeur
      * @param random source d'aléa des tirages
      * @param clock horloge qui date l'expiration des contrats
@@ -37,8 +38,9 @@ public class ContractGenerator {
     }
 
     /**
-     * Tire un élément du catalogue selon son poids, une quantité autour de sa quantité de base et une
-     * qualité minimale selon les poids de qualité configurés.
+     * Tire un élément du catalogue selon son poids, une qualité minimale selon les poids de qualité
+     * configurés et une quantité autour de sa quantité de base, multipliée par le coefficient de
+     * quantité de cette qualité.
      *
      * @return le contrat généré, ou {@link Optional#empty()} si le catalogue est vide
      */
@@ -48,8 +50,8 @@ public class ContractGenerator {
             return Optional.empty();
         }
         CatalogItem catalogItem = pickWeighted(catalogItems);
-        int quantity = drawQuantity(catalogItem);
         Quality minimalQuality = contractConfigRepository.getQualityWeights().pick(random.nextDouble());
+        int quantity = contractConfigRepository.getQuantityRate(minimalQuality).applyTo(drawQuantity(catalogItem));
         return Optional.of(new ContractDraft(catalogItem.type(), catalogItem.client(), catalogItem.material(),
                 quantity, minimalQuality, computeReward(catalogItem.material(), quantity, minimalQuality),
                 clock.instant().plus(contractConfigRepository.getScrollLifetime())));
