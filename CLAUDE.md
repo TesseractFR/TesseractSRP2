@@ -6,7 +6,7 @@ Les normes complètes sont dans [CONTRIBUTING.md](CONTRIBUTING.md). Elles s'appl
 
 - **Langue** : code en anglais, commentaires, Javadoc et commits en français.
 - **Dépendances** : un domaine ne dépend que de `common-domain`, sans Bukkit, Spring ni JPA. Un adapter peut utiliser le service d'un autre domaine, jamais son repository.
-- **SOLID** : un service par agrégat, à découper par responsabilité quand il grossit. Injection par constructeur. Ports petits et ciblés.
+- **SOLID** : un service par cas d'usage (`<Agrégat><Responsabilité>Service`), classe concrète sans interface. Injection par constructeur. Ports petits et ciblés.
 - **Nommage** : noms explicites, sans abréviation, sans `*Utils` ni `*Helper`. L'implémentation d'un port suit `<Techno><Port>` (`JpaCraftingRepository`), jamais `Impl`.
 - **Méthodes** : `find…` renvoie `Optional<T>`, `findAll…` une collection (vide si besoin), `get…` ne renvoie jamais vide et lève une exception métier si l'objet manque. `is/has/can/exists` renvoient un booléen.
 - **Optional** : seulement en type de retour, jamais en paramètre ni en champ. Aucune méthode ne renvoie `null`. On enveloppe les `null` des API externes avec `Optional.ofNullable`. `Optional.get()` est interdit.

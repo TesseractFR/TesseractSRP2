@@ -6,4 +6,6 @@ import onl.tesseract.srp.common.domain.model.item.MaterialName;
 
 public interface MoneyRepository {
     MoneyValue getValue(MaterialName materialName, Quality quality);
+
+    boolean hasValue(MaterialName materialName);
 }

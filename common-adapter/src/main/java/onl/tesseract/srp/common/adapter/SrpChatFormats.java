@@ -52,4 +52,3 @@ public final class SrpChatFormats {
     public static final Component STAFF_CHAT_ERROR = STAFF_CHAT_FORMAT.color(NamedTextColor.RED);
     public static final Component STAFF_CHAT_SUCCESS = STAFF_CHAT_FORMAT.color(NamedTextColor.GREEN);
 }
-

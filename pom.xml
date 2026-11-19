@@ -23,6 +23,8 @@
         <module>job-adapter</module>
         <module>skill-adapter</module>
         <module>plugin</module>
+        <module>contract-domain</module>
+        <module>contract-adapter</module>
     </modules>
 
     <properties>
@@ -33,6 +35,9 @@
         <springboot.version>4.1.0-RC1</springboot.version>
         <springboot-context.version>7.1.0-M1</springboot-context.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
+        <sonar.organization>tesseractfr</sonar.organization>
+        <sonar.projectKey>TesseractFR_TesseractSRP2</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencyManagement>
@@ -191,6 +196,16 @@
             <dependency>
                 <groupId>onl.tesseract.srp</groupId>
                 <artifactId>territory-adapter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>contract-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>contract-adapter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

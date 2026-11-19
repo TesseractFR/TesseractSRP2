@@ -1,0 +1,34 @@
+scroll-lifetime-hours: 72
+
+# Quantité de base demandée par contrat et écart maximal autour d'elle, en % :
+# quantity 600 et variance 50 donnent une quantité entre 300 et 900.
+quantity-by-rarity:
+  COMMON: { quantity: 600, variance: 50 }
+  SPECIAL: { quantity: 300, variance: 50 }
+  RARE: { quantity: 120, variance: 50 }
+  EPIC: { quantity: 40, variance: 50 }
+  LEGENDARY: { quantity: 10, variance: 50 }
+
+rarity-weights:
+  COMMON: 100
+  SPECIAL: 50
+  RARE: 20
+  EPIC: 5
+  LEGENDARY: 1
+
+daily-tickets:
+  Survivant: 2
+  Explorateur: 3
+  Aventurier: 4
+  Noble: 5
+  Baron: 6
+  Seigneur: 7
+  Vicomte: 8
+  Comte: 8
+  Duc: 9
+  Roi: 9
+  Empereur: 10
+
+npc-names:
+  fonte: Fondeur
+  mineur: Mineur
