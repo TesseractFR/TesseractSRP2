@@ -10,7 +10,10 @@ import onl.tesseract.srp.contract.adapter.userside.controller.commands.args.Cont
 import onl.tesseract.srp.contract.adapter.userside.controller.menu.ContractDeliveryMenu;
 import onl.tesseract.srp.contract.adapter.userside.controller.menu.ContractMerchantMenu;
 import onl.tesseract.srp.contract.adapter.userside.controller.message.ContractMessageFormatter;
+import onl.tesseract.srp.contract.domain.model.contract.Contract;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
+import onl.tesseract.srp.contract.domain.model.contract.ContractId;
+import onl.tesseract.srp.contract.domain.model.exception.ContractException;
 import onl.tesseract.srp.contract.domain.port.userside.ContractDeliveryService;
 import onl.tesseract.srp.contract.domain.port.userside.ContractPurchaseService;
 import onl.tesseract.srp.contract.domain.port.userside.ContractTicketService;
@@ -49,11 +52,19 @@ public class ContractCommand extends CommandContext {
         ContractClient npc = jobArgument.get();
         ContractScrollReader.readContractId(sender.getInventory().getItemInMainHand())
                 .ifPresentOrElse(
-                        contractId -> contractDeliveryService.findContract(contractId).ifPresentOrElse(
-                                contract -> new ContractDeliveryMenu(player, npc, contract, contractDeliveryService,
-                                        contractMessageFormatter).open(sender),
-                                () -> sender.sendMessage(contractMessageFormatter.formatNpcInvalidScroll(npc))),
+                        contractId -> openDeliveryMenu(sender, player, npc, contractId),
                         () -> sender.sendMessage(contractMessageFormatter.formatNpcNoScrollInHand(npc)));
+    }
+
+    /** N'ouvre le menu que si le PNJ est bien le destinataire du contrat ; sinon, le PNJ refuse. */
+    private void openDeliveryMenu(Player sender, PlayerId player, ContractClient npc, ContractId contractId) {
+        try {
+            Contract contract = contractDeliveryService.getDeliverableContract(contractId, npc);
+            new ContractDeliveryMenu(player, npc, contract, contractDeliveryService, contractMessageFormatter)
+                    .open(sender);
+        } catch (ContractException refusal) {
+            sender.sendMessage(contractMessageFormatter.formatNpcRefusal(npc, refusal));
+        }
     }
 
     @Command(name = "tickets", description = "Voir ses tickets de contrat.")

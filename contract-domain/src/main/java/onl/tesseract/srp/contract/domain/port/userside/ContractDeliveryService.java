@@ -41,9 +41,19 @@ public class ContractDeliveryService {
         this.clock = clock;
     }
 
-    /** @return le contrat, ou {@link Optional#empty()} s'il n'existe pas ou a été supprimé */
-    public Optional<Contract> findContract(ContractId contractId) {
-        return contractRepository.findById(contractId);
+    /**
+     * Récupère le contrat à présenter au PNJ, avant l'ouverture du menu de livraison.
+     *
+     * @return le contrat, destiné au PNJ
+     * @throws ContractNotFoundException si le contrat n'existe plus
+     * @throws WrongContractClientException si le PNJ n'est pas le destinataire du contrat
+     */
+    public Contract getDeliverableContract(ContractId contractId, ContractClient npcClient) {
+        Contract contract = getContract(contractId);
+        if (!contract.isFor(npcClient)) {
+            throw new WrongContractClientException(contractId, contract.client(), npcClient);
+        }
+        return contract;
     }
 
     /** @return nombre de matériaux du contrat possédés par le joueur à la qualité minimale requise */

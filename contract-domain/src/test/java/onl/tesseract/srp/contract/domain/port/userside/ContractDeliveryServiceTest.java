@@ -111,6 +111,35 @@ class ContractDeliveryServiceTest {
     }
 
     @Test
+    void getDeliverableContract_returnsContractWhenNpcIsTheContractClient() {
+        // when
+        Contract contract = contractDeliveryService.getDeliverableContract(CONTRACT_ID, FARMER);
+
+        // then
+        assertEquals(CONTRACT_ID, contract.id());
+    }
+
+    @Test
+    void getDeliverableContract_throwsWhenNpcIsNotTheContractClient() {
+        // when
+        WrongContractClientException thrown = assertThrows(WrongContractClientException.class,
+                () -> contractDeliveryService.getDeliverableContract(CONTRACT_ID, new ContractClient("miner")));
+
+        // then
+        assertEquals(FARMER, thrown.getExpectedClient());
+    }
+
+    @Test
+    void getDeliverableContract_throwsWhenContractDoesNotExist() {
+        // given
+        when(contractRepository.findById(CONTRACT_ID)).thenReturn(Optional.empty());
+
+        // when / then
+        assertThrows(ContractNotFoundException.class,
+                () -> contractDeliveryService.getDeliverableContract(CONTRACT_ID, FARMER));
+    }
+
+    @Test
     void deliver_throwsWhenContractDoesNotExist() {
         // given
         when(contractRepository.findById(CONTRACT_ID)).thenReturn(Optional.empty());
