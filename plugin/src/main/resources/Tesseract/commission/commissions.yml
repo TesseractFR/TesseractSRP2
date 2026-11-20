@@ -1,0 +1,48 @@
+# Quantité de base demandée par commission et écart maximal autour d'elle, en % :
+# quantity 300 et variance 50 donnent une quantité entre 150 et 450.
+quantity-by-rarity:
+  COMMON: { quantity: 300, variance: 50 }
+  SPECIAL: { quantity: 150, variance: 50 }
+  RARE: { quantity: 60, variance: 50 }
+  EPIC: { quantity: 20, variance: 50 }
+  LEGENDARY: { quantity: 5, variance: 50 }
+
+rarity-weights:
+  COMMON: 100
+  SPECIAL: 50
+  RARE: 20
+  EPIC: 5
+  LEGENDARY: 1
+
+spawn-reward-rate: 0.5
+guild-xp-per-lys: 0.1
+# Taux de taxe d'un tableau de guilde à sa création, entre 0 et 0.5.
+default-usage-tax-rate: 0.25
+# Commissions par type sur le tableau du spawn, appliqué à chaque ouverture. Le menu en affiche au plus 6.
+spawn-slots-per-type: 6
+
+harvest-tiers:
+  TITANE: 1
+
+upgrades:
+  max-craft-tier:
+    2: { cost: 5000, guild-level: 2 }
+    3: { cost: 20000, guild-level: 5 }
+  max-harvest-tier:
+    2: { cost: 5000, guild-level: 2 }
+    3: { cost: 20000, guild-level: 5 }
+  slots:
+    2: { cost: 5000, guild-level: 2 }
+    3: { cost: 20000, guild-level: 5 }
+    4: { cost: 40000, guild-level: 7 }
+    5: { cost: 80000, guild-level: 9 }
+    6: { cost: 160000, guild-level: 11 }
+  max-required-quality:
+    NORMAL: { cost: 5000, guild-level: 2 }
+    GOOD: { cost: 10000, guild-level: 3 }
+    VERY_GOOD: { cost: 20000, guild-level: 5 }
+    EXCEPTIONAL: { cost: 40000, guild-level: 7 }
+  money-bonus:
+    1: { value: 0.02, cost: 5000, guild-level: 3 }
+    2: { value: 0.03, cost: 10000, guild-level: 5 }
+    3: { value: 0.05, cost: 20000, guild-level: 7 }

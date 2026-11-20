@@ -54,7 +54,18 @@
             <artifactId>core</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>beer.devs</groupId>
+            <artifactId>itemsadder-api</artifactId>
+            <version>4.0.17</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- Domain -->
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>commission-domain</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>territory-domain</artifactId>

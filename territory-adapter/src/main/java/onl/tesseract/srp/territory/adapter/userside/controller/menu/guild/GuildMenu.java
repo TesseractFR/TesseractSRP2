@@ -10,6 +10,9 @@ import onl.tesseract.lib.menu.Menu;
 import onl.tesseract.lib.menu.MenuService;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.util.Util;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
+import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardPlacementService;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.userside.TeleportationService;
@@ -28,7 +31,7 @@ public class GuildMenu extends GuildBaseMenu {
     private static final int INFO = 13;
     private static final int STRUCTURES = 15;
     private static final int TELEPORT = 19;
-    private static final int MISSIONS = 21;
+    private static final int COMMISSION_BOARD_BUTTON = 21;
     private static final int BANK = 23;
     private static final int SHOPS = 25;
     private static final int MEMBERS = 29;
@@ -40,15 +43,18 @@ public class GuildMenu extends GuildBaseMenu {
     private final MenuService menuService;
     private final TeleportationService teleportService;
     private final ChatEntryService chatService;
+    private final CommissionBoardPlacementService commissionBoardPlacementService;
 
     public GuildMenu(UUID playerId, GuildService guildService, MenuService menuService,
-                     TeleportationService teleportService, ChatEntryService chatService, Menu previous) {
+                     TeleportationService teleportService, ChatEntryService chatService,
+                     CommissionBoardPlacementService commissionBoardPlacementService, Menu previous) {
         super(MenuSize.Five, Component.text("Guilde"), previous);
         this.playerId = playerId;
         this.guildService = guildService;
         this.menuService = menuService;
         this.teleportService = teleportService;
         this.chatService = chatService;
+        this.commissionBoardPlacementService = commissionBoardPlacementService;
     }
 
     @Override
@@ -60,7 +66,7 @@ public class GuildMenu extends GuildBaseMenu {
         addMembers(viewer);
         addStructuresButton();
         addShopsButton();
-        addMissionsButton();
+        addCommissionBoardButton(guild, viewer);
         addPermissionsButton();
         addTeleport();
         addUpgrade(guild);
@@ -95,7 +101,7 @@ public class GuildMenu extends GuildBaseMenu {
                     catch (NumberFormatException _) { guildService.invalidAmount(playerId); return; }
                     boolean ok = deposit ? guildService.bankDeposit(playerId, amount)
                             : guildService.bankWithdraw(playerId, amount);
-                    if (ok) new GuildMenu(playerId, guildService, menuService, teleportService, chatService, previous).open(viewer);
+                    if (ok) new GuildMenu(playerId, guildService, menuService, teleportService, chatService, commissionBoardPlacementService, previous).open(viewer);
                 });
     }
 
@@ -117,10 +123,37 @@ public class GuildMenu extends GuildBaseMenu {
                 _ -> { /* TODO : menu des shops */ });
     }
 
-    private void addMissionsButton() {
-        button(MISSIONS, new ItemBuilder(Material.OAK_SIGN).name("Tableau des missions", NamedTextColor.GOLD)
-                        .lore(new ItemLoreBuilder().append("Voir le tableau des missions de la guilde", NamedTextColor.GRAY).get()).build(),
-                _ -> { /* TODO : menu du tableau des missions */ });
+    private void addCommissionBoardButton(Guild guild, Player viewer) {
+        PlayerId player = new PlayerId(playerId);
+        GuildId guildId = new GuildId(guild.getId());
+        boolean canManageBoard = commissionBoardPlacementService.canPlaceBoard(player, guildId);
+        boolean isBoardPlaced = commissionBoardPlacementService.isBoardPlaced(guildId);
+        button(COMMISSION_BOARD_BUTTON, new ItemBuilder(Material.OAK_SIGN).name("Tableau de commissions", NamedTextColor.GOLD)
+                        .lore(describeCommissionBoardButton(canManageBoard, isBoardPlaced).get()).build(),
+                _ -> {
+                    if (canManageBoard) {
+                        viewer.closeInventory();
+                        commissionBoardPlacementService.startBoardPlacement(player, guildId);
+                    }
+                });
+    }
+
+    /** Des lignes courtes, pour que le lore ne soit pas coupé au milieu d'une phrase. */
+    private ItemLoreBuilder describeCommissionBoardButton(boolean canManageBoard, boolean isBoardPlaced) {
+        ItemLoreBuilder lore = new ItemLoreBuilder()
+                .append(isBoardPlaced ? "Posé sur le territoire" : "Pas encore posé", NamedTextColor.GRAY)
+                .newline(2);
+        if (!canManageBoard) {
+            return lore.append("Réservé aux adjoints et au chef", NamedTextColor.RED);
+        }
+        lore.append(isBoardPlaced ? "Pour le déplacer" : "Pour le poser", NamedTextColor.GOLD).newline()
+                .append("• Va à l'endroit voulu", NamedTextColor.WHITE).newline()
+                .append("• Clic droit au sol (" + CommissionBoard.BOARD_PLACEMENT_SECONDS + " s)", NamedTextColor.WHITE)
+                .newline();
+        if (isBoardPlaced) {
+            lore.append("• L'ancien est retiré", NamedTextColor.WHITE).newline();
+        }
+        return lore.newline().append("» Clique pour commencer", NamedTextColor.YELLOW);
     }
 
     private void addPermissionsButton() {

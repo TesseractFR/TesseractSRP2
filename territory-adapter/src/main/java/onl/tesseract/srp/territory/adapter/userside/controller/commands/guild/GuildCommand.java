@@ -10,6 +10,7 @@ import onl.tesseract.lib.chat.ChatEntryService;
 import onl.tesseract.lib.command.argument.PlayerArg;
 import onl.tesseract.lib.command.argument.StringArg;
 import onl.tesseract.lib.menu.MenuService;
+import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardPlacementService;
 import onl.tesseract.srp.common.domain.model.Coordinate;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.userside.TeleportationService;
@@ -40,10 +41,11 @@ public class GuildCommand extends CommandContext {
     private final MenuService menuService;
     private final TeleportationService teleportService;
     private final AnnexionStickService annexionStickService;
+    private final CommissionBoardPlacementService commissionBoardPlacementService;
 
     public GuildCommand(CommandInstanceProvider provider, GuildService guildService, GuildBorderService guildBorderService,
                         ChatEntryService chatEntryService, MenuService menuService, TeleportationService teleportService,
-                        AnnexionStickService annexionStickService) {
+                        AnnexionStickService annexionStickService, CommissionBoardPlacementService commissionBoardPlacementService) {
         super(provider);
         this.guildService = guildService;
         this.guildBorderService = guildBorderService;
@@ -51,6 +53,7 @@ public class GuildCommand extends CommandContext {
         this.menuService = menuService;
         this.teleportService = teleportService;
         this.annexionStickService = annexionStickService;
+        this.commissionBoardPlacementService = commissionBoardPlacementService;
     }
 
     @Command(name = "create", playerOnly = true, description = "Créer une nouvelle guilde")
@@ -72,7 +75,7 @@ public class GuildCommand extends CommandContext {
     public void openMenu(Player sender) {
         if (!guildService.canOpenMenu(sender.getUniqueId())) return;
         new GuildMenu(sender.getUniqueId(), guildService, menuService, teleportService,
-                chatEntryService, null).open(sender);
+                chatEntryService, commissionBoardPlacementService, null).open(sender);
     }
 
     @Command(name = "invite", playerOnly = true, description = "Inviter un joueur dans sa guilde.")

@@ -129,6 +129,14 @@
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>commission-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>commission-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>customItem-domain</artifactId>
         </dependency>
         <dependency>
