@@ -13,7 +13,7 @@ La vision indique que les grades et leurs avantages sont définis dans la config
 
 ### Monnaie : service central prévu, mutations exposées dans le profil joueur
 
-La vision pose une porte unique pour toute modification monétaire, avec raison et journal des transactions ([architecture technique](./15-architecture-technique.md), [contrats et économie](./08-contrats-et-economie.md)). `SrpPlayer` expose cependant `addMoney` et `PlayerService` expose un ajustement de solde qui persiste directement le joueur ([commun-domain](../commun-domain/spec/commun-domain.md)). En parallèle, l’adaptateur territorial injecte un `MoneyServiceImpl` provisoire dont les opérations sont des bouchons ([territory-adapter](../territory-adapter/spec/territory-adapter.md)).
+La vision pose une porte unique pour toute modification monétaire, avec raison et journal des transactions ([architecture technique](./15-architecture-technique.md), [contrats et économie](./08-contrats-et-economie.md)). `SrpPlayer` expose cependant `addMoney` et `PlayerMoneyService` expose un ajustement de solde qui persiste directement le joueur ([commun-domain](../commun-domain/spec/commun-domain.md)). En parallèle, l’adaptateur territorial injecte un `MoneyServiceImpl` provisoire dont les opérations sont des bouchons ([territory-adapter](../territory-adapter/spec/territory-adapter.md)).
 
 **À clarifier :** faire de l’ajustement de solde une opération interne au service économique, ou documenter explicitement les cas autorisés hors de celui-ci. La vision prévoit un ledger, mais aucun module économie ni sa spec n’existe encore.
 

@@ -6,7 +6,11 @@ import onl.tesseract.srp.domain.money.ledger.TransactionType;
 import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
 import onl.tesseract.srp.common.domain.model.SrpPlayer;
 import onl.tesseract.srp.common.domain.model.event.PlayerRankUpEvent;
-import onl.tesseract.srp.common.domain.port.userside.PlayerService;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.common.domain.port.userside.PlayerIlluminationService;
+import onl.tesseract.srp.common.domain.port.userside.PlayerMoneyService;
+import onl.tesseract.srp.common.domain.port.userside.SrpPlayerProfileService;
+import onl.tesseract.srp.common.domain.port.userside.PlayerRankService;
 import onl.tesseract.srp.service.money.MoneyLedgerService;
 import onl.tesseract.srp.service.money.TransferService;
 import org.springframework.stereotype.Service;
@@ -16,18 +20,29 @@ import java.util.UUID;
 
 @Service
 public class SrpPlayerService {
-    private final PlayerService playerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
+    private final PlayerRankService playerRankService;
+    private final PlayerMoneyService playerMoneyService;
+    private final PlayerIlluminationService playerIlluminationService;
     private final MoneyLedgerService ledgerService;
     private final DomainEventPublisher eventService;
 
-    public SrpPlayerService(PlayerService playerService, MoneyLedgerService ledgerService, DomainEventPublisher eventService) {
-        this.playerService = playerService;
+    public SrpPlayerService(SrpPlayerProfileService srpPlayerProfileService,
+                            PlayerRankService playerRankService,
+                            PlayerMoneyService playerMoneyService,
+                            PlayerIlluminationService playerIlluminationService,
+                            MoneyLedgerService ledgerService,
+                            DomainEventPublisher eventService) {
+        this.srpPlayerProfileService = srpPlayerProfileService;
+        this.playerRankService = playerRankService;
+        this.playerMoneyService = playerMoneyService;
+        this.playerIlluminationService = playerIlluminationService;
         this.ledgerService = ledgerService;
         this.eventService = eventService;
     }
 
     public SrpPlayer getPlayer(UUID id) {
-        return playerService.getPlayer(id);
+        return srpPlayerProfileService.getPlayer(new PlayerId(id));
     }
 
     /**
@@ -36,7 +51,7 @@ public class SrpPlayerService {
      */
     public boolean setRank(UUID playerID, PlayerRank rank) {
         SrpPlayer player = getPlayer(playerID);
-        if (!playerService.setRank(playerID, rank)) return false;
+        if (!playerRankService.changeRank(new PlayerId(playerID), rank)) return false;
         eventService.publish(new PlayerRankUpEvent(playerID, rank));
         return true;
     }
@@ -48,7 +63,7 @@ public class SrpPlayerService {
     @Transactional
     public boolean buyNextRank(UUID playerID) {
         SrpPlayer player = getPlayer(playerID);
-        boolean result = playerService.buyNextRank(playerID);
+        boolean result = playerRankService.buyNextRank(new PlayerId(playerID));
         if (result) {
             ledgerService.recordTransaction(
                 ledgerService.getPlayerLedger(playerID),
@@ -70,7 +85,7 @@ public class SrpPlayerService {
     @Transactional
     public boolean giveMoneyAsStaff(UUID playerID, int amount) {
         SrpPlayer player = getPlayer(playerID);
-        if (!playerService.adjustMoney(playerID, amount)) return false;
+        if (!playerMoneyService.adjustMoney(new PlayerId(playerID), amount)) return false;
         ledgerService.recordTransaction(
             ledgerService.getServerLedger(),
             ledgerService.getPlayerLedger(playerID),
@@ -96,7 +111,7 @@ public class SrpPlayerService {
             subType,
             details
         );
-        playerService.savePlayer(player);
+        srpPlayerProfileService.savePlayer(player);
     }
 
     public void moneyTransaction(UUID playerID, int amount, TransferService.TransferTransactionBuilder transactionBuilder) {
@@ -110,17 +125,17 @@ public class SrpPlayerService {
             transactionBuilder.setTo(ledgerService.getPlayerLedger(playerID));
         }
         player.addMoney(amount);
-        playerService.savePlayer(player);
+        srpPlayerProfileService.savePlayer(player);
     }
 
     @Transactional
     public boolean giveIlluminationPoints(UUID playerID, int amount) {
         SrpPlayer player = getPlayer(playerID);
-        return playerService.adjustIlluminationPoints(playerID, amount);
+        return playerIlluminationService.adjustIlluminationPoints(new PlayerId(playerID), amount);
     }
 
     protected void savePlayer(SrpPlayer player) {
-        playerService.savePlayer(player);
+        srpPlayerProfileService.savePlayer(player);
     }
 }
 

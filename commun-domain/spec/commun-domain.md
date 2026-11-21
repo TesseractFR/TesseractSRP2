@@ -34,7 +34,11 @@ La validation des montants négatifs en entrée, les bornes supérieures de sold
 
 `PlayerRank` ordonne onze rangs, de `Survivant` à `Empereur`. Chaque rang associe un titre, un coût d’accès au rang (utilisé pour acheter le rang suivant), un délai de téléportation, un nombre d’emplacements de missions métier et un niveau de campement. `next()` retourne le rang suivant ou `null` au sommet. `getRequiredRankForMissionSlot(slot)` retourne le premier rang dont le nombre de slots couvre la demande, et lève `IllegalArgumentException` si aucun rang ne le permet.
 
-`PlayerService` sert de façade de lecture et mutation autour de `PlayerRepository`. Une lecture absente renvoie un joueur neuf avec rang survivant, titre associé et soldes à zéro, sans sauvegarde immédiate. `setRank` synchronise le titre au rang et persiste seulement si le rang change. `buyNextRank` appelle la logique du modèle, synchronise le titre et persiste uniquement en cas d’achat réussi. Les ajustements d’argent et de points d’illumination refusent un solde final négatif (retour `false`) et sauvegardent toute modification acceptée; l’ajustement peut être positif, nul ou négatif.
+Les opérations sur le joueur sont réparties en quatre services, un par cas d’usage, qui prennent tous un `PlayerId` :
+
+- `SrpPlayerProfileService` lit et sauvegarde le joueur via `PlayerRepository`. Une lecture absente renvoie un joueur neuf avec rang survivant, titre associé et soldes à zéro, sans sauvegarde immédiate.
+- `PlayerRankService` : `changeRank` synchronise le titre au rang et persiste seulement si le rang change. `buyNextRank` appelle la logique du modèle, synchronise le titre et persiste uniquement en cas d’achat réussi.
+- `PlayerMoneyService` et `PlayerIlluminationService` : les ajustements d’argent et de points d’illumination refusent un solde final négatif (retour `false`) et sauvegardent toute modification acceptée; l’ajustement peut être positif, nul ou négatif.
 
 ## Détail de la téléportation différée
 

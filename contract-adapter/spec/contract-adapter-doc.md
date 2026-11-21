@@ -168,7 +168,7 @@ Avant l'ajout d'un item :
 
 ### 5.2 Quota : `YamlDailyTicketQuotaPort` (→ `DailyTicketQuotaPort`)
 
-Le quota est lu dans `daily-tickets.<rank.name()>` à partir du grade donné par `PlayerService.getPlayer(...).getRank()`. Un joueur sans grade a un quota nul. La clé du YAML suit la casse de l'enum du grade (`Survivant`, pas `SURVIVANT`).
+Le quota est lu dans `daily-tickets.<rank.name()>` à partir du grade donné par `SrpPlayerProfileService.getPlayer(...).getRank()`. Un joueur sans grade a un quota nul. La clé du YAML suit la casse de l'enum du grade (`Survivant`, pas `SURVIVANT`).
 
 ### 5.3 Bonus : `JobServiceMoneyBonusPort` (→ `JobMoneyBonusPort`)
 
@@ -176,7 +176,7 @@ Le port appelle `JobService.getBonusValue(JobName, PlayerId, Material, Bonus.MON
 
 ### 5.4 Paiement : `PlayerServicePaymentPort` (→ `PaymentPort`)
 
-Le port appelle `PlayerService.adjustMoney(uuid, montant)` avec le montant converti par `intValueExact()`. Si le versement est refusé, il journalise une erreur avec le joueur et le montant, pour que le staff puisse dédommager le joueur, puis lève `PaymentFailedException`. Les matériaux et le parchemin sont déjà retirés à ce moment-là.
+Le port appelle `PlayerMoneyService.adjustMoney(playerId, montant)` avec le montant converti par `intValueExact()`. Si le versement est refusé, il journalise une erreur avec le joueur et le montant, pour que le staff puisse dédommager le joueur, puis lève `PaymentFailedException`. Les matériaux et le parchemin sont déjà retirés à ce moment-là.
 
 ### 5.5 Matériaux : `CustomItemPlayerMaterialPort` (→ `PlayerMaterialPort`)
 
