@@ -9,7 +9,7 @@ import onl.tesseract.lib.persistence.yaml.equipment.InvocableGenericSerializer;
 import onl.tesseract.lib.service.ServiceContainer;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.command.staff.SrpStaffCommand;
-import onl.tesseract.srp.common.domain.model.enums.PlayerRank;
+import onl.tesseract.srp.player.domain.model.PlayerRank;
 import onl.tesseract.srp.common.domain.model.world.SrpWorld;
 import onl.tesseract.srp.repository.yaml.equipment.SrpInvocableSerializer;
 import org.bukkit.Bukkit;

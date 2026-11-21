@@ -1,7 +1,7 @@
 package onl.tesseract.srp.territory.adapter.userside.controller.event.campement;
 
 
-import onl.tesseract.srp.common.domain.model.event.PlayerRankUpEvent;
+import onl.tesseract.srp.player.domain.model.event.PlayerRankUpEvent;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementService;
 import org.bukkit.event.Listener;
 import org.springframework.context.event.EventListener;

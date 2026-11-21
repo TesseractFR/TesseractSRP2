@@ -2,7 +2,7 @@ package onl.tesseract.srp.common.adapter.serverside;
 
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.serverside.TeleportationSettingsPort;
-import onl.tesseract.srp.common.domain.port.userside.SrpPlayerProfileService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import onl.tesseract.core.boutique.BoutiqueService;
 import org.springframework.stereotype.Component;
 

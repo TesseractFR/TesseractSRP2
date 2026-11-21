@@ -11,7 +11,7 @@ import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraInvocationResult;
 import onl.tesseract.srp.service.equipment.elytra.ElytraService;
-import onl.tesseract.srp.service.player.SrpPlayerService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
@@ -29,27 +29,27 @@ public class ElytraMenu extends ElytraBaseMenu {
     private final ElytraService elytraService;
     private final PlayerProfileService playerProfileService;
     private final EquipmentService equipmentService;
-    private final SrpPlayerService srpPlayerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
 
     public ElytraMenu(Player player,
                       ElytraService elytraService,
                       PlayerProfileService playerProfileService,
                       EquipmentService equipmentService,
-                      SrpPlayerService srpPlayerService) {
-        this(player, elytraService, playerProfileService, equipmentService, srpPlayerService, null);
+                      SrpPlayerProfileService srpPlayerProfileService) {
+        this(player, elytraService, playerProfileService, equipmentService, srpPlayerProfileService, null);
     }
 
     public ElytraMenu(Player player,
                       ElytraService elytraService,
                       PlayerProfileService playerProfileService,
                       EquipmentService equipmentService,
-                      SrpPlayerService srpPlayerService,
+                      SrpPlayerProfileService srpPlayerProfileService,
                       Menu previous) {
         super(MenuSize.Five, "Ailes Célestes", previous, player);
         this.elytraService = elytraService;
         this.playerProfileService = playerProfileService;
         this.equipmentService = equipmentService;
-        this.srpPlayerService = srpPlayerService;
+        this.srpPlayerProfileService = srpPlayerProfileService;
     }
 
     @Override
@@ -170,7 +170,7 @@ public class ElytraMenu extends ElytraBaseMenu {
                 player.getUniqueId(),
                 playerProfileService,
                 elytraService,
-                srpPlayerService,
+                srpPlayerProfileService,
                 this
         ).open(viewer));
     }

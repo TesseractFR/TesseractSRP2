@@ -2,8 +2,8 @@ package onl.tesseract.srp.territory.adapter.serverside.service;
 
 import onl.tesseract.srp.territory.domain.port.userside.guild.MoneyService;
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.common.domain.port.userside.PlayerMoneyService;
-import onl.tesseract.srp.common.domain.port.userside.SrpPlayerProfileService;
+import onl.tesseract.srp.player.domain.port.userside.PlayerMoneyService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

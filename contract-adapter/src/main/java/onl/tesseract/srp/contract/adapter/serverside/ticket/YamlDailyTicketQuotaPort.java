@@ -1,7 +1,7 @@
 package onl.tesseract.srp.contract.adapter.serverside.ticket;
 
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.common.domain.port.userside.SrpPlayerProfileService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import onl.tesseract.srp.contract.adapter.serverside.yaml.DailyTicketConfig;
 import onl.tesseract.srp.contract.domain.port.serverside.DailyTicketQuotaPort;
 import org.springframework.stereotype.Component;

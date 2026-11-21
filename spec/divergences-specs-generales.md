@@ -7,13 +7,13 @@
 
 ### Progression des grades : configuration générale, rangs codés dans le domaine
 
-La vision indique que les grades et leurs avantages sont définis dans la configuration, et que les plafonds du joueur se lisent dans cette configuration ([grades](./04-grades.md), [joueur et données](./03-joueur-et-donnees.md)). Pourtant, `commun-domain` décrit `PlayerRank` comme référentiel de onze rangs portant directement coût, délai de téléportation, slots de missions et niveau de campement, et `buyNextRank` achète le rang suivant à son coût ([commun-domain](../commun-domain/spec/commun-domain.md)).
+La vision indique que les grades et leurs avantages sont définis dans la configuration, et que les plafonds du joueur se lisent dans cette configuration ([grades](./04-grades.md), [joueur et données](./03-joueur-et-donnees.md)). Pourtant, `player-domain` décrit `PlayerRank` comme référentiel de onze rangs portant directement coût, délai de téléportation, slots de missions et niveau de campement, et `buyNextRank` achète le rang suivant à son coût ([player-domain](../player-domain/spec/player-domain.md)).
 
 **À clarifier :** quelles propriétés restent codées dans `PlayerRank`, lesquelles viennent des fichiers de configuration, et comment la condition d’achat par contrats s’intègre à `buyNextRank`.
 
 ### Monnaie : service central prévu, mutations exposées dans le profil joueur
 
-La vision pose une porte unique pour toute modification monétaire, avec raison et journal des transactions ([architecture technique](./15-architecture-technique.md), [contrats et économie](./08-contrats-et-economie.md)). `SrpPlayer` expose cependant `addMoney` et `PlayerMoneyService` expose un ajustement de solde qui persiste directement le joueur ([commun-domain](../commun-domain/spec/commun-domain.md)). En parallèle, l’adaptateur territorial injecte un `MoneyServiceImpl` provisoire dont les opérations sont des bouchons ([territory-adapter](../territory-adapter/spec/territory-adapter.md)).
+La vision pose une porte unique pour toute modification monétaire, avec raison et journal des transactions ([architecture technique](./15-architecture-technique.md), [contrats et économie](./08-contrats-et-economie.md)). `SrpPlayer` expose cependant `addMoney` et `PlayerMoneyService` expose un ajustement de solde qui persiste directement le joueur ([player-domain](../player-domain/spec/player-domain.md)). En parallèle, l’adaptateur territorial injecte un `MoneyServiceImpl` provisoire dont les opérations sont des bouchons ([territory-adapter](../territory-adapter/spec/territory-adapter.md)).
 
 **À clarifier :** faire de l’ajustement de solde une opération interne au service économique, ou documenter explicitement les cas autorisés hors de celui-ci. La vision prévoit un ledger, mais aucun module économie ni sa spec n’existe encore.
 
@@ -66,6 +66,6 @@ Les points ci-dessous sont des écarts de couverture documentaire. Les specs gé
 ## Décisions proposées pour fermer les écarts
 
 1. Étiqueter chaque règle générale comme **décidée**, **proposée**, **hors v1** ou **à confirmer**; les modules peuvent alors distinguer règle cible et comportement actuel.
-2. Définir une source de vérité pour les rangs et la monnaie, puis aligner `commun-domain` et la future spec économie dessus.
+2. Définir une source de vérité pour les rangs et la monnaie, puis aligner `player-domain` et la future spec économie dessus.
 3. Ajouter les specs de modules manquantes ou marquer explicitement leurs concepts comme non spécifiés à ce stade.
 4. Ajouter dans les specs concernées les règles chiffrées qui affectent l’équilibrage, notamment le taux de réussite du craft et les mécanismes de progression de talents.

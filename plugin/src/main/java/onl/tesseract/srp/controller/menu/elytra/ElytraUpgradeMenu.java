@@ -11,7 +11,8 @@ import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeEntry;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeResult;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeStats;
 import onl.tesseract.srp.service.equipment.elytra.ElytraService;
-import onl.tesseract.srp.service.player.SrpPlayerService;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -33,24 +34,24 @@ public class ElytraUpgradeMenu extends ElytraBaseMenu {
     private final UUID playerID;
     private final PlayerProfileService playerProfileService;
     private final ElytraService elytraService;
-    private final SrpPlayerService srpPlayerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
 
     public ElytraUpgradeMenu(UUID playerID,
                              PlayerProfileService playerProfileService,
                              ElytraService elytraService,
-                             SrpPlayerService srpPlayerService,
+                             SrpPlayerProfileService srpPlayerProfileService,
                              Menu previous) {
         super(MenuSize.Five, "Améliorations Ailes Célestes", previous, null);
         this.playerID = playerID;
         this.playerProfileService = playerProfileService;
         this.elytraService = elytraService;
-        this.srpPlayerService = srpPlayerService;
+        this.srpPlayerProfileService = srpPlayerProfileService;
     }
 
     @Override
     public void placeButtons(Player viewer) {
         List<ElytraUpgradeEntry> entries = elytraService.getUpgradeEntries(playerID);
-        var playerData = srpPlayerService.getPlayer(playerID);
+        var playerData = srpPlayerProfileService.getPlayer(new PlayerId(playerID));
 
         placeUpgradeButtons(viewer, entries);
         placePlayerInfo(

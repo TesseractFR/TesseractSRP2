@@ -13,7 +13,9 @@
 
     <modules>
         <module>commun-domain</module>
+        <module>player-domain</module>
         <module>common-adapter</module>
+        <module>player-adapter</module>
         <module>customItem-domain</module>
         <module>territory-domain</module>
         <module>territory-adapter</module>
@@ -163,6 +165,16 @@
             </dependency>
 
             <!-- Module dependencies -->
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>player-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>player-adapter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>onl.tesseract.srp</groupId>
                 <artifactId>job-domain</artifactId>

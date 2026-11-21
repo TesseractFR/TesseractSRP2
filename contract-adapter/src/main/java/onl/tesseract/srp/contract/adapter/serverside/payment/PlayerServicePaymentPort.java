@@ -3,7 +3,7 @@ package onl.tesseract.srp.contract.adapter.serverside.payment;
 import lombok.extern.slf4j.Slf4j;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.common.domain.port.userside.PlayerMoneyService;
+import onl.tesseract.srp.player.domain.port.userside.PlayerMoneyService;
 import onl.tesseract.srp.contract.domain.model.exception.PaymentFailedException;
 import onl.tesseract.srp.contract.domain.port.serverside.PaymentPort;
 import org.springframework.stereotype.Component;
