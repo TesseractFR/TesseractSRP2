@@ -1,7 +1,7 @@
 package onl.tesseract.srp.commission.domain.model.commission;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
@@ -18,12 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CommissionModelTest {
 
     private static final CommissionId COMMISSION_ID = new CommissionId(100);
-    private static final BoardId BOARD_ID = new BoardId(1);
+    private static final CommissionBoardId BOARD_ID = new CommissionBoardId(1);
     private static final PlayerId PLAYER = new PlayerId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
     private static final MaterialName WOOD = new MaterialName("BOIS");
 
     private static Commission commission(int quantity, int deliveredQuantity, int reward) {
-        return new Commission(COMMISSION_ID, BOARD_ID, BoardPart.PUBLIC, CommissionType.HARVEST, WOOD, quantity, deliveredQuantity,
+        return new Commission(COMMISSION_ID, BOARD_ID, CommissionBoardPart.PUBLIC, CommissionType.HARVEST, WOOD, quantity, deliveredQuantity,
                 Quality.NORMAL, MoneyValue.of(reward));
     }
 
@@ -69,7 +69,7 @@ class CommissionModelTest {
     @Test
     void getItemsValue_addsTheTaxBackToTheEarnings() {
         // given
-        Delivery delivery = new Delivery(COMMISSION_ID, BOARD_ID, PLAYER, 10, 75, 25, 0, false, true);
+        CommissionDelivery delivery = new CommissionDelivery(COMMISSION_ID, BOARD_ID, PLAYER, 10, 75, 25, 0, false, true);
 
         // when
         int itemsValue = delivery.getItemsValue();

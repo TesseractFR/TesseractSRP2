@@ -3,8 +3,8 @@ package onl.tesseract.srp.commission.domain.port.userside;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
-import onl.tesseract.srp.commission.domain.model.commission.Delivery;
-import onl.tesseract.srp.commission.domain.model.exception.BoardPartAccessDeniedException;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
+import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardPartAccessDeniedException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionNotAvailableException;
 import onl.tesseract.srp.commission.domain.model.exception.ItemQualityTooLowException;
@@ -48,14 +48,14 @@ public class CommissionDeliveryService {
      *
      * @return la livraison, vide si le joueur n'a aucun item à la qualité demandée
      */
-    public Delivery computeDelivery(PlayerId player, CommissionBoard commissionBoard, Commission commission) {
+    public CommissionDelivery computeDelivery(PlayerId player, CommissionBoard commissionBoard, Commission commission) {
         int ownedQuantity = playerMaterialPort.countAtLeast(player, commission.material(), commission.minimalQuality());
         int itemCount = Math.min(ownedQuantity, commission.getRemainingQuantity());
         int itemsValue = commission.computeRewardShareFor(itemCount);
         boolean isGuildMember = commissionBoardService.isGuildMember(player, commissionBoard);
         int guildTax = isGuildMember ? 0 : commissionBoard.computeUsageTaxOn(itemsValue);
         boolean completesCommission = itemCount > 0 && itemCount == commission.getRemainingQuantity();
-        return new Delivery(commission.id(), commissionBoard.getId(), player, itemCount,
+        return new CommissionDelivery(commission.id(), commissionBoard.getId(), player, itemCount,
                 itemsValue - guildTax, guildTax, computeGuildXp(commissionBoard, commission, itemCount), isGuildMember,
                 completesCommission);
     }
@@ -68,19 +68,19 @@ public class CommissionDeliveryService {
      *
      * @return la livraison effectuée
      * @throws CommissionNotAvailableException si la commission n'existe plus ou est déjà terminée
-     * @throws BoardPartAccessDeniedException si le joueur n'a pas accès à la partie de la commission
+     * @throws CommissionBoardPartAccessDeniedException si le joueur n'a pas accès à la partie de la commission
      * @throws ItemQualityTooLowException si le joueur n'a l'item que sous la qualité minimale
      * @throws NoItemToDeliverException si le joueur n'a pas l'item
      */
-    public Delivery deliver(PlayerId player, CommissionId commissionId) {
+    public CommissionDelivery deliver(PlayerId player, CommissionId commissionId) {
         Commission commission = commissionRepository.findById(commissionId)
                 .filter(foundCommission -> !foundCommission.isCompleted())
                 .orElseThrow(() -> new CommissionNotAvailableException(commissionId));
         CommissionBoard commissionBoard = commissionBoardService.getBoard(commission.boardId());
         if (!commissionBoardService.canAccessPart(player, commissionBoard, commission.part())) {
-            throw new BoardPartAccessDeniedException(player, commissionId);
+            throw new CommissionBoardPartAccessDeniedException(player, commissionId);
         }
-        Delivery delivery = computeDelivery(player, commissionBoard, commission);
+        CommissionDelivery delivery = computeDelivery(player, commissionBoard, commission);
         if (delivery.isEmpty()) {
             throw buildNothingToDeliverException(player, commission);
         }
@@ -99,7 +99,7 @@ public class CommissionDeliveryService {
      * @return XP que la commission donne à la guilde une fois terminée
      */
     public int computeTotalGuildXp(CommissionBoard commissionBoard, Commission commission) {
-        if (commissionBoard.isSpawn()) {
+        if (commissionBoard.isSpawnBoard()) {
             return 0;
         }
         return (int) Math.round(commission.reward().value().doubleValue() * commissionConfigRepository.getGuildXpPerLys());

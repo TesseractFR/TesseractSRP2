@@ -7,5 +7,5 @@ package onl.tesseract.srp.commission.adapter.serverside.yaml;
  * @param quantity        quantité de base
  * @param variancePercent écart maximal autour de la base, en pourcentage
  */
-public record RarityQuantity(int quantity, double variancePercent) {
+public record CommissionRarityQuantity(int quantity, double variancePercent) {
 }

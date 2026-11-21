@@ -2,11 +2,8 @@ package onl.tesseract.srp.commission.domain.port.serverside;
 
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
 
-/** Port d'accès au niveau et à la banque des guildes, pour payer les améliorations. */
-public interface GuildProgressPort {
-    /** @return niveau actuel de la guilde */
-    int getGuildLevel(GuildId guildId);
-
+/** Port d'accès à la banque des guildes, pour payer les améliorations. */
+public interface GuildBankPort {
     /** @return solde de la banque de la guilde, en lys */
     int getBankBalance(GuildId guildId);
 

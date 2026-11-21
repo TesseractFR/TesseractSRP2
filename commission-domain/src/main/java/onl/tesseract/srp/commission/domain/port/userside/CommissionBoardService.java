@@ -1,13 +1,12 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardLevels;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardNotFoundException;
-import onl.tesseract.srp.commission.domain.port.serverside.BoardFurniturePort;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionBoardRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionCatalogRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
@@ -21,18 +20,16 @@ public class CommissionBoardService {
     private final CommissionBoardRepository commissionBoardRepository;
     private final GuildMembershipPort guildMembershipPort;
     private final CommissionCatalogRepository commissionCatalogRepository;
-    private final BoardFurniturePort boardFurniturePort;
     private final CommissionConfigRepository commissionConfigRepository;
     private final CommissionBoardRefillService commissionBoardRefillService;
 
     public CommissionBoardService(CommissionBoardRepository commissionBoardRepository, GuildMembershipPort guildMembershipPort,
-                                  CommissionCatalogRepository commissionCatalogRepository, BoardFurniturePort boardFurniturePort,
+                                  CommissionCatalogRepository commissionCatalogRepository,
                                   CommissionConfigRepository commissionConfigRepository,
                                   CommissionBoardRefillService commissionBoardRefillService) {
         this.commissionBoardRepository = commissionBoardRepository;
         this.guildMembershipPort = guildMembershipPort;
         this.commissionCatalogRepository = commissionCatalogRepository;
-        this.boardFurniturePort = boardFurniturePort;
         this.commissionConfigRepository = commissionConfigRepository;
         this.commissionBoardRefillService = commissionBoardRefillService;
     }
@@ -46,8 +43,8 @@ public class CommissionBoardService {
     public CommissionBoard getSpawnBoard() {
         int spawnSlotsPerType = commissionConfigRepository.getSpawnSlotsPerType();
         CommissionBoard spawnBoard = commissionBoardRepository.findSpawnBoard()
-                .orElseGet(() -> commissionBoardRepository.createSpawnBoard(BoardLevels.spawn(spawnSlotsPerType)));
-        if (spawnBoard.getLevels().slotsPerType() != spawnSlotsPerType) {
+                .orElseGet(() -> commissionBoardRepository.createSpawnBoard(CommissionBoardLevels.forSpawnBoard(spawnSlotsPerType)));
+        if (!spawnBoard.getLevels().equals(CommissionBoardLevels.forSpawnBoard(spawnSlotsPerType))) {
             spawnBoard.changeSpawnSlots(spawnSlotsPerType);
             commissionBoardRepository.save(spawnBoard);
         }
@@ -72,14 +69,14 @@ public class CommissionBoardService {
      * @return le tableau
      * @throws CommissionBoardNotFoundException s'il n'existe pas
      */
-    public CommissionBoard getBoard(BoardId boardId) {
+    public CommissionBoard getBoard(CommissionBoardId boardId) {
         return commissionBoardRepository.findById(boardId)
                 .orElseThrow(() -> new CommissionBoardNotFoundException(boardId));
     }
 
     /** @return {@code true} si le joueur voit cette partie : la partie publique est ouverte à tous */
-    public boolean canAccessPart(PlayerId player, CommissionBoard commissionBoard, BoardPart boardPart) {
-        return boardPart == BoardPart.PUBLIC || isGuildMember(player, commissionBoard);
+    public boolean canAccessPart(PlayerId player, CommissionBoard commissionBoard, CommissionBoardPart boardPart) {
+        return boardPart == CommissionBoardPart.PUBLIC || isGuildMember(player, commissionBoard);
     }
 
     /** @return {@code true} si le joueur est membre de la guilde propriétaire ; toujours faux au spawn */
@@ -96,16 +93,11 @@ public class CommissionBoardService {
                 .orElse(List.of());
     }
 
-    /** @return {@code true} si le joueur peut améliorer le tableau, changer sa taxe et le déplacer ; toujours faux au spawn */
+    /** @return {@code true} si le joueur peut améliorer le tableau et changer sa taxe ; toujours faux au spawn */
     public boolean canManageBoard(PlayerId player, CommissionBoard commissionBoard) {
         return commissionBoard.findGuildId()
-                .map(guildId -> canManageGuildBoard(player, guildId))
+                .map(guildId -> guildMembershipPort.canManageBoard(guildId, player))
                 .orElse(false);
-    }
-
-    /** @return {@code true} si le joueur peut gérer le tableau de cette guilde */
-    public boolean canManageGuildBoard(PlayerId player, GuildId guildId) {
-        return guildMembershipPort.canManageBoard(guildId, player);
     }
 
     /** @return tier de l'item de la commission, pour l'afficher */
@@ -113,11 +105,8 @@ public class CommissionBoardService {
         return commissionCatalogRepository.getItemTier(commission.type(), commission.material());
     }
 
-    /** Supprime le tableau de la guilde, dans le monde et en base, avec ses commissions. Ne fait rien s'il n'existe pas. */
+    /** Supprime le tableau de la guilde et ses commissions. Ne fait rien s'il n'existe pas. */
     public void deleteGuildBoard(GuildId guildId) {
-        commissionBoardRepository.findByGuild(guildId)
-                .flatMap(CommissionBoard::findFurniturePosition)
-                .ifPresent(boardFurniturePort::removeFurniture);
         commissionBoardRepository.deleteByGuild(guildId);
     }
 }

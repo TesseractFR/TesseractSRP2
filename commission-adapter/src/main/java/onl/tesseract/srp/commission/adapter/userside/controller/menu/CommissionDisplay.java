@@ -4,18 +4,15 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import onl.tesseract.srp.commission.domain.model.board.BoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
-import onl.tesseract.srp.commission.domain.model.board.UpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
-import onl.tesseract.srp.commission.domain.model.commission.Delivery;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
 import onl.tesseract.srp.common.adapter.utils.QualityAdapter;
-import onl.tesseract.srp.common.domain.model.item.MaterialName;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /** Textes et lignes de lore des menus de commissions. */
 public final class CommissionDisplay {
@@ -30,10 +27,12 @@ public final class CommissionDisplay {
      * @return le lore d'une commission, avec ce que la livraison du joueur rapporterait
      */
     public static List<Component> describeCommission(Commission commission, int commissionTier, int totalGuildXp,
-                                                     Delivery delivery, boolean showsDeliveryHint) {
+                                                     CommissionDelivery delivery, boolean showsDeliveryHint) {
         QualityAdapter minimalQuality = QualityAdapter.from(commission.minimalQuality());
         List<Component> loreLines = new ArrayList<>();
         loreLines.add(coloredText(formatCommissionType(commission.type()) + " · Tier " + commissionTier, NamedTextColor.DARK_GRAY));
+        // TODO : indiquer comment obtenir l'item (métier ou compétence, et sa source) pour que les joueurs ne soient
+        //  pas perdus. L'information n'existe pas encore pour les items de récolte : elle viendra des configs de métier.
         loreLines.add(Component.empty());
         loreLines.add(buildProgressBar(commission));
         loreLines.add(labeledValue("Qualité minimale : ", minimalQuality.label(), minimalQuality.color()));
@@ -77,12 +76,12 @@ public final class CommissionDisplay {
         loreLines.add(coloredText(BULLET + "Tu touches la part de ce que tu livres", NamedTextColor.GRAY));
         loreLines.add(coloredText(BULLET + "Prix fixé par la qualité minimale", NamedTextColor.GRAY));
         loreLines.add(coloredText(BULLET + "Une meilleure qualité ne paie pas plus", NamedTextColor.GRAY));
-        if (commissionBoard.isSpawn()) {
+        if (commissionBoard.isSpawnBoard()) {
             loreLines.add(coloredText(BULLET + "Au spawn, les montants valent " + formatPercent(spawnRewardRate) + " de la valeur des items",
                     NamedTextColor.GRAY));
         }
         loreLines.add(Component.empty());
-        if (!commissionBoard.isSpawn()) {
+        if (!commissionBoard.isSpawnBoard()) {
             loreLines.add(coloredText("Public et guilde", NamedTextColor.GOLD));
             loreLines.add(coloredText(BULLET + "Public : ouvert à tous", NamedTextColor.GRAY));
             loreLines.add(coloredText(BULLET + "Guilde : réservé aux membres", NamedTextColor.GRAY));
@@ -108,44 +107,39 @@ public final class CommissionDisplay {
         return commissionType == CommissionType.HARVEST ? "Récolte" : "Artisanat";
     }
 
-    public static String formatUpgradeName(UpgradeType upgradeType) {
+    public static String formatUpgradeName(CommissionBoardUpgradeType upgradeType) {
         return switch (upgradeType) {
-            case MAX_CRAFT_TIER -> "Tier d'artisanat";
+            case BOARD_TIER -> "Tier du tableau";
             case MAX_HARVEST_TIER -> "Tier de récolte";
-            case SLOTS -> "Emplacements";
-            case MAX_REQUIRED_QUALITY -> "Qualité maximale";
+            case MAX_CRAFT_TIER -> "Tier d'artisanat";
+            case HARVEST_SLOTS -> "Emplacements de récolte";
+            case CRAFT_SLOTS -> "Emplacements d'artisanat";
             case MONEY_BONUS -> "Bonus d'argent";
         };
     }
 
-    public static List<String> describeUpgrade(UpgradeType upgradeType) {
+    public static List<String> describeUpgrade(CommissionBoardUpgradeType upgradeType) {
         return switch (upgradeType) {
-            case MAX_CRAFT_TIER -> List.of("Débloque des recettes plus avancées", "pour plus de gains");
+            case BOARD_TIER -> List.of("Débloque les paliers suivants", "des autres améliorations");
             case MAX_HARVEST_TIER -> List.of("Débloque des matériaux de récolte", "plus avancés pour plus de gains");
-            case SLOTS -> List.of("Ajoute un emplacement par type", "de commission (publique/guilde)");
-            case MAX_REQUIRED_QUALITY -> List.of("Permet des commissions plus exigeantes,", "mais plus rentables");
+            case MAX_CRAFT_TIER -> List.of("Débloque des recettes plus avancées", "pour plus de gains");
+            case HARVEST_SLOTS -> List.of("Ajoute une commission de récolte", "en public et en guilde");
+            case CRAFT_SLOTS -> List.of("Ajoute une commission d'artisanat", "en public et en guilde");
             case MONEY_BONUS -> List.of("Augmente les gains des commissions");
         };
     }
 
-    /** @param moneyBonusRate taux du bonus d'argent correspondant au niveau de bonus décrit */
-    public static String formatUpgradeLevel(BoardLevels levels, UpgradeType upgradeType, double moneyBonusRate) {
+    /** @param moneyBonusRate taux du bonus d'argent à ce niveau, utilisé seulement pour le bonus d'argent */
+    public static String formatUpgradeLevel(CommissionBoardUpgradeType upgradeType, int upgradeLevel, double moneyBonusRate) {
         return switch (upgradeType) {
-            case MAX_CRAFT_TIER -> "Tier " + levels.maxCraftTier();
-            case MAX_HARVEST_TIER -> "Tier " + levels.maxHarvestTier();
-            case SLOTS -> levels.slotsPerType() + " par type";
-            case MAX_REQUIRED_QUALITY -> QualityAdapter.from(levels.maxRequiredQuality()).label();
+            case BOARD_TIER, MAX_HARVEST_TIER, MAX_CRAFT_TIER -> "Tier " + upgradeLevel;
+            case HARVEST_SLOTS, CRAFT_SLOTS -> upgradeLevel + " en public et en guilde";
             case MONEY_BONUS -> "+" + formatPercent(moneyBonusRate);
         };
     }
 
     public static String formatPercent(double rate) {
         return Math.round(rate * 100) + " %";
-    }
-
-    public static String formatMaterialName(MaterialName material) {
-        String lowerCaseMaterial = material.value().toLowerCase(Locale.ROOT).replace('_', ' ');
-        return Character.toUpperCase(lowerCaseMaterial.charAt(0)) + lowerCaseMaterial.substring(1);
     }
 
     private static Component buildProgressBar(Commission commission) {

@@ -2,15 +2,12 @@ package onl.tesseract.srp.commission.adapter.serverside.jpa.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 /** Entité JPA représentant un tableau persisté dans la table {@code t_commission_boards}. */
 @Entity
@@ -18,6 +15,7 @@ import onl.tesseract.srp.common.domain.model.enums.Quality;
 @NoArgsConstructor
 @Table(name = "t_commission_boards")
 public class CommissionBoardEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,18 +24,20 @@ public class CommissionBoardEntity {
     @Column(name = "guild_id", length = 36, unique = true)
     private String guildId;
 
-    @Column(name = "max_craft_tier", nullable = false)
-    private int maxCraftTier;
+    @Column(name = "board_tier", nullable = false)
+    private int boardTier;
 
     @Column(name = "max_harvest_tier", nullable = false)
     private int maxHarvestTier;
 
-    @Column(name = "slots_per_type", nullable = false)
-    private int slotsPerType;
+    @Column(name = "max_craft_tier", nullable = false)
+    private int maxCraftTier;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "max_required_quality", nullable = false)
-    private Quality maxRequiredQuality;
+    @Column(name = "harvest_slots", nullable = false)
+    private int harvestSlots;
+
+    @Column(name = "craft_slots", nullable = false)
+    private int craftSlots;
 
     @Column(name = "money_bonus_level", nullable = false)
     private int moneyBonusLevel;
@@ -47,17 +47,4 @@ public class CommissionBoardEntity {
 
     @Column(name = "completed_commission_count", nullable = false)
     private int completedCommissionCount;
-
-    /** Les quatre colonnes de position sont nulles tant que le tableau n'est pas posé. */
-    @Column(name = "position_world")
-    private String positionWorld;
-
-    @Column(name = "position_x")
-    private Integer positionX;
-
-    @Column(name = "position_y")
-    private Integer positionY;
-
-    @Column(name = "position_z")
-    private Integer positionZ;
 }

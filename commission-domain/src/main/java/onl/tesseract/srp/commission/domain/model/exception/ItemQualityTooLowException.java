@@ -1,10 +1,12 @@
 package onl.tesseract.srp.commission.domain.model.exception;
 
+import lombok.Getter;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 /** Le joueur possède l'item demandé, mais seulement sous la qualité minimale. */
+@Getter
 public final class ItemQualityTooLowException extends CommissionException {
     private final PlayerId player;
     private final CommissionId commissionId;
@@ -15,17 +17,5 @@ public final class ItemQualityTooLowException extends CommissionException {
         this.player = player;
         this.commissionId = commissionId;
         this.minimalQuality = minimalQuality;
-    }
-
-    public PlayerId getPlayer() {
-        return player;
-    }
-
-    public CommissionId getCommissionId() {
-        return commissionId;
-    }
-
-    public Quality getMinimalQuality() {
-        return minimalQuality;
     }
 }

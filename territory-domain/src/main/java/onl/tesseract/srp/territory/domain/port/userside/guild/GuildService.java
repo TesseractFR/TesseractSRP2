@@ -743,11 +743,6 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
         return levelUps;
     }
 
-    /** @return niveau de la guilde ; lève une exception si elle n'existe pas */
-    public int getGuildLevel(UUID guildId) {
-        return getGuild(guildId).getLevel();
-    }
-
     /** @return solde de la banque de la guilde, en lys ; lève une exception si elle n'existe pas */
     public int getGuildMoney(UUID guildId) {
         return getGuild(guildId).getMoney();

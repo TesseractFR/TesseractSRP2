@@ -1,7 +1,7 @@
 package onl.tesseract.srp.commission.domain.model.commission;
 
 import lombok.NonNull;
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 
 /**
@@ -14,7 +14,7 @@ import onl.tesseract.srp.common.domain.model.PlayerId;
  * @param isGuildMember           {@code true} si le livreur est membre de la guilde propriétaire
  * @param completesCommission     {@code true} si la livraison termine la commission
  */
-public record Delivery(@NonNull CommissionId commissionId, @NonNull BoardId boardId,
+public record CommissionDelivery(@NonNull CommissionId commissionId, @NonNull CommissionBoardId boardId,
                        @NonNull PlayerId deliverer, int itemCount, int playerEarnings, int guildTax, int guildXp,
                        boolean isGuildMember, boolean completesCommission) {
 

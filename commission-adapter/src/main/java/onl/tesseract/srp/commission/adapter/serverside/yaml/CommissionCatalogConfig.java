@@ -10,7 +10,7 @@ public interface CommissionCatalogConfig {
     Map<MaterialName, Integer> findAllHarvestTiers();
 
     /** @return quantité de base et variance d'un item de cette rareté, nulles si elle n'est pas configurée */
-    RarityQuantity getRarityQuantity(String rarityName);
+    CommissionRarityQuantity getRarityQuantity(String rarityName);
 
     /** @return poids de tirage d'un item de cette rareté, zéro si elle n'est pas configurée */
     double getRarityWeight(String rarityName);

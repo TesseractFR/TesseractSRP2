@@ -1,7 +1,7 @@
 package onl.tesseract.srp.commission.adapter.serverside.jpa;
 
 import onl.tesseract.srp.commission.adapter.serverside.jpa.entity.CommissionEntity;
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDraft;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
@@ -28,7 +28,7 @@ public class CommissionMapper {
     }
 
     public Commission toDomain(CommissionEntity entity) {
-        return new Commission(new CommissionId(entity.getId()), new BoardId(entity.getBoardId()), entity.getPart(),
+        return new Commission(new CommissionId(entity.getId()), new CommissionBoardId(entity.getBoardId()), entity.getPart(),
                 entity.getType(), new MaterialName(entity.getMaterial()), entity.getQuantity(), entity.getDeliveredQuantity(),
                 entity.getMinimalQuality(), MoneyValue.of(entity.getReward()));
     }

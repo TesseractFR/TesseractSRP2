@@ -63,11 +63,6 @@
         <!-- Domain -->
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
-            <artifactId>commission-domain</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>onl.tesseract.srp</groupId>
             <artifactId>territory-domain</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>

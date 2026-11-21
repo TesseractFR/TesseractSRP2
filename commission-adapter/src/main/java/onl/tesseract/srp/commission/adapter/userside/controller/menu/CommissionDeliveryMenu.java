@@ -5,7 +5,7 @@ import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.MenuSize;
 import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionMessageFormatter;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
-import onl.tesseract.srp.commission.domain.model.commission.Delivery;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionException;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionDeliveryService;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
@@ -57,8 +57,8 @@ public class CommissionDeliveryMenu extends ItemAdderMenu {
 
     private void deliver(Player viewer) {
         try {
-            Delivery delivery = commissionDeliveryService.deliver(new PlayerId(viewer.getUniqueId()), commission.id());
-            commissionMessageFormatter.formatDeliverySucceeded(commission, delivery).forEach(viewer::sendMessage);
+            CommissionDelivery delivery = commissionDeliveryService.deliver(new PlayerId(viewer.getUniqueId()), commission.id());
+            viewer.sendMessage(commissionMessageFormatter.formatDeliverySucceeded(commission, delivery));
             commissionBoardMenu.announceDeliveryToGuild(viewer, commission, delivery);
         } catch (CommissionException refusal) {
             viewer.sendMessage(commissionMessageFormatter.formatRefusal(refusal));

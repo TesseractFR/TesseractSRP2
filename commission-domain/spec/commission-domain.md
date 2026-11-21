@@ -12,40 +12,29 @@ Avec les contrats, les commissions sont la seule source d’argent du jeu. Les d
 
 ### Tableau
 
-- Un `CommissionBoard` appartient soit au spawn (un seul), soit à une guilde (un par guilde). Il porte son tier d’artisanat, son tier de récolte, ses slots débloqués, sa qualité maximale, son bonus d’argent et son taux de taxe d’usage. Les guildes ne choisissent pas les commissions.
-- Chaque guilde a automatiquement son tableau ; il n’y a rien à acheter pour l’obtenir.
+- Un `CommissionBoard` appartient soit au spawn (un seul), soit à une guilde (un par guilde). Il porte son tier, son tier de récolte, son tier d’artisanat, ses slots de récolte et d’artisanat, son bonus d’argent et son taux de taxe d’usage. Les guildes ne choisissent pas les commissions.
+- Chaque guilde a son tableau en base dès son premier accès. Dans le monde, le tableau est un item, obtenu par craft ou par achat, que la guilde pose et récupère : cette partie est gérée par le moteur des structures, pas par ce module.
 - Un tableau a deux parties, visibles sur un seul écran. La partie **publique** (`PUBLIC`) est accessible à tous. La partie **guilde** (`GUILD`) est réservée aux membres de la guilde propriétaire : un externe ne la voit pas et ne peut pas y livrer.
-- Au départ, un tableau de guilde a **un slot par type de chaque partie**, soit 4 commissions : une de récolte et une d’artisanat sur la partie publique, de même sur la partie guilde. Il est au tier 1, en qualité `POOR` au maximum, et n’a aucun bonus.
-- La guilde améliore son tableau avec sa banque, sur décision d’un rôle Adjoint ou supérieur. Une amélioration coûte des lys à prix croissant et demande un niveau de guilde minimum :
-  - le tier d’artisanat, jusqu’à 3 : les recettes que le tableau peut demander ;
-  - le tier de récolte, jusqu’à 3 : les items de récolte que le tableau peut demander. Il s’améliore séparément ;
-  - un slot supplémentaire par type de chaque partie, jusqu’au maximum de la configuration ;
-  - la qualité maximale, pour tout le tableau ;
-  - le bonus d’argent, 5 % au maximum.
+- Au départ, un tableau de guilde a **un slot par type de chaque partie**, soit 4 commissions : une de récolte et une d’artisanat sur la partie publique, de même sur la partie guilde. Toutes ses améliorations sont au niveau 1 et il n’a aucun bonus.
+- La guilde améliore son tableau avec sa banque, sur décision d’un rôle Adjoint ou supérieur. Une amélioration coûte des lys à prix croissant :
+  - le **tier du tableau** est l’amélioration centrale. Pour monter d’un tier, le tableau doit avoir reçu assez de livraisons, par type et par qualité (par exemple 100 items de récolte et 100 d’artisanat sur des commissions exceptionnelles), en plus du coût ;
+  - les autres améliorations demandent un tier de tableau minimal à chaque palier : le tier de récolte et le tier d’artisanat (les items que le tableau peut demander), les slots de récolte et les slots d’artisanat (+1 commission du type dans la partie publique et dans la partie guilde), et le bonus d’argent.
 - Les mêmes rôles (Adjoint et chef) peuvent ajuster le taux de taxe d’usage de leur tableau, gratuitement, entre 0 et 50 %. Le taux d’un tableau neuf vient de la configuration (25 % par défaut).
-- Le tableau du spawn n’est pas améliorable : artisanat et récolte de tier 1, qualité `POOR` au maximum, partie publique seulement, récompenses basses grâce à un coefficient dédié. Son nombre de commissions par type vient de la configuration (6 par défaut), disponibles d’emblée.
-
-### Pose du tableau d'une guilde
-
-- Une guilde a un seul tableau physique. Il n'y a pas d'item : un Adjoint ou le chef clique sur un bouton du menu de guilde, puis a 30 secondes pour faire un clic droit au sol. Le lore du bouton le prévient avant le clic. Si le tableau est déjà posé, le bouton propose de le déplacer.
-- Le tableau fait 3 blocs de large et 2 de haut. Il doit être entièrement sur le territoire de la guilde, sur des blocs libres. Un refus laisse l'ancien tableau en place et le joueur peut réessayer tant que le temps n'est pas écoulé.
-- Poser le tableau retire l'ancien : il n'y en a jamais deux, donc aucun délai n'est nécessaire entre deux déplacements.
-- Le tableau ne peut pas être cassé. Les commissions et les améliorations ne dépendent pas de l’endroit où il est posé.
+- Le tableau du spawn n’est pas améliorable : artisanat et récolte de tier 1, partie publique seulement, récompenses basses grâce à un coefficient dédié. Son nombre de commissions par type vient de la configuration (6 par défaut), disponibles d’emblée.
 
 ### Commission
 
 - Une `Commission` porte son tableau, sa partie, son type (`HARVEST` ou `CRAFT`), le matériau, la quantité demandée, la quantité déjà livrée, la qualité minimale, la récompense totale et son état.
-- Invariants : tier de l’item ≤ tier du tableau pour son type, qualité minimale ≤ qualité maximale du tableau, pas plus de commissions à livrer que de slots débloqués, quantité ≥ 1, 0 ≤ quantité livrée ≤ quantité demandée, récompense ≥ 0.
-- La « qualité maximale » du tableau plafonne la qualité **exigée** : c’est l’amélioration qui permet de proposer des commissions plus exigeantes et mieux payées.
+- Invariants : tier de l’item ≤ tier du tableau pour son type, pas plus de commissions à livrer que de slots débloqués, quantité ≥ 1, 0 ≤ quantité livrée ≤ quantité demandée, récompense ≥ 0.
 - Une commission est terminée quand toute la quantité est livrée. Il n’y a ni réservation ni date d’expiration : elle reste sur le tableau jusqu’à ce qu’elle soit terminée.
 
 ### Génération et remplacement
 
-- `CommissionBoardRefillService` remplit les slots débloqués à partir d’un catalogue d’items. Pour `CRAFT`, ce sont les résultats des recettes dont le tier ne dépasse pas le tier d’artisanat du tableau. Pour `HARVEST`, ce sont les items listés en configuration dont le tier ne dépasse pas le tier de récolte du tableau : cette liste décide quels items peuvent être demandés et à quel tier, et un item absent n’est jamais demandé. Il n’y a pas de tier 0, car un joueur n’a aucun item débloqué de base mais un point à placer où il veut. La progression des joueurs n’entre jamais en compte, puisqu’elle est individuelle. Il tire la qualité minimale entre `POOR` et la qualité maximale. La source aléatoire est injectée pour les tests.
+- `CommissionBoardRefillService` remplit les slots débloqués à partir d’un catalogue d’items. Pour `CRAFT`, ce sont les résultats des recettes dont le tier ne dépasse pas le tier d’artisanat du tableau. Pour `HARVEST`, ce sont les items listés en configuration dont le tier ne dépasse pas le tier de récolte du tableau : cette liste décide quels items peuvent être demandés et à quel tier, et un item absent n’est jamais demandé. Il n’y a pas de tier 0, car un joueur n’a aucun item débloqué de base mais un point à placer où il veut. La progression des joueurs n’entre jamais en compte, puisqu’elle est individuelle. Il tire la qualité minimale uniformément entre `POOR` et `EXCEPTIONAL` ; une pondération viendra plus tard, comme pour les contrats. La source aléatoire est injectée pour les tests.
 - Comme pour les contrats, le tirage ne tient compte ni du joueur, ni de ce que la guilde sait fabriquer : on peut tomber sur n’importe quel item. Le joueur se le procure comme il veut (autre guilde, achat à un autre joueur).
 - Comme pour les contrats, la quantité de base, sa variance et le poids de tirage viennent de la rareté de l’item, en configuration ; la quantité est tirée au hasard autour de la base. La quantité peut dépasser ce que tient un inventaire, puisque la livraison se fait en plusieurs fois.
 - Terminer une commission débloque la suivante : elle sort de la liste, les suivantes remontent et une nouvelle commission arrive aussitôt à la fin. C’est ce qui donne un intérêt à terminer une mission, puisque les gains sont versés au fil des livraisons.
-- Le tableau compte les commissions terminées depuis sa création, quel que soit le livreur. Ce compteur est stocké mais pas affiché ; il pourra servir à un classement. Il disparaît avec le tableau si la guilde est supprimée.
+- Le tableau compte les items livrés par type et par qualité demandée, pour les conditions de son tier. Il compte aussi les commissions terminées depuis sa création, quel que soit le livreur. Ce compteur est stocké mais pas affiché ; il pourra servir à un classement. Il disparaît avec le tableau si la guilde est supprimée.
 - Il n’y a pas de renouvellement périodique : une commission en cours ne change pas, même si personne ne la livre. Un item mis en configuration est toujours chargé et garde son prix ; une commission en cours ne peut donc pas tomber sur un item indisponible. Un item sans prix est seulement écarté du tirage, avec un warning.
 - Débloquer un slot le remplit aussitôt. Les autres améliorations ne s’appliquent qu’aux commissions générées ensuite.
 - Un slot sans item possible reste vide : la génération ne doit jamais échouer. Il est rempli à la prochaine ouverture du tableau.
@@ -83,8 +72,7 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 
 **Côté utilisateur**, un service par cas d’usage :
 - `CommissionBoardService` : obtenir un tableau, savoir ce qu’un joueur peut voir et gérer, supprimer le tableau d’une guilde.
-- `CommissionBoardManagementService` : améliorer le tableau et ajuster la taxe.
-- `CommissionBoardPlacementService` : poser et déplacer le tableau d’une guilde.
+- `CommissionBoardManagementService` : améliorer le tableau (tier, conditions de livraison, coût) et ajuster la taxe.
 - `CommissionDeliveryService` : lister les commissions visibles, préparer et enregistrer une livraison.
 - `CommissionBoardRefillService` : générer et remplacer les commissions d’un tableau.
 
@@ -93,14 +81,12 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 | Port | Rôle |
 |---|---|
 | `CommissionBoardRepository` | Créer, lire et enregistrer les tableaux, supprimer celui d’une guilde |
-| `CommissionRepository` | Lire et remplacer les commissions d’un tableau ; `recordDelivery` applique atomiquement la progression et les crédits |
+| `CommissionRepository` | Lire et remplacer les commissions d’un tableau ; `recordDelivery` applique atomiquement la progression, les crédits et les compteurs ; `countDeliveredItems` lit les items livrés par type et qualité |
 | `CommissionCatalogRepository` | Catalogue par type et tier, valeur d’un item |
 | `CommissionConfigRepository` | Valeurs lues dans le fichier de configuration |
 | `GuildMembershipPort` | Appartenance et rôle d’un joueur, membres d’une guilde |
-| `GuildTerritoryPort` | Chunks d’une guilde, pour la pose du tableau |
-| `GuildProgressPort` | Niveau de guilde et débit de la banque pour les améliorations |
+| `GuildBankPort` | Solde et débit de la banque pour les améliorations |
 | `PlayerMaterialPort` | Compter et retirer des items à partir d’une qualité minimale |
-| `BoardFurniturePort`, `BoardPlacementSessionPort` | Tableau dans le monde et joueurs en train de le poser |
 
 **Issues liées, toutes ouvertes :**
 
@@ -116,7 +102,7 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 
 ## Critères d’acceptation
 
-1. Toute commission générée respecte la qualité maximale et les slots débloqués de son tableau ; elle respecte aussi le tier de son tableau pour son type.
+1. Toute commission générée respecte les slots de son type et le tier de son tableau pour son type.
 2. La génération ne dépend ni du joueur qui consulte, ni des recettes connues de la guilde.
 3. Un externe ne voit et ne peut livrer que la partie publique ; une tentative sur la partie guilde est refusée sans rien retirer.
 4. Sans aucun item de qualité suffisante, rien n’est retiré ni versé.
@@ -126,10 +112,11 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 8. La quantité livrée ne dépasse jamais la quantité demandée.
 9. Un membre touche 100 % sur les deux parties ; un externe touche le montant moins la taxe, et cette taxe va à la banque de la guilde.
 10. Le tableau du spawn ne verse rien à une banque et ne donne pas d’XP de guilde ; sur un tableau de guilde, chaque livraison donne de l’XP à la guilde propriétaire et les passages de niveau sont appliqués.
-11. Une amélioration refusée (rôle, niveau de guilde, fonds) ne change ni le tableau ni la banque ; une amélioration réussie s’applique aux commissions générées ensuite, et un slot débloqué est rempli aussitôt.
+11. Une amélioration refusée (rôle, tier du tableau, livraisons insuffisantes pour monter de tier, fonds) ne change ni le tableau ni la banque ; une amélioration réussie s’applique aux commissions générées ensuite, et un slot débloqué est rempli aussitôt.
 12. Un Adjoint ou le chef peut changer le taux de taxe entre 0 et 50 % ; hors limites ou sans le rôle, le taux ne change pas. Le nouveau taux s’applique aux livraisons suivantes.
 13. Une commission terminée sort aussitôt de la liste : les suivantes remontent et une nouvelle arrive à la fin ; une commission en cours n’est jamais remplacée.
-14. Une guilde a un tableau sans action de sa part ; sa suppression supprime son tableau et ses commissions.
+14. Une guilde a un tableau en base sans action de sa part ; sa suppression supprime son tableau, ses commissions et ses compteurs.
+15. Pour monter de tier, les items livrés sur des commissions d’une qualité supérieure comptent aussi pour une condition d’une qualité inférieure.
 
 ## Configuration
 

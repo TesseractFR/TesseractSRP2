@@ -1,7 +1,9 @@
 package onl.tesseract.srp.commission.adapter.serverside.yaml;
 
-import onl.tesseract.srp.commission.domain.model.board.UpgradeStep;
-import onl.tesseract.srp.commission.domain.model.board.UpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryRequirement;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeStep;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.common.domain.model.item.MaterialName;
@@ -11,7 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -60,12 +64,10 @@ public class YamlCommissionConfigRepository implements CommissionConfigRepositor
     }
 
     @Override
-    public Optional<UpgradeStep> findUpgradeStep(UpgradeType upgradeType, int upgradeLevel) {
-        if (upgradeType == UpgradeType.MAX_REQUIRED_QUALITY && upgradeLevel >= Quality.values().length) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(yaml.getConfigurationSection("upgrades." + toUpgradeStepPath(upgradeType, upgradeLevel)))
-                .map(stepSection -> new UpgradeStep(stepSection.getInt("cost"), stepSection.getInt("guild-level")));
+    public Optional<CommissionBoardUpgradeStep> findUpgradeStep(CommissionBoardUpgradeType upgradeType, int upgradeLevel) {
+        return Optional.ofNullable(yaml.getConfigurationSection("upgrades." + toUpgradeStepPath(upgradeType) + "." + upgradeLevel))
+                .map(stepSection -> new CommissionBoardUpgradeStep(stepSection.getInt("cost"), stepSection.getInt("board-tier", 1),
+                        readDeliveryRequirements(stepSection)));
     }
 
     @Override
@@ -78,9 +80,9 @@ public class YamlCommissionConfigRepository implements CommissionConfigRepositor
     }
 
     @Override
-    public RarityQuantity getRarityQuantity(String rarityName) {
+    public CommissionRarityQuantity getRarityQuantity(String rarityName) {
         String rarityPath = "quantity-by-rarity." + rarityName;
-        return new RarityQuantity(yaml.getInt(rarityPath + ".quantity", 0),
+        return new CommissionRarityQuantity(yaml.getInt(rarityPath + ".quantity", 0),
                 yaml.getDouble(rarityPath + ".variance", 0));
     }
 
@@ -89,14 +91,27 @@ public class YamlCommissionConfigRepository implements CommissionConfigRepositor
         return yaml.getDouble("rarity-weights." + rarityName, 0);
     }
 
-    /** Les paliers de qualité sont indexés par le nom de la qualité visée, les autres par leur niveau. */
-    private static String toUpgradeStepPath(UpgradeType upgradeType, int upgradeLevel) {
+    private static String toUpgradeStepPath(CommissionBoardUpgradeType upgradeType) {
         return switch (upgradeType) {
-            case MAX_CRAFT_TIER -> "max-craft-tier." + upgradeLevel;
-            case MAX_HARVEST_TIER -> "max-harvest-tier." + upgradeLevel;
-            case SLOTS -> "slots." + upgradeLevel;
-            case MAX_REQUIRED_QUALITY -> "max-required-quality." + Quality.values()[upgradeLevel].name();
-            case MONEY_BONUS -> "money-bonus." + upgradeLevel;
+            case BOARD_TIER -> "board-tier";
+            case MAX_HARVEST_TIER -> "max-harvest-tier";
+            case MAX_CRAFT_TIER -> "max-craft-tier";
+            case HARVEST_SLOTS -> "harvest-slots";
+            case CRAFT_SLOTS -> "craft-slots";
+            case MONEY_BONUS -> "money-bonus";
         };
+    }
+
+    /** Les conditions de livraison sont indexées par type de commission : {@code HARVEST: { quality: GOOD, count: 100 }}. */
+    private static List<CommissionBoardDeliveryRequirement> readDeliveryRequirements(ConfigurationSection stepSection) {
+        List<CommissionBoardDeliveryRequirement> requirements = new ArrayList<>();
+        Optional.ofNullable(stepSection.getConfigurationSection("deliveries")).ifPresent(deliveries -> {
+            for (String typeName : deliveries.getKeys(false)) {
+                ConfigurationSection requirement = deliveries.getConfigurationSection(typeName);
+                requirements.add(new CommissionBoardDeliveryRequirement(CommissionType.valueOf(typeName),
+                        Quality.valueOf(requirement.getString("quality")), requirement.getInt("count")));
+            }
+        });
+        return requirements;
     }
 }

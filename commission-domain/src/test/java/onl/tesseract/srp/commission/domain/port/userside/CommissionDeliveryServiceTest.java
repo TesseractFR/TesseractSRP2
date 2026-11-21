@@ -1,15 +1,15 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardLevels;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
-import onl.tesseract.srp.commission.domain.model.commission.Delivery;
-import onl.tesseract.srp.commission.domain.model.exception.BoardPartAccessDeniedException;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
+import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardPartAccessDeniedException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionNotAvailableException;
 import onl.tesseract.srp.commission.domain.model.exception.ItemQualityTooLowException;
 import onl.tesseract.srp.commission.domain.model.exception.NoItemToDeliverException;
@@ -40,15 +40,15 @@ import static org.mockito.Mockito.when;
 
 class CommissionDeliveryServiceTest {
 
-    private static final BoardId GUILD_BOARD_ID = new BoardId(1);
-    private static final BoardId SPAWN_BOARD_ID = new BoardId(2);
+    private static final CommissionBoardId GUILD_BOARD_ID = new CommissionBoardId(1);
+    private static final CommissionBoardId SPAWN_BOARD_ID = new CommissionBoardId(2);
     private static final GuildId GUILD_ID = new GuildId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
     private static final PlayerId MEMBER = new PlayerId(UUID.fromString("00000000-0000-0000-0000-000000000010"));
     private static final PlayerId EXTERNAL = new PlayerId(UUID.fromString("00000000-0000-0000-0000-000000000020"));
     private static final CommissionId COMMISSION_ID = new CommissionId(100);
     private static final MaterialName WOOD = new MaterialName("BOIS");
 
-    private static Commission commission(BoardId boardId, BoardPart part, int deliveredQuantity) {
+    private static Commission commission(CommissionBoardId boardId, CommissionBoardPart part, int deliveredQuantity) {
         return new Commission(COMMISSION_ID, boardId, part, CommissionType.HARVEST, WOOD, 10, deliveredQuantity,
                 Quality.NORMAL, MoneyValue.of(100));
     }
@@ -69,7 +69,7 @@ class CommissionDeliveryServiceTest {
         commissionBoardRefillService = mock(CommissionBoardRefillService.class);
         commissionDeliveryService = new CommissionDeliveryService(commissionRepository, playerMaterialPort, commissionConfigRepository,
                 commissionBoardService, commissionBoardRefillService);
-        guildBoard = CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, BoardLevels.GUILD_START, 0.25);
+        guildBoard = CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, CommissionBoardLevels.GUILD_BOARD_START, 0.25);
 
         when(commissionBoardService.getBoard(GUILD_BOARD_ID)).thenReturn(guildBoard);
         when(commissionBoardService.isGuildMember(MEMBER, guildBoard)).thenReturn(true);
@@ -88,11 +88,11 @@ class CommissionDeliveryServiceTest {
     @Test
     void deliver_recordsTheDeliveryBeforeRemovingTheItems() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0));
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0));
         givenOwnedItems(MEMBER, 5);
 
         // when
-        Delivery delivery = commissionDeliveryService.deliver(MEMBER, COMMISSION_ID);
+        CommissionDelivery delivery = commissionDeliveryService.deliver(MEMBER, COMMISSION_ID);
 
         // then
         InOrder deliveryOrder = inOrder(commissionRepository, playerMaterialPort);
@@ -104,11 +104,11 @@ class CommissionDeliveryServiceTest {
     @Test
     void deliver_removesAtMostTheRemainingQuantityAndRefillsTheBoard() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 8));
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 8));
         givenOwnedItems(MEMBER, 64);
 
         // when
-        Delivery delivery = commissionDeliveryService.deliver(MEMBER, COMMISSION_ID);
+        CommissionDelivery delivery = commissionDeliveryService.deliver(MEMBER, COMMISSION_ID);
 
         // then
         assertEquals(2, delivery.itemCount());
@@ -119,13 +119,13 @@ class CommissionDeliveryServiceTest {
     @Test
     void computeDelivery_taxesAnExternalPlayerButNotAMember() {
         // given
-        Commission commission = commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0);
+        Commission commission = commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0);
         givenOwnedItems(EXTERNAL, 10);
         givenOwnedItems(MEMBER, 10);
 
         // when
-        Delivery externalDelivery = commissionDeliveryService.computeDelivery(EXTERNAL, guildBoard, commission);
-        Delivery memberDelivery = commissionDeliveryService.computeDelivery(MEMBER, guildBoard, commission);
+        CommissionDelivery externalDelivery = commissionDeliveryService.computeDelivery(EXTERNAL, guildBoard, commission);
+        CommissionDelivery memberDelivery = commissionDeliveryService.computeDelivery(MEMBER, guildBoard, commission);
 
         // then
         assertEquals(25, externalDelivery.guildTax());
@@ -140,7 +140,7 @@ class CommissionDeliveryServiceTest {
         givenOwnedItems(MEMBER, 4);
 
         // when
-        Delivery delivery = commissionDeliveryService.computeDelivery(MEMBER, guildBoard, commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0));
+        CommissionDelivery delivery = commissionDeliveryService.computeDelivery(MEMBER, guildBoard, commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0));
 
         // then
         assertEquals(20, delivery.guildXp());
@@ -149,11 +149,11 @@ class CommissionDeliveryServiceTest {
     @Test
     void computeDelivery_givesNoGuildXpAndNoTaxOnTheSpawnBoard() {
         // given
-        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(SPAWN_BOARD_ID, BoardLevels.spawn(6));
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(6));
         givenOwnedItems(EXTERNAL, 10);
 
         // when
-        Delivery delivery = commissionDeliveryService.computeDelivery(EXTERNAL, spawnBoard, commission(SPAWN_BOARD_ID, BoardPart.PUBLIC, 0));
+        CommissionDelivery delivery = commissionDeliveryService.computeDelivery(EXTERNAL, spawnBoard, commission(SPAWN_BOARD_ID, CommissionBoardPart.PUBLIC, 0));
 
         // then
         assertEquals(0, delivery.guildXp());
@@ -163,20 +163,20 @@ class CommissionDeliveryServiceTest {
     @Test
     void computeTotalGuildXp_isTheRewardTimesTheRateOnAGuildBoardAndZeroAtTheSpawn() {
         // given
-        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(SPAWN_BOARD_ID, BoardLevels.spawn(6));
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(6));
 
         // when / then : 100 lys à 0,5 XP par lys
-        assertEquals(50, commissionDeliveryService.computeTotalGuildXp(guildBoard, commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0)));
-        assertEquals(0, commissionDeliveryService.computeTotalGuildXp(spawnBoard, commission(SPAWN_BOARD_ID, BoardPart.PUBLIC, 0)));
+        assertEquals(50, commissionDeliveryService.computeTotalGuildXp(guildBoard, commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0)));
+        assertEquals(0, commissionDeliveryService.computeTotalGuildXp(spawnBoard, commission(SPAWN_BOARD_ID, CommissionBoardPart.PUBLIC, 0)));
     }
 
     @Test
     void findAllVisibleCommissions_hidesTheGuildPartFromAnExternalPlayer() {
         // given
-        Commission publicCommission = commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0);
-        Commission guildCommission = commission(GUILD_BOARD_ID, BoardPart.GUILD, 0);
+        Commission publicCommission = commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0);
+        Commission guildCommission = commission(GUILD_BOARD_ID, CommissionBoardPart.GUILD, 0);
         when(commissionRepository.findAllByBoard(GUILD_BOARD_ID)).thenReturn(List.of(publicCommission, guildCommission));
-        when(commissionBoardService.canAccessPart(EXTERNAL, guildBoard, BoardPart.GUILD)).thenReturn(false);
+        when(commissionBoardService.canAccessPart(EXTERNAL, guildBoard, CommissionBoardPart.GUILD)).thenReturn(false);
 
         // when
         List<Commission> visibleCommissions = commissionDeliveryService.findAllVisibleCommissions(EXTERNAL, guildBoard);
@@ -187,7 +187,7 @@ class CommissionDeliveryServiceTest {
     @Test
     void deliver_throwsWhenTheCommissionIsCompleted() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 10));
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 10));
 
         // when / then
         assertThrows(CommissionNotAvailableException.class, () -> commissionDeliveryService.deliver(MEMBER, COMMISSION_ID));
@@ -196,18 +196,18 @@ class CommissionDeliveryServiceTest {
     @Test
     void deliver_throwsWhenThePlayerCannotAccessThePart() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.GUILD, 0));
-        when(commissionBoardService.canAccessPart(EXTERNAL, guildBoard, BoardPart.GUILD)).thenReturn(false);
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.GUILD, 0));
+        when(commissionBoardService.canAccessPart(EXTERNAL, guildBoard, CommissionBoardPart.GUILD)).thenReturn(false);
 
         // when / then
-        assertThrows(BoardPartAccessDeniedException.class, () -> commissionDeliveryService.deliver(EXTERNAL, COMMISSION_ID));
+        assertThrows(CommissionBoardPartAccessDeniedException.class, () -> commissionDeliveryService.deliver(EXTERNAL, COMMISSION_ID));
         verify(commissionRepository, never()).recordDelivery(any());
     }
 
     @Test
     void deliver_throwsWhenThePlayerHasTheItemOnlyBelowTheMinimalQuality() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0));
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0));
         givenOwnedItems(MEMBER, 0);
         when(playerMaterialPort.countAtLeast(MEMBER, WOOD, Quality.POOR)).thenReturn(3);
 
@@ -219,7 +219,7 @@ class CommissionDeliveryServiceTest {
     @Test
     void deliver_throwsWhenThePlayerHasNoItem() {
         // given
-        givenCommission(commission(GUILD_BOARD_ID, BoardPart.PUBLIC, 0));
+        givenCommission(commission(GUILD_BOARD_ID, CommissionBoardPart.PUBLIC, 0));
         givenOwnedItems(MEMBER, 0);
 
         // when / then

@@ -1,17 +1,15 @@
 package onl.tesseract.srp.commission.domain.model.exception;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
+import lombok.Getter;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 
 /** Le tableau demandé n'existe pas. */
+@Getter
 public final class CommissionBoardNotFoundException extends CommissionException {
-    private final BoardId boardId;
+    private final CommissionBoardId boardId;
 
-    public CommissionBoardNotFoundException(BoardId boardId) {
+    public CommissionBoardNotFoundException(CommissionBoardId boardId) {
         super("Le tableau " + boardId.value() + " n'existe pas");
         this.boardId = boardId;
-    }
-
-    public BoardId getBoardId() {
-        return boardId;
     }
 }

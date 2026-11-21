@@ -1,11 +1,8 @@
-# Quantité de base demandée par commission et écart maximal autour d'elle, en % :
-# quantity 300 et variance 50 donnent une quantité entre 150 et 450.
-quantity-by-rarity:
-  COMMON: { quantity: 300, variance: 50 }
-  SPECIAL: { quantity: 150, variance: 50 }
-  RARE: { quantity: 60, variance: 50 }
-  EPIC: { quantity: 20, variance: 50 }
-  LEGENDARY: { quantity: 5, variance: 50 }
+spawn-reward-rate: 0.5
+guild-xp-per-lys: 0.1
+
+spawn-slots-per-type: 6
+default-usage-tax-rate: 0.25
 
 rarity-weights:
   COMMON: 100
@@ -14,35 +11,80 @@ rarity-weights:
   EPIC: 5
   LEGENDARY: 1
 
-spawn-reward-rate: 0.5
-guild-xp-per-lys: 0.1
-# Taux de taxe d'un tableau de guilde à sa création, entre 0 et 0.5.
-default-usage-tax-rate: 0.25
-# Commissions par type sur le tableau du spawn, appliqué à chaque ouverture. Le menu en affiche au plus 6.
-spawn-slots-per-type: 6
+quantity-by-rarity:
+  COMMON: { quantity: 300, variance: 50 }
+  SPECIAL: { quantity: 150, variance: 50 }
+  RARE: { quantity: 60, variance: 50 }
+  EPIC: { quantity: 20, variance: 50 }
+  LEGENDARY: { quantity: 5, variance: 50 }
 
 harvest-tiers:
+  # Agriculteur
+  BLE_DORE: 1
+  FANES_COMMUNES: 1
+  LAINE_FINE: 1
+  LAIT_ENRICHI: 1
+  # Bûcheron
+  COPEAUX_RESISTANTS: 1
+  MOUSSE_ECORCE: 1
+  RONDIN_SOLIDE: 1
+  SEVE_COMMUNE: 1
+  # Chasseur
+  CORNE_DE_VACHE: 1
+  COUENNE: 1
+  OREILLE_DE_LAPIN: 1
+  PLUME_ARGENTEE: 1
+  # Gardien
+  FRAGMENT_DE_CERVEAU: 1
+  OS_RENFORCE: 1
+  RESIDU_SULFUREUX: 1
+  SOIE_ARAIGNEE: 1
+  # Herboriste
+  FEUILLAGE_DENSE: 1
+  FLEUR_RARE: 1
+  HERBE_MEDICINALE: 1
+  POUSSIERE_FONGIQUE: 1
+  # Mineur
   TITANE: 1
+  LINGOT_ETAIN_BRUT: 1
+  NODULE_SILICEUX: 1
+  PAILLETTE_OR_BRUTE: 1
+  POUSSIERE_DE_FER: 1
+  # Pêcheur
+  ALGUE_PURIFIANTE: 1
+  ECAILLE_TERNIE: 1
+  POISSON_ARGENTE: 1
+  TENTACULE_SECHE: 1
+  # Terrassier
+  CROUTE_DE_SABLE: 1
+  GRAVIER_BRUT: 1
+  PIERRE_MARBREE: 1
+  TERRE_FERTILE: 1
 
 upgrades:
-  max-craft-tier:
-    2: { cost: 5000, guild-level: 2 }
-    3: { cost: 20000, guild-level: 5 }
+  board-tier:
+    2: { cost: 10000, deliveries: { HARVEST: { quality: GOOD, count: 200 }, CRAFT: { quality: GOOD, count: 100 } } }
+    3: { cost: 40000, deliveries: { HARVEST: { quality: VERY_GOOD, count: 300 }, CRAFT: { quality: VERY_GOOD, count: 150 } } }
+    4: { cost: 100000, deliveries: { HARVEST: { quality: EXCEPTIONAL, count: 100 }, CRAFT: { quality: EXCEPTIONAL, count: 100 } } }
   max-harvest-tier:
-    2: { cost: 5000, guild-level: 2 }
-    3: { cost: 20000, guild-level: 5 }
-  slots:
-    2: { cost: 5000, guild-level: 2 }
-    3: { cost: 20000, guild-level: 5 }
-    4: { cost: 40000, guild-level: 7 }
-    5: { cost: 80000, guild-level: 9 }
-    6: { cost: 160000, guild-level: 11 }
-  max-required-quality:
-    NORMAL: { cost: 5000, guild-level: 2 }
-    GOOD: { cost: 10000, guild-level: 3 }
-    VERY_GOOD: { cost: 20000, guild-level: 5 }
-    EXCEPTIONAL: { cost: 40000, guild-level: 7 }
+    2: { cost: 5000, board-tier: 2 }
+    3: { cost: 20000, board-tier: 3 }
+  max-craft-tier:
+    2: { cost: 5000, board-tier: 2 }
+    3: { cost: 20000, board-tier: 3 }
+  harvest-slots:
+    2: { cost: 5000, board-tier: 1 }
+    3: { cost: 20000, board-tier: 2 }
+    4: { cost: 40000, board-tier: 3 }
+    5: { cost: 80000, board-tier: 3 }
+    6: { cost: 160000, board-tier: 4 }
+  craft-slots:
+    2: { cost: 5000, board-tier: 1 }
+    3: { cost: 20000, board-tier: 2 }
+    4: { cost: 40000, board-tier: 3 }
+    5: { cost: 80000, board-tier: 3 }
+    6: { cost: 160000, board-tier: 4 }
   money-bonus:
-    1: { value: 0.02, cost: 5000, guild-level: 3 }
-    2: { value: 0.03, cost: 10000, guild-level: 5 }
-    3: { value: 0.05, cost: 20000, guild-level: 7 }
+    1: { value: 0.02, cost: 5000, board-tier: 1 }
+    2: { value: 0.03, cost: 10000, board-tier: 2 }
+    3: { value: 0.05, cost: 20000, board-tier: 3 }

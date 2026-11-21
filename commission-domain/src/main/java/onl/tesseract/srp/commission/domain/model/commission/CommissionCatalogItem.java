@@ -11,10 +11,10 @@ import onl.tesseract.srp.common.domain.model.item.MaterialName;
  * @param quantity                quantité de base demandée, qui dépend de la rareté
  * @param quantityVariancePercent écart maximal de la quantité autour de la base, en pourcentage, qui dépend de la rareté
  */
-public record CatalogItem(@NonNull MaterialName material, int tier, double weight, int quantity,
+public record CommissionCatalogItem(@NonNull MaterialName material, int tier, double weight, int quantity,
                           double quantityVariancePercent) {
     /** Vérifie que le tier et la quantité valent au moins un, et que le poids et la variance ne sont pas négatifs. */
-    public CatalogItem {
+    public CommissionCatalogItem {
         if (tier < 1) {
             throw new IllegalArgumentException("Le tier d'un item du catalogue vaut au moins 1 : " + tier);
         }

@@ -2,8 +2,8 @@ package onl.tesseract.srp.commission.adapter.serverside.catalog;
 
 import lombok.extern.slf4j.Slf4j;
 import onl.tesseract.srp.commission.adapter.serverside.yaml.CommissionCatalogConfig;
-import onl.tesseract.srp.commission.adapter.serverside.yaml.RarityQuantity;
-import onl.tesseract.srp.commission.domain.model.commission.CatalogItem;
+import onl.tesseract.srp.commission.adapter.serverside.yaml.CommissionRarityQuantity;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionCatalogItem;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionCatalogRepository;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
@@ -45,8 +45,8 @@ public class SkillCustomItemCommissionCatalogRepository implements CommissionCat
     }
 
     @Override
-    public List<CatalogItem> findAllCatalogItems(CommissionType commissionType) {
-        List<CatalogItem> catalogItems = new ArrayList<>();
+    public List<CommissionCatalogItem> findAllCatalogItems(CommissionType commissionType) {
+        List<CommissionCatalogItem> catalogItems = new ArrayList<>();
         findAllItemTiers(commissionType).forEach((material, tier) -> {
             if (customItemService.hasMoneyValue(material)) {
                 catalogItems.add(toCatalogItem(material, tier));
@@ -67,10 +67,10 @@ public class SkillCustomItemCommissionCatalogRepository implements CommissionCat
         return findAllItemTiers(commissionType).get(material);
     }
 
-    private CatalogItem toCatalogItem(MaterialName material, int tier) {
+    private CommissionCatalogItem toCatalogItem(MaterialName material, int tier) {
         String rarityName = resolveRarity(material).name();
-        RarityQuantity rarityQuantity = commissionCatalogConfig.getRarityQuantity(rarityName);
-        return new CatalogItem(material, tier, commissionCatalogConfig.getRarityWeight(rarityName), rarityQuantity.quantity(),
+        CommissionRarityQuantity rarityQuantity = commissionCatalogConfig.getRarityQuantity(rarityName);
+        return new CommissionCatalogItem(material, tier, commissionCatalogConfig.getRarityWeight(rarityName), rarityQuantity.quantity(),
                 rarityQuantity.variancePercent());
     }
 

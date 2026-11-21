@@ -11,7 +11,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 
@@ -30,7 +30,7 @@ public class CommissionEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BoardPart part;
+    private CommissionBoardPart part;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

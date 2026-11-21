@@ -1,8 +1,8 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
-import onl.tesseract.srp.commission.domain.model.commission.CatalogItem;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionCatalogItem;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDraft;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
@@ -53,26 +53,32 @@ public class CommissionBoardRefillService {
         }
     }
 
-    /** Génère ce qu'il manque pour que chaque liste du tableau ait {@code slotsPerType} commissions en cours. */
+    /** Génère ce qu'il manque pour que chaque liste du tableau ait autant de commissions en cours que de slots pour son type. */
     private List<CommissionDraft> generateMissingCommissions(CommissionBoard commissionBoard, List<Commission> existingCommissions) {
         List<CommissionDraft> newCommissions = new ArrayList<>();
         for (CommissionType commissionType : CommissionType.values()) {
-            List<BoardPart> partsToFill = findAllPartsMissingCommissions(commissionBoard, commissionType, existingCommissions);
-            if (partsToFill.isEmpty()) {
-                continue;
-            }
-            List<CatalogItem> allowedItems = findAllItemsAllowedOn(commissionBoard, commissionType);
-            if (allowedItems.isEmpty()) {
-                continue;
-            }
-            for (BoardPart boardPart : partsToFill) {
-                newCommissions.add(drawCommission(commissionBoard, boardPart, commissionType, allowedItems));
-            }
+            newCommissions.addAll(generateMissingCommissions(commissionBoard, commissionType, existingCommissions));
         }
         return newCommissions;
     }
 
-    private List<CatalogItem> findAllItemsAllowedOn(CommissionBoard commissionBoard, CommissionType commissionType) {
+    /** Le catalogue n'est lu que s'il manque des commissions de ce type. */
+    private List<CommissionDraft> generateMissingCommissions(CommissionBoard commissionBoard, CommissionType commissionType,
+                                                             List<Commission> existingCommissions) {
+        List<CommissionBoardPart> partsToFill = findAllPartsMissingCommissions(commissionBoard, commissionType, existingCommissions);
+        if (partsToFill.isEmpty()) {
+            return List.of();
+        }
+        List<CommissionCatalogItem> allowedItems = findAllItemsAllowedOn(commissionBoard, commissionType);
+        if (allowedItems.isEmpty()) {
+            return List.of();
+        }
+        return partsToFill.stream()
+                .map(boardPart -> drawCommission(commissionBoard, boardPart, commissionType, allowedItems))
+                .toList();
+    }
+
+    private List<CommissionCatalogItem> findAllItemsAllowedOn(CommissionBoard commissionBoard, CommissionType commissionType) {
         int maxTier = commissionBoard.getLevels().getMaxTierFor(commissionType);
         return commissionCatalogRepository.findAllCatalogItems(commissionType).stream()
                 .filter(catalogItem -> catalogItem.tier() <= maxTier && catalogItem.weight() > 0)
@@ -80,25 +86,25 @@ public class CommissionBoardRefillService {
     }
 
     /** @return chaque partie du tableau, autant de fois qu'il lui manque de commissions de ce type */
-    private List<BoardPart> findAllPartsMissingCommissions(CommissionBoard commissionBoard, CommissionType commissionType,
+    private List<CommissionBoardPart> findAllPartsMissingCommissions(CommissionBoard commissionBoard, CommissionType commissionType,
                                                            List<Commission> existingCommissions) {
-        List<BoardPart> partsToFill = new ArrayList<>();
-        for (BoardPart boardPart : commissionBoard.findAllParts()) {
+        List<CommissionBoardPart> partsToFill = new ArrayList<>();
+        for (CommissionBoardPart boardPart : commissionBoard.findAllParts()) {
             long openCount = existingCommissions.stream()
                     .filter(commission -> commission.isInList(boardPart, commissionType) && !commission.isCompleted())
                     .count();
-            int missingCount = (int) Math.max(0, commissionBoard.getLevels().slotsPerType() - openCount);
+            int missingCount = (int) Math.max(0, commissionBoard.getLevels().getSlotsFor(commissionType) - openCount);
             partsToFill.addAll(Collections.nCopies(missingCount, boardPart));
         }
         return partsToFill;
     }
 
-    /** La qualité minimale est tirée entre {@code POOR} et la qualité maximale du tableau. */
-    private CommissionDraft drawCommission(CommissionBoard commissionBoard, BoardPart boardPart, CommissionType commissionType,
-                                           List<CatalogItem> allowedItems) {
-        CatalogItem catalogItem = pickWeighted(allowedItems);
+    /** La qualité minimale est tirée uniformément entre {@code POOR} et {@code EXCEPTIONAL}. */
+    private CommissionDraft drawCommission(CommissionBoard commissionBoard, CommissionBoardPart boardPart, CommissionType commissionType,
+                                           List<CommissionCatalogItem> allowedItems) {
+        CommissionCatalogItem catalogItem = drawCatalogItem(allowedItems);
         int quantity = drawQuantity(catalogItem);
-        Quality minimalQuality = Quality.values()[random.nextInt(commissionBoard.getLevels().maxRequiredQuality().ordinal() + 1)];
+        Quality minimalQuality = Quality.values()[random.nextInt(Quality.values().length)];
         return new CommissionDraft(commissionBoard.getId(), boardPart, commissionType, catalogItem.material(),
                 quantity, minimalQuality, computeReward(commissionBoard, catalogItem.material(), quantity, minimalQuality));
     }
@@ -108,7 +114,7 @@ public class CommissionBoardRefillService {
      * bornes arrondies à l'unité et comprises, avec un minimum de un. La base et la variance viennent
      * de l'item du catalogue.
      */
-    private int drawQuantity(CatalogItem catalogItem) {
+    private int drawQuantity(CommissionCatalogItem catalogItem) {
         int baseQuantity = catalogItem.quantity();
         double varianceRate = catalogItem.quantityVariancePercent() / 100;
         int minimalQuantity = (int) Math.max(1, Math.round(baseQuantity * (1 - varianceRate)));
@@ -125,7 +131,7 @@ public class CommissionBoardRefillService {
      */
     private MoneyValue computeReward(CommissionBoard commissionBoard, MaterialName material, int quantity, Quality minimalQuality) {
         BigDecimal unitValue = commissionCatalogRepository.getUnitValue(material, minimalQuality).value();
-        double boardRewardRate = commissionBoard.isSpawn() ? commissionConfigRepository.getSpawnRewardRate() : 1;
+        double boardRewardRate = commissionBoard.isSpawnBoard() ? commissionConfigRepository.getSpawnRewardRate() : 1;
         double moneyBonusFactor = 1 + commissionConfigRepository.getMoneyBonusRate(commissionBoard.getLevels().moneyBonusLevel());
         BigDecimal reward = unitValue.multiply(BigDecimal.valueOf(quantity))
                 .multiply(BigDecimal.valueOf(boardRewardRate * moneyBonusFactor))
@@ -135,9 +141,9 @@ public class CommissionBoardRefillService {
     }
 
     /** Sélectionne un item proportionnellement à son poids. */
-    private CatalogItem pickWeighted(List<CatalogItem> catalogItems) {
-        double remainingWeight = random.nextDouble() * catalogItems.stream().mapToDouble(CatalogItem::weight).sum();
-        for (CatalogItem catalogItem : catalogItems) {
+    private CommissionCatalogItem drawCatalogItem(List<CommissionCatalogItem> catalogItems) {
+        double remainingWeight = random.nextDouble() * catalogItems.stream().mapToDouble(CommissionCatalogItem::weight).sum();
+        for (CommissionCatalogItem catalogItem : catalogItems) {
             remainingWeight -= catalogItem.weight();
             if (remainingWeight < 0) {
                 return catalogItem;

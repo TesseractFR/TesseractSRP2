@@ -5,20 +5,17 @@ package onl.tesseract.srp.commission.domain.model.exception;
  * qui traduisent ces exceptions en message soient forcés par le compilateur de traiter chaque cas.
  */
 public abstract sealed class CommissionException extends RuntimeException
-        permits BoardFurnitureUnavailableException,
-        BoardManagementNotAllowedException,
-        BoardOutsideTerritoryException,
-        BoardPartAccessDeniedException,
-        BoardPlacementNotStartedException,
-        BoardSpotNotFreeException,
+        permits CommissionBoardManagementNotAllowedException,
+        CommissionBoardPartAccessDeniedException,
+        CommissionBoardTierTooLowException,
         CommissionBoardNotFoundException,
         CommissionNotAvailableException,
-        GuildLevelTooLowException,
         InvalidUsageTaxRateException,
         ItemQualityTooLowException,
         NoItemToDeliverException,
         NotEnoughBankMoneyException,
-        UpgradeMaxLevelReachedException {
+        NotEnoughDeliveredItemsException,
+        CommissionBoardUpgradeMaxLevelReachedException {
 
     protected CommissionException(String message) {
         super(message);

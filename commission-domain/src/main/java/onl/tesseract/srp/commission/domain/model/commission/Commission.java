@@ -1,8 +1,8 @@
 package onl.tesseract.srp.commission.domain.model.commission;
 
 import lombok.NonNull;
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.common.domain.model.item.MaterialName;
@@ -13,7 +13,7 @@ import onl.tesseract.srp.common.domain.model.item.MaterialName;
  * @param deliveredQuantity quantité déjà livrée, entre zéro et {@code quantity}
  * @param reward            récompense totale, figée à la génération
  */
-public record Commission(@NonNull CommissionId id, @NonNull BoardId boardId, @NonNull BoardPart part,
+public record Commission(@NonNull CommissionId id, @NonNull CommissionBoardId boardId, @NonNull CommissionBoardPart part,
                          @NonNull CommissionType type, @NonNull MaterialName material, int quantity,
                          int deliveredQuantity, @NonNull Quality minimalQuality, @NonNull MoneyValue reward) {
 
@@ -38,7 +38,7 @@ public record Commission(@NonNull CommissionId id, @NonNull BoardId boardId, @No
     }
 
     /** @return {@code true} si la commission est dans la liste de cette partie et de ce type */
-    public boolean isInList(BoardPart listPart, CommissionType listType) {
+    public boolean isInList(CommissionBoardPart listPart, CommissionType listType) {
         return part == listPart && type == listType;
     }
 

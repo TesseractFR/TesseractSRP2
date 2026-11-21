@@ -1,23 +1,18 @@
 package onl.tesseract.srp.commission.adapter.serverside.guild;
 
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
-import onl.tesseract.srp.commission.domain.port.serverside.GuildProgressPort;
+import onl.tesseract.srp.commission.domain.port.serverside.GuildBankPort;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.springframework.stereotype.Component;
 
-/** Lit le niveau des guildes et débite leur banque au moyen de {@link GuildService}. */
+/** Lit et débite la banque des guildes au moyen de {@link GuildService}. */
 @Component
-public class GuildServiceProgressPort implements GuildProgressPort {
+public class GuildServiceBankPort implements GuildBankPort {
 
     private final GuildService guildService;
 
-    public GuildServiceProgressPort(GuildService guildService) {
+    public GuildServiceBankPort(GuildService guildService) {
         this.guildService = guildService;
-    }
-
-    @Override
-    public int getGuildLevel(GuildId guildId) {
-        return guildService.getGuildLevel(guildId.value());
     }
 
     @Override

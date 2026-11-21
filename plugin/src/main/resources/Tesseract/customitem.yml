@@ -3,7 +3,175 @@ steel:
   item_tag: "tesseract:steel"
   rarity: "COMMON"
 
+# Agriculteur
+ble_dore:
+  display_name: "Blé Doré"
+  item_tag: "tesseract:agriculteur_p0_ble_dore"
+  rarity: "COMMON"
+
+fanes_communes:
+  display_name: "Fanes Communes"
+  item_tag: "tesseract:agriculteur_p0_fanes_communes"
+  rarity: "COMMON"
+
+laine_fine:
+  display_name: "Laine Fine"
+  item_tag: "tesseract:agriculteur_p0_laine_fine"
+  rarity: "COMMON"
+
+lait_enrichi:
+  display_name: "Lait Enrichi"
+  item_tag: "tesseract:agriculteur_p0_lait_enrichi"
+  rarity: "COMMON"
+
+# Bûcheron
+copeaux_resistants:
+  display_name: "Copeaux Résistants"
+  item_tag: "tesseract:bucheron_p0_copeaux_resistants"
+  rarity: "COMMON"
+
+mousse_ecorce:
+  display_name: "Mousse d'Écorce"
+  item_tag: "tesseract:bucheron_p0_mousse_ecorce"
+  rarity: "COMMON"
+
+rondin_solide:
+  display_name: "Rondin Solide"
+  item_tag: "tesseract:bucheron_p0_rondin_solide"
+  rarity: "COMMON"
+
+seve_commune:
+  display_name: "Sève Commune"
+  item_tag: "tesseract:bucheron_p0_seve_commune"
+  rarity: "COMMON"
+
+# Chasseur
+corne_de_vache:
+  display_name: "Corne de Vache"
+  item_tag: "tesseract:chasseur_p0_corne_de_vache"
+  rarity: "COMMON"
+
+couenne:
+  display_name: "Couenne"
+  item_tag: "tesseract:chasseur_p0_couenne"
+  rarity: "COMMON"
+
+oreille_de_lapin:
+  display_name: "Oreille de Lapin"
+  item_tag: "tesseract:chasseur_p0_oreille_de_lapin"
+  rarity: "COMMON"
+
+plume_argentee:
+  display_name: "Plume Argentée"
+  item_tag: "tesseract:chasseur_p0_plume_argentee"
+  rarity: "COMMON"
+
+# Gardien
+fragment_de_cerveau:
+  display_name: "Fragment de Cerveau"
+  item_tag: "tesseract:gardien_p0_fragment_de_cerveau"
+  rarity: "COMMON"
+
+os_renforce:
+  display_name: "Os Renforcé"
+  item_tag: "tesseract:gardien_p0_os_renforce"
+  rarity: "COMMON"
+
+residu_sulfureux:
+  display_name: "Résidu Sulfureux"
+  item_tag: "tesseract:gardien_p0_residu_sulfureux"
+  rarity: "COMMON"
+
+soie_araignee:
+  display_name: "Soie d'Araignée"
+  item_tag: "tesseract:gardien_p0_soie_araignee"
+  rarity: "COMMON"
+
+# Herboriste
+feuillage_dense:
+  display_name: "Feuillage Dense"
+  item_tag: "tesseract:herboriste_p0_feuillage_dense"
+  rarity: "COMMON"
+
+fleur_rare:
+  display_name: "Fleur Rare"
+  item_tag: "tesseract:herboriste_p0_fleur_rare"
+  rarity: "COMMON"
+
+herbe_medicinale:
+  display_name: "Herbe Médicinale"
+  item_tag: "tesseract:herboriste_p0_herbe_medicinale"
+  rarity: "COMMON"
+
+poussiere_fongique:
+  display_name: "Poussière Fongique"
+  item_tag: "tesseract:herboriste_p0_poussiere_fongique"
+  rarity: "COMMON"
+
+# Mineur
 titane:
   display_name: "Titane"
   item_tag: "tesseract:titane"
+  rarity: "COMMON"
+
+lingot_etain_brut:
+  display_name: "Lingot d'étain brut"
+  item_tag: "tesseract:mineur_p0_lingot_etain_brut"
+  rarity: "COMMON"
+
+nodule_siliceux:
+  display_name: "Nodule Siliceux"
+  item_tag: "tesseract:mineur_p0_nodule_siliceux"
+  rarity: "COMMON"
+
+paillette_or_brute:
+  display_name: "Paillette d'Or Brute"
+  item_tag: "tesseract:mineur_p0_paillette_or_brute"
+  rarity: "COMMON"
+
+poussiere_de_fer:
+  display_name: "Poussière de Fer"
+  item_tag: "tesseract:mineur_p0_poussiere_de_fer"
+  rarity: "COMMON"
+
+# Pêcheur
+algue_purifiante:
+  display_name: "Algue Purifiante"
+  item_tag: "tesseract:pecheur_p0_algue_purifiante"
+  rarity: "COMMON"
+
+ecaille_ternie:
+  display_name: "Écaille Ternie"
+  item_tag: "tesseract:pecheur_p0_ecaille_ternie"
+  rarity: "COMMON"
+
+poisson_argente:
+  display_name: "Poisson Argenté"
+  item_tag: "tesseract:pecheur_p0_poisson_argente"
+  rarity: "COMMON"
+
+tentacule_seche:
+  display_name: "Tentacule Séché"
+  item_tag: "tesseract:pecheur_p0_tentacule_seche"
+  rarity: "COMMON"
+
+# Terrassier
+croute_de_sable:
+  display_name: "Croûte de Sable"
+  item_tag: "tesseract:terrassier_p0_croute_de_sable"
+  rarity: "COMMON"
+
+gravier_brut:
+  display_name: "Gravier Brut"
+  item_tag: "tesseract:terrassier_p0_gravier_brut"
+  rarity: "COMMON"
+
+pierre_marbree:
+  display_name: "Pierre Marbrée"
+  item_tag: "tesseract:terrassier_p0_pierre_marbree"
+  rarity: "COMMON"
+
+terre_fertile:
+  display_name: "Terre Fertile"
+  item_tag: "tesseract:terrassier_p0_terre_fertile"
   rarity: "COMMON"

@@ -1,7 +1,7 @@
 package onl.tesseract.srp.commission.domain.port.serverside;
 
-import onl.tesseract.srp.commission.domain.model.board.UpgradeStep;
-import onl.tesseract.srp.commission.domain.model.board.UpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeStep;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
 
 import java.util.Optional;
 
@@ -23,8 +23,8 @@ public interface CommissionConfigRepository {
     int getSpawnSlotsPerType();
 
     /**
-     * @param upgradeLevel niveau à atteindre ; pour la qualité, rang de la qualité visée
+     * @param upgradeLevel niveau à atteindre
      * @return le palier, ou {@link Optional#empty()} si ce niveau n'existe pas : l'amélioration est au maximum
      */
-    Optional<UpgradeStep> findUpgradeStep(UpgradeType upgradeType, int upgradeLevel);
+    Optional<CommissionBoardUpgradeStep> findUpgradeStep(CommissionBoardUpgradeType upgradeType, int upgradeLevel);
 }

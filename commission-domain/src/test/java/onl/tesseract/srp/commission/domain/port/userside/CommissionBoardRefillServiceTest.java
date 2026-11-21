@@ -1,11 +1,11 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardLevels;
-import onl.tesseract.srp.commission.domain.model.board.BoardPart;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
-import onl.tesseract.srp.commission.domain.model.commission.CatalogItem;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionCatalogItem;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDraft;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
@@ -36,24 +36,24 @@ import static org.mockito.Mockito.when;
 
 class CommissionBoardRefillServiceTest {
 
-    private static final BoardId GUILD_BOARD_ID = new BoardId(1);
-    private static final BoardId SPAWN_BOARD_ID = new BoardId(2);
+    private static final CommissionBoardId GUILD_BOARD_ID = new CommissionBoardId(1);
+    private static final CommissionBoardId SPAWN_BOARD_ID = new CommissionBoardId(2);
     private static final GuildId GUILD_ID = new GuildId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
     private static final CommissionId COMMISSION_ID = new CommissionId(100);
     private static final MaterialName WOOD = new MaterialName("BOIS");
     private static final MaterialName STONE = new MaterialName("PIERRE");
     private static final MaterialName TITANIUM = new MaterialName("TITANE");
 
-    private static CommissionBoard guildBoard(BoardLevels levels) {
+    private static CommissionBoard guildBoard(CommissionBoardLevels levels) {
         return CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, levels, 0.25);
     }
 
     private static CommissionBoard spawnBoard() {
-        return CommissionBoard.spawnBoard(SPAWN_BOARD_ID, BoardLevels.spawn(6));
+        return CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(6));
     }
 
-    private static Commission commission(BoardId boardId, int deliveredQuantity) {
-        return new Commission(COMMISSION_ID, boardId, BoardPart.PUBLIC, CommissionType.HARVEST, WOOD, 10, deliveredQuantity,
+    private static Commission commission(CommissionBoardId boardId, int deliveredQuantity) {
+        return new Commission(COMMISSION_ID, boardId, CommissionBoardPart.PUBLIC, CommissionType.HARVEST, WOOD, 10, deliveredQuantity,
                 Quality.NORMAL, MoneyValue.of(100));
     }
 
@@ -94,47 +94,61 @@ class CommissionBoardRefillServiceTest {
     @Test
     void refillBoard_fillsOneSlotPerTypeAndPartOnANewGuildBoard() {
         // given
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(WOOD, 1, 1, 10, 0)));
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(BoardLevels.GUILD_START));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then : récolte et artisanat, sur la partie publique et sur la partie guilde
         List<CommissionDraft> newCommissions = captureNewCommissions();
         assertEquals(4, newCommissions.size());
-        assertEquals(2, newCommissions.stream().filter(draft -> draft.part() == BoardPart.GUILD).count());
+        assertEquals(2, newCommissions.stream().filter(draft -> draft.part() == CommissionBoardPart.GUILD).count());
     }
 
     @Test
     void refillBoard_neverDrawsAnItemAboveTheTierOfTheBoard() {
         // given
         when(commissionCatalogRepository.findAllCatalogItems(any()))
-                .thenReturn(List.of(new CatalogItem(TITANIUM, 2, 100, 10, 0), new CatalogItem(WOOD, 1, 1, 10, 0)));
+                .thenReturn(List.of(new CommissionCatalogItem(TITANIUM, 2, 100, 10, 0), new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(BoardLevels.GUILD_START));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then
         assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.material().equals(WOOD)));
     }
 
     @Test
-    void refillBoard_drawsTheMinimalQualityUpToTheMaximumOfTheBoard() {
+    void refillBoard_drawsTheMinimalQualityAmongAllQualities() {
         // given
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(WOOD, 1, 1, 10, 0)));
-        when(random.nextInt(Quality.GOOD.ordinal() + 1)).thenReturn(Quality.GOOD.ordinal());
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
+        when(random.nextInt(Quality.values().length)).thenReturn(Quality.EXCEPTIONAL.ordinal());
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(new BoardLevels(1, 1, 1, Quality.GOOD, 0)));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then
-        assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.minimalQuality() == Quality.GOOD));
+        assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.minimalQuality() == Quality.EXCEPTIONAL));
+    }
+
+    @Test
+    void refillBoard_fillsTheHarvestAndCraftSlotsSeparately() {
+        // given : deux slots de récolte et un d'artisanat, dans chacune des deux parties
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
+
+        // when
+        commissionBoardRefillService.refillBoard(guildBoard(new CommissionBoardLevels(1, 1, 1, 2, 1, 0)));
+
+        // then
+        List<CommissionDraft> newCommissions = captureNewCommissions();
+        assertEquals(4, newCommissions.stream().filter(draft -> draft.type() == CommissionType.HARVEST).count());
+        assertEquals(2, newCommissions.stream().filter(draft -> draft.type() == CommissionType.CRAFT).count());
     }
 
     @Test
     void refillBoard_appliesTheSpawnRewardRate() {
         // given : 10 items à 2 lys, payés à moitié au spawn
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(WOOD, 1, 1, 10, 0)));
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
 
         // when
         commissionBoardRefillService.refillBoard(spawnBoard());
@@ -147,10 +161,10 @@ class CommissionBoardRefillServiceTest {
     void refillBoard_replacesACompletedCommission() {
         // given : seule la liste de récolte publique a déjà une commission, terminée
         when(commissionRepository.findAllByBoard(GUILD_BOARD_ID)).thenReturn(List.of(commission(GUILD_BOARD_ID, 10)));
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(STONE, 1, 1, 10, 0)));
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(STONE, 1, 1, 10, 0)));
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(BoardLevels.GUILD_START));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then
         assertEquals(List.of(COMMISSION_ID), captureRemovedCommissions());
@@ -160,10 +174,10 @@ class CommissionBoardRefillServiceTest {
     void refillBoard_neverReplacesACommissionInProgress() {
         // given : un slot par type ; la récolte publique a une commission en cours, l'artisanat aucune
         when(commissionRepository.findAllByBoard(SPAWN_BOARD_ID)).thenReturn(List.of(commission(SPAWN_BOARD_ID, 3)));
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(STONE, 1, 1, 10, 0)));
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(STONE, 1, 1, 10, 0)));
 
         // when
-        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, BoardLevels.spawn(1)));
+        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(1)));
 
         // then : seule la liste d'artisanat est complétée, rien n'est retiré
         assertEquals(List.of(), captureRemovedCommissions());
@@ -174,12 +188,12 @@ class CommissionBoardRefillServiceTest {
     void refillBoard_changesNothingOnAFullBoard() {
         // given : un slot par type, chaque liste a déjà sa commission en cours
         Commission harvestCommission = commission(SPAWN_BOARD_ID, 3);
-        Commission craftCommission = new Commission(new CommissionId(101), SPAWN_BOARD_ID, BoardPart.PUBLIC, CommissionType.CRAFT,
+        Commission craftCommission = new Commission(new CommissionId(101), SPAWN_BOARD_ID, CommissionBoardPart.PUBLIC, CommissionType.CRAFT,
                 STONE, 10, 0, Quality.NORMAL, MoneyValue.of(100));
         when(commissionRepository.findAllByBoard(SPAWN_BOARD_ID)).thenReturn(List.of(harvestCommission, craftCommission));
 
         // when
-        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, BoardLevels.spawn(1)));
+        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(1)));
 
         // then
         verify(commissionRepository, never()).replaceCommissions(any(), any());
@@ -188,11 +202,11 @@ class CommissionBoardRefillServiceTest {
     @Test
     void refillBoard_leavesASlotEmptyWhenNoItemIsAllowed() {
         // given : seul un item d'artisanat existe, la récolte n'a rien à proposer
-        when(commissionCatalogRepository.findAllCatalogItems(CommissionType.CRAFT)).thenReturn(List.of(new CatalogItem(STONE, 1, 1, 10, 0)));
+        when(commissionCatalogRepository.findAllCatalogItems(CommissionType.CRAFT)).thenReturn(List.of(new CommissionCatalogItem(STONE, 1, 1, 10, 0)));
         when(commissionCatalogRepository.findAllCatalogItems(CommissionType.HARVEST)).thenReturn(List.of());
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(BoardLevels.GUILD_START));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then
         assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.type() == CommissionType.CRAFT));
@@ -200,11 +214,11 @@ class CommissionBoardRefillServiceTest {
     @Test
     void refillBoard_drawsTheQuantityAroundTheBaseOfTheItem() {
         // given : base 50, variance 50 % donne [25 ; 75]
-        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CatalogItem(WOOD, 1, 1, 50, 50)));
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 50, 50)));
         when(random.nextInt(25, 76)).thenReturn(75);
 
         // when
-        commissionBoardRefillService.refillBoard(guildBoard(BoardLevels.GUILD_START));
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then : la récompense suit la quantité tirée, à 2 lys l'unité
         assertTrue(captureNewCommissions().stream()

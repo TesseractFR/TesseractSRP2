@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    J[Joueur] --> L[Listeners du tableau et de la pose]
+    J[Joueur] --> L[Listener du clic sur le tableau]
     L --> M[Menus du tableau]
     M --> S[Services du domaine]
     S --> JPA[Dépôts JPA]
@@ -24,19 +24,17 @@ flowchart TD
 
 ```text
 onl.tesseract.srp.commission.adapter
-├── furniture/CommissionBoardFurniture
+├── furniture/CommissionBoardItem
 ├── serverside
 │   ├── jpa/JpaCommissionBoardRepository, JpaCommissionRepository, mappers, entity, repository
 │   ├── catalog/SkillCustomItemCommissionCatalogRepository
 │   ├── yaml/YamlCommissionConfigRepository
-│   ├── guild/GuildServiceMembershipPort, GuildServiceTerritoryPort, GuildServiceProgressPort
-│   ├── material/CustomItemPlayerMaterialPort
-│   ├── furniture/ItemsAdderBoardFurniturePort
-│   └── placement/BukkitBoardPlacementSessionPort
+│   ├── guild/GuildServiceMembershipPort, GuildServiceBankPort
+│   └── material/CustomItemPlayerMaterialPort
 └── userside
     ├── config/CommissionProvider
     └── controller
-        ├── event/CommissionBoardFurnitureListener, CommissionBoardPlacementListener, CommissionGuildDeletedListener
+        ├── event/CommissionBoardClickListener, CommissionGuildDeletedListener
         ├── menu/CommissionBoardMenu, CommissionDeliveryMenu, CommissionManagementMenu, CommissionDisplay
         └── message/CommissionMessageFormatter, CommissionChatFormats
 ```
@@ -53,10 +51,9 @@ Il n’y a aucune relation JPA vers un autre module : les joueurs et les guildes
 |---|---|
 | `id` | Clé |
 | `guild_id` | UUID, vide pour le spawn, unique |
-| `max_craft_tier`, `max_harvest_tier`, `slots_per_type`, `max_required_quality`, `money_bonus_level` | Niveaux d’amélioration |
+| `board_tier`, `max_harvest_tier`, `max_craft_tier`, `harvest_slots`, `craft_slots`, `money_bonus_level` | Niveaux d’amélioration |
 | `usage_tax_rate` | Choisi par la guilde ; à la création, `default-usage-tax-rate` de la configuration |
 | `completed_commission_count` | Commissions terminées sur ce tableau, incrémenté dans la transaction de la livraison |
-| `position_world`, `position_x`, `position_y`, `position_z` | Position du tableau, vide tant qu’il n’est pas posé |
 
 **`t_commissions`** :
 
@@ -67,6 +64,8 @@ Il n’y a aucune relation JPA vers un autre module : les joueurs et les guildes
 | `part`, `type` | Liste dans laquelle la commission s’affiche, dans l’ordre des `id` |
 | `material`, `quantity`, `minimal_quality`, `reward` | Figés à la génération |
 | `delivered_quantity` | Progression partagée, entre 0 et `quantity` |
+
+**`t_commission_delivered_items`** : items livrés par tableau, type et qualité demandée (`board_id`, `type`, `minimal_quality`, `item_count`), pour les conditions du tier du tableau. Une ligne est créée à la première livraison de ce type et de cette qualité, et supprimée avec le tableau.
 
 Le détail de qui a livré quoi n’est pas stocké ici : il relève du journal des transactions (B2, #72).
 
@@ -90,38 +89,33 @@ spawn-slots-per-type: 6
 harvest-tiers:
   TITANE: 1
 upgrades:
-  max-craft-tier:   { 2: { cost: 5000, guild-level: 2 }, 3: { cost: 20000, guild-level: 5 } }
-  max-harvest-tier: { 2: { cost: 5000, guild-level: 2 }, 3: { cost: 20000, guild-level: 5 } }
-  slots:         { 2: { cost: 5000, guild-level: 2 }, 3: { cost: 20000, guild-level: 5 } }
-  max-required-quality:   { NORMAL: { cost: 5000, guild-level: 2 } }
-  money-bonus:   { 1: { value: 0.02, cost: 5000, guild-level: 3 } }
+  board-tier:       { 2: { cost: 10000, deliveries: { HARVEST: { quality: GOOD, count: 200 }, CRAFT: { quality: GOOD, count: 100 } } } }
+  max-harvest-tier: { 2: { cost: 5000, board-tier: 2 } }
+  max-craft-tier:   { 2: { cost: 5000, board-tier: 2 } }
+  harvest-slots:    { 2: { cost: 5000, board-tier: 1 }, 3: { cost: 20000, board-tier: 2 } }
+  craft-slots:      { 2: { cost: 5000, board-tier: 1 }, 3: { cost: 20000, board-tier: 2 } }
+  money-bonus:      { 1: { value: 0.02, cost: 5000, board-tier: 1 } }
 ```
 
 ## Ports et modules voisins
 
 | Port du domaine | Implémentation |
 |---|---|
-| `GuildMembershipPort`, `GuildTerritoryPort`, `GuildProgressPort` | `GuildService` : appartenance, rôle, territoire, niveau, banque |
+| `GuildMembershipPort`, `GuildBankPort` | `GuildService` : appartenance, rôle, membres, banque |
 | `CommissionCatalogRepository` | `harvest-tiers` et `SkillService.findAllSkills` pour le catalogue, `CustomItemService.getMoneyValue` pour la valeur ; un item sans prix est ignoré avec un warning |
 | `PlayerMaterialPort` | `CustomItemService`, boucle sur les qualités jusqu’à A7 (#70) |
-| `BoardFurniturePort`, `BoardPlacementSessionPort` | ItemsAdder et le planificateur Bukkit |
 | Paiement dans `recordDelivery` | `PlayerService.adjustMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
 
 L’adapter utilise les services des autres domaines, jamais leurs repositories.
 
 ## Interface
 
-### Tableau posé dans le monde
+### Tableau dans le monde
 
-Dans le monde, le tableau est un meuble ItemsAdder gratuit, `tesseract:commission_board`. Ses données existent même s’il n’est pas posé : il n’est que le point d’accès que la guilde installe.
+Dans le monde, le tableau est un item ItemsAdder, `tesseract:commission_board`, obtenu par craft ou par achat. Sa pose, sa récupération et le blocage d’un second tableau sont gérés par le moteur des structures, pas par ce module. Ses données en base existent même s’il n’est pas posé.
 
-- Une guilde a un seul tableau, sans item à placer. Un Adjoint ou le chef clique sur le bouton du menu de guilde, dont le lore prévient qu’il faut se placer avant. Le menu se ferme, un compte à rebours de 30 s s’affiche, et un clic droit sur le dessus d’un bloc pose le tableau face au joueur. S’accroupir annule.
-- L’ancien tableau est retiré à la pose, même si son chunk n’est pas chargé. Un tableau de guilde ne peut pas être cassé.
-- Une fois posé, un clic droit ouvre le tableau de la guilde propriétaire du chunk.
-- Le tableau du spawn utilise le même item, posé par le staff : un item posé hors de toute guilde, quel que soit le monde, ouvre le tableau du spawn. `NatureProtectionListener` autorise cette pose dans la nature pour ce seul item, avec la permission `staff`.
-- Le chunk est calculé depuis la position du tableau avec `ChunkCoordMapper`.
-
-Le menu de guilde est dans `territory-adapter`. `GuildMenu` appelle directement `CommissionBoardPlacementService` : `territory-adapter` dépend donc de `commission-domain`. `GuildService` et `territory-domain` ne connaissent pas les commissions.
+- Un clic droit sur le tableau ouvre le tableau de la guilde propriétaire du chunk, calculé avec `ChunkCoordMapper`.
+- Un tableau posé hors de toute guilde, quel que soit le monde, ouvre le tableau du spawn. `NatureProtectionListener` autorise le staff à poser cet item dans la nature, avec la permission `staff`.
 
 Il n’y a aucune commande joueur.
 
@@ -155,7 +149,8 @@ Le clic sur une commission ouvre `CommissionDeliveryMenu`, qui récapitule la pr
 
 `CommissionManagementMenu` n’est proposé qu’aux Adjoints et au chef et n’existe pas au spawn. Il affiche :
 
-- pour chaque amélioration, le niveau actuel, le suivant, le coût payé par la banque et le niveau de guilde requis ;
+- le tier du tableau, avec les livraisons faites et celles demandées pour le palier suivant ;
+- pour chaque autre amélioration, le niveau actuel, le suivant, le coût payé par la banque et le tier de tableau requis ;
 - le taux de taxe d’usage, modifiable entre 0 et 50 %.
 
 ## Remplacement des commissions

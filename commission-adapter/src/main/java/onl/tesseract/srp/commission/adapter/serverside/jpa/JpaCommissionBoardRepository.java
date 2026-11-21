@@ -3,8 +3,9 @@ package onl.tesseract.srp.commission.adapter.serverside.jpa;
 import onl.tesseract.srp.commission.adapter.serverside.jpa.entity.CommissionBoardEntity;
 import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.CommissionBoardJpaRepository;
 import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.CommissionJpaRepository;
-import onl.tesseract.srp.commission.domain.model.board.BoardId;
-import onl.tesseract.srp.commission.domain.model.board.BoardLevels;
+import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.CommissionDeliveredItemCountJpaRepository;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardNotFoundException;
@@ -20,18 +21,22 @@ public class JpaCommissionBoardRepository implements CommissionBoardRepository {
 
     private final CommissionBoardJpaRepository commissionBoardJpaRepository;
     private final CommissionJpaRepository commissionJpaRepository;
+    private final CommissionDeliveredItemCountJpaRepository commissionDeliveredItemCountJpaRepository;
     private final CommissionBoardMapper commissionBoardMapper;
 
     public JpaCommissionBoardRepository(CommissionBoardJpaRepository commissionBoardJpaRepository,
-                                        CommissionJpaRepository commissionJpaRepository, CommissionBoardMapper commissionBoardMapper) {
+                                        CommissionJpaRepository commissionJpaRepository,
+                                        CommissionDeliveredItemCountJpaRepository commissionDeliveredItemCountJpaRepository,
+                                        CommissionBoardMapper commissionBoardMapper) {
         this.commissionBoardJpaRepository = commissionBoardJpaRepository;
         this.commissionJpaRepository = commissionJpaRepository;
+        this.commissionDeliveredItemCountJpaRepository = commissionDeliveredItemCountJpaRepository;
         this.commissionBoardMapper = commissionBoardMapper;
     }
 
     @Override
     @Transactional
-    public CommissionBoard createSpawnBoard(BoardLevels levels) {
+    public CommissionBoard createSpawnBoard(CommissionBoardLevels levels) {
         return commissionBoardMapper.toDomain(commissionBoardJpaRepository.save(commissionBoardMapper.toNewSpawnBoardEntity(levels)));
     }
 
@@ -46,7 +51,7 @@ public class JpaCommissionBoardRepository implements CommissionBoardRepository {
     @Override
     @Transactional
     public void save(CommissionBoard commissionBoard) {
-        BoardId boardId = commissionBoard.getId();
+        CommissionBoardId boardId = commissionBoard.getId();
         CommissionBoardEntity entity = commissionBoardJpaRepository.findById(boardId.value())
                 .orElseThrow(() -> new CommissionBoardNotFoundException(boardId));
         commissionBoardMapper.copyChanges(commissionBoard, entity);
@@ -55,7 +60,7 @@ public class JpaCommissionBoardRepository implements CommissionBoardRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CommissionBoard> findById(BoardId boardId) {
+    public Optional<CommissionBoard> findById(CommissionBoardId boardId) {
         return commissionBoardJpaRepository.findById(boardId.value()).map(commissionBoardMapper::toDomain);
     }
 
@@ -76,6 +81,7 @@ public class JpaCommissionBoardRepository implements CommissionBoardRepository {
     public void deleteByGuild(GuildId guildId) {
         commissionBoardJpaRepository.findByGuildId(guildId.value().toString()).ifPresent(entity -> {
             commissionJpaRepository.deleteByBoardId(entity.getId());
+            commissionDeliveredItemCountJpaRepository.deleteByBoardId(entity.getId());
             commissionBoardJpaRepository.deleteById(entity.getId());
         });
     }
