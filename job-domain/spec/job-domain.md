@@ -10,14 +10,15 @@ Modéliser les métiers, leurs sources de récolte et produits, la progression d
 - Une `Source` est classée par `SourceType`. `Sources` associe des sources à des sorties matérielles ; `Products` représente les produits du métier.
 - `PlayerJobProgression` porte la progression et le niveau des talents d’un joueur pour un métier. Les identifiants métier et joueur sont des types dédiés (`JobName`, `PlayerID`).
 - Les talents déclarent leurs prérequis, leur niveau maximal, le coût de chaque niveau et les bonus associés. Un talent sans parent est disponible ; sinon tous ses parents doivent être au niveau supérieur à zéro.
-- `JobService.listJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `getJob` lit un métier par nom.
-- `JobService.process` ignore une source nulle, inconnue ou sans sorties. Pour chaque sortie, il effectue un tirage de chance de butin à partir des bonus du talent, puis attribue un objet de quantité 1 et une qualité déterminée par le bonus de qualité.
+- `JobCatalogService.listJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `getJob` lit un métier par nom, `findJobBySource` et `findLoadedJob` cherchent dans le catalogue chargé.
+- `JobTalentBonusService.getBonusValue` additionne la valeur des talents du métier qui portent un bonus sur un objet, selon le niveau du joueur ; il renvoie 0 si le métier est inconnu.
+- `JobHarvestService.process` ignore une source nulle, inconnue ou sans sorties. Pour chaque sortie, il effectue un tirage de chance de butin à partir des bonus du talent, puis attribue un objet de quantité 1 et une qualité déterminée par le bonus de qualité.
 - La qualité part de `POOR` et progresse tant que le tirage aléatoire est inférieur au bonus, jusqu’à `EXCEPTIONAL`.
 - Le coût d’amélioration est le coût du prochain niveau. `canBuyUpgrade` compare ce coût aux points de talent disponibles. L’arbre est fourni par `JobSkillTreeRepository`.
 
 ## Interfaces et dépendances
 
-Les ports serveur couvrent la lecture des métiers, des progressions, des arbres et des objets. Les services côté utilisateur sont `JobService`, `JobPlayerProgressionService` et `JobTalentTreeService`.
+Les ports serveur couvrent la lecture des métiers, des progressions, des arbres et des objets. Les services côté utilisateur sont `JobCatalogService`, `JobTalentBonusService`, `JobHarvestService`, `JobPlayerProgressionService` et `JobTalentTreeService`.
 
 ## Critères d’acceptation
 
@@ -45,4 +46,4 @@ Les ports serveur couvrent la lecture des métiers, des progressions, des arbres
 
 ## Détails du traitement de récolte
 
-`JobService.listJobs` initialise son cache de métiers et son index source-vers-métier au premier besoin. `process` ignore une source nulle/inconnue ou dépourvue de sorties. Chaque matériau de sortie reçoit un tirage indépendant comparé au bonus cumulé `LOOT_CHANCE`; si le tirage réussit, un item est accordé et un autre bonus détermine la qualité. La qualité commence à `POOR` et avance d’un rang par tirage réussi, jusqu’à `EXCEPTIONAL`. Les bonus cumulés ne sont ni bornés ni normalisés ici; la qualité excelle donc immédiatement si le bonus est supérieur ou égal à 1.
+`JobCatalogService` initialise son cache de métiers et son index source-vers-métier au premier besoin. `JobHarvestService.process` ignore une source nulle/inconnue ou dépourvue de sorties. Chaque matériau de sortie reçoit un tirage indépendant comparé au bonus cumulé `LOOT_CHANCE`; si le tirage réussit, un item est accordé et un autre bonus détermine la qualité. La qualité commence à `POOR` et avance d’un rang par tirage réussi, jusqu’à `EXCEPTIONAL`. Les bonus cumulés ne sont ni bornés ni normalisés ici; la qualité excelle donc immédiatement si le bonus est supérieur ou égal à 1.

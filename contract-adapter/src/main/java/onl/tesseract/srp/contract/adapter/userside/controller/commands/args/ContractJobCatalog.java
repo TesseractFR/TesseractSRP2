@@ -2,7 +2,7 @@ package onl.tesseract.srp.contract.adapter.userside.controller.commands.args;
 
 import onl.tesseract.srp.contract.adapter.serverside.skill.SkillCatalogPort;
 import onl.tesseract.srp.contract.domain.model.contract.ContractClient;
-import onl.tesseract.srp.job.domain.port.userside.JobService;
+import onl.tesseract.srp.job.domain.port.userside.JobCatalogService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -13,17 +13,17 @@ import java.util.Optional;
 @Component
 public class ContractJobCatalog {
 
-    private final JobService jobService;
+    private final JobCatalogService jobCatalogService;
     private final SkillCatalogPort skillCatalogPort;
 
-    public ContractJobCatalog(JobService jobService, SkillCatalogPort skillCatalogPort) {
-        this.jobService = jobService;
+    public ContractJobCatalog(JobCatalogService jobCatalogService, SkillCatalogPort skillCatalogPort) {
+        this.jobCatalogService = jobCatalogService;
         this.skillCatalogPort = skillCatalogPort;
     }
 
     public List<String> findAllNames() {
         List<String> names = new ArrayList<>();
-        jobService.listJobs().forEach(job -> names.add(job.jobName().value()));
+        jobCatalogService.listJobs().forEach(job -> names.add(job.jobName().value()));
         skillCatalogPort.findAllSkills().forEach(skill -> names.add(skill.name().value()));
         return names;
     }
