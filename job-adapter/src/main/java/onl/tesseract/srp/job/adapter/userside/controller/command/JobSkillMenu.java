@@ -107,7 +107,7 @@ public class JobSkillMenu extends BiMenu {
         if (cellType instanceof Arrow arrow) {
             addButton(index, new ItemBuilder(Material.STONE_BUTTON)
                     .name(" ")
-                    .customModelData(arrow.type().getCustomModelData())
+                    .customModelData(JobArrowModelData.of(arrow.type()))
                     .build());
         } else if (cellType instanceof RootCell) {
             addButton(index, new ItemBuilder(Material.DIAMOND_PICKAXE)
