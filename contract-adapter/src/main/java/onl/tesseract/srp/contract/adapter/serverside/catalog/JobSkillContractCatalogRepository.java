@@ -16,7 +16,7 @@ import onl.tesseract.srp.customitem.domain.model.Rarity;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
 import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.Material;
-import onl.tesseract.srp.job.domain.port.userside.JobService;
+import onl.tesseract.srp.job.domain.port.userside.JobCatalogService;
 import onl.tesseract.srp.skill.domain.model.recipe.Recipe;
 import onl.tesseract.srp.skill.domain.model.skill.Skill;
 import onl.tesseract.srp.skill.domain.model.skill.SkillTier;
@@ -37,14 +37,14 @@ import java.util.Set;
 @Component
 public class JobSkillContractCatalogRepository implements ContractCatalogRepository {
 
-    private final JobService jobService;
+    private final JobCatalogService jobCatalogService;
     private final SkillCatalogPort skillCatalogPort;
     private final CustomItemService customItemService;
     private final ContractRarityConfig contractRarityConfig;
 
-    public JobSkillContractCatalogRepository(JobService jobService, SkillCatalogPort skillCatalogPort,
+    public JobSkillContractCatalogRepository(JobCatalogService jobCatalogService, SkillCatalogPort skillCatalogPort,
                                              CustomItemService customItemService, ContractRarityConfig contractRarityConfig) {
-        this.jobService = jobService;
+        this.jobCatalogService = jobCatalogService;
         this.skillCatalogPort = skillCatalogPort;
         this.customItemService = customItemService;
         this.contractRarityConfig = contractRarityConfig;
@@ -53,7 +53,7 @@ public class JobSkillContractCatalogRepository implements ContractCatalogReposit
     @Override
     public List<CatalogItem> findAllCatalogItems() {
         List<CatalogItem> catalogItems = new ArrayList<>();
-        for (Job job : jobService.listJobs()) {
+        for (Job job : jobCatalogService.listJobs()) {
             ContractClient client = new ContractClient(job.jobName().value());
             for (MaterialName material : findAllHarvestedMaterials(job)) {
                 addCatalogItem(catalogItems, ContractType.HARVEST, client, material);

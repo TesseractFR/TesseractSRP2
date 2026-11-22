@@ -2,7 +2,7 @@
 
 ## Périmètre
 
-L’adaptateur relie les services du domaine des métiers aux fichiers du serveur, à JPA, aux objets personnalisés et à Bukkit. `JobProvider` assemble `JobTalentTreeService`, `JobPlayerProgressionService` et `JobService` avec les dépôts correspondants.
+L’adaptateur relie les services du domaine des métiers aux fichiers du serveur, à JPA, aux objets personnalisés et à Bukkit. `JobProvider` assemble `JobTalentTreeService`, `JobPlayerProgressionService`, `JobCatalogService`, `JobTalentBonusService` et `JobHarvestService` avec les dépôts correspondants.
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ Chaque entrée de talent fournit sa clé/nom, `maxLevel` (défaut 1), `bonus`, `
 
 `TesseractJobItemRepository` traduit un matériau métier, un joueur, une quantité et une qualité en appel `CustomItemService.addItem`. Il utilise le système d’objets partagés, qui choisit entre item personnalisé et vanilla.
 
-`BlockBreakListener` capte `BlockBreakEvent` et transmet au `JobService` une `Source` constituée du type du bloc cassé et de `SourceType.BLOCK`, avec l’UUID du joueur. Le traitement de récompense, incluant les tirages de loot et de qualité, est délégué au domaine.
+`BlockBreakListener` capte `BlockBreakEvent` et transmet au `JobHarvestService` une `Source` constituée du type du bloc cassé et de `SourceType.BLOCK`, avec l’UUID du joueur. Le traitement de récompense, incluant les tirages de loot et de qualité, est délégué au domaine.
 
 ## Interface joueur
 
