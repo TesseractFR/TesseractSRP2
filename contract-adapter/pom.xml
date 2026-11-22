@@ -52,6 +52,11 @@
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>player-domain</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>job-domain</artifactId>
             <scope>provided</scope>
         </dependency>

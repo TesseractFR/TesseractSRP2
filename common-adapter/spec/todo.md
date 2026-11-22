@@ -6,7 +6,6 @@ Ce document déduit les travaux des limites signalées dans [common-adapter.md](
 
 - [ ] Gérer explicitement un monde absent dans `LocationMapper.toLocation` (retour contrôlé ou erreur métier claire) et couvrir cette situation.
 - [ ] Vérifier/corriger `PlayerUtils.tryFreeChestplateSlot` : déplacer réellement le plastron hors du slot d’armure et ne pas dupliquer l’objet si la tentative échoue.
-- [ ] Décider la politique de lecture d’un joueur absent dans `SrpPlayerJpaRepositoryAdapter` : laisser le service créer le profil par défaut ou ajouter une création/persistance explicite.
 
 ## Vérifications à faire
 

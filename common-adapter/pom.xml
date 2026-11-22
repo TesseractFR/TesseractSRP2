@@ -61,5 +61,9 @@
             <artifactId>common-domain</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>player-domain</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -104,6 +104,14 @@
         <!-- Module dependencies -->
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>player-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
+            <artifactId>player-adapter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>job-adapter</artifactId>
         </dependency>
         <dependency>

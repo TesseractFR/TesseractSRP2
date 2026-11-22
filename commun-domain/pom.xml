@@ -21,11 +21,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-        <dependency>
-            <groupId>onl.tesseract</groupId>
-            <artifactId>core</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
 </project>

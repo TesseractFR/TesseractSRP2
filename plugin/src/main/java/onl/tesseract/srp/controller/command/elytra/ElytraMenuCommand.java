@@ -7,7 +7,7 @@ import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.menu.elytra.ElytraMenu;
 import onl.tesseract.srp.service.equipment.elytra.ElytraService;
-import onl.tesseract.srp.service.player.SrpPlayerService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.bukkit.entity.Player;
 import org.springframework.stereotype.Component;
 
@@ -17,18 +17,18 @@ public class ElytraMenuCommand extends CommandContext {
     private final ElytraService elytraService;
     private final PlayerProfileService playerProfileService;
     private final EquipmentService equipmentService;
-    private final SrpPlayerService srpPlayerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
 
     public ElytraMenuCommand(SrpCommandInstanceProvider provider,
                              ElytraService elytraService,
                              PlayerProfileService playerProfileService,
                              EquipmentService equipmentService,
-                             SrpPlayerService srpPlayerService) {
+                             SrpPlayerProfileService srpPlayerProfileService) {
         super(provider);
         this.elytraService = elytraService;
         this.playerProfileService = playerProfileService;
         this.equipmentService = equipmentService;
-        this.srpPlayerService = srpPlayerService;
+        this.srpPlayerProfileService = srpPlayerProfileService;
     }
 
     @Command
@@ -38,7 +38,7 @@ public class ElytraMenuCommand extends CommandContext {
                 elytraService,
                 playerProfileService,
                 equipmentService,
-                srpPlayerService
+                srpPlayerProfileService
         ).open(sender);
     }
 }

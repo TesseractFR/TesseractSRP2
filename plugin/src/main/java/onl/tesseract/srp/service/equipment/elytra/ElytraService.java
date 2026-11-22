@@ -7,7 +7,9 @@ import onl.tesseract.srp.domain.equipment.elytra.ElytraInvocationResult;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeEntry;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeResult;
 import onl.tesseract.srp.domain.equipment.elytra.ElytraUpgradeStats;
-import onl.tesseract.srp.service.player.SrpPlayerService;
+import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.player.domain.port.userside.PlayerIlluminationService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +21,15 @@ import java.util.UUID;
  */
 @Service
 public class ElytraService {
-    private final SrpPlayerService srpPlayerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
+    private final PlayerIlluminationService playerIlluminationService;
     private final EquipmentService equipmentService;
 
-    public ElytraService(SrpPlayerService srpPlayerService, EquipmentService equipmentService) {
-        this.srpPlayerService = srpPlayerService;
+    public ElytraService(SrpPlayerProfileService srpPlayerProfileService,
+                         PlayerIlluminationService playerIlluminationService,
+                         EquipmentService equipmentService) {
+        this.srpPlayerProfileService = srpPlayerProfileService;
+        this.playerIlluminationService = playerIlluminationService;
         this.equipmentService = equipmentService;
     }
 
@@ -80,7 +86,7 @@ public class ElytraService {
             return List.of();
         }
 
-        var player = srpPlayerService.getPlayer(playerId);
+        var player = srpPlayerProfileService.getPlayer(new PlayerId(playerId));
 
         return List.of(ElytraUpgrade.values()).stream()
                 .map(upgrade -> {
@@ -115,7 +121,7 @@ public class ElytraService {
         if (price == null) {
             return ElytraUpgradeResult.MAX_LEVEL_REACHED;
         }
-        boolean success = srpPlayerService.giveIlluminationPoints(playerId, -price);
+        boolean success = playerIlluminationService.adjustIlluminationPoints(new PlayerId(playerId), -price);
         if (!success) {
             return ElytraUpgradeResult.NOT_ENOUGH_POINTS;
         }

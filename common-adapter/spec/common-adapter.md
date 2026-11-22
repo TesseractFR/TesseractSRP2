@@ -2,14 +2,12 @@
 
 ## Périmètre et dépendances
 
-Ce module implémente des intégrations réutilisables des ports de `commun-domain` avec Bukkit, Spring, JPA et les services Tesseract. Il contient les conversions de coordonnées, l’accès JPA au profil SRP, l’adaptation de la téléportation, des utilitaires d’entités et les composants de menus partagés.
+Ce module implémente des intégrations réutilisables des ports de `commun-domain` avec Bukkit, Spring, JPA et les services Tesseract. Il contient les conversions de coordonnées, l’adaptation de la téléportation, des utilitaires d’entités et les composants de menus partagés.
 
 ```mermaid
 flowchart LR
     D[Ports / types communs] --> A[common-adapter]
     A --> B[Bukkit et services Tesseract]
-    A --> J[Spring Data JPA]
-    J --> DB[(t_srp_player)]
 ```
 
 ## Publication d’événements et commandes
@@ -22,12 +20,6 @@ flowchart LR
 - `CoordinateMapper.toCoordinate(Location)` copie les coordonnées flottantes X/Y/Z et ajoute le chunk calculé à partir du bloc et du monde Bukkit.
 - `ChunkCoordMapper.toChunkCoord(Location)` calcule X/Z de chunk par décalage de quatre bits des coordonnées de bloc; la surcharge `Chunk` prend directement les indices Bukkit. Les deux incluent le nom du monde.
 - `LocationMapper.toLocation(Coordinate)` résout le monde par son nom via `Bukkit.getWorld` et reconstruit la `Location`. Il ne vérifie pas que le monde a été trouvé.
-
-## Persistance du profil SRP
-
-`SrpPlayerEntity` mappe la table `t_srp_player`: UUID (clé), rang stocké comme chaîne d’enum, argent, identifiant de titre et points d’illumination. L’entité est cacheable avec la stratégie Hibernate `READ_WRITE`. `toDomain` et `fromDomain` convertissent entre l’entité et `SrpPlayer`.
-
-`SrpPlayerJpaRepository` est le dépôt Spring Data JPA. `SrpPlayerJpaRepositoryAdapter` implémente `PlayerRepository`: `getById` cherche par UUID et retourne `null` en l’absence de ligne; `save` mappe vers l’entité, persiste, puis retourne le modèle reconstruit.
 
 ## Téléportation Bukkit
 
@@ -42,7 +34,7 @@ flowchart LR
 
 Les opérations dépendant du joueur utilisent une recherche Bukkit par UUID et deviennent sans effet si le joueur est absent. La lecture de position retourne `null` lorsqu’il ne peut être résolu. L’accès à un monde de destination absent n’est pas protégé par `LocationMapper`.
 
-`TeleportationSettingsPortImpl` combine le délai de téléportation du rang SRP et le nom de l’animation active dans les informations de boutique du joueur. `TeleportationServiceProvider` assemble le service domaine avec ces deux ports.
+`TeleportationSettingsPortImpl` combine le délai de téléportation du rang SRP (lu via `SrpPlayerProfileService` de [player-domain](../../player-domain/spec/player-domain.md)) et le nom de l’animation active dans les informations de boutique du joueur. `TeleportationServiceProvider` assemble le service domaine avec ces deux ports.
 
 ## Monde
 
@@ -62,4 +54,4 @@ Les opérations dépendant du joueur utilisent une recherche Bukkit par UUID et 
 
 ## Limites
 
-Les menus graphiques supposent les APIs ItemAdder et Tesseract disponibles. La conversion vers `Location` ne valide pas la résolution du monde. L’adaptateur JPA ne crée pas ici de profil lors d’une lecture absente; cette politique est à la charge du service appelant.
+Les menus graphiques supposent les APIs ItemAdder et Tesseract disponibles. La conversion vers `Location` ne valide pas la résolution du monde.

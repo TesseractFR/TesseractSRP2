@@ -6,7 +6,7 @@ import onl.tesseract.lib.profile.PlayerProfileService;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.controller.menu.elytra.ElytraUpgradeMenu;
 import onl.tesseract.srp.service.equipment.elytra.ElytraService;
-import onl.tesseract.srp.service.player.SrpPlayerService;
+import onl.tesseract.srp.player.domain.port.userside.SrpPlayerProfileService;
 import org.bukkit.entity.Player;
 import org.springframework.stereotype.Component;
 
@@ -15,16 +15,16 @@ import org.springframework.stereotype.Component;
 public class ElytraUpgradeMenuCommand extends CommandContext {
     private final PlayerProfileService playerProfileService;
     private final ElytraService elytraService;
-    private final SrpPlayerService srpPlayerService;
+    private final SrpPlayerProfileService srpPlayerProfileService;
 
     public ElytraUpgradeMenuCommand(SrpCommandInstanceProvider provider,
                                     PlayerProfileService playerProfileService,
                                     ElytraService elytraService,
-                                    SrpPlayerService srpPlayerService) {
+                                    SrpPlayerProfileService srpPlayerProfileService) {
         super(provider);
         this.playerProfileService = playerProfileService;
         this.elytraService = elytraService;
-        this.srpPlayerService = srpPlayerService;
+        this.srpPlayerProfileService = srpPlayerProfileService;
     }
 
     @Command
@@ -33,7 +33,7 @@ public class ElytraUpgradeMenuCommand extends CommandContext {
                 sender.getUniqueId(),
                 playerProfileService,
                 elytraService,
-                srpPlayerService,
+                srpPlayerProfileService,
                 null
         ).open(sender);
     }
