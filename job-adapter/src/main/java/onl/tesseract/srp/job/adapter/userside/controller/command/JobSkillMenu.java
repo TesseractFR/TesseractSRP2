@@ -117,7 +117,7 @@ public class JobSkillMenu extends BiMenu {
             Talent skill = job.talents().get(skillCell.talent());
             ItemLoreBuilder lore = new ItemLoreBuilder()
                     .newline()
-                    .append(skill.bonus().getDescription())
+                    .append(JobBonusDescription.of(skill.bonus()))
                     .newline();
 
             if (jobPlayerProgressionService.getTalentLevel(
