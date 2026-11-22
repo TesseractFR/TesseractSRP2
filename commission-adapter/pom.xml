@@ -50,6 +50,11 @@
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
+            <artifactId>player-domain</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>onl.tesseract.srp</groupId>
             <artifactId>territory-domain</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

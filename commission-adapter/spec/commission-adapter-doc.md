@@ -264,7 +264,7 @@ Quand une livraison termine une commission, `CommissionBoardRefillService` gén�
 ## 10. Points d'attention connus
 
 - **Non testé en jeu ni sur une vraie base** : le module n'a aucun test propre.
-- **Transaction de `recordDelivery`** : `PlayerService` et `GuildService` ne sont pas conçus autour de cette transaction. S'ils gardent des objets en mémoire, un retour arrière en base peut ne pas s'y refléter. À vérifier.
+- **Transaction de `recordDelivery`** : `PlayerMoneyService` et `GuildService` ne sont pas conçus autour de cette transaction. S'ils gardent des objets en mémoire, un retour arrière en base peut ne pas s'y refléter. À vérifier.
 - **Warnings répétés** : un item sans prix écrit un warning à chaque lecture du catalogue, donc à chaque génération.
 - **Tableau du spawn** : tout tableau posé hors d'une guilde ouvre le tableau du spawn, y compris dans un campement.
 - **Permission ItemsAdder** : la configuration ItemsAdder de l'item peut demander une permission, que le code ne gère pas.

@@ -104,7 +104,7 @@ upgrades:
 | `GuildMembershipPort`, `GuildBankPort` | `GuildService` : appartenance, rôle, membres, banque |
 | `CommissionCatalogRepository` | `harvest-tiers` et `SkillService.findAllSkills` pour le catalogue, `CustomItemService.getMoneyValue` pour la valeur ; un item sans prix est ignoré avec un warning |
 | `PlayerMaterialPort` | `CustomItemService`, boucle sur les qualités jusqu’à A7 (#70) |
-| Paiement dans `recordDelivery` | `PlayerService.adjustMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
+| Paiement dans `recordDelivery` | `PlayerMoneyService.adjustMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
 
 L’adapter utilise les services des autres domaines, jamais leurs repositories.
 

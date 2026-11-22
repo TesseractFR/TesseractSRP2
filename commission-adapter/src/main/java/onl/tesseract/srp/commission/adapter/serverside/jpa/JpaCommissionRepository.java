@@ -15,7 +15,7 @@ import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionNotAvailableException;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
-import onl.tesseract.srp.common.domain.port.userside.PlayerService;
+import onl.tesseract.srp.player.domain.port.userside.PlayerMoneyService;
 import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,19 +36,19 @@ public class JpaCommissionRepository implements CommissionRepository {
     private final CommissionBoardJpaRepository commissionBoardJpaRepository;
     private final CommissionDeliveredItemCountJpaRepository commissionDeliveredItemCountJpaRepository;
     private final CommissionMapper commissionMapper;
-    private final PlayerService playerService;
+    private final PlayerMoneyService playerMoneyService;
     private final GuildService guildService;
 
     public JpaCommissionRepository(CommissionJpaRepository commissionJpaRepository,
                                    CommissionBoardJpaRepository commissionBoardJpaRepository,
                                    CommissionDeliveredItemCountJpaRepository commissionDeliveredItemCountJpaRepository,
                                    CommissionMapper commissionMapper,
-                                   PlayerService playerService, GuildService guildService) {
+                                   PlayerMoneyService playerMoneyService, GuildService guildService) {
         this.commissionJpaRepository = commissionJpaRepository;
         this.commissionBoardJpaRepository = commissionBoardJpaRepository;
         this.commissionDeliveredItemCountJpaRepository = commissionDeliveredItemCountJpaRepository;
         this.commissionMapper = commissionMapper;
-        this.playerService = playerService;
+        this.playerMoneyService = playerMoneyService;
         this.guildService = guildService;
     }
 
@@ -67,7 +67,7 @@ public class JpaCommissionRepository implements CommissionRepository {
     }
 
     /**
-     * Un gain n'est jamais négatif, donc {@link PlayerService#adjustMoney} ne le refuse pas. Une panne de
+     * Un gain n'est jamais négatif, donc {@link PlayerMoneyService#adjustMoney} ne le refuse pas. Une panne de
      * base annule toute la transaction, progression comprise. Les items livrés sont comptés à la qualité
      * demandée par la commission.
      *
@@ -80,7 +80,7 @@ public class JpaCommissionRepository implements CommissionRepository {
                 .orElseThrow(() -> new CommissionNotAvailableException(delivery.commissionId()));
         addDeliveredItems(commission, delivery.itemCount());
         commissionJpaRepository.addDeliveredQuantity(commission.getId(), delivery.itemCount());
-        playerService.adjustMoney(delivery.deliverer().value(), delivery.playerEarnings());
+        playerMoneyService.adjustMoney(delivery.deliverer(), delivery.playerEarnings());
         long boardId = delivery.boardId().value();
         commissionBoardJpaRepository.findById(boardId)
                 .map(CommissionBoardEntity::getGuildId)

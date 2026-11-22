@@ -220,7 +220,7 @@ sequenceDiagram
 
 - La progression et les gains sont enregistrés **avant** le retrait des items : si la base échoue, rien n'a été retiré au joueur et il n'y a jamais d'items à rendre.
 - Tout s'exécute sur le thread principal du serveur : entre la lecture de la commission, le comptage des items et leur retrait, rien ne peut changer. Il n'y a donc ni contrôle de concurrence, ni cas « items manquants au retrait ».
-- Un gain n'est jamais négatif : `PlayerService.adjustMoney` ne refuse jamais le versement.
+- Un gain n'est jamais négatif : `PlayerMoneyService.adjustMoney` ne refuse jamais le versement.
 - Risque accepté : si le retrait échoue après l'enregistrement, le joueur est payé et garde ses items. C'est limité à la quantité de cette livraison, puisque la progression a déjà avancé.
 - La livraison n'est pas en tout ou rien : le joueur donne ce qu'il peut, jusqu'à la quantité restante.
 - Sans item livrable, c'est `ItemQualityTooLowException` si le joueur a l'item à une qualité plus basse, sinon `NoItemToDeliverException`.

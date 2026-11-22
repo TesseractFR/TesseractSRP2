@@ -93,7 +93,7 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 | Dépendance | Solution provisoire |
 |---|---|
 | B7 #170, valeur et récompense | Prix de base de `itemValue.yml` |
-| B2 #72, `MoneyService` et journal | `PlayerService.adjustMoney` |
+| B2 #72, `MoneyService` et journal | `PlayerMoneyService.adjustMoney` |
 | A7 #70, comptage à partir d’une qualité | Boucle sur les qualités avec `CustomItemService` |
 | E4 #92, banque de guilde | `GuildService.payFromBank` et `GuildService.addCommissionIncome` |
 | F8 #146, structures du spawn | Aucune : les recettes de tier 1 ne sont pas encore disponibles au spawn |
