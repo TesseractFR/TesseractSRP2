@@ -4,7 +4,7 @@ import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.player.domain.model.PlayerRank;
 import onl.tesseract.srp.player.domain.model.SrpPlayer;
-import onl.tesseract.srp.player.domain.model.event.PlayerRankUpEvent;
+import onl.tesseract.srp.player.domain.model.event.PlayerRankChangedEvent;
 import onl.tesseract.srp.player.domain.port.serverside.PlayerLedgerPort;
 
 import java.util.Objects;
@@ -25,7 +25,7 @@ public class PlayerRankService {
     }
 
     /**
-     * Donne directement un grade au joueur, avec le titre correspondant, et publie {@link PlayerRankUpEvent}.
+     * Donne directement un grade au joueur, avec le titre correspondant, et publie {@link PlayerRankChangedEvent}.
      *
      * @return {@code false} si le joueur a déjà ce grade, rien n'est alors modifié
      */
@@ -35,13 +35,13 @@ public class PlayerRankService {
         player.setRank(rank);
         synchronizeTitle(player);
         srpPlayerProfileService.savePlayer(player);
-        eventPublisher.publish(new PlayerRankUpEvent(playerId.value(), rank));
+        eventPublisher.publish(new PlayerRankChangedEvent(playerId.value(), rank));
         return true;
     }
 
     /**
      * Achète le grade suivant en débitant son coût du solde du joueur, met à jour son titre,
-     * journalise le paiement et publie {@link PlayerRankUpEvent} avec le nouveau grade.
+     * journalise le paiement et publie {@link PlayerRankChangedEvent} avec le nouveau grade.
      *
      * @return {@code false} si le joueur a déjà le dernier grade ou n'a pas assez d'argent
      */
@@ -52,7 +52,7 @@ public class PlayerRankService {
         srpPlayerProfileService.savePlayer(player);
         PlayerRank purchasedRank = player.getRank();
         playerLedgerPort.recordRankPurchase(playerId, purchasedRank);
-        eventPublisher.publish(new PlayerRankUpEvent(playerId.value(), purchasedRank));
+        eventPublisher.publish(new PlayerRankChangedEvent(playerId.value(), purchasedRank));
         return true;
     }
 

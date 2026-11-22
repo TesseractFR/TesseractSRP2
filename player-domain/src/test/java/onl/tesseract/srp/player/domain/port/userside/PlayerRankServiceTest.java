@@ -4,7 +4,7 @@ import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.port.userside.plugin.EventPublisher;
 import onl.tesseract.srp.player.domain.model.PlayerRank;
 import onl.tesseract.srp.player.domain.model.SrpPlayer;
-import onl.tesseract.srp.player.domain.model.event.PlayerRankUpEvent;
+import onl.tesseract.srp.player.domain.model.event.PlayerRankChangedEvent;
 import onl.tesseract.srp.player.domain.port.serverside.PlayerLedgerPort;
 import onl.tesseract.srp.player.domain.port.serverside.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,10 +47,10 @@ class PlayerRankServiceTest {
         return player;
     }
 
-    private PlayerRankUpEvent publishedEvent() {
+    private PlayerRankChangedEvent publishedEvent() {
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(eventPublisher).publish(captor.capture());
-        return (PlayerRankUpEvent) captor.getValue();
+        return (PlayerRankChangedEvent) captor.getValue();
     }
 
     @Test
@@ -69,7 +69,7 @@ class PlayerRankServiceTest {
     }
 
     @Test
-    void changeRank_publishesRankUpEventWithNewRank() {
+    void changeRank_publishesRankChangedEventWithNewRank() {
         // given
         storedPlayer(PlayerRank.Survivant, 0);
 
@@ -77,7 +77,7 @@ class PlayerRankServiceTest {
         service.changeRank(PLAYER, PlayerRank.Baron);
 
         // then
-        PlayerRankUpEvent event = publishedEvent();
+        PlayerRankChangedEvent event = publishedEvent();
         assertEquals(PLAYER.value(), event.getPlayerId());
         assertEquals(PlayerRank.Baron, event.getNewRank());
         verifyNoInteractions(playerLedgerPort);
@@ -127,7 +127,7 @@ class PlayerRankServiceTest {
     }
 
     @Test
-    void buyNextRank_publishesRankUpEventWithPurchasedRank() {
+    void buyNextRank_publishesRankChangedEventWithPurchasedRank() {
         // given
         storedPlayer(PlayerRank.Survivant, PlayerRank.Explorateur.getCost());
 
@@ -135,7 +135,7 @@ class PlayerRankServiceTest {
         service.buyNextRank(PLAYER);
 
         // then
-        PlayerRankUpEvent event = publishedEvent();
+        PlayerRankChangedEvent event = publishedEvent();
         assertEquals(PLAYER.value(), event.getPlayerId());
         assertEquals(PlayerRank.Explorateur, event.getNewRank());
     }

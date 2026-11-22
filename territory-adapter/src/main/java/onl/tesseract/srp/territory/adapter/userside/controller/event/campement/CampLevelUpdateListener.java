@@ -1,7 +1,7 @@
 package onl.tesseract.srp.territory.adapter.userside.controller.event.campement;
 
 
-import onl.tesseract.srp.player.domain.model.event.PlayerRankUpEvent;
+import onl.tesseract.srp.player.domain.model.event.PlayerRankChangedEvent;
 import onl.tesseract.srp.territory.domain.port.userside.campement.CampementService;
 import org.bukkit.event.Listener;
 import org.springframework.context.event.EventListener;
@@ -17,7 +17,7 @@ public class CampLevelUpdateListener implements Listener {
     }
 
     @EventListener
-    public void onPlayerRankUpdate(PlayerRankUpEvent event) {
+    public void onPlayerRankUpdate(PlayerRankChangedEvent event) {
         if (campementService.getByPlayer(event.getPlayerId()) != null) {
             campementService.setCampLevel(event.getPlayerId(), event.getNewRank().getCampLevel());
         }
