@@ -11,11 +11,11 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BlockBreakListener implements Listener {
+public class JobBlockBreakListener implements Listener {
 
     private final JobHarvestService jobHarvestService;
 
-    public BlockBreakListener(JobHarvestService jobHarvestService) {
+    public JobBlockBreakListener(JobHarvestService jobHarvestService) {
         this.jobHarvestService = jobHarvestService;
     }
 

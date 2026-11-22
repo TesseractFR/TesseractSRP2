@@ -2,17 +2,17 @@ package onl.tesseract.srp.job.domain.port.userside;
 
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.talenttree.TalentTree;
-import onl.tesseract.srp.job.domain.port.serverside.JobSkillTreeRepository;
+import onl.tesseract.srp.job.domain.port.serverside.JobTalentTreeRepository;
 
 /**
  * Donne accès à l'arbre de talents des métiers.
  */
 public class JobTalentTreeService {
 
-    private final JobSkillTreeRepository jobSkillTreeRepository;
+    private final JobTalentTreeRepository jobTalentTreeRepository;
 
-    public JobTalentTreeService(JobSkillTreeRepository jobSkillTreeRepository) {
-        this.jobSkillTreeRepository = jobSkillTreeRepository;
+    public JobTalentTreeService(JobTalentTreeRepository jobTalentTreeRepository) {
+        this.jobTalentTreeRepository = jobTalentTreeRepository;
     }
 
     /**
@@ -23,6 +23,6 @@ public class JobTalentTreeService {
      * @throws IllegalArgumentException si {@code jobName} est {@code null} ou si la définition de l'arbre est introuvable
      */
     public TalentTree getTalentTree(JobName jobName) {
-        return jobSkillTreeRepository.getTalentTree(jobName);
+        return jobTalentTreeRepository.getTalentTree(jobName);
     }
 }

@@ -1,4 +1,4 @@
-package onl.tesseract.srp.job.adapter.userside.controller.command;
+package onl.tesseract.srp.job.adapter.userside.controller.menu;
 
 import onl.tesseract.srp.job.domain.model.talenttree.ArrowType;
 

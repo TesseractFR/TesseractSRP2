@@ -6,7 +6,7 @@ import onl.tesseract.srp.job.domain.model.talenttree.TalentTree;
 /**
  * Port de lecture de l'arbre de talents d'un métier, c'est-à-dire sa disposition dans le menu.
  */
-public interface JobSkillTreeRepository {
+public interface JobTalentTreeRepository {
 
     /**
      * Lit l'arbre de talents d'un métier.

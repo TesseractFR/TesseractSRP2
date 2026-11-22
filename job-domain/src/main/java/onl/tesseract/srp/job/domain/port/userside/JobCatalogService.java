@@ -30,7 +30,7 @@ public class JobCatalogService {
      *
      * @return les métiers chargés, liste vide s'il n'y en a aucun
      */
-    public List<Job> listJobs() {
+    public List<Job> findAllJobs() {
         loadJobsIfNeeded();
         return new ArrayList<>(jobs.values());
     }

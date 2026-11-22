@@ -6,7 +6,7 @@ import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.Material;
 import onl.tesseract.srp.job.domain.model.source.Source;
 import onl.tesseract.srp.job.domain.model.talent.Bonus;
-import onl.tesseract.srp.job.domain.port.serverside.ItemRepository;
+import onl.tesseract.srp.job.domain.port.serverside.JobRewardPort;
 
 import java.util.List;
 import java.util.Random;
@@ -17,14 +17,14 @@ public class JobHarvestService {
     private final Random random = new Random();
     private final JobCatalogService jobCatalogService;
     private final JobTalentBonusService jobTalentBonusService;
-    private final ItemRepository itemRepository;
+    private final JobRewardPort jobRewardPort;
 
     public JobHarvestService(JobCatalogService jobCatalogService,
                              JobTalentBonusService jobTalentBonusService,
-                             ItemRepository itemRepository) {
+                             JobRewardPort jobRewardPort) {
         this.jobCatalogService = jobCatalogService;
         this.jobTalentBonusService = jobTalentBonusService;
-        this.itemRepository = itemRepository;
+        this.jobRewardPort = jobRewardPort;
     }
 
     /**
@@ -66,7 +66,7 @@ public class JobHarvestService {
             double lootChance = jobTalentBonusService.getBonusValue(job.jobName(), playerId, output, Bonus.LOOT_CHANCE);
             if (random.nextDouble() < lootChance) {
                 double qualityBonus = jobTalentBonusService.getBonusValue(job.jobName(), playerId, output, Bonus.QUALITY);
-                itemRepository.giveItem(playerId, output, 1, getQuality(qualityBonus));
+                jobRewardPort.giveItem(playerId, output, 1, getQuality(qualityBonus));
             }
         });
     }

@@ -1,9 +1,9 @@
 package onl.tesseract.srp.job.adapter.userside.config;
 
-import onl.tesseract.srp.job.domain.port.serverside.ItemRepository;
+import onl.tesseract.srp.job.domain.port.serverside.JobRewardPort;
 import onl.tesseract.srp.job.domain.port.serverside.JobPlayerProgressionRepository;
 import onl.tesseract.srp.job.domain.port.serverside.JobRepository;
-import onl.tesseract.srp.job.domain.port.serverside.JobSkillTreeRepository;
+import onl.tesseract.srp.job.domain.port.serverside.JobTalentTreeRepository;
 import onl.tesseract.srp.job.domain.port.userside.JobPlayerProgressionService;
 import onl.tesseract.srp.job.domain.port.userside.JobCatalogService;
 import onl.tesseract.srp.job.domain.port.userside.JobHarvestService;
@@ -16,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 public class JobProvider {
 
     @Bean
-    public JobTalentTreeService jobTalentTreeService(JobSkillTreeRepository jobSkillTreeRepository) {
-        return new JobTalentTreeService(jobSkillTreeRepository);
+    public JobTalentTreeService jobTalentTreeService(JobTalentTreeRepository jobTalentTreeRepository) {
+        return new JobTalentTreeService(jobTalentTreeRepository);
     }
 
     @Bean
@@ -39,8 +39,8 @@ public class JobProvider {
     @Bean
     public JobHarvestService jobHarvestService(JobCatalogService jobCatalogService,
                                                JobTalentBonusService jobTalentBonusService,
-                                               ItemRepository itemRepository) {
-        return new JobHarvestService(jobCatalogService, jobTalentBonusService, itemRepository);
+                                               JobRewardPort jobRewardPort) {
+        return new JobHarvestService(jobCatalogService, jobTalentBonusService, jobRewardPort);
     }
 
 }

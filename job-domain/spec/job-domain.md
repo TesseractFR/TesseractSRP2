@@ -10,11 +10,11 @@ Modéliser les métiers, leurs sources de récolte et produits, la progression d
 - Une `Source` est classée par `SourceType`. `Sources` associe des sources à des sorties matérielles ; `Products` représente les produits du métier.
 - `PlayerJobProgression` porte la progression et le niveau des talents d’un joueur pour un métier. Les identifiants métier et joueur sont des types dédiés (`JobName`, `PlayerID`).
 - Les talents déclarent leurs prérequis, leur niveau maximal, le coût de chaque niveau et les bonus associés. Un talent sans parent est disponible ; sinon tous ses parents doivent être au niveau supérieur à zéro.
-- `JobCatalogService.listJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `getJob` lit un métier par nom, `findJobBySource` et `findLoadedJob` cherchent dans le catalogue chargé.
+- `JobCatalogService.findAllJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `getJob` lit un métier par nom, `findJobBySource` et `findLoadedJob` cherchent dans le catalogue chargé.
 - `JobTalentBonusService.getBonusValue` additionne la valeur des talents du métier qui portent un bonus sur un objet, selon le niveau du joueur ; il renvoie 0 si le métier est inconnu.
 - `JobHarvestService.process` ignore une source nulle, inconnue ou sans sorties. Pour chaque sortie, il effectue un tirage de chance de butin à partir des bonus du talent, puis attribue un objet de quantité 1 et une qualité déterminée par le bonus de qualité.
 - La qualité part de `POOR` et progresse tant que le tirage aléatoire est inférieur au bonus, jusqu’à `EXCEPTIONAL`.
-- Le coût d’amélioration est le coût du prochain niveau. `canBuyUpgrade` compare ce coût aux points de talent disponibles. L’arbre est fourni par `JobSkillTreeRepository`.
+- Le coût d’amélioration est le coût du prochain niveau. `canBuyUpgrade` compare ce coût aux points de talent disponibles. L’arbre est fourni par `JobTalentTreeRepository`.
 
 ## Interfaces et dépendances
 
@@ -36,7 +36,7 @@ Les ports serveur couvrent la lecture des métiers, des progressions, des arbres
 
 - Les missions de livraison (ancien `JobMission`, `MissionDepositResult`) ont été **retirées** de ce module : elles sont remplacées par le module `contrat` (`contrat-domain.md`).
 - `Source` est un couple matériau/type; `SourceType` distingue la nature de la source. `Sources` mappe chaque source vers une liste de matériaux de sortie et retourne la liste associée (ou `null` si absente). `Products` est un ensemble séparé de matériaux déclarés comme produits.
-- `Talent` contient son identifiant, le bonus, l’objet/matériau visé, les valeurs par niveau, les prérequis, le niveau maximal et le coût par niveau. `getValue(level)` fournit la valeur de bonus au niveau demandé. `Talents.get(material, bonus)` filtre les talents à la fois par matériau et type de bonus.
+- `Talent` contient son identifiant, le bonus, l’objet/matériau visé, les valeurs par niveau, les prérequis, le niveau maximal et le coût par niveau. `getValue(level)` fournit la valeur de bonus au niveau demandé. `Talents.findAllByItemAndBonus(material, bonus)` filtre les talents à la fois par matériau et type de bonus.
 - `TalentTree` contient une matrice de `CellType`; `SkillCell` référence un talent, `RootCell` la racine et `Arrow` une orientation/connexion rendue via `ArrowType` et ses données de modèle d’objet.
 - `JobPlayerProgression` contient métier, points disponibles et progressions de talents. Un talent absent de la map est de niveau zéro.
 

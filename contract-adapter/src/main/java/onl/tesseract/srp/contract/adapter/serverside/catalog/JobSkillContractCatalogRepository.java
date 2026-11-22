@@ -53,7 +53,7 @@ public class JobSkillContractCatalogRepository implements ContractCatalogReposit
     @Override
     public List<CatalogItem> findAllCatalogItems() {
         List<CatalogItem> catalogItems = new ArrayList<>();
-        for (Job job : jobCatalogService.listJobs()) {
+        for (Job job : jobCatalogService.findAllJobs()) {
             ContractClient client = new ContractClient(job.jobName().value());
             for (MaterialName material : findAllHarvestedMaterials(job)) {
                 addCatalogItem(catalogItems, ContractType.HARVEST, client, material);

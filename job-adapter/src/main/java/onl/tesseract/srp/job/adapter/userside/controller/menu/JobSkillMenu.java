@@ -1,4 +1,4 @@
-package onl.tesseract.srp.job.adapter.userside.controller.command;
+package onl.tesseract.srp.job.adapter.userside.controller.menu;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -25,20 +25,20 @@ import org.slf4j.LoggerFactory;
 public class JobSkillMenu extends BiMenu {
     private static final Logger LOGGER = LoggerFactory.getLogger(JobSkillMenu.class);
 
-    private final PlayerId playerID;
+    private final PlayerId playerId;
     private final Job job;
     private final JobTalentTreeService jobTalentTreeService;
     private final JobPlayerProgressionService jobPlayerProgressionService;
 
-    private TalentTree menuConfig;
+    private TalentTree talentTree;
     private int scroll;
 
-    public JobSkillMenu(PlayerId playerID,
+    public JobSkillMenu(PlayerId playerId,
                         Job job,
                         JobTalentTreeService jobTalentTreeService,
                         JobPlayerProgressionService jobPlayerProgressionService) {
         super(MenuSize.Six, Component.text("Compétences"), null);
-        this.playerID = playerID;
+        this.playerId = playerId;
         this.job = job;
         this.jobTalentTreeService = jobTalentTreeService;
         this.jobPlayerProgressionService = jobPlayerProgressionService;
@@ -47,7 +47,7 @@ public class JobSkillMenu extends BiMenu {
     @Override
     public void placeButtons(Player viewer) {
         try {
-            menuConfig = jobTalentTreeService.getTalentTree(job.jobName());
+            talentTree = jobTalentTreeService.getTalentTree(job.jobName());
         } catch (Exception exception) {
             LOGGER.error("Failed to open skill menu for job {}", job, exception);
             viewer.sendMessage(Component.text(
@@ -65,7 +65,7 @@ public class JobSkillMenu extends BiMenu {
         clearTop();
         this.scroll = scroll;
 
-        CellType[][] matrix = menuConfig.matrix();
+        CellType[][] matrix = talentTree.matrix();
         int maxHeight = Math.min(matrix.length, 6 + scroll);
         for (int row = scroll; row < maxHeight; row++) {
             for (int column = 0; column < matrix[row].length; column++) {
@@ -78,7 +78,7 @@ public class JobSkillMenu extends BiMenu {
                 .customHead(InventoryHeadIcons.UP_ARROW.getData(), null)
                 .name("Monter", NamedTextColor.GRAY)
                 .build(), event -> {
-            if (this.scroll < menuConfig.matrix().length - 1) {
+            if (this.scroll < talentTree.matrix().length - 1) {
                 openScroll(this.scroll + 1);
             }
         });
@@ -114,35 +114,35 @@ public class JobSkillMenu extends BiMenu {
                     .name(job.jobDisplayName().value())
                     .build());
         } else if (cellType instanceof SkillCell skillCell) {
-            Talent skill = job.talents().get(skillCell.talent());
+            Talent talent = job.talents().getByName(skillCell.talent());
             ItemLoreBuilder lore = new ItemLoreBuilder()
                     .newline()
-                    .append(JobBonusDescription.of(skill.bonus()))
+                    .append(JobBonusDescription.of(talent.bonus()))
                     .newline();
 
             if (jobPlayerProgressionService.getTalentLevel(
-                    playerID, job.jobName(), skill.name()) > 0) {
+                    playerId, job.jobName(), talent.name()) > 0) {
                 lore.append("Acquis", NamedTextColor.GREEN);
             } else {
                 NamedTextColor color = jobPlayerProgressionService.canBuyUpgrade(
-                        playerID, job.jobName(), skill
+                        playerId, job.jobName(), talent
                 ) ? NamedTextColor.BLUE : NamedTextColor.RED;
                 lore.append("Coût", color)
                         .append(" : " + jobPlayerProgressionService.getTalentCost(
-                                playerID, job.jobName(), skill
+                                playerId, job.jobName(), talent
                         ), NamedTextColor.GRAY);
                 if (!jobPlayerProgressionService.isAvailable(
-                        playerID, job.jobName(), skill
+                        playerId, job.jobName(), talent
                 )) {
                     lore.newline().append("Bloqué", NamedTextColor.RED);
                 }
             }
 
             addButton(index, new ItemBuilder(Material.RABBIT_FOOT)
-                    .name(skill.name().value())
+                    .name(talent.name().value())
                     .lore(lore.get())
                     .build(), event -> {
-                if (jobPlayerProgressionService.upgradeSkill(playerID, skill)) {
+                if (jobPlayerProgressionService.upgradeSkill(playerId, talent)) {
                     openScroll(this.scroll);
                 }
             });

@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
-public class JobYamlRepository implements JobRepository {
+public class YamlJobRepository implements JobRepository {
 
-    private final static Path TREEPATH = Path.of("plugins/Tesseract/job");
+    private final static Path JOB_DIRECTORY = Path.of("plugins/Tesseract/job");
     private final static String FILE_EXT = ".yaml";
 
     private final Map<JobName, Job> jobs = new HashMap<>();
@@ -48,8 +48,8 @@ public class JobYamlRepository implements JobRepository {
 
 
     private void loadJobs(){
-        for (Path p : loadFiles()){
-            loadJob(p);
+        for (Path path : loadFiles()){
+            loadJob(path);
         }
     }
 
@@ -109,10 +109,10 @@ public class JobYamlRepository implements JobRepository {
     }
 
     private List<Path> loadFiles(){
-        if(!Files.exists(TREEPATH) || !Files.isDirectory(TREEPATH))return new ArrayList<>();
+        if(!Files.exists(JOB_DIRECTORY) || !Files.isDirectory(JOB_DIRECTORY))return new ArrayList<>();
 
-        try(Stream<Path> s = Files.list(TREEPATH)) {
-             return s.filter(path -> path.toString().endsWith(FILE_EXT))
+        try(Stream<Path> paths = Files.list(JOB_DIRECTORY)) {
+             return paths.filter(path -> path.toString().endsWith(FILE_EXT))
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);

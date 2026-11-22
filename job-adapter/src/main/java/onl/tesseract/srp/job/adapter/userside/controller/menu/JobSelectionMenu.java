@@ -1,4 +1,4 @@
-package onl.tesseract.srp.job.adapter.userside.controller.command;
+package onl.tesseract.srp.job.adapter.userside.controller.menu;
 
 import net.kyori.adventure.text.Component;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
@@ -37,7 +37,7 @@ public class JobSelectionMenu extends Menu {
         addCloseButton();
 
         int index = 0;
-        for (Job job : jobCatalogService.listJobs()) {
+        for (Job job : jobCatalogService.findAllJobs()) {
             addButton(index++, new ItemBuilder(Material.DIAMOND_PICKAXE)
                     .name(job.jobName().value())
                     .build(), event -> onJobClick.accept(viewer, job));

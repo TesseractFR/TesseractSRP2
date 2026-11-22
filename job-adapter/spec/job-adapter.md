@@ -14,11 +14,11 @@ flowchart LR
 
 ## Chargement de métiers et talents
 
-`JobYamlRepository` lit les fichiers `*.yaml` directement sous `plugins/Tesseract/job` et met les `Job` en cache à la première lecture. Les champs lus sont `name`, `display-name`, `talents` et `break`.
+`YamlJobRepository` lit les fichiers `*.yaml` directement sous `plugins/Tesseract/job` et met les `Job` en cache à la première lecture. Les champs lus sont `name`, `display-name`, `talents` et `break`.
 
 Chaque entrée de talent fournit sa clé/nom, `maxLevel` (défaut 1), `bonus`, `parents`, `prices`, `item` et `values`. La liste `prices` est indexée en niveaux à partir de 1. Chaque entrée `break` associe un nom de matériau source à la liste des matériaux de sortie; le type de source est fixé à `BLOCK`. `findAll` retourne une copie immuable de la collection des valeurs; `findByName` retourne l’entrée ou `null`. La map est uniquement chargée lorsqu’elle est vide et n’est pas rechargée dynamiquement.
 
-`JobSkillTreeYamlRepository` lit `plugins/Tesseract/job/<jobName>.skills`. Les lignes de correspondance caractère=talent précèdent les lignes du dessin; le dessin se termine à `END`. Il construit une matrice de cellules avec cases vides, racine, cellules de talent et flèches typées. Un fichier absent ou un nom nul déclenche `IllegalArgumentException`; les erreurs de lecture deviennent `RuntimeException`. Bien qu’une map statique soit présente, la condition de cache contient `&& false`, donc le fichier est relu à chaque appel.
+`YamlJobTalentTreeRepository` lit `plugins/Tesseract/job/<jobName>.skills`. Les lignes de correspondance caractère=talent précèdent les lignes du dessin; le dessin se termine à `END`. Il construit une matrice de cellules avec cases vides, racine, cellules de talent et flèches typées. Un fichier absent ou un nom nul déclenche `IllegalArgumentException`; les erreurs de lecture deviennent `RuntimeException`. Bien qu’une map statique soit présente, la condition de cache contient `&& false`, donc le fichier est relu à chaque appel.
 
 ## Progressions JPA
 
@@ -26,9 +26,9 @@ Chaque entrée de talent fournit sa clé/nom, `maxLevel` (défaut 1), `bonus`, `
 
 ## Objets et déclencheurs Bukkit
 
-`TesseractJobItemRepository` traduit un matériau métier, un joueur, une quantité et une qualité en appel `CustomItemService.addItem`. Il utilise le système d’objets partagés, qui choisit entre item personnalisé et vanilla.
+`CustomItemJobRewardPort` traduit un matériau métier, un joueur, une quantité et une qualité en appel `CustomItemService.addItem`. Il utilise le système d’objets partagés, qui choisit entre item personnalisé et vanilla.
 
-`BlockBreakListener` capte `BlockBreakEvent` et transmet au `JobHarvestService` une `Source` constituée du type du bloc cassé et de `SourceType.BLOCK`, avec l’UUID du joueur. Le traitement de récompense, incluant les tirages de loot et de qualité, est délégué au domaine.
+`JobBlockBreakListener` capte `BlockBreakEvent` et transmet au `JobHarvestService` une `Source` constituée du type du bloc cassé et de `SourceType.BLOCK`, avec l’UUID du joueur. Le traitement de récompense, incluant les tirages de loot et de qualité, est délégué au domaine.
 
 ## Interface joueur
 

@@ -17,11 +17,11 @@ public record Talents(Map<TalentName, Talent> value){
         value.put(talentName, talent);
     }
 
-    public Talent get(TalentName talentName){
+    public Talent getByName(TalentName talentName){
         return value.get(talentName);
     }
 
-    public List<Talent> get(Material item, Bonus bonus) {
+    public List<Talent> findAllByItemAndBonus(Material item, Bonus bonus) {
         return value.values()
                 .stream()
                 .filter(talent ->

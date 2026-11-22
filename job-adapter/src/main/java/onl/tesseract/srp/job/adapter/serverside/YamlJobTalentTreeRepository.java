@@ -4,7 +4,7 @@ import onl.tesseract.srp.job.domain.model.Job;
 import onl.tesseract.srp.job.domain.model.JobName;
 import onl.tesseract.srp.job.domain.model.talent.TalentName;
 import onl.tesseract.srp.job.domain.model.talenttree.*;
-import onl.tesseract.srp.job.domain.port.serverside.JobSkillTreeRepository;
+import onl.tesseract.srp.job.domain.port.serverside.JobTalentTreeRepository;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -16,9 +16,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class JobSkillTreeYamlRepository implements JobSkillTreeRepository {
+public class YamlJobTalentTreeRepository implements JobTalentTreeRepository {
 
-    private final static Path TREEPATH = Path.of("plugins/Tesseract/job");
+    private final static Path JOB_DIRECTORY = Path.of("plugins/Tesseract/job");
     private final static String FILE_EXT = ".skills";
 
     private final static Map<JobName, TalentTree> skillTrees = new HashMap<>();
@@ -31,7 +31,7 @@ public class JobSkillTreeYamlRepository implements JobSkillTreeRepository {
         if (jobName == null) {
             throw new IllegalArgumentException("jobName cannot be null");
         }
-        Path file = TREEPATH.resolve(jobName.value() + FILE_EXT);
+        Path file = JOB_DIRECTORY.resolve(jobName.value() + FILE_EXT);
         if(!Files.exists(file)){
             throw new IllegalArgumentException("Fichier non trouvé: " + file);
         }
@@ -81,19 +81,19 @@ public class JobSkillTreeYamlRepository implements JobSkillTreeRepository {
             String line = graphLines.get(y);
             for (int x = 0; x < width; x++) {
                 if (x < line.length()) {
-                    char c = line.charAt(x);
-                    grid[y][x] = getFromString(c);
+                    char symbol = line.charAt(x);
+                    grid[y][x] = getFromString(symbol);
                     if(grid[y][x] == null) {
-                        TalentName tn = talentNameMap.get(c);
-                        if(tn == null){
+                        TalentName talentName = talentNameMap.get(symbol);
+                        if(talentName == null){
                             grid[y][x] = new EmptyCell();
                             continue;
                         }
-                        if(tn.value().equals("ROOT")){
+                        if(talentName.value().equals("ROOT")){
                             grid[y][x] = new RootCell();
                             continue;
                         }
-                        grid[y][x] = new SkillCell(tn);
+                        grid[y][x] = new SkillCell(talentName);
                     }
                 } else {
                     grid[y][x] = new EmptyCell();

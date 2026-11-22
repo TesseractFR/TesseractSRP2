@@ -150,7 +150,7 @@ Chaque rareté de `quantity-by-rarity` est lue en `RarityQuantity(quantity, vari
 
 `findAllCatalogItems()` reconstruit le catalogue à chaque appel, donc à chaque achat :
 
-1. Pour chaque métier de `JobService.listJobs()`, chaque matériau produit par ses sources (dédoublonné au sein du métier) devient un `CatalogItem` `HARVEST` dont le client est le métier.
+1. Pour chaque métier de `JobCatalogService.findAllJobs()`, chaque matériau produit par ses sources (dédoublonné au sein du métier) devient un `CatalogItem` `HARVEST` dont le client est le métier.
 2. Pour chaque compétence de `SkillCatalogPort.findAllSkills()`, le résultat de chaque recette de chaque palier (dédoublonné au sein de la compétence) devient un `CatalogItem` `CRAFT`.
 
 Un matériau produit par deux métiers apparaît donc deux fois.

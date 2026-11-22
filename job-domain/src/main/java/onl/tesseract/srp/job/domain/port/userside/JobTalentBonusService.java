@@ -29,7 +29,7 @@ public class JobTalentBonusService {
      */
     public double getBonusValue(JobName jobName, PlayerId playerId, Material item, Bonus bonus) {
         return jobCatalogService.findLoadedJob(jobName)
-                .map(job -> job.talents().get(item, bonus).stream()
+                .map(job -> job.talents().findAllByItemAndBonus(item, bonus).stream()
                         .mapToDouble(talent -> talent.getValue(
                                 jobPlayerProgressionService.getTalentLevel(playerId, jobName, talent.name())))
                         .sum())

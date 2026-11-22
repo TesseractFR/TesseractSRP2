@@ -4,6 +4,8 @@ import onl.tesseract.commandBuilder.CommandContext;
 import onl.tesseract.commandBuilder.annotation.Command;
 import onl.tesseract.srp.common.adapter.SrpCommandInstanceProvider;
 import onl.tesseract.srp.common.domain.model.PlayerId;
+import onl.tesseract.srp.job.adapter.userside.controller.menu.JobSelectionMenu;
+import onl.tesseract.srp.job.adapter.userside.controller.menu.JobSkillMenu;
 import onl.tesseract.srp.job.domain.port.userside.JobPlayerProgressionService;
 import onl.tesseract.srp.job.domain.port.userside.JobCatalogService;
 import onl.tesseract.srp.job.domain.port.userside.JobTalentTreeService;

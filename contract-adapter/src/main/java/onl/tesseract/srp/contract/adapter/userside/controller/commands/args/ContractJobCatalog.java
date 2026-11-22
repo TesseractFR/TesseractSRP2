@@ -23,7 +23,7 @@ public class ContractJobCatalog {
 
     public List<String> findAllNames() {
         List<String> names = new ArrayList<>();
-        jobCatalogService.listJobs().forEach(job -> names.add(job.jobName().value()));
+        jobCatalogService.findAllJobs().forEach(job -> names.add(job.jobName().value()));
         skillCatalogPort.findAllSkills().forEach(skill -> names.add(skill.name().value()));
         return names;
     }
