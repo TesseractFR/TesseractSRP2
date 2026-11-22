@@ -29,13 +29,7 @@ public class JobPlayerProgressionService {
      * @return {@code true} si le talent est accessible
      */
     public boolean isAvailable(PlayerId playerID,JobName jobName,Talent talent) {
-        if(talent.parents().isEmpty())return true;
-        for(TalentName parent : talent.parents()) {
-            if(getTalentLevel(playerID, jobName, parent) <= 0) {
-                return false;
-            }
-        }
-        return true;
+        return getJobProgression(playerID, jobName).isTalentAvailable(talent);
     }
 
     /**
@@ -60,11 +54,7 @@ public class JobPlayerProgressionService {
      * @throws IllegalStateException si le talent est déjà à son niveau maximal
      */
     public int getTalentCost(PlayerId playerID, JobName job, Talent talent) {
-        int talentLevel = getTalentLevel(playerID, job, talent.name());
-        if(talentLevel >= talent.maxLevel()) {
-            throw new IllegalStateException("Pas d'amélioration possible");
-        }
-        return talent.pricePerLevel().get(talentLevel+1);
+        return talent.getPriceForLevel(getTalentLevel(playerID, job, talent.name()) + 1);
     }
 
     /**
