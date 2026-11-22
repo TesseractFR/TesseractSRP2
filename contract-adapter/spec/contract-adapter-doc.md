@@ -176,7 +176,7 @@ Le port appelle `JobService.getBonusValue(JobName, PlayerId, Material, Bonus.MON
 
 ### 5.4 Paiement : `PlayerServicePaymentPort` (→ `PaymentPort`)
 
-Le port appelle `PlayerMoneyService.addMoney(playerId, montant)` avec le montant converti par `intValueExact()`. Un montant de contrat n'étant jamais négatif, l'ajout ne peut pas être refusé : le port ne lève donc plus `PaymentFailedException`.
+Le port appelle `PlayerMoneyService.addMoney(playerId, montant)` avec le montant converti par `intValueExact()`. Si le service refuse le montant (`IllegalArgumentException` d'un montant négatif) ou si la conversion déborde (`ArithmeticException`), le port journalise une erreur avec le joueur et le montant, pour que le staff puisse dédommager le joueur, puis lève `PaymentFailedException`. Les matériaux et le parchemin sont déjà retirés à ce moment-là.
 
 ### 5.5 Matériaux : `CustomItemPlayerMaterialPort` (→ `PlayerMaterialPort`)
 
