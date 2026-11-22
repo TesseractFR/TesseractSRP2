@@ -21,7 +21,7 @@ Les opérations sur le joueur sont réparties en quatre services, un par cas d�
 - `PlayerRankService` :
   - `changeRank` synchronise le titre au grade, persiste et publie `PlayerRankUpEvent`, seulement si le grade change.
   - `buyNextRank` appelle la logique du modèle, synchronise le titre et persiste uniquement en cas d’achat réussi. Il journalise alors le paiement du grade acheté via `PlayerLedgerPort` et publie `PlayerRankUpEvent` avec ce nouveau grade.
-- `PlayerMoneyService` et `PlayerIlluminationService` : les ajustements d’argent et de points d’illumination refusent un solde final négatif (retour `false`) et sauvegardent toute modification acceptée ; l’ajustement peut être positif, nul ou négatif. `adjustMoney` ne journalise rien : c’est à l’appelant de tracer le mouvement s’il le faut. `adjustMoneyAsStaff` applique la même règle et journalise l’ajustement accepté via `PlayerLedgerPort`.
+- `PlayerMoneyService` et `PlayerIlluminationService` exposent deux méthodes strictes, une pour ajouter (`addMoney`, `addIlluminationPoints`) et une pour retirer (`removeMoney`, `removeIlluminationPoints`), qui passent par une méthode privée d’ajustement. Elles refusent un montant négatif (`IllegalArgumentException`). Le retrait refuse un solde final négatif (retour `false`, rien n’est modifié) ; l’ajout n’est jamais refusé et le dépassement de la valeur maximale n’est pas contrôlé. Toute modification acceptée est sauvegardée. `addMoney` et `removeMoney` ne journalisent rien : c’est à l’appelant de tracer le mouvement s’il le faut. `addMoneyAsStaff` et `removeMoneyAsStaff` appliquent les mêmes règles et journalisent le mouvement accepté via `PlayerLedgerPort` (montant négatif pour un retrait).
 
 ## Ports
 

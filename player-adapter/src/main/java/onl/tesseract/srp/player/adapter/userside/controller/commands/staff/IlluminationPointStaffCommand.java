@@ -32,19 +32,15 @@ public class IlluminationPointStaffCommand {
     public void give(@Argument("player") OfflineUUIDPlayerArg playerArg,
                      @Argument("amount") IntegerCommandArgument amountArg,
                      CommandSender sender) {
-        boolean result = playerIlluminationService.adjustIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
-        if (result) {
-            sender.sendMessage(Component.text( "Points donnés",NamedTextColor.GREEN));
-        } else {
-            sender.sendMessage(Component.text( "Échec",NamedTextColor.RED));
-        }
+        playerIlluminationService.addIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
+        sender.sendMessage(Component.text( "Points donnés",NamedTextColor.GREEN));
     }
 
     @Command(name = "take")
     public void take(@Argument("player") OfflineUUIDPlayerArg playerArg,
                      @Argument("amount") IntegerCommandArgument amountArg,
                      CommandSender sender) {
-        boolean result = playerIlluminationService.adjustIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), -amountArg.get());
+        boolean result = playerIlluminationService.removeIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
         if (result) {
             sender.sendMessage(Component.text( "Points retirés",NamedTextColor.GREEN));
         } else {

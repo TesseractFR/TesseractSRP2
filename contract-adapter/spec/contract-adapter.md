@@ -14,7 +14,7 @@ La documentation détaillée du code est dans `contract-adapter-doc.md`.
 | `ContractTicketRepository` | `JpaContractTicketRepository` | table `t_contract_player_state` |
 | `DailyTicketQuotaPort` | `YamlDailyTicketQuotaPort` | grade du joueur (`SrpPlayerProfileService`) et `daily-tickets` du YAML |
 | `JobMoneyBonusPort` | `JobServiceMoneyBonusPort` | `JobService.getBonusValue(..., Bonus.MONEY)` |
-| `PaymentPort` | `PlayerServicePaymentPort` | `PlayerMoneyService.adjustMoney` |
+| `PaymentPort` | `PlayerServicePaymentPort` | `PlayerMoneyService.addMoney` |
 | `PlayerMaterialPort` | `CustomItemPlayerMaterialPort` | `CustomItemService` |
 | `ContractScrollPort` | `BukkitContractScrollPort` | inventaire Bukkit du joueur en ligne |
 | `ContractCatalogRepository` | `JobSkillContractCatalogRepository` | métiers (`JobService`), compétences (`SkillCatalogPort`), raretés et valeurs (`CustomItemService`) |

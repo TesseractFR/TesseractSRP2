@@ -15,15 +15,38 @@ public class PlayerIlluminationService {
     }
 
     /**
-     * Ajoute (montant positif) ou retire (montant négatif) des points d'illumination au joueur.
+     * Ajoute des points d'illumination au joueur. Le dépassement de la valeur maximale n'est pas contrôlé.
      *
-     * @return {@code false} si le total deviendrait négatif, rien n'est alors modifié
+     * @throws IllegalArgumentException si le nombre de points est négatif
      */
-    public boolean adjustIlluminationPoints(PlayerId playerId, int amount) {
+    public void addIlluminationPoints(PlayerId playerId, int amount) {
+        requireNotNegative(amount);
+        adjustIlluminationPoints(playerId, amount);
+    }
+
+    /**
+     * Retire des points d'illumination au joueur.
+     *
+     * @return {@code false} si le joueur n'a pas assez de points, rien n'est alors modifié
+     * @throws IllegalArgumentException si le nombre de points est négatif
+     */
+    public boolean removeIlluminationPoints(PlayerId playerId, int amount) {
+        requireNotNegative(amount);
+        return adjustIlluminationPoints(playerId, -amount);
+    }
+
+    /** Applique la variation, sauf si elle ferait passer le total sous zéro. */
+    private boolean adjustIlluminationPoints(PlayerId playerId, int variation) {
         SrpPlayer player = srpPlayerProfileService.getPlayer(playerId);
-        if ((long) player.getIlluminationPoints() + amount < 0) return false;
-        player.addIlluminationPoints(amount);
+        if (variation < 0 && player.getIlluminationPoints() < -variation) return false;
+        player.addIlluminationPoints(variation);
         srpPlayerProfileService.savePlayer(player);
         return true;
+    }
+
+    private static void requireNotNegative(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Le nombre de points ne peut pas être négatif : " + amount);
+        }
     }
 }

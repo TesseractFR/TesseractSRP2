@@ -27,5 +27,5 @@ flowchart LR
 - `/rank` (`RankCommand`) ouvre `PlayerRankProgressMenu`, qui affiche les grades en ligne défilante avec la progression du solde vers le grade suivant. Un clic sur le grade suivant appelle `PlayerRankService.buyNextRank` ; en cas de succès, un son de montée de niveau est joué et la vue défile vers le nouveau grade.
 - Sous-commandes de `/staffSrp`, déclarées dans `SrpStaffCommand` (plugin) :
   - `rank set <joueur> <grade>` (`PlayerRankStaffCommand`) appelle `PlayerRankService.changeRank`. `PlayerRankArg` analyse le nom du grade et propose la complétion.
-  - `money get|give|take` (`MoneyStaffCommand`) lit le solde ou appelle `PlayerMoneyService.adjustMoneyAsStaff`, qui journalise l’ajustement.
-  - `illumination get|give|take` (`IlluminationPointStaffCommand`) lit les points ou appelle `PlayerIlluminationService.adjustIlluminationPoints`.
+  - `money get|give|take` (`MoneyStaffCommand`) lit le solde ou appelle `PlayerMoneyService.addMoneyAsStaff` ou `removeMoneyAsStaff`, qui journalisent le mouvement.
+  - `illumination get|give|take` (`IlluminationPointStaffCommand`) lit les points ou appelle `PlayerIlluminationService.addIlluminationPoints` ou `removeIlluminationPoints`.

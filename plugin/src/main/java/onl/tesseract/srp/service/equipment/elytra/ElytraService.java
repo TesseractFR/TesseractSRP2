@@ -121,7 +121,7 @@ public class ElytraService {
         if (price == null) {
             return ElytraUpgradeResult.MAX_LEVEL_REACHED;
         }
-        boolean success = playerIlluminationService.adjustIlluminationPoints(new PlayerId(playerId), -price);
+        boolean success = playerIlluminationService.removeIlluminationPoints(new PlayerId(playerId), price);
         if (!success) {
             return ElytraUpgradeResult.NOT_ENOUGH_POINTS;
         }

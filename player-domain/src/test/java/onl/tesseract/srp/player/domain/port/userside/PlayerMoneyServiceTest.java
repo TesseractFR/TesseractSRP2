@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,84 +44,111 @@ class PlayerMoneyServiceTest {
     }
 
     @Test
-    void adjustMoney_addsPositiveAmountAndSaves() {
+    void addMoney_addsAmountAndSaves() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustMoney(PLAYER, 50);
+        service.addMoney(PLAYER, 50);
 
         // then
-        assertTrue(adjusted);
         assertEquals(150, player.getMoney());
         verify(repository).save(player);
     }
 
     @Test
-    void adjustMoney_withdrawsDownToZero() {
-        // given
-        SrpPlayer player = storedPlayerWith(100);
-
-        // when
-        boolean adjusted = service.adjustMoney(PLAYER, -100);
-
-        // then
-        assertTrue(adjusted);
-        assertEquals(0, player.getMoney());
-        verify(repository).save(player);
-    }
-
-    @Test
-    void adjustMoney_returnsFalseWithoutSavingWhenResultWouldBeNegative() {
-        // given
-        SrpPlayer player = storedPlayerWith(100);
-
-        // when
-        boolean adjusted = service.adjustMoney(PLAYER, -101);
-
-        // then
-        assertFalse(adjusted);
-        assertEquals(100, player.getMoney());
-        verify(repository, never()).save(any());
-    }
-
-    @Test
-    void adjustMoney_doesNotRecordInLedger() {
+    void addMoney_doesNotRecordInLedger() {
         // given
         storedPlayerWith(100);
 
         // when
-        service.adjustMoney(PLAYER, 50);
+        service.addMoney(PLAYER, 50);
 
         // then
         verifyNoInteractions(playerLedgerPort);
     }
 
     @Test
-    void adjustMoneyAsStaff_adjustsSavesAndRecordsInLedger() {
+    void addMoney_throwsWhenAmountIsNegative() {
+        // when / then
+        assertThrows(IllegalArgumentException.class, () -> service.addMoney(PLAYER, -1));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void removeMoney_withdrawsDownToZero() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustMoneyAsStaff(PLAYER, -40);
+        boolean removed = service.removeMoney(PLAYER, 100);
 
         // then
-        assertTrue(adjusted);
+        assertTrue(removed);
+        assertEquals(0, player.getMoney());
+        verify(repository).save(player);
+    }
+
+    @Test
+    void removeMoney_returnsFalseWithoutSavingWhenMoneyIsNotEnough() {
+        // given
+        SrpPlayer player = storedPlayerWith(100);
+
+        // when
+        boolean removed = service.removeMoney(PLAYER, 101);
+
+        // then
+        assertFalse(removed);
+        assertEquals(100, player.getMoney());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void removeMoney_throwsWhenAmountIsNegative() {
+        // when / then
+        assertThrows(IllegalArgumentException.class, () -> service.removeMoney(PLAYER, -1));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void addMoneyAsStaff_addsSavesAndRecordsInLedger() {
+        // given
+        SrpPlayer player = storedPlayerWith(100);
+
+        // when
+        service.addMoneyAsStaff(PLAYER, 40);
+
+        // then
+        assertEquals(140, player.getMoney());
+        verify(repository).save(player);
+        verify(playerLedgerPort).recordStaffMoneyAdjustment(PLAYER, 40);
+    }
+
+    @Test
+    void removeMoneyAsStaff_removesSavesAndRecordsNegativeAmountInLedger() {
+        // given
+        SrpPlayer player = storedPlayerWith(100);
+
+        // when
+        boolean removed = service.removeMoneyAsStaff(PLAYER, 40);
+
+        // then
+        assertTrue(removed);
         assertEquals(60, player.getMoney());
         verify(repository).save(player);
         verify(playerLedgerPort).recordStaffMoneyAdjustment(PLAYER, -40);
     }
 
     @Test
-    void adjustMoneyAsStaff_returnsFalseWithoutRecordingWhenResultWouldBeNegative() {
+    void removeMoneyAsStaff_returnsFalseWithoutRecordingWhenMoneyIsNotEnough() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustMoneyAsStaff(PLAYER, -101);
+        boolean removed = service.removeMoneyAsStaff(PLAYER, 101);
 
         // then
-        assertFalse(adjusted);
+        assertFalse(removed);
         assertEquals(100, player.getMoney());
         verify(repository, never()).save(any());
         verifyNoInteractions(playerLedgerPort);

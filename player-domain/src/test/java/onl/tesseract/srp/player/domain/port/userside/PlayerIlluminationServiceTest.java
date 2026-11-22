@@ -12,11 +12,13 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class PlayerIlluminationServiceTest {
@@ -39,44 +41,57 @@ class PlayerIlluminationServiceTest {
     }
 
     @Test
-    void adjustIlluminationPoints_addsPositiveAmountAndSaves() {
+    void addIlluminationPoints_addsAmountAndSaves() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustIlluminationPoints(PLAYER, 50);
+        service.addIlluminationPoints(PLAYER, 50);
 
         // then
-        assertTrue(adjusted);
         assertEquals(150, player.getIlluminationPoints());
         verify(repository).save(player);
     }
 
     @Test
-    void adjustIlluminationPoints_withdrawsDownToZero() {
+    void addIlluminationPoints_throwsWhenAmountIsNegative() {
+        // when / then
+        assertThrows(IllegalArgumentException.class, () -> service.addIlluminationPoints(PLAYER, -1));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void removeIlluminationPoints_withdrawsDownToZero() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustIlluminationPoints(PLAYER, -100);
+        boolean removed = service.removeIlluminationPoints(PLAYER, 100);
 
         // then
-        assertTrue(adjusted);
+        assertTrue(removed);
         assertEquals(0, player.getIlluminationPoints());
         verify(repository).save(player);
     }
 
     @Test
-    void adjustIlluminationPoints_returnsFalseWithoutSavingWhenResultWouldBeNegative() {
+    void removeIlluminationPoints_returnsFalseWithoutSavingWhenPointsAreNotEnough() {
         // given
         SrpPlayer player = storedPlayerWith(100);
 
         // when
-        boolean adjusted = service.adjustIlluminationPoints(PLAYER, -101);
+        boolean removed = service.removeIlluminationPoints(PLAYER, 101);
 
         // then
-        assertFalse(adjusted);
+        assertFalse(removed);
         assertEquals(100, player.getIlluminationPoints());
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void removeIlluminationPoints_throwsWhenAmountIsNegative() {
+        // when / then
+        assertThrows(IllegalArgumentException.class, () -> service.removeIlluminationPoints(PLAYER, -1));
+        verifyNoInteractions(repository);
     }
 }

@@ -18,26 +18,60 @@ public class PlayerMoneyService {
     }
 
     /**
-     * Ajoute (montant positif) ou retire (montant négatif) de l'argent au joueur.
+     * Ajoute de l'argent au joueur. Le dépassement de la valeur maximale n'est pas contrôlé.
      *
-     * @return {@code false} si le solde deviendrait négatif, rien n'est alors modifié
+     * @throws IllegalArgumentException si le montant est négatif
      */
-    public boolean adjustMoney(PlayerId playerId, int amount) {
+    public void addMoney(PlayerId playerId, int amount) {
+        requireNotNegative(amount);
+        adjustMoney(playerId, amount);
+    }
+
+    /**
+     * Retire de l'argent au joueur.
+     *
+     * @return {@code false} si le joueur n'a pas assez d'argent, rien n'est alors modifié
+     * @throws IllegalArgumentException si le montant est négatif
+     */
+    public boolean removeMoney(PlayerId playerId, int amount) {
+        requireNotNegative(amount);
+        return adjustMoney(playerId, -amount);
+    }
+
+    /**
+     * Don d'argent fait par le staff : même règle que {@link #addMoney}, et le mouvement est journalisé.
+     *
+     * @throws IllegalArgumentException si le montant est négatif
+     */
+    public void addMoneyAsStaff(PlayerId playerId, int amount) {
+        addMoney(playerId, amount);
+        playerLedgerPort.recordStaffMoneyAdjustment(playerId, amount);
+    }
+
+    /**
+     * Retrait d'argent fait par le staff : même règle que {@link #removeMoney}, et le mouvement est journalisé.
+     *
+     * @return {@code false} si le joueur n'a pas assez d'argent, rien n'est alors modifié ni journalisé
+     * @throws IllegalArgumentException si le montant est négatif
+     */
+    public boolean removeMoneyAsStaff(PlayerId playerId, int amount) {
+        if (!removeMoney(playerId, amount)) return false;
+        playerLedgerPort.recordStaffMoneyAdjustment(playerId, -amount);
+        return true;
+    }
+
+    /** Applique la variation, sauf si elle ferait passer le solde sous zéro. */
+    private boolean adjustMoney(PlayerId playerId, int variation) {
         SrpPlayer player = srpPlayerProfileService.getPlayer(playerId);
-        if ((long) player.getMoney() + amount < 0) return false;
-        player.addMoney(amount);
+        if (variation < 0 && player.getMoney() < -variation) return false;
+        player.addMoney(variation);
         srpPlayerProfileService.savePlayer(player);
         return true;
     }
 
-    /**
-     * Ajustement de solde fait par le staff : même règle que {@link #adjustMoney}, et le mouvement est journalisé.
-     *
-     * @return {@code false} si le solde deviendrait négatif, rien n'est alors modifié ni journalisé
-     */
-    public boolean adjustMoneyAsStaff(PlayerId playerId, int amount) {
-        if (!adjustMoney(playerId, amount)) return false;
-        playerLedgerPort.recordStaffMoneyAdjustment(playerId, amount);
-        return true;
+    private static void requireNotNegative(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Le montant ne peut pas être négatif : " + amount);
+        }
     }
 }

@@ -26,16 +26,18 @@ public class MoneyServiceImpl implements MoneyService {
 
     @Override
     public boolean payCreation(UUID player, int amount) {
-        return amount > 0 && playerMoneyService.adjustMoney(new PlayerId(player), -amount);
+        return amount > 0 && playerMoneyService.removeMoney(new PlayerId(player), amount);
     }
 
     @Override
     public boolean transfertToGuild(UUID player, int amount) {
-        return amount > 0 && playerMoneyService.adjustMoney(new PlayerId(player), -amount);
+        return amount > 0 && playerMoneyService.removeMoney(new PlayerId(player), amount);
     }
 
     @Override
     public boolean transfertFromGuild(UUID player, int amount) {
-        return amount > 0 && playerMoneyService.adjustMoney(new PlayerId(player), amount);
+        if (amount <= 0) return false;
+        playerMoneyService.addMoney(new PlayerId(player), amount);
+        return true;
     }
 }

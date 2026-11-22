@@ -30,17 +30,13 @@ public class MoneyStaffCommand {
 
     @Command(name = "give", description = "Donner de l'argent à un joueur")
     public void giveMoney(@Argument("player") OfflineUUIDPlayerArg playerArg, @Argument("amount") IntegerCommandArgument amountArg, CommandSender sender) {
-        boolean result = playerMoneyService.adjustMoneyAsStaff(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
-        if (result) {
-            sender.sendMessage(Component.text( "Argent ajouté",NamedTextColor.GREEN));
-        } else {
-            sender.sendMessage(Component.text( "Le joueur n'a pas assez d'argent",NamedTextColor.RED));
-        }
+        playerMoneyService.addMoneyAsStaff(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
+        sender.sendMessage(Component.text( "Argent ajouté",NamedTextColor.GREEN));
     }
 
     @Command(name = "take", description = "Retirer de l'argent à un joueur")
     public void takeMoney(@Argument("player") OfflineUUIDPlayerArg playerArg, @Argument("amount") IntegerCommandArgument amountArg, CommandSender sender) {
-        boolean result = playerMoneyService.adjustMoneyAsStaff(new PlayerId(playerArg.get().getUniqueId()), -amountArg.get());
+        boolean result = playerMoneyService.removeMoneyAsStaff(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
         if (result) {
             sender.sendMessage(Component.text( "Argent retiré",NamedTextColor.GREEN));
         } else {
