@@ -96,7 +96,7 @@ public class PlayerRankProgressMenu extends BiMenu {
                 .build(), event -> placeButtons(viewer, scroll - 1));
 
         addBottomButton(23, new ItemBuilder(Material.PLAYER_HEAD)
-                .customHead(InventoryHeadIcons.RIGHT_ARROW.getData(), InventoryHeadIcons.LEFT_ARROW.getSignature())
+                .customHead(InventoryHeadIcons.RIGHT_ARROW.getData(), InventoryHeadIcons.RIGHT_ARROW.getSignature())
                 .name("Droite")
                 .build(), event -> placeButtons(viewer, scroll + 1));
     }
