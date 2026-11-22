@@ -29,3 +29,4 @@ flowchart LR
   - `rank set <joueur> <grade>` (`PlayerRankStaffCommand`) appelle `PlayerRankService.changeRank`. `PlayerRankArg` analyse le nom du grade et propose la complétion.
   - `money get|give|take` (`MoneyStaffCommand`) lit le solde ou appelle `PlayerMoneyService.addMoneyAsStaff` ou `removeMoneyAsStaff`, qui journalisent le mouvement.
   - `illumination get|give|take` (`IlluminationPointStaffCommand`) lit les points ou appelle `PlayerIlluminationService.addIlluminationPoints` ou `removeIlluminationPoints`.
+  - Pour `give` et `take`, un montant nul ou négatif est refusé avec un message au staff, sans appel au service.

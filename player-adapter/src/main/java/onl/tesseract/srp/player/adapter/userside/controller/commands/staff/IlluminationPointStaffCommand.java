@@ -32,6 +32,10 @@ public class IlluminationPointStaffCommand {
     public void give(@Argument("player") OfflineUUIDPlayerArg playerArg,
                      @Argument("amount") IntegerCommandArgument amountArg,
                      CommandSender sender) {
+        if (amountArg.get() <= 0) {
+            sender.sendMessage(Component.text("Le montant doit être strictement positif", NamedTextColor.RED));
+            return;
+        }
         playerIlluminationService.addIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
         sender.sendMessage(Component.text( "Points donnés",NamedTextColor.GREEN));
     }
@@ -40,11 +44,15 @@ public class IlluminationPointStaffCommand {
     public void take(@Argument("player") OfflineUUIDPlayerArg playerArg,
                      @Argument("amount") IntegerCommandArgument amountArg,
                      CommandSender sender) {
+        if (amountArg.get() <= 0) {
+            sender.sendMessage(Component.text("Le montant doit être strictement positif", NamedTextColor.RED));
+            return;
+        }
         boolean result = playerIlluminationService.removeIlluminationPoints(new PlayerId(playerArg.get().getUniqueId()), amountArg.get());
         if (result) {
             sender.sendMessage(Component.text( "Points retirés",NamedTextColor.GREEN));
         } else {
-            sender.sendMessage(Component.text( "Échec",NamedTextColor.RED));
+            sender.sendMessage(Component.text( "Le joueur n'a pas assez de points d'illumination",NamedTextColor.RED));
         }
     }
 }
