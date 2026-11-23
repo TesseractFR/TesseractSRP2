@@ -3,12 +3,10 @@ package onl.tesseract.srp.job.domain.port.userside;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import onl.tesseract.srp.job.domain.model.Job;
-import onl.tesseract.srp.job.domain.model.Material;
 import onl.tesseract.srp.job.domain.model.source.Source;
 import onl.tesseract.srp.job.domain.model.talent.Bonus;
 import onl.tesseract.srp.job.domain.port.serverside.JobRewardPort;
 
-import java.util.List;
 import java.util.Random;
 
 /** Attribue au joueur les objets obtenus en exploitant une source de métier. */
@@ -58,11 +56,7 @@ public class JobHarvestService {
     }
 
     private void harvest(PlayerId playerId, Source source, Job job) {
-        List<Material> outputs = job.sources().getOutputItems(source);
-        if (outputs == null || outputs.isEmpty()) {
-            return;
-        }
-        outputs.forEach(output -> {
+        job.sources().getOutputItems(source).forEach(output -> {
             double lootChance = jobTalentBonusService.getBonusValue(job.jobName(), playerId, output, Bonus.LOOT_CHANCE);
             if (random.nextDouble() < lootChance) {
                 double qualityBonus = jobTalentBonusService.getBonusValue(job.jobName(), playerId, output, Bonus.QUALITY);

@@ -11,7 +11,13 @@ public record Sources(Map<Source, List<Material>> value) {
         this(new java.util.HashMap<>());
     }
 
+    /**
+     * Donne les matériaux produits par une source.
+     *
+     * @param source la source exploitée
+     * @return les matériaux de sortie, liste vide si la source n'a aucune sortie
+     */
     public List<Material> getOutputItems(Source source) {
-        return value.get(source);
+        return value.getOrDefault(source, List.of());
     }
 }

@@ -35,7 +35,7 @@ Les ports serveur couvrent la lecture des métiers, des progressions, des arbres
 ## Détails complémentaires du modèle de métier
 
 - Les missions de livraison (ancien `JobMission`, `MissionDepositResult`) ont été **retirées** de ce module : elles sont remplacées par le module `contrat` (`contrat-domain.md`).
-- `Source` est un couple matériau/type; `SourceType` distingue la nature de la source. `Sources` mappe chaque source vers une liste de matériaux de sortie et retourne la liste associée (ou `null` si absente). `Products` est un ensemble séparé de matériaux déclarés comme produits.
+- `Source` est un couple matériau/type; `SourceType` distingue la nature de la source. `Sources` mappe chaque source vers une liste de matériaux de sortie et retourne la liste associée (liste vide si la source n’a aucune sortie). `Products` est un ensemble séparé de matériaux déclarés comme produits.
 - `Talent` contient son identifiant, le bonus, l’objet/matériau visé, les valeurs par niveau, les prérequis, le niveau maximal et le coût par niveau. `getValue(level)` fournit la valeur de bonus au niveau demandé. `Talents.findAllByItemAndBonus(material, bonus)` filtre les talents à la fois par matériau et type de bonus.
 - `TalentTree` contient une matrice de `CellType`; `SkillCell` référence un talent, `RootCell` la racine et `Arrow` une orientation/connexion rendue via `ArrowType` et ses données de modèle d’objet.
 - `JobPlayerProgression` contient métier, points disponibles et progressions de talents. Un talent absent de la map est de niveau zéro.
