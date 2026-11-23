@@ -38,14 +38,6 @@ public class YamlJobRepository implements JobRepository {
         return List.copyOf(jobs.values());
     }
 
-    @Override
-    public Job findByName(JobName jobName) {
-        if(jobs.isEmpty()){
-            loadJobs();
-        }
-        return jobs.get(jobName);
-    }
-
 
     private void loadJobs(){
         for (Path path : loadFiles()){

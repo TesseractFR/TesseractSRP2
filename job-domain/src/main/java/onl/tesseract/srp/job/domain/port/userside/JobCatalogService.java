@@ -36,16 +36,6 @@ public class JobCatalogService {
     }
 
     /**
-     * Lit un métier par son nom directement dans le dépôt.
-     *
-     * @param jobName le nom du métier
-     * @return le métier correspondant
-     */
-    public Job getJob(JobName jobName) {
-        return jobRepository.findByName(jobName);
-    }
-
-    /**
      * Cherche le métier qui exploite une source donnée.
      *
      * @param source la source frappée

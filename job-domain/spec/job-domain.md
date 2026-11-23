@@ -10,7 +10,7 @@ Modéliser les métiers, leurs sources de récolte et produits, la progression d
 - Une `Source` est classée par `SourceType`. `Sources` associe des sources à des sorties matérielles ; `Products` représente les produits du métier.
 - `PlayerJobProgression` porte la progression et le niveau des talents d’un joueur pour un métier. Les identifiants métier et joueur sont des types dédiés (`JobName`, `PlayerID`).
 - Les talents déclarent leurs prérequis, leur niveau maximal, le coût de chaque niveau et les bonus associés. Un talent sans parent est disponible ; sinon tous ses parents doivent être au niveau supérieur à zéro.
-- `JobCatalogService.findAllJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `getJob` lit un métier par nom, `findJobBySource` et `findLoadedJob` cherchent dans le catalogue chargé.
+- `JobCatalogService.findAllJobs` charge les métiers depuis le dépôt et prépare l’index source → métier. `findJobBySource` et `findLoadedJob` cherchent dans le catalogue chargé.
 - `JobTalentBonusService.getBonusValue` additionne la valeur des talents du métier qui portent un bonus sur un objet, selon le niveau du joueur ; il renvoie 0 si le métier est inconnu.
 - `JobHarvestService.process` ignore une source nulle, inconnue ou sans sorties. Pour chaque sortie, il effectue un tirage de chance de butin à partir des bonus du talent, puis attribue un objet de quantité 1 et une qualité déterminée par le bonus de qualité.
 - La qualité part de `POOR` et progresse tant que le tirage aléatoire est inférieur au bonus, jusqu’à `EXCEPTIONAL`.
