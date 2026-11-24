@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -82,19 +83,7 @@ public class YamlJobTalentTreeRepository implements JobTalentTreeRepository {
             for (int x = 0; x < width; x++) {
                 if (x < line.length()) {
                     char symbol = line.charAt(x);
-                    grid[y][x] = getFromString(symbol);
-                    if(grid[y][x] == null) {
-                        TalentName talentName = talentNameMap.get(symbol);
-                        if(talentName == null){
-                            grid[y][x] = new EmptyCell();
-                            continue;
-                        }
-                        if(talentName.value().equals("ROOT")){
-                            grid[y][x] = new RootCell();
-                            continue;
-                        }
-                        grid[y][x] = new SkillCell(talentName);
-                    }
+                    grid[y][x] = findCellBySymbol(symbol).orElseGet(() -> toTalentCell(symbol, talentNameMap));
                 } else {
                     grid[y][x] = new EmptyCell();
                 }
@@ -104,19 +93,27 @@ public class YamlJobTalentTreeRepository implements JobTalentTreeRepository {
         return grid;
     }
 
-    private CellType getFromString(char s) {
-        return switch (s) {
-            case ' ' -> new EmptyCell();
-            case '└' -> ArrowType.TopRight.toArrow();
-            case '┘' -> ArrowType.TopLeft.toArrow();
-            case '─' -> ArrowType.Horizontal.toArrow();
-            case '│' -> ArrowType.Vertical.toArrow();
-            case '┬' -> ArrowType.T.toArrow();
-            case '┼' -> ArrowType.Cross.toArrow();
-            case '┴' -> ArrowType.ReversedT.toArrow();
-            case '├' -> ArrowType.RightT.toArrow();
-            case '┤' -> ArrowType.LeftT.toArrow();
-            default -> null;
+    private CellType toTalentCell(char symbol, Map<Character, TalentName> talentNameMap) {
+        return Optional.ofNullable(talentNameMap.get(symbol))
+                .<CellType>map(talentName -> talentName.value().equals("ROOT")
+                        ? new RootCell()
+                        : new SkillCell(talentName))
+                .orElseGet(EmptyCell::new);
+    }
+
+    private Optional<CellType> findCellBySymbol(char symbol) {
+        return switch (symbol) {
+            case ' ' -> Optional.of(new EmptyCell());
+            case '└' -> Optional.of(ArrowType.TopRight.toArrow());
+            case '┘' -> Optional.of(ArrowType.TopLeft.toArrow());
+            case '─' -> Optional.of(ArrowType.Horizontal.toArrow());
+            case '│' -> Optional.of(ArrowType.Vertical.toArrow());
+            case '┬' -> Optional.of(ArrowType.T.toArrow());
+            case '┼' -> Optional.of(ArrowType.Cross.toArrow());
+            case '┴' -> Optional.of(ArrowType.ReversedT.toArrow());
+            case '├' -> Optional.of(ArrowType.RightT.toArrow());
+            case '┤' -> Optional.of(ArrowType.LeftT.toArrow());
+            default -> Optional.empty();
         };
     }
 }
