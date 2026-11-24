@@ -114,38 +114,49 @@ public class JobSkillMenu extends BiMenu {
                     .name(job.jobDisplayName().value())
                     .build());
         } else if (cellType instanceof SkillCell skillCell) {
-            Talent talent = job.talents().getByName(skillCell.talent());
-            ItemLoreBuilder lore = new ItemLoreBuilder()
-                    .newline()
-                    .append(JobBonusDescription.of(talent.bonus()))
-                    .newline();
-
-            if (jobPlayerProgressionService.getTalentLevel(
-                    playerId, job.jobName(), talent.name()) > 0) {
-                lore.append("Acquis", NamedTextColor.GREEN);
-            } else {
-                NamedTextColor color = jobPlayerProgressionService.canBuyUpgrade(
-                        playerId, job.jobName(), talent
-                ) ? NamedTextColor.BLUE : NamedTextColor.RED;
-                lore.append("Coût", color)
-                        .append(" : " + jobPlayerProgressionService.getTalentCost(
-                                playerId, job.jobName(), talent
-                        ), NamedTextColor.GRAY);
-                if (!jobPlayerProgressionService.isAvailable(
-                        playerId, job.jobName(), talent
-                )) {
-                    lore.newline().append("Bloqué", NamedTextColor.RED);
-                }
-            }
-
-            addButton(index, new ItemBuilder(Material.RABBIT_FOOT)
-                    .name(talent.name().value())
-                    .lore(lore.get())
-                    .build(), event -> {
-                if (jobPlayerProgressionService.upgradeSkill(playerId, talent)) {
-                    openScroll(this.scroll);
-                }
-            });
+            job.talents().findByName(skillCell.talent()).ifPresentOrElse(
+                    talent -> placeTalent(talent, index),
+                    () -> placeMissingTalent(skillCell, index)
+            );
         }
+    }
+
+    private void placeMissingTalent(SkillCell skillCell, int index) {
+        LOGGER.warn("Talent {} présent dans l'arbre du métier {} mais absent de sa configuration (case {})",
+                skillCell.talent().value(), job.jobName().value(), index);
+    }
+
+    private void placeTalent(Talent talent, int index) {
+        ItemLoreBuilder lore = new ItemLoreBuilder()
+                .newline()
+                .append(JobBonusDescription.of(talent.bonus()))
+                .newline();
+
+        if (jobPlayerProgressionService.getTalentLevel(
+                playerId, job.jobName(), talent.name()) > 0) {
+            lore.append("Acquis", NamedTextColor.GREEN);
+        } else {
+            NamedTextColor color = jobPlayerProgressionService.canBuyUpgrade(
+                    playerId, job.jobName(), talent
+            ) ? NamedTextColor.BLUE : NamedTextColor.RED;
+            lore.append("Coût", color)
+                    .append(" : " + jobPlayerProgressionService.getTalentCost(
+                            playerId, job.jobName(), talent
+                    ), NamedTextColor.GRAY);
+            if (!jobPlayerProgressionService.isAvailable(
+                    playerId, job.jobName(), talent
+            )) {
+                lore.newline().append("Bloqué", NamedTextColor.RED);
+            }
+        }
+
+        addButton(index, new ItemBuilder(Material.RABBIT_FOOT)
+                .name(talent.name().value())
+                .lore(lore.get())
+                .build(), event -> {
+            if (jobPlayerProgressionService.upgradeSkill(playerId, talent)) {
+                openScroll(this.scroll);
+            }
+        });
     }
 }

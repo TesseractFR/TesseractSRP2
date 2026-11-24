@@ -5,6 +5,7 @@ import onl.tesseract.srp.job.domain.model.Material;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public record Talents(Map<TalentName, Talent> value){
 
@@ -17,8 +18,14 @@ public record Talents(Map<TalentName, Talent> value){
         value.put(talentName, talent);
     }
 
-    public Talent getByName(TalentName talentName){
-        return value.get(talentName);
+    /**
+     * Cherche un talent par son nom.
+     *
+     * @param talentName le nom du talent
+     * @return le talent, ou vide s'il n'est pas défini pour ce métier
+     */
+    public Optional<Talent> findByName(TalentName talentName) {
+        return Optional.ofNullable(value.get(talentName));
     }
 
     public List<Talent> findAllByItemAndBonus(Material item, Bonus bonus) {
