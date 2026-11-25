@@ -42,7 +42,7 @@ pipeline {
                 stage('Version') {
                     steps {
                         script {
-                            def baseVersion = maven('help:evaluate -N -q -DforceStdout -Dexpression=revision', true)
+                            def baseVersion = runMaven('help:evaluate -N -q -DforceStdout -Dexpression=revision', true)
                                     .trim()
                                     .replace('-SNAPSHOT', '')
                             env.BUILD_VERSION = "${baseVersion}-${buildSuffix()}"
@@ -57,8 +57,10 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: params.PACKAGES_CREDENTIALS_ID,
                                                           usernameVariable: 'PACKAGES_USERNAME',
                                                           passwordVariable: 'PACKAGES_ACCESS_TOKEN')]) {
-                            maven("clean deploy -Drevision=${env.BUILD_VERSION} " +
-                                  "-DaltDeploymentRepository=tesseract-artifacts::${params.DEPLOY_REPOSITORY_URL}")
+                            script {
+                                runMaven("clean deploy -Drevision=${env.BUILD_VERSION} " +
+                                         "-DaltDeploymentRepository=tesseract-artifacts::${params.DEPLOY_REPOSITORY_URL}")
+                            }
                         }
                     }
                     post {
@@ -82,7 +84,7 @@ def buildSuffix() {
 
 // Lance Maven avec les réglages GitHub Packages du dépôt : le wrapper sous Unix,
 // le Maven du PATH sous Windows (le dépôt n'a pas de mvnw.cmd).
-def maven(String arguments, boolean returnStdout = false) {
+def runMaven(String arguments, boolean returnStdout = false) {
     def command = "-B -s .github/workflows/maven-settings.xml ${arguments}"
     if (isUnix()) {
         return sh(script: "./mvnw ${command}", returnStdout: returnStdout)
