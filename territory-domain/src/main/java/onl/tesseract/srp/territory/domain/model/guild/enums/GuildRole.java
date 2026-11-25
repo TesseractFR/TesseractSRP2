@@ -9,4 +9,5 @@ public enum GuildRole {
     public boolean canSetSpawn()      { return compareTo(Adjoint) >= 0; }
     public boolean canInvite()        { return compareTo(Adjoint) >= 0; }
     public boolean canBuild()         { return compareTo(Batisseur) >= 0; }
+    public boolean canManageBoard()   { return compareTo(Adjoint) >= 0; }
 }

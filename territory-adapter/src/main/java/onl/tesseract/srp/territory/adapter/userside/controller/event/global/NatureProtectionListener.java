@@ -1,5 +1,6 @@
 package onl.tesseract.srp.territory.adapter.userside.controller.event.global;
 
+import dev.lone.itemsadder.api.CustomStack;
 import net.kyori.adventure.text.Component;
 import onl.tesseract.srp.common.adapter.SrpChatFormats;
 import onl.tesseract.srp.common.adapter.mapper.ChunkCoordMapper;
@@ -17,8 +18,13 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
+import java.util.Optional;
+
 @org.springframework.stereotype.Component
 public class NatureProtectionListener extends ChunkProtectionListener {
+    private static final String COMMISSION_BOARD_ITEM_ID = "tesseract:commission_board";
+    private static final String STAFF_PERMISSION = "staff";
+
     private final CampementService campementService;
     private final GuildService guildService;
     private final WorldService worldService;
@@ -45,7 +51,19 @@ public class NatureProtectionListener extends ChunkProtectionListener {
         return prefix.append(Component.text("Tu ne peux pas interagir dans la nature."));
     }
 
-    @Override public boolean canPlaceBlock(Player player, Block block) { return false; }
+    // TODO : réserver cette possibilité à certains grades staff quand ils existeront, tous ne l'auront pas
+    @Override
+    public boolean canPlaceBlock(Player player, Block block) {
+        return player.hasPermission(STAFF_PERMISSION) && isHoldingCommissionBoard(player);
+    }
+
+    private boolean isHoldingCommissionBoard(Player player) {
+        return Optional.ofNullable(CustomStack.byItemStack(player.getInventory().getItemInMainHand()))
+                .map(CustomStack::getNamespacedID)
+                .filter(COMMISSION_BOARD_ITEM_ID::equals)
+                .isPresent();
+    }
+
     @Override public boolean canBreakBlock(Player player, Block block) { return false; }
     @Override public boolean canOpenContainer(Player player, Container container) { return true; }
     @Override public boolean canDamagePassiveEntity(Player player, LivingEntity entity) { return true; }

@@ -23,6 +23,8 @@
         <module>job-domain</module>
         <module>customItem-adapter</module>
         <module>job-adapter</module>
+        <module>commission-adapter</module>
+        <module>commission-domain</module>
         <module>skill-adapter</module>
         <module>plugin</module>
         <module>contract-domain</module>
@@ -203,6 +205,16 @@
             <dependency>
                 <groupId>onl.tesseract.srp</groupId>
                 <artifactId>customItem-adapter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>commission-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>onl.tesseract.srp</groupId>
+                <artifactId>commission-adapter</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

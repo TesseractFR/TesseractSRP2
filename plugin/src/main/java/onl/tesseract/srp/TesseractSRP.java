@@ -41,6 +41,7 @@ public class TesseractSRP extends JavaPlugin {
     @Override
     public void onEnable() {
         PLUGIN_INSTANCE = this;
+        copyConfigsIfAbsent(Config.getInstance().forceUpdateConfig());
         CompoundClassLoader classLoader = new CompoundClassLoader(
             java.util.List.of(getClassLoader(), getClassLoader().getParent(), TesseractLib.class.getClassLoader()),
             getClassLoader().getParent());
@@ -60,8 +61,6 @@ public class TesseractSRP extends JavaPlugin {
             env.getPropertySources().addFirst(new PropertiesPropertySource("customProperties", props));
         });
         this.springContext = app.run();
-        Config config = this.springContext.getBean(Config.class);
-        copyConfigsIfAbsent(config.forceUpdateConfig());
         registerCommands();
         registerListeners();
         registerSerializers();

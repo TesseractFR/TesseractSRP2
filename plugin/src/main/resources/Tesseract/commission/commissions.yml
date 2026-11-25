@@ -1,0 +1,125 @@
+# Part de la valeur des items payée au spawn : 0.5 paie la moitié. Les tableaux de guilde paient 100 %.
+spawn-reward-rate: 0.5
+# XP de guilde accordée par lys de récompense, sur les tableaux de guilde seulement.
+guild-xp-per-lys: 0.1
+
+# Nombre de commissions de récolte et d'artisanat au spawn. Le tableau existant suit la nouvelle valeur après un redémarrage.
+spawn-slots-per-type: 6
+# Taxe payée par les joueurs hors de la guilde à la création d'un tableau, entre 0 et 0.5,
+# arrondie au pourcent (0.25 pour 25 %).
+default-usage-tax-rate: 0.25
+
+# Poids de tirage des items selon leur rareté : une rareté absente ou à 0 n'est jamais tirée.
+rarity-weights:
+  COMMON: 100
+  SPECIAL: 50
+  RARE: 20
+  EPIC: 5
+  LEGENDARY: 1
+
+# Quantité de base demandée par commission et écart maximal autour d'elle, en % :
+# quantity 300 et variance 50 donnent une quantité entre 150 et 450. Rareté absente : 300 sans variance.
+quantity-by-rarity:
+  COMMON: { quantity: 300, variance: 50 }
+  SPECIAL: { quantity: 150, variance: 50 }
+  RARE: { quantity: 60, variance: 50 }
+  EPIC: { quantity: 20, variance: 50 }
+  LEGENDARY: { quantity: 5, variance: 50 }
+
+# Poids de tirage de la qualité minimale demandée par une commission : plus le poids est bas, plus la
+# qualité est rare. Une qualité absente n'est jamais tirée ; section absente : 30/35/20/10/5.
+quality-weights:
+  POOR: 30
+  NORMAL: 35
+  GOOD: 20
+  VERY_GOOD: 10
+  EXCEPTIONAL: 5
+
+# Coefficient appliqué à la quantité tirée selon la qualité minimale demandée, arrondi à l'unité
+# avec un minimum de 1 : plus la qualité est haute, moins on demande d'items. Une qualité absente
+# vaut 1. Exemple : 300 items tirés et EXCEPTIONAL à 0.25 donnent 75 items.
+quantity-rate-by-quality:
+  POOR: 1.0
+  NORMAL: 0.8
+  GOOD: 0.6
+  VERY_GOOD: 0.4
+  EXCEPTIONAL: 0.25
+
+# Items de récolte que les tableaux peuvent demander, avec leur tier. Les items d'artisanat viennent
+# des recettes des compétences, avec le tier de leur recette.
+harvest-tiers:
+  # Agriculteur
+  BLE_DORE: 1
+  FANES_COMMUNES: 1
+  LAINE_FINE: 1
+  LAIT_ENRICHI: 1
+  # Bûcheron
+  COPEAUX_RESISTANTS: 1
+  MOUSSE_ECORCE: 1
+  RONDIN_SOLIDE: 1
+  SEVE_COMMUNE: 1
+  # Chasseur
+  CORNE_DE_VACHE: 1
+  COUENNE: 1
+  OREILLE_DE_LAPIN: 1
+  PLUME_ARGENTEE: 1
+  # Gardien
+  FRAGMENT_DE_CERVEAU: 1
+  OS_RENFORCE: 1
+  RESIDU_SULFUREUX: 1
+  SOIE_ARAIGNEE: 1
+  # Herboriste
+  FEUILLAGE_DENSE: 1
+  FLEUR_RARE: 1
+  HERBE_MEDICINALE: 1
+  POUSSIERE_FONGIQUE: 1
+  # Mineur
+  TITANE: 1
+  LINGOT_ETAIN_BRUT: 1
+  NODULE_SILICEUX: 1
+  PAILLETTE_OR_BRUTE: 1
+  POUSSIERE_DE_FER: 1
+  # Pêcheur
+  ALGUE_PURIFIANTE: 1
+  ECAILLE_TERNIE: 1
+  POISSON_ARGENTE: 1
+  TENTACULE_SECHE: 1
+  # Terrassier
+  CROUTE_DE_SABLE: 1
+  GRAVIER_BRUT: 1
+  PIERRE_MARBREE: 1
+  TERRE_FERTILE: 1
+
+# Paliers des améliorations des tableaux de guilde, indexés par niveau à atteindre :
+# - cost : prix payé par la banque de la guilde ;
+# - board-tier : tier du tableau requis, 1 si absent ;
+# - deliveries : items à avoir livrés sur ce tableau, par type, sur des commissions de cette qualité ou mieux ;
+# - value (money-bonus seulement) : bonus ajouté aux récompenses, 0.02 pour +2 %.
+# Un niveau absent marque le maximum de l'amélioration.
+upgrades:
+  board-tier:
+    2: { cost: 10000, deliveries: { HARVEST: { quality: GOOD, count: 200 }, CRAFT: { quality: GOOD, count: 100 } } }
+    3: { cost: 40000, deliveries: { HARVEST: { quality: VERY_GOOD, count: 300 }, CRAFT: { quality: VERY_GOOD, count: 150 } } }
+    4: { cost: 100000, deliveries: { HARVEST: { quality: EXCEPTIONAL, count: 100 }, CRAFT: { quality: EXCEPTIONAL, count: 100 } } }
+  max-harvest-tier:
+    2: { cost: 5000, board-tier: 2 }
+    3: { cost: 20000, board-tier: 3 }
+  max-craft-tier:
+    2: { cost: 5000, board-tier: 2 }
+    3: { cost: 20000, board-tier: 3 }
+  harvest-slots:
+    2: { cost: 5000, board-tier: 1 }
+    3: { cost: 20000, board-tier: 2 }
+    4: { cost: 40000, board-tier: 3 }
+    5: { cost: 80000, board-tier: 3 }
+    6: { cost: 160000, board-tier: 4 }
+  craft-slots:
+    2: { cost: 5000, board-tier: 1 }
+    3: { cost: 20000, board-tier: 2 }
+    4: { cost: 40000, board-tier: 3 }
+    5: { cost: 80000, board-tier: 3 }
+    6: { cost: 160000, board-tier: 4 }
+  money-bonus:
+    1: { value: 0.02, cost: 5000, board-tier: 1 }
+    2: { value: 0.03, cost: 10000, board-tier: 2 }
+    3: { value: 0.05, cost: 20000, board-tier: 3 }

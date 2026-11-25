@@ -1,0 +1,173 @@
+# Spec — `commission-adapter`
+
+*À lire avec `commission-domain.md`.*
+
+## Périmètre
+
+`commission-adapter` relie `commission-domain` au serveur : il implémente les ports `serverside` (JPA, YAML, Bukkit, modules voisins) et expose les services du domaine aux joueurs par le tableau et les menus. Il ne contient aucune règle métier : tier, taxes, accès et concurrence sont décidés par le domaine. Il traduit les refus du domaine, qui sont des exceptions, en messages pour le joueur.
+
+```mermaid
+flowchart TD
+    J[Joueur] --> L[Listener du clic sur le tableau]
+    L --> M[Menus du tableau]
+    M --> S[Services du domaine]
+    S --> JPA[Dépôts JPA]
+    JPA --> DB[(t_commission_boards, t_commissions)]
+    S --> G[Ports de guilde : GuildService]
+    S --> PAY[PlayerPaymentPort : PlayerMoneyService]
+    S --> MAT[PlayerMaterialPort : CustomItemService]
+    S --> CAT[CommissionCatalogRepository : commissions.yml, SkillService, CustomItemService]
+    S --> CFG[YAML commissions.yml]
+    M --> F[CommissionMessageFormatter]
+```
+
+## Organisation
+
+```text
+onl.tesseract.srp.commission.adapter
+├── serverside
+│   ├── jpa/JpaCommissionBoardRepository, JpaCommissionRepository, mappers, entity, repository
+│   ├── catalog/SkillCustomItemCommissionCatalogRepository
+│   ├── yaml/YamlCommissionConfigRepository, CommissionConfig
+│   ├── guild/GuildServiceMembershipPort, GuildServiceBankPort, GuildServiceIncomePort
+│   ├── payment/PlayerServicePaymentPort
+│   └── material/CustomItemPlayerMaterialPort
+└── userside
+    ├── config/CommissionProvider
+    └── controller
+        ├── event/CommissionBoardClickListener, CommissionGuildDeletedListener
+        ├── menu/CommissionBoardMenu, CommissionDeliveryMenu, CommissionManagementMenu, CommissionDisplay
+        └── message/CommissionMessageFormatter, CommissionLabels, CommissionChatFormats
+```
+
+`CommissionProvider` déclare les services du domaine comme beans Spring. Le module est déclaré dans le `pom.xml` racine et dans les dépendances du plugin.
+
+## Persistance
+
+Il n’y a aucune relation JPA vers un autre module : les joueurs et les guildes sont référencés par leur UUID. La conversion entre le domaine et les entités passe par `CommissionMapper` et `CommissionBoardMapper`.
+
+**`t_commission_boards`** :
+
+| Colonne | Remarque |
+|---|---|
+| `id` | Clé |
+| `guild_id` | UUID, vide pour le spawn, unique |
+| `board_tier`, `max_harvest_tier`, `max_craft_tier`, `harvest_slots`, `craft_slots`, `money_bonus_level` | Niveaux d’amélioration |
+| `usage_tax_rate` | Choisi par la guilde ; à la création, `default-usage-tax-rate` de la configuration |
+| `completed_commission_count` | Commissions terminées sur ce tableau, incrémenté dans la transaction de la livraison |
+
+**`t_commissions`** :
+
+| Colonne | Remarque |
+|---|---|
+| `id` | Clé |
+| `board_id` | Indexée |
+| `part`, `type` | Liste dans laquelle la commission s’affiche, dans l’ordre des `id` |
+| `material`, `quantity`, `minimal_quality`, `reward` | Figés à la génération |
+| `delivered_quantity` | Progression partagée, entre 0 et `quantity` |
+
+**`t_commission_delivered_items`** : items livrés par tableau, type et qualité demandée (`board_id`, `type`, `minimal_quality`, `item_count`), pour les conditions du tier du tableau. Une ligne est créée à la première livraison de ce type et de cette qualité, et supprimée avec le tableau.
+
+Le détail de qui a livré quoi n’est pas stocké ici : il relève du journal des transactions (B2, #72).
+
+- **Pas de concurrence :** tout s’exécute sur le thread principal du serveur ; une commission ne peut pas changer entre sa lecture et l’enregistrement de la livraison.
+- **Crédits atomiques :** la progression, le paiement du joueur, la taxe versée à la banque et l’XP sont dans la même transaction ; un échec annule tout. Les items ne sont retirés qu’ensuite.
+- **Remplacement :** suppression des commissions terminées et insertion des nouvelles, dans une seule transaction.
+- **Création :** le tableau d’une guilde est créé à son premier accès, ce qui couvre aussi les guildes déjà existantes. Le tableau du spawn est créé au premier clic sur un tableau posé hors des guildes.
+- **Suppression d’une guilde :** `GuildService` publie `GuildDeletedEvent`, et `CommissionGuildDeletedListener` supprime alors le tableau, dans le monde et en base, avec ses commissions.
+
+## Configuration
+
+`YamlCommissionConfigRepository` lit `plugins/Tesseract/commission/commissions.yml`, chargé une fois au démarrage. Les valeurs ci-dessous illustrent la structure :
+
+```yaml
+quantity-by-rarity: { COMMON: { quantity: 300, variance: 50 }, RARE: { quantity: 60, variance: 50 } }
+rarity-weights: { COMMON: 100, RARE: 20 }
+quality-weights: { POOR: 30, NORMAL: 35, GOOD: 20, VERY_GOOD: 10, EXCEPTIONAL: 5 }
+quantity-rate-by-quality: { POOR: 1.0, NORMAL: 0.8, GOOD: 0.6, VERY_GOOD: 0.4, EXCEPTIONAL: 0.25 }
+spawn-reward-rate: 0.5
+guild-xp-per-lys: 0.1
+default-usage-tax-rate: 0.25
+spawn-slots-per-type: 6
+harvest-tiers:
+  TITANE: 1
+upgrades:
+  board-tier:       { 2: { cost: 10000, deliveries: { HARVEST: { quality: GOOD, count: 200 }, CRAFT: { quality: GOOD, count: 100 } } } }
+  max-harvest-tier: { 2: { cost: 5000, board-tier: 2 } }
+  max-craft-tier:   { 2: { cost: 5000, board-tier: 2 } }
+  harvest-slots:    { 2: { cost: 5000, board-tier: 1 }, 3: { cost: 20000, board-tier: 2 } }
+  craft-slots:      { 2: { cost: 5000, board-tier: 1 }, 3: { cost: 20000, board-tier: 2 } }
+  money-bonus:      { 1: { value: 0.02, cost: 5000, board-tier: 1 } }
+```
+
+## Ports et modules voisins
+
+| Port du domaine | Implémentation |
+|---|---|
+| `GuildMembershipPort`, `GuildBankPort`, `GuildIncomePort` | `GuildService` : appartenance, rôle, membres, banque, taxe et XP des livraisons |
+| `CommissionCatalogRepository` | `harvest-tiers` et `SkillService.findAllSkills` pour le catalogue, `CustomItemService.getMoneyValue` pour la valeur ; un item sans prix est ignoré avec un warning |
+| `PlayerMaterialPort` | `CustomItemService`, boucle sur les qualités jusqu’à A7 (#70) |
+| `PlayerPaymentPort` | `PlayerMoneyService.addMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
+
+L’adapter utilise les services des autres domaines, jamais leurs repositories.
+
+## Interface
+
+### Tableau dans le monde
+
+Dans le monde, le tableau est un item ItemsAdder, `tesseract:commission_board`, obtenu par craft ou par achat. Sa pose, sa récupération et le blocage d’un second tableau sont gérés par le moteur des structures, pas par ce module. Ses données en base existent même s’il n’est pas posé.
+
+- Un clic droit sur le tableau ouvre le tableau de la guilde propriétaire du chunk, calculé avec `ChunkCoordMapper`.
+- Un tableau posé hors de toute guilde, quel que soit le monde, ouvre le tableau du spawn. `NatureProtectionListener` autorise le staff à poser cet item dans la nature, avec la permission `staff`.
+
+Il n’y a aucune commande joueur.
+
+### Menu du tableau
+
+`CommissionBoardMenu` étend `ItemAdderMenu`, comme les menus de `skill-adapter`, avec un fond personnalisé de 6 lignes sur 9 colonnes (`tesseract:commission_board_menu`, déclaré dans `configs/gui/guis.yml` d’ItemsAdder ; sans lui, le menu s’ouvre sans fond). Le fond montre un tableau d’affichage coupé verticalement : **public à gauche, guilde à droite**. Tout tient sur un seul écran, sans page.
+
+| Ligne | Moitié gauche (colonnes 0 à 3) | Colonne 4 | Moitié droite (colonnes 5 à 8) |
+|---|---|---|---|
+| 0 | Récolte : icône en 0, slots en 1, 2, 3 | Séparation | Récolte : slots en 7, 6, 5, icône en 8 |
+| 1 | Récolte : slots en 1, 2, 3 | Séparation | Récolte : slots en 7, 6, 5 |
+| 2 | Barre de séparation entre les types | Séparation | Barre de séparation entre les types |
+| 3 | Artisanat : icône en 0, slots en 1, 2, 3 | Séparation | Artisanat : slots en 7, 6, 5, icône en 8 |
+| 4 | Artisanat : slots en 1, 2, 3 | Séparation | Artisanat : slots en 7, 6, 5 |
+| 5 | Informations en 0 | Séparation | Gestion en 8, pour les Adjoints et le chef |
+
+Les étiquettes « Public » et « Guilde » font partie de la texture. Un tableau peut monter à 6 slots par type, de chaque côté.
+
+- Un membre voit les deux moitiés. Pour un externe, la moitié droite affiche des vitres grises, avec le message « Réservé aux membres de la guilde ».
+- Le tableau du spawn a la même apparence : ses slots par type (`spawn-slots-per-type`) sont tous disponibles à gauche, sans slot à débloquer, et la moitié droite affiche des vitres grises, avec le message « Pas de commissions de guilde au spawn ».
+- Chaque commission affiche son type, son tier s’il est connu, son item, sa progression (par exemple 5 / 10), sa qualité minimale et sa récompense.
+- Le montant affiché est **net pour ce joueur** ; la taxe est indiquée à l’externe avant de livrer.
+- Un slot verrouillé indique qu’il reste à débloquer.
+- Les libellés et couleurs de qualité viennent de `QualityAdapter` (`common-adapter`), partagé avec les items custom et les contrats.
+
+### Livraison
+
+Le clic sur une commission ouvre `CommissionDeliveryMenu`, qui récapitule la progression, ce qui sera réellement livré et le montant net correspondant, puis demande confirmation. Le joueur livre tout ce qu’il peut d’un coup. Le message dans le chat, préfixé par `CommissionChatFormats`, indique la quantité livrée et le montant touché, ou la cause du refus : déjà terminée, aucun item, qualité insuffisante, accès refusé. Après la livraison, le menu du tableau se rafraîchit.
+
+### Gestion du tableau
+
+`CommissionManagementMenu` n’est proposé qu’aux Adjoints et au chef et n’existe pas au spawn. Il affiche :
+
+- le tier du tableau, avec les livraisons faites et celles demandées pour le palier suivant ;
+- pour chaque autre amélioration, le niveau actuel, le suivant, le coût payé par la banque et le tier de tableau requis ;
+- le taux de taxe d’usage, modifiable entre 0 et 50 %.
+
+## Remplacement des commissions
+
+Il n’y a aucune tâche périodique : une commission est remplacée quand elle est terminée. Si un autre joueur a un menu ouvert à ce moment-là, sa livraison est refusée proprement puisque la commission n’existe plus. Les livraisons déjà faites restent payées.
+
+## Critères d’acceptation
+
+1. Un clic droit sur le tableau ouvre le bon tableau ; un autre meuble ItemsAdder n’est pas intercepté.
+2. Un externe et un membre voient les bonnes parties et le bon montant net pour la même commission.
+3. Deux joueurs qui confirment l’un après l’autre : la progression ne dépasse jamais la quantité demandée, et le second ne livre que ce qui reste.
+4. Une panne de base pendant la livraison ne laisse ni progression sans paiement, ni banque créditée seule, et ne retire aucun item.
+5. Après un redémarrage, tableaux, commissions et progressions sont identiques.
+6. Sur une base vide, le tableau du spawn et celui d’une guilde sont créés à leur premier accès.
+7. Un changement de `commissions.yml` s’applique après un redémarrage, aux prochaines générations ; les commissions déjà générées ne changent pas.
+8. Item sans prix : la génération ne plante pas, et un warning est journalisé. Une valeur de configuration invalide empêche le démarrage.
+9. Le menu de gestion n’apparaît qu’aux rôles autorisés, et un taux changé s’affiche aussitôt aux externes.

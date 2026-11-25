@@ -11,7 +11,9 @@ import onl.tesseract.srp.territory.domain.model.enums.result.CreationResult;
 import onl.tesseract.srp.territory.domain.model.enums.result.SetSpawnResult;
 import onl.tesseract.srp.territory.domain.model.guild.Guild;
 import onl.tesseract.srp.territory.domain.model.guild.GuildChunk;
+import onl.tesseract.srp.territory.domain.model.guild.GuildMember;
 import onl.tesseract.srp.territory.domain.model.guild.enums.*;
+import onl.tesseract.srp.territory.domain.model.guild.event.GuildDeletedEvent;
 import onl.tesseract.srp.territory.domain.model.guild.event.GuildInvitationEvent;
 import onl.tesseract.srp.territory.domain.model.guild.event.GuildLevelUpEvent;
 import onl.tesseract.srp.territory.domain.port.serverside.GuildRepository;
@@ -221,6 +223,7 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
             return;
         }
         territoryRepository.deleteById(guild.getId());
+        eventService.publish(new GuildDeletedEvent(guild.getId()));
         messaging.playerGuildDeleted(leader);
     }
 
@@ -232,6 +235,7 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
             return;
         }
         territoryRepository.deleteById(guildId);
+        eventService.publish(new GuildDeletedEvent(guildId));
         messaging.staffGuildDeleted(staff, guild.getName());
     }
 
@@ -721,6 +725,13 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
             return;
         }
         var guild = getGuild(guildId);
+        List<Integer> levelUps = addXp(guild, amount);
+        territoryRepository.save(guild);
+        levelUps.forEach(level -> eventService.publish(new GuildLevelUpEvent(guild, level)));
+        messaging.staffXpAdded(staff, guild.getName(), amount);
+    }
+
+    private List<Integer> addXp(Guild guild, int amount) {
         guild.addXp(amount);
         List<Integer> levelUps = new ArrayList<>();
         while (guild.getXp() >= xpToNextLevel(guild.getLevel())) {
@@ -729,9 +740,37 @@ public class GuildService extends TerritoryService<GuildChunk, Guild> {
             guild.setLevel(Math.addExact(guild.getLevel(), 1));
             levelUps.add(guild.getLevel());
         }
+        return levelUps;
+    }
+
+    /** @return solde de la banque de la guilde, en lys ; lève une exception si elle n'existe pas */
+    public int getGuildMoney(UUID guildId) {
+        return getGuild(guildId).getMoney();
+    }
+
+    /** @return identifiants des membres de la guilde ; lève une exception si elle n'existe pas */
+    public List<UUID> getMemberIds(UUID guildId) {
+        return getGuild(guildId).getMembers().stream().map(GuildMember::getPlayerID).toList();
+    }
+
+    /** Verse à la guilde la taxe et l'XP d'une livraison de commission, et publie ses montées de niveau. */
+    public synchronized void addCommissionIncome(UUID guildId, int money, int xp) {
+        var guild = getGuild(guildId);
+        guild.addMoney(money);
+        List<Integer> levelUps = addXp(guild, xp);
         territoryRepository.save(guild);
         levelUps.forEach(level -> eventService.publish(new GuildLevelUpEvent(guild, level)));
-        messaging.staffXpAdded(staff, guild.getName(), amount);
+    }
+
+    /** @return {@code false} sans rien débiter si la banque de la guilde n'a pas assez de lys */
+    public synchronized boolean payFromBank(UUID guildId, int amount) {
+        var guild = getGuild(guildId);
+        if (guild.getMoney() < amount) {
+            return false;
+        }
+        guild.addMoney(-amount);
+        territoryRepository.save(guild);
+        return true;
     }
 
     public void addLevelAsStaff(UUID staff, UUID guildId, int amount) {
