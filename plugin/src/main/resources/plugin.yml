@@ -1,5 +1,5 @@
 name: TesseractSRP2
-version: '0.1-SNAPSHOT'
+version: '${project.version}'
 main: onl.tesseract.srp.TesseractSRP
 api-version: '1.21'
 depend: [TesseractCore, MCKotlin-Paper, Citizens, Multiverse-Core]

@@ -58,7 +58,7 @@
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>territory-domain</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>onl.tesseract.srp</groupId>
             <artifactId>common-adapter</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Spring Boot JPA -->
