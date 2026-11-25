@@ -25,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Menu d'un tableau : ses commissions par partie et par type, et l'accès à la gestion pour les adjoints et le chef. */
 public class CommissionBoardMenu extends ItemAdderMenu {
@@ -161,7 +162,8 @@ public class CommissionBoardMenu extends ItemAdderMenu {
     private ItemStack buildCommissionIcon(Player viewer, Commission commission, boolean showsDeliveryHint) {
         PlayerId player = new PlayerId(viewer.getUniqueId());
         CommissionDelivery delivery = commissionDeliveryService.computeDelivery(player, commissionBoard, commission);
-        ItemStack commissionIcon = customItemService.getItemStack(commission.material());
+        ItemStack commissionIcon = Optional.ofNullable(customItemService.getItemStack(commission.material()))
+                .orElseGet(() -> new ItemStack(Material.BARRIER));
         commissionIcon.editMeta(meta -> {
             meta.displayName(CommissionDisplay.coloredText(commissionMessageFormatter.formatMaterialName(commission.material()),
                     NamedTextColor.GOLD));
