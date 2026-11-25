@@ -1,8 +1,9 @@
 // Pipeline multibranch du plugin TesseractSRP2.
 //
-// - master          : build, tests, archivage et déploiement, version suffixée « -master »
-// - pull request    : build, tests, archivage et déploiement, version suffixée « -MR<numéro> »
-// - autres branches : build et tests seulement, version du pom inchangée
+// Seuls master et les pull requests sont construits :
+// - master       : build, tests, archivage et déploiement, version suffixée « -master »
+// - pull request : build, tests, archivage et déploiement, version suffixée « -MR<numéro> »
+// Toute autre branche est ignorée sans réserver d'agent (build « Not built »).
 //
 // La version passe par la propriété Maven « revision » (CI-friendly versions) :
 // le jar produit s'appelle donc plugin-0.1-master.jar ou plugin-0.1-MR42.jar,
@@ -13,7 +14,7 @@
 // déploiement correspondant (le jar reste disponible dans les artefacts du build).
 
 pipeline {
-    agent any
+    agent none
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
@@ -31,82 +32,83 @@ pipeline {
     }
 
     stages {
-        stage('Version') {
-            steps {
-                script {
-                    def baseVersion = maven('help:evaluate -N -q -DforceStdout -Dexpression=revision', true)
-                            .trim()
-                            .replace('-SNAPSHOT', '')
-                    env.BUILD_SUFFIX = buildSuffix()
-                    env.BUILD_VERSION = env.BUILD_SUFFIX ? "${baseVersion}-${env.BUILD_SUFFIX}" : ''
-                    currentBuild.displayName = "#${env.BUILD_NUMBER} ${env.BUILD_VERSION ?: baseVersion}"
-                    echo "Version construite : ${env.BUILD_VERSION ?: 'version du pom'}"
+        stage('Master ou MR') {
+            when {
+                beforeAgent true
+                anyOf {
+                    branch 'master'
+                    changeRequest()
                 }
             }
-        }
-
-        stage('Build') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: params.PACKAGES_CREDENTIALS_ID,
-                                                  usernameVariable: 'PACKAGES_USERNAME',
-                                                  passwordVariable: 'PACKAGES_ACCESS_TOKEN')]) {
-                    script {
-                        def revision = env.BUILD_VERSION ? "-Drevision=${env.BUILD_VERSION}" : ''
-                        maven("clean verify ${revision}")
+            agent any
+            stages {
+                stage('Version') {
+                    steps {
+                        script {
+                            def baseVersion = maven('help:evaluate -N -q -DforceStdout -Dexpression=revision', true)
+                                    .trim()
+                                    .replace('-SNAPSHOT', '')
+                            env.BUILD_VERSION = "${baseVersion}-${buildSuffix()}"
+                            currentBuild.displayName = "#${env.BUILD_NUMBER} ${env.BUILD_VERSION}"
+                            echo "Version construite : ${env.BUILD_VERSION}"
+                        }
                     }
                 }
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
 
-        stage('Archive') {
-            when { expression { env.BUILD_SUFFIX } }
-            steps {
-                archiveArtifacts artifacts: 'plugin/target/plugin-*.jar', fingerprint: true
-            }
-        }
-
-        stage('Deploy') {
-            when { expression { env.BUILD_SUFFIX && deployDirectory() } }
-            steps {
-                script {
-                    def target = deployDirectory()
-                    def jar = "plugin/target/plugin-${env.BUILD_VERSION}.jar"
-                    // On retire le jar précédent du même canal, sinon Paper chargerait les deux.
-                    def previous = env.CHANGE_ID ? 'plugin-*-MR*.jar' : 'plugin-*-master.jar'
-                    if (isUnix()) {
-                        sh """
-                            mkdir -p '${target}'
-                            rm -f '${target}'/${previous}
-                            cp '${jar}' '${target}/'
-                        """
-                    } else {
-                        bat """
-                            if not exist "${target}" mkdir "${target}"
-                            del /q "${target}\\${previous}" 2>nul
-                            copy /y "${jar.replace('/', '\\')}" "${target}\\"
-                        """
+                stage('Build') {
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: params.PACKAGES_CREDENTIALS_ID,
+                                                          usernameVariable: 'PACKAGES_USERNAME',
+                                                          passwordVariable: 'PACKAGES_ACCESS_TOKEN')]) {
+                            maven("clean verify -Drevision=${env.BUILD_VERSION}")
+                        }
                     }
-                    echo "Jar déployé dans ${target}"
+                    post {
+                        always {
+                            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                        }
+                    }
+                }
+
+                stage('Archive') {
+                    steps {
+                        archiveArtifacts artifacts: 'plugin/target/plugin-*.jar', fingerprint: true
+                    }
+                }
+
+                stage('Deploy') {
+                    when { expression { deployDirectory() } }
+                    steps {
+                        script {
+                            def target = deployDirectory()
+                            def jar = "plugin/target/plugin-${env.BUILD_VERSION}.jar"
+                            // On retire le jar précédent du même canal, sinon Paper chargerait les deux.
+                            def previous = env.CHANGE_ID ? 'plugin-*-MR*.jar' : 'plugin-*-master.jar'
+                            if (isUnix()) {
+                                sh """
+                                    mkdir -p '${target}'
+                                    rm -f '${target}'/${previous}
+                                    cp '${jar}' '${target}/'
+                                """
+                            } else {
+                                bat """
+                                    if not exist "${target}" mkdir "${target}"
+                                    del /q "${target}\\${previous}" 2>nul
+                                    copy /y "${jar.replace('/', '\\')}" "${target}\\"
+                                """
+                            }
+                            echo "Jar déployé dans ${target}"
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-// Suffixe de version du build courant, vide pour une branche ni master ni pull request.
+// Suffixe de version du build courant : « MR<numéro> » pour une pull request, « master » sinon.
 def buildSuffix() {
-    if (env.CHANGE_ID) {
-        return "MR${env.CHANGE_ID}"
-    }
-    if (env.BRANCH_NAME == 'master') {
-        return 'master'
-    }
-    return ''
+    return env.CHANGE_ID ? "MR${env.CHANGE_ID}" : 'master'
 }
 
 // Dossier de déploiement du canal courant, vide si le déploiement est désactivé.
