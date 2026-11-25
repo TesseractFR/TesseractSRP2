@@ -4,16 +4,17 @@ import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 
 import java.util.Optional;
 
 /** Port de persistance des tableaux de commissions. */
 public interface CommissionBoardRepository {
-    /** Enregistre le tableau du spawn avec ces niveaux, sans taxe ni commission terminée. */
-    CommissionBoard createSpawnBoard(CommissionBoardLevels levels);
+    /** Enregistre le tableau du spawn avec ce nombre de commissions par type, sans taxe ni commission terminée. */
+    CommissionBoard createSpawnBoard(int slotsPerType);
 
     /** Enregistre le tableau d'une guilde avec les niveaux {@link CommissionBoardLevels#GUILD_BOARD_START} et cette taxe. */
-    CommissionBoard createGuildBoard(GuildId guildId, double usageTaxRate);
+    CommissionBoard createGuildBoard(GuildId guildId, UsageTaxRate usageTaxRate);
 
     /** Enregistre les niveaux et la taxe du tableau. */
     void save(CommissionBoard commissionBoard);

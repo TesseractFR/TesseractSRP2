@@ -2,6 +2,10 @@ package onl.tesseract.srp.commission.domain.port.serverside;
 
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeStep;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionQualityWeights;
+import onl.tesseract.srp.commission.domain.model.commission.QuantityRate;
+import onl.tesseract.srp.common.domain.model.enums.Quality;
 
 import java.util.Optional;
 
@@ -16,8 +20,14 @@ public interface CommissionConfigRepository {
     /** @return XP de guilde accordée par lys de récompense */
     double getGuildXpPerLys();
 
-    /** @return taux de taxe d'usage d'un tableau de guilde à sa création */
-    double getDefaultUsageTaxRate();
+    /** @return taxe d'usage d'un tableau de guilde à sa création */
+    UsageTaxRate getDefaultUsageTaxRate();
+
+    /** @return poids de tirage de la qualité minimale des commissions générées */
+    CommissionQualityWeights getQualityWeights();
+
+    /** @return coefficient appliqué à la quantité tirée selon la qualité minimale, neutre si elle n'est pas configurée */
+    QuantityRate getQuantityRate(Quality minimalQuality);
 
     /** @return nombre de commissions par type sur le tableau du spawn */
     int getSpawnSlotsPerType();

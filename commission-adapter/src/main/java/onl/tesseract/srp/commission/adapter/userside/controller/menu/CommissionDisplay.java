@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionLabels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
@@ -22,17 +23,24 @@ public final class CommissionDisplay {
     private CommissionDisplay() {
     }
 
+    /** @return la première ligne du lore d'une commission : son type et le tier de son item */
+    public static Component describeCommissionHeader(CommissionType commissionType, int commissionTier) {
+        return coloredText(CommissionLabels.formatCommissionType(commissionType) + " · Tier " + commissionTier, NamedTextColor.DARK_GRAY);
+    }
+
+    /** @return la première ligne du lore d'une commission dont l'item a quitté le catalogue : son type seul */
+    public static Component describeCommissionHeader(CommissionType commissionType) {
+        return coloredText(CommissionLabels.formatCommissionType(commissionType), NamedTextColor.DARK_GRAY);
+    }
+
     /**
      * @param totalGuildXp XP que la commission donne à la guilde une fois terminée, affichée aux membres seulement
-     * @return le lore d'une commission, avec ce que la livraison du joueur rapporterait
+     * @return le lore d'une commission sous son en-tête, avec ce que la livraison du joueur rapporterait
      */
-    public static List<Component> describeCommission(Commission commission, int commissionTier, int totalGuildXp,
-                                                     CommissionDelivery delivery, boolean showsDeliveryHint) {
+    public static List<Component> describeCommission(Commission commission, int totalGuildXp, CommissionDelivery delivery,
+                                                     boolean showsDeliveryHint) {
         QualityAdapter minimalQuality = QualityAdapter.from(commission.minimalQuality());
         List<Component> loreLines = new ArrayList<>();
-        loreLines.add(coloredText(formatCommissionType(commission.type()) + " · Tier " + commissionTier, NamedTextColor.DARK_GRAY));
-        // TODO : indiquer comment obtenir l'item (métier ou compétence, et sa source) pour que les joueurs ne soient
-        //  pas perdus. L'information n'existe pas encore pour les items de récolte : elle viendra des configs de métier.
         loreLines.add(Component.empty());
         loreLines.add(buildProgressBar(commission));
         loreLines.add(labeledValue("Qualité minimale : ", minimalQuality.label(), minimalQuality.color()));
@@ -77,15 +85,16 @@ public final class CommissionDisplay {
         loreLines.add(coloredText(BULLET + "Prix fixé par la qualité minimale", NamedTextColor.GRAY));
         loreLines.add(coloredText(BULLET + "Une meilleure qualité ne paie pas plus", NamedTextColor.GRAY));
         if (commissionBoard.isSpawnBoard()) {
-            loreLines.add(coloredText(BULLET + "Au spawn, les montants valent " + formatPercent(spawnRewardRate) + " de la valeur des items",
-                    NamedTextColor.GRAY));
+            loreLines.add(coloredText(BULLET + "Au spawn, les montants valent " + CommissionLabels.formatPercent(spawnRewardRate)
+                    + " de la valeur des items", NamedTextColor.GRAY));
         }
         loreLines.add(Component.empty());
         if (!commissionBoard.isSpawnBoard()) {
             loreLines.add(coloredText("Public et guilde", NamedTextColor.GOLD));
             loreLines.add(coloredText(BULLET + "Public : ouvert à tous", NamedTextColor.GRAY));
             loreLines.add(coloredText(BULLET + "Guilde : réservé aux membres", NamedTextColor.GRAY));
-            loreLines.add(labeledValue(BULLET + "Taxe des externes : ", formatPercent(commissionBoard.getUsageTaxRate()), NamedTextColor.WHITE));
+            loreLines.add(labeledValue(BULLET + "Taxe des externes : ", CommissionLabels.formatUsageTax(commissionBoard.getUsageTaxRate()),
+                    NamedTextColor.WHITE));
             loreLines.add(Component.empty());
         }
         loreLines.add(coloredText("Nouvelles commissions", NamedTextColor.GOLD));
@@ -101,21 +110,6 @@ public final class CommissionDisplay {
     public static Component labeledValue(String label, String value, TextColor valueColor) {
         return Component.text(label, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
                 .append(Component.text(value, valueColor));
-    }
-
-    public static String formatCommissionType(CommissionType commissionType) {
-        return commissionType == CommissionType.HARVEST ? "Récolte" : "Artisanat";
-    }
-
-    public static String formatUpgradeName(CommissionBoardUpgradeType upgradeType) {
-        return switch (upgradeType) {
-            case BOARD_TIER -> "Tier du tableau";
-            case MAX_HARVEST_TIER -> "Tier de récolte";
-            case MAX_CRAFT_TIER -> "Tier d'artisanat";
-            case HARVEST_SLOTS -> "Emplacements de récolte";
-            case CRAFT_SLOTS -> "Emplacements d'artisanat";
-            case MONEY_BONUS -> "Bonus d'argent";
-        };
     }
 
     public static List<String> describeUpgrade(CommissionBoardUpgradeType upgradeType) {
@@ -134,12 +128,8 @@ public final class CommissionDisplay {
         return switch (upgradeType) {
             case BOARD_TIER, MAX_HARVEST_TIER, MAX_CRAFT_TIER -> "Tier " + upgradeLevel;
             case HARVEST_SLOTS, CRAFT_SLOTS -> upgradeLevel + " en public et en guilde";
-            case MONEY_BONUS -> "+" + formatPercent(moneyBonusRate);
+            case MONEY_BONUS -> "+" + CommissionLabels.formatPercent(moneyBonusRate);
         };
-    }
-
-    public static String formatPercent(double rate) {
-        return Math.round(rate * 100) + " %";
     }
 
     private static Component buildProgressBar(Commission commission) {

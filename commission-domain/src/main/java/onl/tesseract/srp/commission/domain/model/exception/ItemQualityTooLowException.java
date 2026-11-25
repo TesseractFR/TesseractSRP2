@@ -13,7 +13,8 @@ public final class ItemQualityTooLowException extends CommissionException {
     private final Quality minimalQuality;
 
     public ItemQualityTooLowException(PlayerId player, CommissionId commissionId, Quality minimalQuality) {
-        super("Les items du joueur " + player.value() + " sont sous la qualité " + minimalQuality + " demandée par la commission " + commissionId.value());
+        super("Les items du joueur " + player.value() + " sont sous la qualité " + minimalQuality
+                + " demandée par la commission " + commissionId.value());
         this.player = player;
         this.commissionId = commissionId;
         this.minimalQuality = minimalQuality;

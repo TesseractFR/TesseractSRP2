@@ -5,9 +5,9 @@ import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.Commission
 import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.CommissionJpaRepository;
 import onl.tesseract.srp.commission.adapter.serverside.jpa.repository.CommissionDeliveredItemCountJpaRepository;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardNotFoundException;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionBoardRepository;
 import org.springframework.stereotype.Component;
@@ -36,13 +36,13 @@ public class JpaCommissionBoardRepository implements CommissionBoardRepository {
 
     @Override
     @Transactional
-    public CommissionBoard createSpawnBoard(CommissionBoardLevels levels) {
-        return commissionBoardMapper.toDomain(commissionBoardJpaRepository.save(commissionBoardMapper.toNewSpawnBoardEntity(levels)));
+    public CommissionBoard createSpawnBoard(int slotsPerType) {
+        return commissionBoardMapper.toDomain(commissionBoardJpaRepository.save(commissionBoardMapper.toNewSpawnBoardEntity(slotsPerType)));
     }
 
     @Override
     @Transactional
-    public CommissionBoard createGuildBoard(GuildId guildId, double usageTaxRate) {
+    public CommissionBoard createGuildBoard(GuildId guildId, UsageTaxRate usageTaxRate) {
         return commissionBoardMapper.toDomain(commissionBoardJpaRepository.save(
                 commissionBoardMapper.toNewGuildBoardEntity(guildId, usageTaxRate)));
     }

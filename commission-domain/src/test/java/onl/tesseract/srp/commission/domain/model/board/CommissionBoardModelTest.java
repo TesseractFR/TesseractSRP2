@@ -13,7 +13,7 @@ class CommissionBoardModelTest {
 
     private static final CommissionBoardId BOARD_ID = new CommissionBoardId(1);
     private static final GuildId GUILD_ID = new GuildId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
-    private static final double USAGE_TAX_RATE = 0.25;
+    private static final UsageTaxRate USAGE_TAX_RATE = new UsageTaxRate(25);
 
     private static CommissionBoard guildBoard() {
         return CommissionBoard.guildBoard(BOARD_ID, GUILD_ID, CommissionBoardLevels.GUILD_BOARD_START, USAGE_TAX_RATE);
@@ -31,13 +31,30 @@ class CommissionBoardModelTest {
     }
 
     @Test
-    void changeUsageTax_throwsAndKeepsTheRateAboveTheMaximum() {
+    void usageTaxRate_throwsAboveTheMaximum() {
+        // when / then
+        assertThrows(InvalidUsageTaxRateException.class, () -> new UsageTaxRate(UsageTaxRate.MAX_PERCENT + 1));
+    }
+
+    @Test
+    void changeUsageTax_throwsAndKeepsTheRateOnTheSpawnBoard() {
         // given
-        CommissionBoard commissionBoard = guildBoard();
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(BOARD_ID, 6);
+        UsageTaxRate newUsageTaxRate = new UsageTaxRate(10);
 
         // when / then
-        assertThrows(InvalidUsageTaxRateException.class, () -> commissionBoard.changeUsageTax(0.55));
-        assertEquals(USAGE_TAX_RATE, commissionBoard.getUsageTaxRate());
+        assertThrows(IllegalStateException.class, () -> spawnBoard.changeUsageTax(newUsageTaxRate));
+        assertEquals(UsageTaxRate.ZERO, spawnBoard.getUsageTaxRate());
+    }
+
+    @Test
+    void upgrade_throwsAndKeepsTheLevelsOnTheSpawnBoard() {
+        // given
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(BOARD_ID, 6);
+
+        // when / then
+        assertThrows(IllegalStateException.class, () -> spawnBoard.upgrade(CommissionBoardUpgradeType.HARVEST_SLOTS));
+        assertEquals(CommissionBoardLevels.forSpawnBoard(6), spawnBoard.getLevels());
     }
 
     @Test
@@ -55,11 +72,20 @@ class CommissionBoardModelTest {
     @Test
     void findAllParts_givesOnlyThePublicPartOnTheSpawnBoard() {
         // given
-        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(BOARD_ID, CommissionBoardLevels.forSpawnBoard(6));
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(BOARD_ID, 6);
 
         // when / then
         assertEquals(Set.of(CommissionBoardPart.PUBLIC), Set.copyOf(spawnBoard.findAllParts()));
         assertEquals(Set.of(CommissionBoardPart.PUBLIC, CommissionBoardPart.GUILD), Set.copyOf(guildBoard().findAllParts()));
     }
 
+    @Test
+    void changeSpawnSlots_throwsAndKeepsTheLevelsOnAGuildBoard() {
+        // given
+        CommissionBoard commissionBoard = guildBoard();
+
+        // when / then
+        assertThrows(IllegalStateException.class, () -> commissionBoard.changeSpawnSlots(4));
+        assertEquals(CommissionBoardLevels.GUILD_BOARD_START, commissionBoard.getLevels());
+    }
 }

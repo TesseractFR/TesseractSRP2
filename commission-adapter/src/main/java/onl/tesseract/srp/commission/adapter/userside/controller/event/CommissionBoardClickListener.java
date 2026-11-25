@@ -1,11 +1,11 @@
 package onl.tesseract.srp.commission.adapter.userside.controller.event;
 
 import dev.lone.itemsadder.api.Events.FurnitureInteractEvent;
-import onl.tesseract.srp.commission.adapter.furniture.CommissionBoardItem;
 import onl.tesseract.srp.commission.adapter.userside.controller.menu.CommissionBoardMenu;
 import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionMessageFormatter;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardAccessService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardManagementService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionDeliveryService;
@@ -16,6 +16,7 @@ import onl.tesseract.srp.territory.domain.port.userside.guild.GuildService;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
@@ -23,10 +24,12 @@ import java.util.Optional;
  * Réagit au tableau posé : un clic ouvre le tableau de la guilde du territoire, ou celui du spawn
  * hors des guildes. La pose et la récupération du tableau sont gérées par le moteur des structures.
  */
-@org.springframework.stereotype.Component
+@Component
 public class CommissionBoardClickListener implements Listener {
+    private static final String BOARD_ITEM_ID = "tesseract:commission_board";
 
     private final CommissionBoardService commissionBoardService;
+    private final CommissionBoardAccessService commissionBoardAccessService;
     private final CommissionBoardManagementService commissionBoardManagementService;
     private final CommissionDeliveryService commissionDeliveryService;
     private final GuildService guildService;
@@ -34,10 +37,12 @@ public class CommissionBoardClickListener implements Listener {
     private final CommissionMessageFormatter commissionMessageFormatter;
 
     public CommissionBoardClickListener(CommissionBoardService commissionBoardService,
-                                            CommissionBoardManagementService commissionBoardManagementService,
-                                            CommissionDeliveryService commissionDeliveryService, GuildService guildService,
-                                            CustomItemService customItemService, CommissionMessageFormatter commissionMessageFormatter) {
+                                        CommissionBoardAccessService commissionBoardAccessService,
+                                        CommissionBoardManagementService commissionBoardManagementService,
+                                        CommissionDeliveryService commissionDeliveryService, GuildService guildService,
+                                        CustomItemService customItemService, CommissionMessageFormatter commissionMessageFormatter) {
         this.commissionBoardService = commissionBoardService;
+        this.commissionBoardAccessService = commissionBoardAccessService;
         this.commissionBoardManagementService = commissionBoardManagementService;
         this.commissionDeliveryService = commissionDeliveryService;
         this.guildService = guildService;
@@ -47,15 +52,15 @@ public class CommissionBoardClickListener implements Listener {
 
     @EventHandler
     public void onFurnitureInteract(FurnitureInteractEvent event) {
-        if (!CommissionBoardItem.BOARD_ITEM_ID.equals(event.getNamespacedID())) {
+        if (!BOARD_ITEM_ID.equals(event.getNamespacedID())) {
             return;
         }
         event.setCancelled(true);
         CommissionBoard commissionBoard = findGuildOwningLocation(event.getBukkitEntity().getLocation())
-                .map(commissionBoardService::getGuildBoard)
-                .orElseGet(commissionBoardService::getSpawnBoard);
-        new CommissionBoardMenu(commissionBoard, commissionBoardService, commissionBoardManagementService, commissionDeliveryService,
-                customItemService, commissionMessageFormatter).open(event.getPlayer());
+                .map(commissionBoardService::openGuildBoard)
+                .orElseGet(commissionBoardService::openSpawnBoard);
+        new CommissionBoardMenu(commissionBoard, commissionBoardService, commissionBoardAccessService, commissionBoardManagementService,
+                commissionDeliveryService, customItemService, commissionMessageFormatter).open(event.getPlayer());
     }
 
     private Optional<GuildId> findGuildOwningLocation(Location location) {

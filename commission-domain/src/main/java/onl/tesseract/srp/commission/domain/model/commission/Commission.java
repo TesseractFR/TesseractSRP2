@@ -1,6 +1,5 @@
 package onl.tesseract.srp.commission.domain.model.commission;
 
-import lombok.NonNull;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.common.domain.model.MoneyValue;
@@ -13,19 +12,9 @@ import onl.tesseract.srp.common.domain.model.item.MaterialName;
  * @param deliveredQuantity quantité déjà livrée, entre zéro et {@code quantity}
  * @param reward            récompense totale, figée à la génération
  */
-public record Commission(@NonNull CommissionId id, @NonNull CommissionBoardId boardId, @NonNull CommissionBoardPart part,
-                         @NonNull CommissionType type, @NonNull MaterialName material, int quantity,
-                         int deliveredQuantity, @NonNull Quality minimalQuality, @NonNull MoneyValue reward) {
-
-    /** Vérifie que la quantité vaut au moins un et que la quantité livrée ne la dépasse pas. */
-    public Commission {
-        if (quantity < 1) {
-            throw new IllegalArgumentException("La quantité d'une commission vaut au moins 1 : " + quantity);
-        }
-        if (deliveredQuantity < 0 || deliveredQuantity > quantity) {
-            throw new IllegalArgumentException("La quantité livrée doit être entre 0 et " + quantity + " : " + deliveredQuantity);
-        }
-    }
+public record Commission(CommissionId id, CommissionBoardId boardId, CommissionBoardPart part,
+                         CommissionType type, MaterialName material, int quantity,
+                         int deliveredQuantity, Quality minimalQuality, MoneyValue reward) {
 
     /** @return quantité qu'il reste à livrer */
     public int getRemainingQuantity() {
@@ -37,23 +26,24 @@ public record Commission(@NonNull CommissionId id, @NonNull CommissionBoardId bo
         return getRemainingQuantity() == 0;
     }
 
-    /** @return {@code true} si la commission est dans la liste de cette partie et de ce type */
-    public boolean isInList(CommissionBoardPart listPart, CommissionType listType) {
-        return part == listPart && type == listType;
+    /** @return {@code true} si la commission est dans cette partie du tableau et de ce type */
+    public boolean belongsTo(CommissionBoardPart boardPart, CommissionType commissionType) {
+        return part == boardPart && type == commissionType;
     }
 
     /** @return part de la récompense rapportée par les {@code itemCount} prochains items */
     public int computeRewardShareFor(int itemCount) {
-        return computeShareFor(reward.value().intValueExact(), itemCount);
+        return computeProgressShareOf(reward.value().intValueExact(), itemCount);
     }
 
     /**
      * La part est calculée à partir de la progression totale, si bien que la somme des parts vaut
      * exactement {@code total}, quel que soit le découpage des livraisons.
      *
+     * @param total montant réparti sur toute la commission : sa récompense, ou l'XP qu'elle donne à la guilde
      * @return part de {@code total} rapportée par les {@code itemCount} prochains items
      */
-    public int computeShareFor(int total, int itemCount) {
+    public int computeProgressShareOf(int total, int itemCount) {
         return computeTotalShareAfter(total, deliveredQuantity + itemCount) - computeTotalShareAfter(total, deliveredQuantity);
     }
 

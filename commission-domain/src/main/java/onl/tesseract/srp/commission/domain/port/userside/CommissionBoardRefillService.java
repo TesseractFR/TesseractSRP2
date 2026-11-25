@@ -91,7 +91,7 @@ public class CommissionBoardRefillService {
         List<CommissionBoardPart> partsToFill = new ArrayList<>();
         for (CommissionBoardPart boardPart : commissionBoard.findAllParts()) {
             long openCount = existingCommissions.stream()
-                    .filter(commission -> commission.isInList(boardPart, commissionType) && !commission.isCompleted())
+                    .filter(commission -> commission.belongsTo(boardPart, commissionType) && !commission.isCompleted())
                     .count();
             int missingCount = (int) Math.max(0, commissionBoard.getLevels().getSlotsFor(commissionType) - openCount);
             partsToFill.addAll(Collections.nCopies(missingCount, boardPart));
@@ -99,12 +99,15 @@ public class CommissionBoardRefillService {
         return partsToFill;
     }
 
-    /** La qualité minimale est tirée uniformément entre {@code POOR} et {@code EXCEPTIONAL}. */
+    /**
+     * La qualité minimale est tirée selon les poids de qualité de la configuration, puis la quantité tirée
+     * est multipliée par le coefficient de cette qualité : une haute qualité est plus rare et demande moins d'items.
+     */
     private CommissionDraft drawCommission(CommissionBoard commissionBoard, CommissionBoardPart boardPart, CommissionType commissionType,
                                            List<CommissionCatalogItem> allowedItems) {
         CommissionCatalogItem catalogItem = drawCatalogItem(allowedItems);
-        int quantity = drawQuantity(catalogItem);
-        Quality minimalQuality = Quality.values()[random.nextInt(Quality.values().length)];
+        Quality minimalQuality = commissionConfigRepository.getQualityWeights().pick(random.nextDouble());
+        int quantity = commissionConfigRepository.getQuantityRate(minimalQuality).applyTo(drawQuantity(catalogItem));
         return new CommissionDraft(commissionBoard.getId(), boardPart, commissionType, catalogItem.material(),
                 quantity, minimalQuality, computeReward(commissionBoard, catalogItem.material(), quantity, minimalQuality));
     }
@@ -118,7 +121,7 @@ public class CommissionBoardRefillService {
         int baseQuantity = catalogItem.quantity();
         double varianceRate = catalogItem.quantityVariancePercent() / 100;
         int minimalQuantity = (int) Math.max(1, Math.round(baseQuantity * (1 - varianceRate)));
-        int maximalQuantity = (int) Math.max(minimalQuantity, Math.round(baseQuantity * (1 + varianceRate)));
+        int maximalQuantity = (int) Math.round(baseQuantity * (1 + varianceRate));
         if (minimalQuantity == maximalQuantity) {
             return minimalQuantity;
         }

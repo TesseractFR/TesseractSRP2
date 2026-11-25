@@ -9,12 +9,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
 public interface CommissionDeliveredItemCountJpaRepository extends JpaRepository<CommissionDeliveredItemCountEntity, Long> {
     Optional<CommissionDeliveredItemCountEntity> findByBoardIdAndTypeAndMinimalQuality(Long boardId, CommissionType type,
                                                                                        Quality minimalQuality);
+
+    @Query("select coalesce(sum(d.itemCount), 0) from CommissionDeliveredItemCountEntity d"
+            + " where d.boardId = :boardId and d.type = :type and d.minimalQuality in :qualities")
+    int sumItemCount(@Param("boardId") Long boardId, @Param("type") CommissionType type,
+                     @Param("qualities") Collection<Quality> qualities);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from CommissionDeliveredItemCountEntity d where d.boardId = :boardId")

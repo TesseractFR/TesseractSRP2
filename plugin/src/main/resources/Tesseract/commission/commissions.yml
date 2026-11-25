@@ -1,9 +1,15 @@
+# Part de la valeur des items payée au spawn : 0.5 paie la moitié. Les tableaux de guilde paient 100 %.
 spawn-reward-rate: 0.5
+# XP de guilde accordée par lys de récompense, sur les tableaux de guilde seulement.
 guild-xp-per-lys: 0.1
 
+# Nombre de commissions de récolte et d'artisanat au spawn. Le tableau existant suit la nouvelle valeur après un redémarrage.
 spawn-slots-per-type: 6
+# Taxe payée par les joueurs hors de la guilde à la création d'un tableau, entre 0 et 0.5,
+# arrondie au pourcent (0.25 pour 25 %).
 default-usage-tax-rate: 0.25
 
+# Poids de tirage des items selon leur rareté : une rareté absente ou à 0 n'est jamais tirée.
 rarity-weights:
   COMMON: 100
   SPECIAL: 50
@@ -11,6 +17,8 @@ rarity-weights:
   EPIC: 5
   LEGENDARY: 1
 
+# Quantité de base demandée par commission et écart maximal autour d'elle, en % :
+# quantity 300 et variance 50 donnent une quantité entre 150 et 450. Rareté absente : 300 sans variance.
 quantity-by-rarity:
   COMMON: { quantity: 300, variance: 50 }
   SPECIAL: { quantity: 150, variance: 50 }
@@ -18,6 +26,27 @@ quantity-by-rarity:
   EPIC: { quantity: 20, variance: 50 }
   LEGENDARY: { quantity: 5, variance: 50 }
 
+# Poids de tirage de la qualité minimale demandée par une commission : plus le poids est bas, plus la
+# qualité est rare. Une qualité absente n'est jamais tirée ; section absente : 30/35/20/10/5.
+quality-weights:
+  POOR: 30
+  NORMAL: 35
+  GOOD: 20
+  VERY_GOOD: 10
+  EXCEPTIONAL: 5
+
+# Coefficient appliqué à la quantité tirée selon la qualité minimale demandée, arrondi à l'unité
+# avec un minimum de 1 : plus la qualité est haute, moins on demande d'items. Une qualité absente
+# vaut 1. Exemple : 300 items tirés et EXCEPTIONAL à 0.25 donnent 75 items.
+quantity-rate-by-quality:
+  POOR: 1.0
+  NORMAL: 0.8
+  GOOD: 0.6
+  VERY_GOOD: 0.4
+  EXCEPTIONAL: 0.25
+
+# Items de récolte que les tableaux peuvent demander, avec leur tier. Les items d'artisanat viennent
+# des recettes des compétences, avec le tier de leur recette.
 harvest-tiers:
   # Agriculteur
   BLE_DORE: 1
@@ -61,6 +90,12 @@ harvest-tiers:
   PIERRE_MARBREE: 1
   TERRE_FERTILE: 1
 
+# Paliers des améliorations des tableaux de guilde, indexés par niveau à atteindre :
+# - cost : prix payé par la banque de la guilde ;
+# - board-tier : tier du tableau requis, 1 si absent ;
+# - deliveries : items à avoir livrés sur ce tableau, par type, sur des commissions de cette qualité ou mieux ;
+# - value (money-bonus seulement) : bonus ajouté aux récompenses, 0.02 pour +2 %.
+# Un niveau absent marque le maximum de l'amélioration.
 upgrades:
   board-tier:
     2: { cost: 10000, deliveries: { HARVEST: { quality: GOOD, count: 200 }, CRAFT: { quality: GOOD, count: 100 } } }

@@ -6,7 +6,10 @@ import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepos
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.GuildMembershipPort;
 import onl.tesseract.srp.commission.domain.port.serverside.GuildBankPort;
+import onl.tesseract.srp.commission.domain.port.serverside.GuildIncomePort;
 import onl.tesseract.srp.commission.domain.port.serverside.PlayerMaterialPort;
+import onl.tesseract.srp.commission.domain.port.serverside.PlayerPaymentPort;
+import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardAccessService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardManagementService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardRefillService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardService;
@@ -24,17 +27,24 @@ public class CommissionProvider {
     public CommissionBoardRefillService commissionBoardRefillService(CommissionRepository commissionRepository,
                                                                      CommissionConfigRepository commissionConfigRepository,
                                                                      CommissionCatalogRepository commissionCatalogRepository) {
-        return new CommissionBoardRefillService(commissionRepository, commissionConfigRepository, commissionCatalogRepository, new Random());
+        return new CommissionBoardRefillService(commissionRepository, commissionConfigRepository, commissionCatalogRepository,
+                new Random());
     }
 
     @Bean
     public CommissionBoardService commissionBoardService(CommissionBoardRepository commissionBoardRepository,
-                                                         GuildMembershipPort guildMembershipPort,
+                                                         CommissionRepository commissionRepository,
                                                          CommissionCatalogRepository commissionCatalogRepository,
                                                          CommissionConfigRepository commissionConfigRepository,
+                                                         CommissionBoardAccessService commissionBoardAccessService,
                                                          CommissionBoardRefillService commissionBoardRefillService) {
-        return new CommissionBoardService(commissionBoardRepository, guildMembershipPort, commissionCatalogRepository,
-                commissionConfigRepository, commissionBoardRefillService);
+        return new CommissionBoardService(commissionBoardRepository, commissionRepository, commissionCatalogRepository,
+                commissionConfigRepository, commissionBoardAccessService, commissionBoardRefillService);
+    }
+
+    @Bean
+    public CommissionBoardAccessService commissionBoardAccessService(GuildMembershipPort guildMembershipPort) {
+        return new CommissionBoardAccessService(guildMembershipPort);
     }
 
     @Bean
@@ -42,18 +52,22 @@ public class CommissionProvider {
                                                                              CommissionConfigRepository commissionConfigRepository,
                                                                              CommissionRepository commissionRepository,
                                                                              GuildBankPort guildBankPort,
+                                                                             GuildMembershipPort guildMembershipPort,
                                                                              CommissionBoardService commissionBoardService,
                                                                              CommissionBoardRefillService commissionBoardRefillService) {
         return new CommissionBoardManagementService(commissionBoardRepository, commissionConfigRepository, commissionRepository,
-                guildBankPort, commissionBoardService, commissionBoardRefillService);
+                guildBankPort, guildMembershipPort, commissionBoardService, commissionBoardRefillService);
     }
 
     @Bean
-    public CommissionDeliveryService commissionDeliveryService(CommissionRepository commissionRepository, PlayerMaterialPort playerMaterialPort,
+    public CommissionDeliveryService commissionDeliveryService(CommissionRepository commissionRepository,
+                                                               PlayerMaterialPort playerMaterialPort,
+                                                               PlayerPaymentPort playerPaymentPort, GuildIncomePort guildIncomePort,
                                                                CommissionConfigRepository commissionConfigRepository,
                                                                CommissionBoardService commissionBoardService,
+                                                               CommissionBoardAccessService commissionBoardAccessService,
                                                                CommissionBoardRefillService commissionBoardRefillService) {
-        return new CommissionDeliveryService(commissionRepository, playerMaterialPort, commissionConfigRepository, commissionBoardService,
-                commissionBoardRefillService);
+        return new CommissionDeliveryService(commissionRepository, playerMaterialPort, playerPaymentPort, guildIncomePort,
+                commissionConfigRepository, commissionBoardService, commissionBoardAccessService, commissionBoardRefillService);
     }
 }

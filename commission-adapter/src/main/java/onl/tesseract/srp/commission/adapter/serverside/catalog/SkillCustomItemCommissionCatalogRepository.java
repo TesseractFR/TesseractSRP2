@@ -63,8 +63,8 @@ public class SkillCustomItemCommissionCatalogRepository implements CommissionCat
     }
 
     @Override
-    public int getItemTier(CommissionType commissionType, MaterialName material) {
-        return findAllItemTiers(commissionType).get(material);
+    public Optional<Integer> findItemTier(CommissionType commissionType, MaterialName material) {
+        return Optional.ofNullable(findAllItemTiers(commissionType).get(material));
     }
 
     private CommissionCatalogItem toCatalogItem(MaterialName material, int tier) {

@@ -2,8 +2,8 @@ package onl.tesseract.srp.commission.domain.port.userside;
 
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
-import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionId;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardPartAccessDeniedException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionNotAvailableException;
@@ -11,35 +11,36 @@ import onl.tesseract.srp.commission.domain.model.exception.ItemQualityTooLowExce
 import onl.tesseract.srp.commission.domain.model.exception.NoItemToDeliverException;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
+import onl.tesseract.srp.commission.domain.port.serverside.GuildIncomePort;
 import onl.tesseract.srp.commission.domain.port.serverside.PlayerMaterialPort;
+import onl.tesseract.srp.commission.domain.port.serverside.PlayerPaymentPort;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
-
-import java.util.List;
 
 /** Fait livrer aux joueurs les items d'une commission, et les paie au fil des livraisons. */
 public class CommissionDeliveryService {
     private final CommissionRepository commissionRepository;
     private final PlayerMaterialPort playerMaterialPort;
+    private final PlayerPaymentPort playerPaymentPort;
+    private final GuildIncomePort guildIncomePort;
     private final CommissionConfigRepository commissionConfigRepository;
     private final CommissionBoardService commissionBoardService;
+    private final CommissionBoardAccessService commissionBoardAccessService;
     private final CommissionBoardRefillService commissionBoardRefillService;
 
     public CommissionDeliveryService(CommissionRepository commissionRepository, PlayerMaterialPort playerMaterialPort,
+                                     PlayerPaymentPort playerPaymentPort, GuildIncomePort guildIncomePort,
                                      CommissionConfigRepository commissionConfigRepository, CommissionBoardService commissionBoardService,
+                                     CommissionBoardAccessService commissionBoardAccessService,
                                      CommissionBoardRefillService commissionBoardRefillService) {
         this.commissionRepository = commissionRepository;
         this.playerMaterialPort = playerMaterialPort;
+        this.playerPaymentPort = playerPaymentPort;
+        this.guildIncomePort = guildIncomePort;
         this.commissionConfigRepository = commissionConfigRepository;
         this.commissionBoardService = commissionBoardService;
+        this.commissionBoardAccessService = commissionBoardAccessService;
         this.commissionBoardRefillService = commissionBoardRefillService;
-    }
-
-    /** @return les commissions du tableau que le joueur voit, de la plus ancienne à la plus récente */
-    public List<Commission> findAllVisibleCommissions(PlayerId player, CommissionBoard commissionBoard) {
-        return commissionRepository.findAllByBoard(commissionBoard.getId()).stream()
-                .filter(commission -> commissionBoardService.canAccessPart(player, commissionBoard, commission.part()))
-                .toList();
     }
 
     /**
@@ -52,19 +53,19 @@ public class CommissionDeliveryService {
         int ownedQuantity = playerMaterialPort.countAtLeast(player, commission.material(), commission.minimalQuality());
         int itemCount = Math.min(ownedQuantity, commission.getRemainingQuantity());
         int itemsValue = commission.computeRewardShareFor(itemCount);
-        boolean isGuildMember = commissionBoardService.isGuildMember(player, commissionBoard);
+        boolean isGuildMember = commissionBoardAccessService.isGuildMember(player, commissionBoard);
         int guildTax = isGuildMember ? 0 : commissionBoard.computeUsageTaxOn(itemsValue);
         boolean completesCommission = itemCount > 0 && itemCount == commission.getRemainingQuantity();
-        return new CommissionDelivery(commission.id(), commissionBoard.getId(), player, itemCount,
+        return new CommissionDelivery(commission.id(), commissionBoard.getId(), itemCount,
                 itemsValue - guildTax, guildTax, computeGuildXp(commissionBoard, commission, itemCount), isGuildMember,
                 completesCommission);
     }
 
     /**
-     * Livre tout ce que le joueur peut livrer. La progression et les gains sont enregistrés en premier,
-     * en une seule transaction : si la base échoue, rien n'a été retiré au joueur. Les items sont
-     * retirés ensuite, de la plus basse qualité admissible à la plus haute. Une commission terminée
-     * laisse aussitôt sa place à une nouvelle.
+     * Livre tout ce que le joueur peut livrer. La progression est enregistrée en premier : si la base
+     * échoue, rien n'a été retiré ni versé. Les items sont retirés ensuite, de la plus basse qualité
+     * admissible à la plus haute, puis le livreur et la guilde propriétaire sont payés. Une commission
+     * terminée laisse aussitôt sa place à une nouvelle.
      *
      * @return la livraison effectuée
      * @throws CommissionNotAvailableException si la commission n'existe plus ou est déjà terminée
@@ -77,7 +78,7 @@ public class CommissionDeliveryService {
                 .filter(foundCommission -> !foundCommission.isCompleted())
                 .orElseThrow(() -> new CommissionNotAvailableException(commissionId));
         CommissionBoard commissionBoard = commissionBoardService.getBoard(commission.boardId());
-        if (!commissionBoardService.canAccessPart(player, commissionBoard, commission.part())) {
+        if (!commissionBoardAccessService.canAccessPart(player, commissionBoard, commission.part())) {
             throw new CommissionBoardPartAccessDeniedException(player, commissionId);
         }
         CommissionDelivery delivery = computeDelivery(player, commissionBoard, commission);
@@ -87,6 +88,9 @@ public class CommissionDeliveryService {
 
         commissionRepository.recordDelivery(delivery);
         playerMaterialPort.removeAtLeast(player, commission.material(), commission.minimalQuality(), delivery.itemCount());
+        playerPaymentPort.pay(player, delivery.playerEarnings());
+        commissionBoard.findGuildId()
+                .ifPresent(guildId -> guildIncomePort.addCommissionIncome(guildId, delivery.guildTax(), delivery.guildXp()));
         if (delivery.completesCommission()) {
             commissionBoardRefillService.refillBoard(commissionBoard);
         }
@@ -106,7 +110,7 @@ public class CommissionDeliveryService {
     }
 
     private int computeGuildXp(CommissionBoard commissionBoard, Commission commission, int itemCount) {
-        return commission.computeShareFor(computeTotalGuildXp(commissionBoard, commission), itemCount);
+        return commission.computeProgressShareOf(computeTotalGuildXp(commissionBoard, commission), itemCount);
     }
 
     private CommissionException buildNothingToDeliverException(PlayerId player, Commission commission) {

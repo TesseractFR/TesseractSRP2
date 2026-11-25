@@ -1,8 +1,6 @@
 package onl.tesseract.srp.commission.domain.model.commission;
 
-import lombok.NonNull;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
-import onl.tesseract.srp.common.domain.model.PlayerId;
 
 /**
  * Ce qu'un joueur livre à une commission et ce que la livraison rapporte. Les montants sont en lys
@@ -14,8 +12,8 @@ import onl.tesseract.srp.common.domain.model.PlayerId;
  * @param isGuildMember           {@code true} si le livreur est membre de la guilde propriétaire
  * @param completesCommission     {@code true} si la livraison termine la commission
  */
-public record CommissionDelivery(@NonNull CommissionId commissionId, @NonNull CommissionBoardId boardId,
-                       @NonNull PlayerId deliverer, int itemCount, int playerEarnings, int guildTax, int guildXp,
+public record CommissionDelivery(CommissionId commissionId, CommissionBoardId boardId,
+                       int itemCount, int playerEarnings, int guildTax, int guildXp,
                        boolean isGuildMember, boolean completesCommission) {
 
     /** @return {@code true} si le joueur n'a aucun item à livrer */

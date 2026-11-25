@@ -1,50 +1,54 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.GuildId;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardNotFoundException;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionBoardRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionCatalogRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
-import onl.tesseract.srp.commission.domain.port.serverside.GuildMembershipPort;
+import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 
 import java.util.List;
+import java.util.Optional;
 
-/** Donne accès aux tableaux de commissions : lecture, droits des joueurs et suppression avec la guilde. */
+/** Ouvre les tableaux de commissions, donne ce qu'un joueur y voit, et les supprime avec leur guilde. */
 public class CommissionBoardService {
     private final CommissionBoardRepository commissionBoardRepository;
-    private final GuildMembershipPort guildMembershipPort;
+    private final CommissionRepository commissionRepository;
     private final CommissionCatalogRepository commissionCatalogRepository;
     private final CommissionConfigRepository commissionConfigRepository;
+    private final CommissionBoardAccessService commissionBoardAccessService;
     private final CommissionBoardRefillService commissionBoardRefillService;
 
-    public CommissionBoardService(CommissionBoardRepository commissionBoardRepository, GuildMembershipPort guildMembershipPort,
+    public CommissionBoardService(CommissionBoardRepository commissionBoardRepository, CommissionRepository commissionRepository,
                                   CommissionCatalogRepository commissionCatalogRepository,
                                   CommissionConfigRepository commissionConfigRepository,
+                                  CommissionBoardAccessService commissionBoardAccessService,
                                   CommissionBoardRefillService commissionBoardRefillService) {
         this.commissionBoardRepository = commissionBoardRepository;
-        this.guildMembershipPort = guildMembershipPort;
+        this.commissionRepository = commissionRepository;
         this.commissionCatalogRepository = commissionCatalogRepository;
         this.commissionConfigRepository = commissionConfigRepository;
+        this.commissionBoardAccessService = commissionBoardAccessService;
         this.commissionBoardRefillService = commissionBoardRefillService;
     }
 
     /**
-     * Le nombre de slots du spawn suit la configuration à chaque appel : un slot ajouté est rempli
+     * Prépare le tableau du spawn pour un joueur qui l'ouvre : il est créé au premier appel, son nombre
+     * de slots suit la configuration, et il est rempli. Un slot ajouté en configuration est donc rempli
      * aussitôt, et les commissions d'un slot retiré ne sont plus affichées.
      *
-     * @return le tableau du spawn, créé au premier appel, avec ses slots remplis
+     * @return le tableau du spawn, avec ses slots remplis
      */
-    public CommissionBoard getSpawnBoard() {
+    public CommissionBoard openSpawnBoard() {
         int spawnSlotsPerType = commissionConfigRepository.getSpawnSlotsPerType();
         CommissionBoard spawnBoard = commissionBoardRepository.findSpawnBoard()
-                .orElseGet(() -> commissionBoardRepository.createSpawnBoard(CommissionBoardLevels.forSpawnBoard(spawnSlotsPerType)));
-        if (!spawnBoard.getLevels().equals(CommissionBoardLevels.forSpawnBoard(spawnSlotsPerType))) {
+                .orElseGet(() -> commissionBoardRepository.createSpawnBoard(spawnSlotsPerType));
+        // Au spawn, les deux types ont toujours le même nombre de commissions.
+        if (spawnBoard.getLevels().harvestSlots() != spawnSlotsPerType) {
             spawnBoard.changeSpawnSlots(spawnSlotsPerType);
             commissionBoardRepository.save(spawnBoard);
         }
@@ -52,13 +56,13 @@ public class CommissionBoardService {
         return spawnBoard;
     }
 
-    /** @return part de la valeur des items payée au spawn, pour l'afficher aux joueurs */
-    public double getSpawnRewardRate() {
-        return commissionConfigRepository.getSpawnRewardRate();
-    }
-
-    /** @return le tableau de la guilde, créé au premier appel avec la taxe par défaut de la configuration, avec ses slots remplis */
-    public CommissionBoard getGuildBoard(GuildId guildId) {
+    /**
+     * Prépare le tableau de la guilde pour un joueur qui l'ouvre : il est créé au premier appel avec la
+     * taxe par défaut de la configuration, puis rempli.
+     *
+     * @return le tableau de la guilde, avec ses slots remplis
+     */
+    public CommissionBoard openGuildBoard(GuildId guildId) {
         CommissionBoard guildBoard = commissionBoardRepository.findByGuild(guildId)
                 .orElseGet(() -> commissionBoardRepository.createGuildBoard(guildId, commissionConfigRepository.getDefaultUsageTaxRate()));
         commissionBoardRefillService.refillBoard(guildBoard);
@@ -74,35 +78,24 @@ public class CommissionBoardService {
                 .orElseThrow(() -> new CommissionBoardNotFoundException(boardId));
     }
 
-    /** @return {@code true} si le joueur voit cette partie : la partie publique est ouverte à tous */
-    public boolean canAccessPart(PlayerId player, CommissionBoard commissionBoard, CommissionBoardPart boardPart) {
-        return boardPart == CommissionBoardPart.PUBLIC || isGuildMember(player, commissionBoard);
+    /** @return les commissions du tableau que le joueur voit, de la plus ancienne à la plus récente */
+    public List<Commission> findAllVisibleCommissions(PlayerId player, CommissionBoard commissionBoard) {
+        return commissionRepository.findAllByBoard(commissionBoard.getId()).stream()
+                .filter(commission -> commissionBoardAccessService.canAccessPart(player, commissionBoard, commission.part()))
+                .toList();
     }
 
-    /** @return {@code true} si le joueur est membre de la guilde propriétaire ; toujours faux au spawn */
-    public boolean isGuildMember(PlayerId player, CommissionBoard commissionBoard) {
-        return commissionBoard.findGuildId()
-                .map(guildId -> guildMembershipPort.isMember(guildId, player))
-                .orElse(false);
+    /** @return part de la valeur des items payée au spawn, pour l'afficher aux joueurs */
+    public double getSpawnRewardRate() {
+        return commissionConfigRepository.getSpawnRewardRate();
     }
 
-    /** @return les membres de la guilde propriétaire, à prévenir des gains de la guilde ; liste vide au spawn */
-    public List<PlayerId> findAllGuildMembers(CommissionBoard commissionBoard) {
-        return commissionBoard.findGuildId()
-                .map(guildMembershipPort::findAllMembers)
-                .orElse(List.of());
-    }
-
-    /** @return {@code true} si le joueur peut améliorer le tableau et changer sa taxe ; toujours faux au spawn */
-    public boolean canManageBoard(PlayerId player, CommissionBoard commissionBoard) {
-        return commissionBoard.findGuildId()
-                .map(guildId -> guildMembershipPort.canManageBoard(guildId, player))
-                .orElse(false);
-    }
-
-    /** @return tier de l'item de la commission, pour l'afficher */
-    public int getCommissionTier(Commission commission) {
-        return commissionCatalogRepository.getItemTier(commission.type(), commission.material());
+    /**
+     * @return tier de l'item de la commission, pour l'afficher, ou {@link Optional#empty()} si l'item
+     * a quitté le catalogue depuis la génération de la commission
+     */
+    public Optional<Integer> findCommissionTier(Commission commission) {
+        return commissionCatalogRepository.findItemTier(commission.type(), commission.material());
     }
 
     /** Supprime le tableau de la guilde et ses commissions. Ne fait rien s'il n'existe pas. */

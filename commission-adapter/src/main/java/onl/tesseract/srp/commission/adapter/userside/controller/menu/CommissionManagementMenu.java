@@ -4,12 +4,15 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.MenuSize;
+import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionLabels;
 import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionMessageFormatter;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryProgress;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryRequirement;
-import onl.tesseract.srp.commission.domain.model.board.GuildId;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeStep;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeConditions;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionException;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardManagementService;
@@ -24,7 +27,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /** Menu de gestion d'un tableau de guilde : améliorations payées par la banque et taxe des externes. */
 public class CommissionManagementMenu extends ItemAdderMenu {
@@ -40,7 +42,7 @@ public class CommissionManagementMenu extends ItemAdderMenu {
     private static final int USAGE_TAX_SLOT = 32;
     private static final int BACK_SLOT = 36;
     private static final int INFORMATION_SLOT = 44;
-    private static final double USAGE_TAX_STEP = 0.05;
+    private static final int USAGE_TAX_STEP_PERCENT = 5;
 
     private final CommissionBoard commissionBoard;
     private final GuildId guildId;
@@ -79,20 +81,21 @@ public class CommissionManagementMenu extends ItemAdderMenu {
     private void addUpgradeButton(Player viewer, int buttonSlot, CommissionBoardUpgradeType upgradeType, Material iconMaterial) {
         int currentLevel = commissionBoard.getLevels().getLevel(upgradeType);
         List<Component> loreLines = new ArrayList<>();
-        CommissionDisplay.describeUpgrade(upgradeType).forEach(line -> loreLines.add(CommissionDisplay.coloredText(line, NamedTextColor.GRAY)));
+        CommissionDisplay.describeUpgrade(upgradeType)
+                .forEach(line -> loreLines.add(CommissionDisplay.coloredText(line, NamedTextColor.GRAY)));
         loreLines.add(Component.empty());
         loreLines.add(CommissionDisplay.labeledValue("Actuel : ", formatLevel(upgradeType, currentLevel), NamedTextColor.WHITE));
-        Optional<CommissionBoardUpgradeStep> nextStep = commissionBoardManagementService.findNextUpgradeStep(commissionBoard, upgradeType);
-        nextStep.ifPresentOrElse(step -> {
+        commissionBoardManagementService.findNextUpgradeConditions(commissionBoard, upgradeType).ifPresentOrElse(conditions -> {
             loreLines.add(CommissionDisplay.labeledValue("Prochain : ", formatLevel(upgradeType, currentLevel + 1), NamedTextColor.GREEN));
             loreLines.add(Component.empty());
-            loreLines.addAll(describeConditions(step));
+            loreLines.addAll(describeConditions(conditions));
         }, () -> {
             loreLines.add(Component.empty());
             loreLines.add(CommissionDisplay.coloredText("Niveau maximal atteint", NamedTextColor.GREEN));
         });
-        addButton(buttonSlot, new ItemBuilder(iconMaterial).name(CommissionDisplay.formatUpgradeName(upgradeType), NamedTextColor.GOLD)
-                .lore(loreLines).build(), () -> {
+        ItemStack upgradeIcon = new ItemBuilder(iconMaterial).name(CommissionLabels.formatUpgradeName(upgradeType), NamedTextColor.GOLD)
+                .lore(loreLines).build();
+        addButton(buttonSlot, upgradeIcon, () -> {
             upgradeBoard(viewer, upgradeType);
             reopenWithUpToDateBoard(viewer);
         });
@@ -108,37 +111,40 @@ public class CommissionManagementMenu extends ItemAdderMenu {
     }
 
     private String formatLevel(CommissionBoardUpgradeType upgradeType, int upgradeLevel) {
-        return CommissionDisplay.formatUpgradeLevel(upgradeType, upgradeLevel, commissionBoardManagementService.getMoneyBonusRate(upgradeLevel));
+        double moneyBonusRate = commissionBoardManagementService.getMoneyBonusRate(upgradeLevel);
+        return CommissionDisplay.formatUpgradeLevel(upgradeType, upgradeLevel, moneyBonusRate);
     }
 
-    private List<Component> describeConditions(CommissionBoardUpgradeStep nextStep) {
-        boolean hasEnoughMoney = commissionBoardManagementService.getBankBalance(guildId) >= nextStep.cost();
-        boolean hasBoardTier = commissionBoard.getLevels().boardTier() >= nextStep.requiredBoardTier();
+    /** Affiche chaque condition évaluée par le domaine, en vert si elle est remplie et en rouge sinon. */
+    private static List<Component> describeConditions(CommissionBoardUpgradeConditions conditions) {
         List<Component> loreLines = new ArrayList<>();
         loreLines.add(CommissionDisplay.coloredText("Conditions", NamedTextColor.GOLD));
-        loreLines.add(CommissionDisplay.labeledValue("• Coût : ", nextStep.cost() + " lys", toConditionColor(hasEnoughMoney)));
-        if (nextStep.requiredBoardTier() > 1) {
-            loreLines.add(CommissionDisplay.labeledValue("• Tier du tableau : ", String.valueOf(nextStep.requiredBoardTier()),
-                    toConditionColor(hasBoardTier)));
+        loreLines.add(CommissionDisplay.labeledValue("• Coût : ", conditions.step().cost() + " lys",
+                toConditionColor(conditions.hasEnoughMoney())));
+        if (conditions.step().requiredBoardTier() > 1) {
+            loreLines.add(CommissionDisplay.labeledValue("• Tier du tableau : ", String.valueOf(conditions.step().requiredBoardTier()),
+                    toConditionColor(conditions.hasBoardTier())));
         }
-        boolean hasDeliveries = true;
-        for (CommissionBoardDeliveryRequirement requirement : nextStep.deliveryRequirements()) {
-            int deliveredItemCount = commissionBoardManagementService.countDeliveredItems(commissionBoard, requirement);
-            boolean isMet = deliveredItemCount >= requirement.itemCount();
-            hasDeliveries &= isMet;
-            String itemKind = requirement.type() == CommissionType.HARVEST ? "• Items de récolte livrés : " : "• Items d'artisanat livrés : ";
-            loreLines.add(CommissionDisplay.labeledValue(itemKind,
-                    Math.min(deliveredItemCount, requirement.itemCount()) + " / " + requirement.itemCount(), toConditionColor(isMet)));
-            QualityAdapter minimalQuality = QualityAdapter.from(requirement.minimalQuality());
-            loreLines.add(CommissionDisplay.coloredText("   sur des commissions de qualité ", NamedTextColor.DARK_GRAY)
-                    .append(Component.text(minimalQuality.label(), minimalQuality.color()))
-                    .append(Component.text(" ou plus", NamedTextColor.DARK_GRAY)));
-        }
+        conditions.deliveryProgress().forEach(progress -> loreLines.addAll(describeDeliveryProgress(progress)));
         loreLines.add(Component.empty());
-        loreLines.add(hasEnoughMoney && hasBoardTier && hasDeliveries
+        loreLines.add(conditions.areAllMet()
                 ? CommissionDisplay.coloredText("» Clique pour améliorer", NamedTextColor.YELLOW)
                 : CommissionDisplay.coloredText("Conditions non remplies", NamedTextColor.RED));
         return loreLines;
+    }
+
+    private static List<Component> describeDeliveryProgress(CommissionBoardDeliveryProgress progress) {
+        CommissionBoardDeliveryRequirement requirement = progress.requirement();
+        String itemKind = requirement.type() == CommissionType.HARVEST
+                ? "• Items de récolte livrés : "
+                : "• Items d'artisanat livrés : ";
+        String count = Math.min(progress.deliveredItemCount(), requirement.itemCount()) + " / " + requirement.itemCount();
+        QualityAdapter minimalQuality = QualityAdapter.from(requirement.minimalQuality());
+        return List.of(
+                CommissionDisplay.labeledValue(itemKind, count, toConditionColor(progress.isMet())),
+                CommissionDisplay.coloredText("   sur des commissions de qualité ", NamedTextColor.DARK_GRAY)
+                        .append(Component.text(minimalQuality.label(), minimalQuality.color()))
+                        .append(Component.text(" ou plus", NamedTextColor.DARK_GRAY)));
     }
 
     private static NamedTextColor toConditionColor(boolean isMet) {
@@ -146,31 +152,29 @@ public class CommissionManagementMenu extends ItemAdderMenu {
     }
 
     private void addUsageTaxButton(Player viewer) {
+        String stepLabel = USAGE_TAX_STEP_PERCENT + " %";
         List<Component> loreLines = List.of(
                 CommissionDisplay.coloredText("Payée par les joueurs hors de la guilde", NamedTextColor.GRAY),
                 CommissionDisplay.coloredText("et versée à la banque", NamedTextColor.GRAY),
                 Component.empty(),
-                CommissionDisplay.labeledValue("Actuelle : ", CommissionDisplay.formatPercent(commissionBoard.getUsageTaxRate()), NamedTextColor.WHITE),
-                CommissionDisplay.labeledValue("Maximum : ", CommissionDisplay.formatPercent(CommissionBoard.MAX_USAGE_TAX_RATE), NamedTextColor.WHITE),
+                CommissionDisplay.labeledValue("Actuelle : ", CommissionLabels.formatUsageTax(commissionBoard.getUsageTaxRate()),
+                        NamedTextColor.WHITE),
+                CommissionDisplay.labeledValue("Maximum : ", UsageTaxRate.MAX_PERCENT + " %", NamedTextColor.WHITE),
                 Component.empty(),
-                CommissionDisplay.coloredText("» Clic gauche : +" + CommissionDisplay.formatPercent(USAGE_TAX_STEP), NamedTextColor.YELLOW),
-                CommissionDisplay.coloredText("» Clic droit : -" + CommissionDisplay.formatPercent(USAGE_TAX_STEP), NamedTextColor.YELLOW));
-        addButton(USAGE_TAX_SLOT, new ItemBuilder(Material.EMERALD).name("Taxe des externes", NamedTextColor.GOLD).lore(loreLines).build(), event -> {
-            double taxChange = event.isLeftClick() ? USAGE_TAX_STEP : -USAGE_TAX_STEP;
-            changeUsageTax(viewer, roundToPercent(commissionBoard.getUsageTaxRate() + taxChange));
+                CommissionDisplay.coloredText("» Clic gauche : +" + stepLabel, NamedTextColor.YELLOW),
+                CommissionDisplay.coloredText("» Clic droit : -" + stepLabel, NamedTextColor.YELLOW));
+        ItemStack usageTaxIcon = new ItemBuilder(Material.EMERALD).name("Taxe des externes", NamedTextColor.GOLD).lore(loreLines).build();
+        addButton(USAGE_TAX_SLOT, usageTaxIcon, event -> {
+            int taxChange = event.isLeftClick() ? USAGE_TAX_STEP_PERCENT : -USAGE_TAX_STEP_PERCENT;
+            changeUsageTax(viewer, commissionBoard.getUsageTaxRate().percent() + taxChange);
             reopenWithUpToDateBoard(viewer);
         });
     }
 
-    /** Les additions de {@code double} accumulent des erreurs (0,25 + 0,05 donne 0,30000000000000004) : on arrondit au pourcent. */
-    private static double roundToPercent(double rate) {
-        return Math.round(rate * 100) / 100.0;
-    }
-
-    private void changeUsageTax(Player viewer, double usageTaxRate) {
+    private void changeUsageTax(Player viewer, int usageTaxPercent) {
         try {
-            commissionBoardManagementService.changeUsageTax(new PlayerId(viewer.getUniqueId()), commissionBoard.getId(), usageTaxRate);
-            viewer.sendMessage(commissionMessageFormatter.formatUsageTaxChanged(usageTaxRate));
+            commissionBoardManagementService.changeUsageTax(new PlayerId(viewer.getUniqueId()), commissionBoard.getId(), usageTaxPercent);
+            viewer.sendMessage(commissionMessageFormatter.formatUsageTaxChanged(new UsageTaxRate(usageTaxPercent)));
         } catch (CommissionException refusal) {
             viewer.sendMessage(commissionMessageFormatter.formatRefusal(refusal));
         }
@@ -179,8 +183,8 @@ public class CommissionManagementMenu extends ItemAdderMenu {
     private void addInformationButton() {
         int boardTier = commissionBoard.getLevels().boardTier();
         List<Component> loreLines = new ArrayList<>();
-        loreLines.add(CommissionDisplay.labeledValue("Banque de la guilde : ", commissionBoardManagementService.getBankBalance(guildId) + " lys",
-                NamedTextColor.GREEN));
+        int bankBalance = commissionBoardManagementService.getBankBalance(guildId);
+        loreLines.add(CommissionDisplay.labeledValue("Banque de la guilde : ", bankBalance + " lys", NamedTextColor.GREEN));
         loreLines.add(CommissionDisplay.labeledValue("Tier du tableau : ", String.valueOf(boardTier), NamedTextColor.WHITE));
         loreLines.add(Component.empty());
         loreLines.add(CommissionDisplay.coloredText("Fonctionnement", NamedTextColor.GOLD));
@@ -194,9 +198,9 @@ public class CommissionManagementMenu extends ItemAdderMenu {
         loreLines.add(CommissionDisplay.coloredText("Maximum au tier " + boardTier, NamedTextColor.GOLD));
         for (CommissionBoardUpgradeType upgradeType : CommissionBoardUpgradeType.values()) {
             if (upgradeType != CommissionBoardUpgradeType.BOARD_TIER) {
-                loreLines.add(CommissionDisplay.labeledValue("• " + CommissionDisplay.formatUpgradeName(upgradeType) + " : ",
-                        formatLevel(upgradeType, commissionBoardManagementService.getMaxLevelAtBoardTier(commissionBoard, upgradeType)),
-                        NamedTextColor.WHITE));
+                int maxLevel = commissionBoardManagementService.getMaxLevelAtBoardTier(commissionBoard, upgradeType);
+                loreLines.add(CommissionDisplay.labeledValue("• " + CommissionLabels.formatUpgradeName(upgradeType) + " : ",
+                        formatLevel(upgradeType, maxLevel), NamedTextColor.WHITE));
             }
         }
         ItemStack informationIcon = getCustomButtonItemStack(CustomMenuButton.MENU_INFORMATION_BUTTON);
@@ -207,9 +211,8 @@ public class CommissionManagementMenu extends ItemAdderMenu {
         addButton(INFORMATION_SLOT, informationIcon);
     }
 
-
     private void reopenWithUpToDateBoard(Player viewer) {
-        new CommissionManagementMenu(commissionBoardService.getGuildBoard(guildId), guildId, commissionBoardMenu, commissionBoardService,
+        new CommissionManagementMenu(commissionBoardService.openGuildBoard(guildId), guildId, commissionBoardMenu, commissionBoardService,
                 commissionBoardManagementService, commissionMessageFormatter).open(viewer);
     }
 }

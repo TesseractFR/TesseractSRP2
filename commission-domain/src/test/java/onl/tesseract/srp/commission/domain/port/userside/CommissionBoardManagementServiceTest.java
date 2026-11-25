@@ -1,5 +1,8 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryProgress;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeConditions;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
@@ -18,6 +21,7 @@ import onl.tesseract.srp.commission.domain.port.serverside.CommissionBoardReposi
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.GuildBankPort;
+import onl.tesseract.srp.commission.domain.port.serverside.GuildMembershipPort;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.common.domain.model.enums.Quality;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +32,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -43,7 +49,7 @@ class CommissionBoardManagementServiceTest {
     private static final GuildId GUILD_ID = new GuildId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
     private static final PlayerId MANAGER = new PlayerId(UUID.fromString("00000000-0000-0000-0000-000000000010"));
     private static final PlayerId EXTERNAL = new PlayerId(UUID.fromString("00000000-0000-0000-0000-000000000020"));
-    private static final double USAGE_TAX_RATE = 0.25;
+    private static final UsageTaxRate USAGE_TAX_RATE = new UsageTaxRate(25);
     private static final CommissionBoardDeliveryRequirement GOOD_HARVEST = new CommissionBoardDeliveryRequirement(CommissionType.HARVEST, Quality.GOOD, 100);
 
     private CommissionBoardRepository commissionBoardRepository;
@@ -51,6 +57,7 @@ class CommissionBoardManagementServiceTest {
     private CommissionRepository commissionRepository;
     private GuildBankPort guildBankPort;
     private CommissionBoardService commissionBoardService;
+    private GuildMembershipPort guildMembershipPort;
     private CommissionBoardRefillService commissionBoardRefillService;
     private CommissionBoardManagementService commissionBoardManagementService;
     private CommissionBoard guildBoard;
@@ -62,13 +69,14 @@ class CommissionBoardManagementServiceTest {
         commissionRepository = mock(CommissionRepository.class);
         guildBankPort = mock(GuildBankPort.class);
         commissionBoardService = mock(CommissionBoardService.class);
+        guildMembershipPort = mock(GuildMembershipPort.class);
         commissionBoardRefillService = mock(CommissionBoardRefillService.class);
         commissionBoardManagementService = new CommissionBoardManagementService(commissionBoardRepository, commissionConfigRepository,
-                commissionRepository, guildBankPort, commissionBoardService, commissionBoardRefillService);
+                commissionRepository, guildBankPort, guildMembershipPort, commissionBoardService, commissionBoardRefillService);
         guildBoard = CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, CommissionBoardLevels.GUILD_BOARD_START, USAGE_TAX_RATE);
 
         when(commissionBoardService.getBoard(GUILD_BOARD_ID)).thenReturn(guildBoard);
-        when(commissionBoardService.canManageBoard(MANAGER, guildBoard)).thenReturn(true);
+        when(guildMembershipPort.canManageBoard(GUILD_ID, MANAGER)).thenReturn(true);
         when(commissionConfigRepository.findUpgradeStep(CommissionBoardUpgradeType.HARVEST_SLOTS, 2))
                 .thenReturn(Optional.of(new CommissionBoardUpgradeStep(1000, 1, List.of())));
         when(commissionConfigRepository.findUpgradeStep(CommissionBoardUpgradeType.BOARD_TIER, 2))
@@ -77,13 +85,23 @@ class CommissionBoardManagementServiceTest {
     }
 
     @Test
+    void canManageBoard_isAlwaysFalseOnTheSpawnBoard() {
+        // given
+        CommissionBoard spawnBoard = CommissionBoard.spawnBoard(SPAWN_BOARD_ID, 6);
+
+        // when / then
+        assertFalse(commissionBoardManagementService.canManageBoard(MANAGER, spawnBoard));
+        verify(guildMembershipPort, never()).canManageBoard(any(), any());
+    }
+
+    @Test
     void upgradeBoard_paysWithTheBankThenSavesAndFillsTheNewSlot() {
         // when
-        CommissionBoard upgradedBoard = commissionBoardManagementService.upgradeBoard(MANAGER, GUILD_BOARD_ID, CommissionBoardUpgradeType.HARVEST_SLOTS);
+        commissionBoardManagementService.upgradeBoard(MANAGER, GUILD_BOARD_ID, CommissionBoardUpgradeType.HARVEST_SLOTS);
 
         // then
-        assertEquals(2, upgradedBoard.getLevels().harvestSlots());
-        assertEquals(1, upgradedBoard.getLevels().craftSlots());
+        assertEquals(2, guildBoard.getLevels().harvestSlots());
+        assertEquals(1, guildBoard.getLevels().craftSlots());
         verify(guildBankPort).withdrawFromBank(GUILD_ID, 1000);
         verify(commissionBoardRepository).save(guildBoard);
         verify(commissionBoardRefillService).refillBoard(guildBoard);
@@ -100,7 +118,7 @@ class CommissionBoardManagementServiceTest {
     @Test
     void upgradeBoard_throwsOnTheSpawnBoard() {
         // given
-        when(commissionBoardService.getBoard(SPAWN_BOARD_ID)).thenReturn(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(6)));
+        when(commissionBoardService.getBoard(SPAWN_BOARD_ID)).thenReturn(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, 6));
 
         // when / then
         assertThrows(CommissionBoardManagementNotAllowedException.class,
@@ -132,7 +150,7 @@ class CommissionBoardManagementServiceTest {
     @Test
     void upgradeBoard_throwsAndKeepsTheBankWhenTheBoardHasNotReceivedEnoughDeliveries() {
         // given
-        when(commissionRepository.countDeliveredItems(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.GOOD)).thenReturn(99);
+        when(commissionRepository.countDeliveredItemsAtLeast(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.GOOD)).thenReturn(99);
 
         // when / then
         assertThrows(NotEnoughDeliveredItemsException.class,
@@ -141,18 +159,32 @@ class CommissionBoardManagementServiceTest {
     }
 
     @Test
-    void upgradeBoard_countsDeliveriesOfHigherQualitiesTowardsTheBoardTier() {
-        // given : 60 items livrés en qualité bonne et 40 en très bonne, pour 100 demandés en bonne ou mieux
-        when(commissionRepository.countDeliveredItems(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.GOOD)).thenReturn(60);
-        when(commissionRepository.countDeliveredItems(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.VERY_GOOD)).thenReturn(40);
-        when(commissionRepository.countDeliveredItems(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.NORMAL)).thenReturn(500);
+    void upgradeBoard_raisesTheBoardTierOnceTheDeliveriesAreMet() {
+        // given : 100 items livrés en qualité bonne ou mieux, pour 100 demandés
+        when(commissionRepository.countDeliveredItemsAtLeast(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.GOOD)).thenReturn(100);
 
         // when
-        CommissionBoard upgradedBoard = commissionBoardManagementService.upgradeBoard(MANAGER, GUILD_BOARD_ID, CommissionBoardUpgradeType.BOARD_TIER);
+        commissionBoardManagementService.upgradeBoard(MANAGER, GUILD_BOARD_ID, CommissionBoardUpgradeType.BOARD_TIER);
 
         // then
-        assertEquals(2, upgradedBoard.getLevels().boardTier());
-        assertEquals(100, commissionBoardManagementService.countDeliveredItems(guildBoard, GOOD_HARVEST));
+        assertEquals(2, guildBoard.getLevels().boardTier());
+    }
+
+    @Test
+    void findNextUpgradeConditions_reportsEachConditionOfTheNextStep() {
+        // given : 1 500 lys en banque pour un palier à 1 000, 40 items livrés sur 100
+        when(guildBankPort.getBankBalance(GUILD_ID)).thenReturn(1500);
+        when(commissionRepository.countDeliveredItemsAtLeast(GUILD_BOARD_ID, CommissionType.HARVEST, Quality.GOOD)).thenReturn(40);
+
+        // when
+        CommissionBoardUpgradeConditions conditions = commissionBoardManagementService
+                .findNextUpgradeConditions(guildBoard, CommissionBoardUpgradeType.BOARD_TIER).orElseThrow();
+
+        // then
+        assertTrue(conditions.hasEnoughMoney());
+        assertTrue(conditions.hasBoardTier());
+        assertEquals(List.of(new CommissionBoardDeliveryProgress(GOOD_HARVEST, 40)), conditions.deliveryProgress());
+        assertFalse(conditions.areAllMet());
     }
 
     @Test
@@ -170,10 +202,10 @@ class CommissionBoardManagementServiceTest {
     @Test
     void changeUsageTax_savesTheNewRate() {
         // when
-        commissionBoardManagementService.changeUsageTax(MANAGER, GUILD_BOARD_ID, 0.1);
+        commissionBoardManagementService.changeUsageTax(MANAGER, GUILD_BOARD_ID, 10);
 
         // then
-        assertEquals(0.1, guildBoard.getUsageTaxRate());
+        assertEquals(new UsageTaxRate(10), guildBoard.getUsageTaxRate());
         verify(commissionBoardRepository).save(guildBoard);
     }
 
@@ -181,7 +213,7 @@ class CommissionBoardManagementServiceTest {
     void changeUsageTax_throwsAndSavesNothingOutsideTheAllowedRange() {
         // when / then
         assertThrows(InvalidUsageTaxRateException.class,
-                () -> commissionBoardManagementService.changeUsageTax(MANAGER, GUILD_BOARD_ID, 0.6));
+                () -> commissionBoardManagementService.changeUsageTax(MANAGER, GUILD_BOARD_ID, 60));
         verify(commissionBoardRepository, never()).save(any());
     }
 
@@ -189,9 +221,10 @@ class CommissionBoardManagementServiceTest {
     void changeUsageTax_throwsAndKeepsTheRateWhenThePlayerCannotManageTheBoard() {
         // when / then
         assertThrows(CommissionBoardManagementNotAllowedException.class,
-                () -> commissionBoardManagementService.changeUsageTax(EXTERNAL, GUILD_BOARD_ID, 0.1));
+                () -> commissionBoardManagementService.changeUsageTax(EXTERNAL, GUILD_BOARD_ID, 10));
         assertEquals(USAGE_TAX_RATE, guildBoard.getUsageTaxRate());
     }
+
     @Test
     void getMaxLevelAtBoardTier_stopsAtTheFirstStepThatNeedsAHigherBoardTier() {
         // given : le palier 2 est accessible au tier 1, le palier 3 demande le tier 2

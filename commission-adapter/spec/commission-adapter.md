@@ -14,6 +14,7 @@ flowchart TD
     S --> JPA[Dépôts JPA]
     JPA --> DB[(t_commission_boards, t_commissions)]
     S --> G[Ports de guilde : GuildService]
+    S --> PAY[PlayerPaymentPort : PlayerMoneyService]
     S --> MAT[PlayerMaterialPort : CustomItemService]
     S --> CAT[CommissionCatalogRepository : commissions.yml, SkillService, CustomItemService]
     S --> CFG[YAML commissions.yml]
@@ -24,19 +25,19 @@ flowchart TD
 
 ```text
 onl.tesseract.srp.commission.adapter
-├── furniture/CommissionBoardItem
 ├── serverside
 │   ├── jpa/JpaCommissionBoardRepository, JpaCommissionRepository, mappers, entity, repository
 │   ├── catalog/SkillCustomItemCommissionCatalogRepository
-│   ├── yaml/YamlCommissionConfigRepository
-│   ├── guild/GuildServiceMembershipPort, GuildServiceBankPort
+│   ├── yaml/YamlCommissionConfigRepository, CommissionConfig
+│   ├── guild/GuildServiceMembershipPort, GuildServiceBankPort, GuildServiceIncomePort
+│   ├── payment/PlayerServicePaymentPort
 │   └── material/CustomItemPlayerMaterialPort
 └── userside
     ├── config/CommissionProvider
     └── controller
         ├── event/CommissionBoardClickListener, CommissionGuildDeletedListener
         ├── menu/CommissionBoardMenu, CommissionDeliveryMenu, CommissionManagementMenu, CommissionDisplay
-        └── message/CommissionMessageFormatter, CommissionChatFormats
+        └── message/CommissionMessageFormatter, CommissionLabels, CommissionChatFormats
 ```
 
 `CommissionProvider` déclare les services du domaine comme beans Spring. Le module est déclaré dans le `pom.xml` racine et dans les dépendances du plugin.
@@ -82,6 +83,8 @@ Le détail de qui a livré quoi n’est pas stocké ici : il relève du journal 
 ```yaml
 quantity-by-rarity: { COMMON: { quantity: 300, variance: 50 }, RARE: { quantity: 60, variance: 50 } }
 rarity-weights: { COMMON: 100, RARE: 20 }
+quality-weights: { POOR: 30, NORMAL: 35, GOOD: 20, VERY_GOOD: 10, EXCEPTIONAL: 5 }
+quantity-rate-by-quality: { POOR: 1.0, NORMAL: 0.8, GOOD: 0.6, VERY_GOOD: 0.4, EXCEPTIONAL: 0.25 }
 spawn-reward-rate: 0.5
 guild-xp-per-lys: 0.1
 default-usage-tax-rate: 0.25
@@ -101,10 +104,10 @@ upgrades:
 
 | Port du domaine | Implémentation |
 |---|---|
-| `GuildMembershipPort`, `GuildBankPort` | `GuildService` : appartenance, rôle, membres, banque |
+| `GuildMembershipPort`, `GuildBankPort`, `GuildIncomePort` | `GuildService` : appartenance, rôle, membres, banque, taxe et XP des livraisons |
 | `CommissionCatalogRepository` | `harvest-tiers` et `SkillService.findAllSkills` pour le catalogue, `CustomItemService.getMoneyValue` pour la valeur ; un item sans prix est ignoré avec un warning |
 | `PlayerMaterialPort` | `CustomItemService`, boucle sur les qualités jusqu’à A7 (#70) |
-| Paiement dans `recordDelivery` | `PlayerMoneyService.adjustMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
+| `PlayerPaymentPort` | `PlayerMoneyService.addMoney`, puis `MoneyService` à l’arrivée de B2 (#72) |
 
 L’adapter utilise les services des autres domaines, jamais leurs repositories.
 
@@ -135,7 +138,7 @@ Il n’y a aucune commande joueur.
 Les étiquettes « Public » et « Guilde » font partie de la texture. Un tableau peut monter à 6 slots par type, de chaque côté.
 
 - Un membre voit les deux moitiés. Pour un externe, la moitié droite affiche des vitres grises, avec le message « Réservé aux membres de la guilde ».
-- Le tableau du spawn a la même apparence : ses slots par type (`spawn-slots-per-type`, 6 par défaut) sont tous disponibles à gauche, sans slot à débloquer, et la moitié droite affiche des vitres grises, avec le message « Pas de commissions de guilde au spawn ».
+- Le tableau du spawn a la même apparence : ses slots par type (`spawn-slots-per-type`) sont tous disponibles à gauche, sans slot à débloquer, et la moitié droite affiche des vitres grises, avec le message « Pas de commissions de guilde au spawn ».
 - Chaque commission affiche son type, son tier s’il est connu, son item, sa progression (par exemple 5 / 10), sa qualité minimale et sa récompense.
 - Le montant affiché est **net pour ce joueur** ; la taxe est indiquée à l’externe avant de livrer.
 - Un slot verrouillé indique qu’il reste à débloquer.
@@ -166,5 +169,5 @@ Il n’y a aucune tâche périodique : une commission est remplacée quand elle 
 5. Après un redémarrage, tableaux, commissions et progressions sont identiques.
 6. Sur une base vide, le tableau du spawn et celui d’une guilde sont créés à leur premier accès.
 7. Un changement de `commissions.yml` s’applique après un redémarrage, aux prochaines générations ; les commissions déjà générées ne changent pas.
-8. Fichier de configuration absent ou item sans prix : la génération ne plante pas, et un warning est journalisé.
+8. Item sans prix : la génération ne plante pas, et un warning est journalisé. Une valeur de configuration invalide empêche le démarrage.
 9. Le menu de gestion n’apparaît qu’aux rôles autorisés, et un taux changé s’affiche aussitôt aux externes.

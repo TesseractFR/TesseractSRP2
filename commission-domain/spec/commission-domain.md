@@ -30,7 +30,7 @@ Avec les contrats, les commissions sont la seule source d’argent du jeu. Les d
 
 ### Génération et remplacement
 
-- `CommissionBoardRefillService` remplit les slots débloqués à partir d’un catalogue d’items. Pour `CRAFT`, ce sont les résultats des recettes dont le tier ne dépasse pas le tier d’artisanat du tableau. Pour `HARVEST`, ce sont les items listés en configuration dont le tier ne dépasse pas le tier de récolte du tableau : cette liste décide quels items peuvent être demandés et à quel tier, et un item absent n’est jamais demandé. Il n’y a pas de tier 0, car un joueur n’a aucun item débloqué de base mais un point à placer où il veut. La progression des joueurs n’entre jamais en compte, puisqu’elle est individuelle. Il tire la qualité minimale uniformément entre `POOR` et `EXCEPTIONAL` ; une pondération viendra plus tard, comme pour les contrats. La source aléatoire est injectée pour les tests.
+- `CommissionBoardRefillService` remplit les slots débloqués à partir d’un catalogue d’items. Pour `CRAFT`, ce sont les résultats des recettes dont le tier ne dépasse pas le tier d’artisanat du tableau. Pour `HARVEST`, ce sont les items listés en configuration dont le tier ne dépasse pas le tier de récolte du tableau : cette liste décide quels items peuvent être demandés et à quel tier, et un item absent n’est jamais demandé. Il n’y a pas de tier 0, car un joueur n’a aucun item débloqué de base mais un point à placer où il veut. La progression des joueurs n’entre jamais en compte, puisqu’elle est individuelle. Comme pour les contrats, il tire la qualité minimale selon des poids configurés, qui rendent les hautes qualités plus rares, puis réduit la quantité demandée selon cette qualité. La source aléatoire est injectée pour les tests.
 - Comme pour les contrats, le tirage ne tient compte ni du joueur, ni de ce que la guilde sait fabriquer : on peut tomber sur n’importe quel item. Le joueur se le procure comme il veut (autre guilde, achat à un autre joueur).
 - Comme pour les contrats, la quantité de base, sa variance et le poids de tirage viennent de la rareté de l’item, en configuration ; la quantité est tirée au hasard autour de la base. La quantité peut dépasser ce que tient un inventaire, puisque la livraison se fait en plusieurs fois.
 - Terminer une commission débloque la suivante : elle sort de la liste, les suivantes remontent et une nouvelle commission arrive aussitôt à la fin. C’est ce qui donne un intérêt à terminer une mission, puisque les gains sont versés au fil des livraisons.
@@ -71,7 +71,9 @@ Sur un tableau de guilde, chaque livraison donne de l’XP à la guilde proprié
 Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`, `MoneyValue` et `Quality` de `commun-domain`, et atteint les guildes, les items et la monnaie par ses ports.
 
 **Côté utilisateur**, un service par cas d’usage :
-- `CommissionBoardService` : obtenir un tableau, savoir ce qu’un joueur peut voir et gérer, supprimer le tableau d’une guilde.
+- `CommissionBoardService` : ouvrir un tableau, lister les commissions qu’un joueur y voit, supprimer le tableau d’une guilde.
+- `CommissionBoardAccessService` : savoir à quelles parties d’un tableau un joueur a accès, et qui sont les membres de la guilde propriétaire.
+- `CommissionBoardManagementService` gère aussi le droit de gérer le tableau (Adjoint ou chef).
 - `CommissionBoardManagementService` : améliorer le tableau (tier, conditions de livraison, coût) et ajuster la taxe.
 - `CommissionDeliveryService` : lister les commissions visibles, préparer et enregistrer une livraison.
 - `CommissionBoardRefillService` : générer et remplacer les commissions d’un tableau.
@@ -81,11 +83,13 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 | Port | Rôle |
 |---|---|
 | `CommissionBoardRepository` | Créer, lire et enregistrer les tableaux, supprimer celui d’une guilde |
-| `CommissionRepository` | Lire et remplacer les commissions d’un tableau ; `recordDelivery` applique atomiquement la progression, les crédits et les compteurs ; `countDeliveredItems` lit les items livrés par type et qualité |
+| `CommissionRepository` | Lire et remplacer les commissions d’un tableau ; `recordDelivery` enregistre atomiquement la progression et les compteurs ; `countDeliveredItemsAtLeast` lit les items livrés par type et qualité |
 | `CommissionCatalogRepository` | Catalogue par type et tier, valeur d’un item |
 | `CommissionConfigRepository` | Valeurs lues dans le fichier de configuration |
 | `GuildMembershipPort` | Appartenance et rôle d’un joueur, membres d’une guilde |
 | `GuildBankPort` | Solde et débit de la banque pour les améliorations |
+| `GuildIncomePort` | Versement à la guilde de la taxe et de l’XP d’une livraison |
+| `PlayerPaymentPort` | Versement au livreur de son gain |
 | `PlayerMaterialPort` | Compter et retirer des items à partir d’une qualité minimale |
 
 **Issues liées, toutes ouvertes :**
@@ -93,7 +97,7 @@ Le domaine n’a aucune annotation Spring. Il utilise `PlayerId`, `MaterialName`
 | Dépendance | Solution provisoire |
 |---|---|
 | B7 #170, valeur et récompense | Prix de base de `itemValue.yml` |
-| B2 #72, `MoneyService` et journal | `PlayerMoneyService.adjustMoney` |
+| B2 #72, `MoneyService` et journal | `PlayerMoneyService.addMoney` |
 | A7 #70, comptage à partir d’une qualité | Boucle sur les qualités avec `CustomItemService` |
 | E4 #92, banque de guilde | `GuildService.payFromBank` et `GuildService.addCommissionIncome` |
 | F8 #146, structures du spawn | Aucune : les recettes de tier 1 ne sont pas encore disponibles au spawn |

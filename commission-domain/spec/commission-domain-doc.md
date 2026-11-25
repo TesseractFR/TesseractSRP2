@@ -27,15 +27,16 @@ commission-domain
 │   └── exception                    refus métier, sous la racine scellée CommissionException
 └── port
     ├── userside                     ce que le jeu appelle, un service par cas d'usage
-    │   ├── CommissionBoardService             lecture des tableaux, droits des joueurs, suppression
+    │   ├── CommissionBoardService             ouverture des tableaux, commissions visibles, suppression
+    │   ├── CommissionBoardAccessService       accès aux parties du tableau et membres de la guilde propriétaire
     │   ├── CommissionBoardManagementService   améliorations et taxe d'usage
     │   ├── CommissionDeliveryService          commissions visibles et livraison
     │   └── CommissionBoardRefillService       tirage et remplacement des commissions
     └── serverside                   ce dont le domaine a besoin, implémenté par l'adapter
         ├── CommissionBoardRepository, CommissionRepository     persistance
         ├── CommissionCatalogRepository, CommissionConfigRepository
-        ├── GuildMembershipPort, GuildBankPort
-        └── PlayerMaterialPort
+        ├── GuildMembershipPort, GuildBankPort, GuildIncomePort
+        └── PlayerMaterialPort, PlayerPaymentPort
 ```
 
 Schéma des appels :
@@ -45,8 +46,11 @@ flowchart TD
     JEU[Adapter : menus, listeners] --> BS[CommissionBoardService]
     JEU --> MS[CommissionBoardManagementService]
     JEU --> DS[CommissionDeliveryService]
+    JEU --> AS[CommissionBoardAccessService]
+    BS --> AS
     MS --> BS
     DS --> BS
+    DS --> AS
     BS --> RS[CommissionBoardRefillService]
     MS --> RS
     DS --> RS
@@ -73,14 +77,23 @@ Classe et non record : ses niveaux et sa taxe changent, mais seulement par des m
 | `getId()` | Identifiant du tableau |
 | `findGuildId()` | Guilde propriétaire ; vide pour le spawn |
 | `getLevels()` | Niveaux d'amélioration (`CommissionBoardLevels`) |
-| `getUsageTaxRate()` | Taxe payée par les externes, entre 0 et `MAX_USAGE_TAX_RATE` (50 %) |
+| `getUsageTaxRate()` | Taxe payée par les externes (`UsageTaxRate`), `UsageTaxRate.ZERO` au spawn |
 
-- `spawnBoard(id, levels)` : le tableau du spawn, sans taxe ; ses niveaux sont ceux de `CommissionBoardLevels.forSpawnBoard(slots)`.
-- `guildBoard(id, guildId, levels, taxRate)` : un tableau de guilde.
+- `spawnBoard(id, slotsPerType)` : le tableau du spawn, sans taxe ; ses niveaux sont ceux de `CommissionBoardLevels.forSpawnBoard(slotsPerType)`, il ne peut pas en avoir d'autres.
+- `guildBoard(id, guildId, levels, usageTaxRate)` : un tableau de guilde.
 - `isSpawnBoard()`, `findAllParts()` : `PUBLIC` seule au spawn, `PUBLIC` et `GUILD` sur une guilde.
-- `computeUsageTaxOn(montant)` : `montant × usageTaxRate`, arrondi à l'inférieur.
-- `upgrade(type)` : monte l'amélioration d'un palier. Le prix et les conditions sont vérifiés par le service.
-- `changeUsageTax(taux)` : lève `InvalidUsageTaxRateException` hors de [0, 50 %]. Le constructeur vérifie la même chose.
+- `computeUsageTaxOn(montant)` : délègue à `UsageTaxRate.computeTaxOn`.
+- `upgrade(type)` : monte l'amélioration d'un palier. Le prix et les conditions sont vérifiés par le service. Lève `IllegalStateException` au spawn.
+- `changeUsageTax(usageTaxRate)` : lève `IllegalStateException` au spawn, qui ne taxe jamais.
+- `changeSpawnSlots(slotsPerType)` : lève `IllegalStateException` sur un tableau de guilde.
+
+### `UsageTaxRate` (record)
+
+La taxe d'usage, en pourcentage entier entre 0 et `MAX_PERCENT` (50). Le constructeur lève `InvalidUsageTaxRateException` hors de cet intervalle : c'est la seule vérification de la limite, pour la configuration comme pour le menu. `computeTaxOn(montant)` vaut `montant × percent / 100`, arrondi à l'inférieur. Le pourcentage entier rend les paliers de 5 % exacts, sans erreur d'arrondi sur des décimaux.
+
+### `CommissionBoardUpgradeConditions` et `CommissionBoardDeliveryProgress` (records)
+
+L'état des conditions du prochain palier d'une amélioration : le palier visé, `hasEnoughMoney`, `hasBoardTier` et un `CommissionBoardDeliveryProgress` (condition, items livrés, `isMet()`) par condition de livraison. `areAllMet()` les combine. C'est la seule évaluation de ces conditions : le menu l'affiche, `upgradeBoard` l'applique.
 
 ### `CommissionBoardLevels` (record)
 
@@ -99,18 +112,18 @@ Un palier a un coût en lys, un tier de tableau minimal (1 pour le tier du table
 Une commission porte son tableau (`boardId`), `part`, `type`, `material`, `quantity`, `deliveredQuantity`, `minimalQuality` et `reward` (`MoneyValue`, figée à la génération). Un `CommissionDraft` a les mêmes champs sans identifiant ni livraison : c'est ce que produit le tirage, et le dépôt en fait une `Commission`.
 
 - Le constructeur refuse `quantity < 1` et `deliveredQuantity` hors de `0..quantity`.
-- `getRemainingQuantity()`, `isCompleted()`, `isInList(part, type)`.
-- `computeShareFor(total, itemCount)` : la part de `total` gagnée par les `itemCount` prochains items. Elle se calcule sur la progression cumulée :
+- `getRemainingQuantity()`, `isCompleted()`, `belongsTo(part, type)`.
+- `computeProgressShareOf(total, itemCount)` : la part de `total` (la récompense ou l'XP de guilde) gagnée par les `itemCount` prochains items. Elle se calcule sur la progression cumulée :
 
 ```
-computeShareFor = arrondi(total × (livré + itemCount) / quantity) − arrondi(total × livré / quantity)
+computeProgressShareOf = arrondi(total × (livré + itemCount) / quantity) − arrondi(total × livré / quantity)
 ```
 
 La somme des parts vaut donc exactement `total`, quel que soit le découpage des livraisons. Exemple avec 100 lys pour 7 items livrés un par un : 14, 15, 14, 14, 14, 15, 14. `computeRewardShareFor(itemCount)` l'applique à la récompense ; la même méthode sert à l'XP.
 
 ### `CommissionDelivery` (record)
 
-Une livraison calculée : `commissionId`, `boardId`, `deliverer`, `itemCount`, `playerEarnings`, `guildTax`, `guildXp`, `isGuildMember`, `completesCommission`. Elle sert à l'affichage dans les menus et à l'enregistrement.
+Une livraison calculée : `commissionId`, `boardId`, `itemCount`, `playerEarnings`, `guildTax`, `guildXp`, `isGuildMember`, `completesCommission`. Elle sert à l'affichage dans les menus et à l'enregistrement.
 
 Les montants sont des `int` et non des `MoneyValue` : une petite livraison peut rapporter zéro lys, et `MoneyValue` n'accepte que des montants strictement positifs.
 
@@ -129,24 +142,26 @@ Les montants sont des `int` et non des `MoneyValue` : une petite livraison peut 
 | `ItemQualityTooLowException` | Le joueur n'a l'item que sous la qualité minimale |
 | `CommissionBoardManagementNotAllowedException` | Le joueur n'est pas Adjoint ou chef, ou le tableau est celui du spawn |
 | `CommissionBoardUpgradeMaxLevelReachedException`, `CommissionBoardTierTooLowException`, `NotEnoughDeliveredItemsException`, `NotEnoughBankMoneyException` | Refus d'amélioration |
-| `InvalidUsageTaxRateException` | Taxe hors de [0, 50 %] |
+| `InvalidUsageTaxRateException` | Taxe hors de [0, 50 %], levée par `UsageTaxRate` |
 
 ## 3. Ports `serverside`
 
 | Port | Méthode | Contrat |
 |---|---|---|
-| `CommissionBoardRepository` | `createSpawnBoard(levels)`, `createGuildBoard(guildId, taxRate)` | Enregistre un tableau neuf et le renvoie avec son id ; un tableau de guilde part de `CommissionBoardLevels.GUILD_BOARD_START` |
+| `CommissionBoardRepository` | `createSpawnBoard(slotsPerType)`, `createGuildBoard(guildId, usageTaxRate)` | Enregistre un tableau neuf et le renvoie avec son id ; un tableau de guilde part de `CommissionBoardLevels.GUILD_BOARD_START` |
 | | `save(board)` | Enregistre niveaux et taxe du tableau |
 | | `findById`, `findSpawnBoard`, `findByGuild` | `Optional` vide si absent |
 | | `deleteByGuild(guildId)` | Supprime le tableau d'une guilde, ses commissions et ses compteurs |
 | `CommissionRepository` | `findById`, `findAllByBoard` | `findAllByBoard` renvoie les plus anciennes d'abord, ce qui donne l'ordre d'affichage |
-| | `recordDelivery(delivery)` | En une transaction : progression, gain du livreur, taxe et XP de la guilde, compteur de commissions terminées et compteur d'items livrés (à la qualité demandée par la commission) |
-| | `countDeliveredItems(board, type, quality)` | Items livrés sur des commissions de ce type qui demandaient exactement cette qualité |
+| | `recordDelivery(delivery)` | En une transaction : progression, compteur de commissions terminées et compteur d'items livrés (à la qualité demandée par la commission). Les gains n'y passent pas |
+| | `countDeliveredItemsAtLeast(board, type, minimalQuality)` | Items livrés sur des commissions de ce type qui demandaient cette qualité ou une qualité supérieure |
 | | `replaceCommissions(removed, added)` | Retire et ajoute des commissions en une transaction |
-| `CommissionCatalogRepository` | `findAllCatalogItems(type)`, `getUnitValue`, `getItemTier` | Catalogue et valeur des items ; le catalogue ne contient que des items avec un prix |
-| `CommissionConfigRepository` | `getSpawnRewardRate`, `getMoneyBonusRate`, `getGuildXpPerLys`, `getDefaultUsageTaxRate`, `getSpawnSlotsPerType`, `findUpgradeStep` | Valeurs de configuration ; `findUpgradeStep` vide au niveau maximal |
+| `CommissionCatalogRepository` | `findAllCatalogItems(type)`, `getUnitValue`, `findItemTier` | Catalogue et valeur des items ; le catalogue ne contient que des items avec un prix. `findItemTier` est vide pour un item sorti du catalogue depuis la génération de la commission |
+| `CommissionConfigRepository` | `getSpawnRewardRate`, `getMoneyBonusRate`, `getGuildXpPerLys`, `getDefaultUsageTaxRate`, `getQualityWeights`, `getQuantityRate(qualité)`, `getSpawnSlotsPerType`, `findUpgradeStep` | Valeurs de configuration ; `findUpgradeStep` vide au niveau maximal |
 | `GuildMembershipPort` | `isMember`, `canManageBoard`, `findAllMembers` | Appartenance, rôle et membres |
 | `GuildBankPort` | `getBankBalance`, `withdrawFromBank` | Banque ; `withdrawFromBank` renvoie `false` sans rien retirer si les fonds manquent |
+| `GuildIncomePort` | `addCommissionIncome(guildId, usageTax, xp)` | Verse à la guilde la taxe et l'XP d'une livraison |
+| `PlayerPaymentPort` | `pay(player, amount)` | Verse un gain de livraison, positif ou nul, au joueur |
 | `PlayerMaterialPort` | `countAtLeast`, `removeAtLeast` | Comptage et retrait à partir d'une qualité ; l'appelant compte avant de retirer |
 
 ## 4. `CommissionBoardRefillService`
@@ -160,7 +175,8 @@ Les montants sont des `int` et non des `MoneyValue` : une petite livraison peut 
 Pour une commission tirée :
 
 - l'item est tiré selon son poids ;
-- la qualité minimale est tirée uniformément entre `POOR` et `EXCEPTIONAL` ;
+- la qualité minimale est tirée selon `CommissionQualityWeights` (`quality-weights`) : une qualité sort proportionnellement à son poids, les hautes qualités sont donc plus rares ;
+- la quantité tirée est ensuite multipliée par le `QuantityRate` de cette qualité (`quantity-rate-by-quality`), arrondie avec un minimum de 1 : une haute qualité demande moins d'items. C'est le même tirage que pour les contrats ;
 - la quantité est tirée uniformément entre `base × (1 − variance)` et `base × (1 + variance)`, bornes arrondies et comprises, au moins 1 ; la base et la variance viennent du `CommissionCatalogItem` (50 % sur une base de 50 donne [25 ; 75]) ;
 - la récompense est figée :
 
@@ -174,25 +190,27 @@ Elle est arrondie à l'unité et vaut au moins 1 lys. Le tirage ne regarde ni le
 
 ### 5.1 `CommissionBoardService`
 
-- `getSpawnBoard()`, `getGuildBoard(guildId)` : lisent le tableau, ou le créent s'il n'existe pas, puis appellent `refillBoard`. Le tableau d'une guilde est créé avec la taxe `getDefaultUsageTaxRate()` ; la changer en configuration ne modifie pas les tableaux existants. Le tableau du spawn suit `getSpawnSlotsPerType()` à chaque appel : un slot ajouté est rempli aussitôt, et les commissions d'un slot retiré restent en base sans être affichées.
+- `openSpawnBoard()`, `openGuildBoard(guildId)` : préparent le tableau qu'un joueur ouvre. Ils lisent le tableau, ou le créent s'il n'existe pas, puis appellent `refillBoard`. Le tableau d'une guilde est créé avec la taxe `getDefaultUsageTaxRate()` ; la changer en configuration ne modifie pas les tableaux existants. Le tableau du spawn suit `getSpawnSlotsPerType()` à chaque appel : un slot ajouté est rempli aussitôt, et les commissions d'un slot retiré restent en base sans être affichées.
 - `getSpawnRewardRate()` : part payée au spawn, pour le bouton d'information du menu.
 - `getBoard(boardId)` : lève `CommissionBoardNotFoundException` s'il n'existe pas.
-- `canAccessPart(player, board, part)` : `PUBLIC` pour tout le monde, `GUILD` pour les membres.
-- `isGuildMember`, `canManageBoard` : toujours faux au spawn.
-- `findAllGuildMembers(board)` : les membres de la guilde propriétaire, à prévenir des gains de la guilde ; liste vide au spawn.
-- `getCommissionTier(commission)` : tier de l'item, pour l'affichage ; rien n'est stocké sur la commission.
+- `findAllVisibleCommissions(player, board)` : les commissions des parties auxquelles le joueur a accès, dans l'ordre d'affichage.
+- `findCommissionTier(commission)` : tier de l'item, pour l'affichage ; rien n'est stocké sur la commission. Vide si l'item a quitté le catalogue : le menu n'affiche alors que le type.
 - `deleteGuildBoard(guildId)` : supprime le tableau en base, ses commissions et ses compteurs. Le retrait de l'item du monde relève du moteur des structures.
 
-### 5.2 `CommissionDeliveryService`
+### 5.1 bis `CommissionBoardAccessService`
 
-`findAllVisibleCommissions(player, board)` : les commissions auxquelles le joueur a accès.
+- `canAccessPart(player, board, part)` : `PUBLIC` pour tout le monde, `GUILD` pour les membres.
+- `isGuildMember` : toujours faux au spawn.
+- `findAllGuildMembers(board)` : les membres de la guilde propriétaire, à prévenir des gains de la guilde ; liste vide au spawn.
+
+### 5.2 `CommissionDeliveryService`
 
 `computeDelivery(player, board, commission)` ne modifie rien et sert à l'affichage comme à la livraison :
 
 1. `itemCount = min(items possédés à la qualité minimale ou au-dessus, quantité restante)` ;
 2. `itemsValue = commission.computeRewardShareFor(itemCount)` ;
 3. `guildTax = 0` pour un membre, sinon `board.computeUsageTaxOn(itemsValue)` ; au spawn, le taux vaut 0 ;
-4. `guildXp = commission.computeShareFor(computeTotalGuildXp(board, commission), itemCount)` ;
+4. `guildXp = commission.computeProgressShareOf(computeTotalGuildXp(board, commission), itemCount)` ;
 5. `playerEarnings = itemsValue − guildTax`.
 
 `computeTotalGuildXp(board, commission)` : l'XP que la commission donne à la guilde une fois terminée, `arrondi(reward × guild-xp-per-lys)`, 0 au spawn. Le menu l'affiche aux membres sous la récompense totale.
@@ -204,6 +222,8 @@ sequenceDiagram
     participant S as CommissionDeliveryService
     participant R as CommissionRepository
     participant M as PlayerMaterialPort
+    participant P as PlayerPaymentPort
+    participant G as GuildIncomePort
     S->>R: findById
     alt absente ou terminée
         Note over S: CommissionNotAvailableException
@@ -214,33 +234,41 @@ sequenceDiagram
     else
         S->>R: recordDelivery
         S->>M: removeAtLeast
+        S->>P: pay
+        S->>G: addCommissionIncome (tableau de guilde seulement)
         Note over S: si la commission est terminée, refillBoard
     end
 ```
 
-- La progression et les gains sont enregistrés **avant** le retrait des items : si la base échoue, rien n'a été retiré au joueur et il n'y a jamais d'items à rendre.
+- La progression est enregistrée **avant** le retrait des items et les paiements : si la base échoue, rien n'a été retiré ni versé, et il n'y a jamais d'items à rendre.
 - Tout s'exécute sur le thread principal du serveur : entre la lecture de la commission, le comptage des items et leur retrait, rien ne peut changer. Il n'y a donc ni contrôle de concurrence, ni cas « items manquants au retrait ».
-- Un gain n'est jamais négatif : `PlayerMoneyService.adjustMoney` ne refuse jamais le versement.
-- Risque accepté : si le retrait échoue après l'enregistrement, le joueur est payé et garde ses items. C'est limité à la quantité de cette livraison, puisque la progression a déjà avancé.
+- Un gain n'est jamais négatif : `PlayerPaymentPort.pay` ne refuse jamais le versement.
+- Risque accepté : la progression, le retrait et les paiements ne sont pas dans une même transaction. Si le retrait ou un paiement échoue après l'enregistrement, la progression a avancé sans que tout soit appliqué ; c'est limité à la quantité de cette livraison.
 - La livraison n'est pas en tout ou rien : le joueur donne ce qu'il peut, jusqu'à la quantité restante.
 - Sans item livrable, c'est `ItemQualityTooLowException` si le joueur a l'item à une qualité plus basse, sinon `NoItemToDeliverException`.
 
 ### 5.3 `CommissionBoardManagementService`
 
+`canManageBoard(player, board)` : vrai pour un Adjoint ou le chef de la guilde propriétaire, toujours faux au spawn. Le menu s'en sert pour afficher le bouton de gestion, et `upgradeBoard` comme `changeUsageTax` appliquent la même règle.
+
+`findNextUpgradeConditions(board, type)` : les conditions du prochain palier (`CommissionBoardUpgradeConditions`), vides au niveau maximal. Les livraisons sont comptées par `countDeliveredItemsAtLeast`, qui inclut les qualités supérieures à celle demandée.
+
 `upgradeBoard(player, boardId, type)` relit le tableau, car celui d'un menu ouvert peut être dépassé. Dans l'ordre :
 
 1. le tableau doit être celui d'une guilde que le joueur gère, sinon `CommissionBoardManagementNotAllowedException` ;
-2. le palier suivant doit exister (`findNextUpgradeStep`), sinon `CommissionBoardUpgradeMaxLevelReachedException` ;
+2. les conditions du palier suivant sont évaluées (`findNextUpgradeConditions`) ; s'il n'existe pas, `CommissionBoardUpgradeMaxLevelReachedException` ;
 3. le tableau doit avoir le tier demandé par le palier, sinon `CommissionBoardTierTooLowException` ;
-4. pour le tier du tableau, chaque condition de livraison doit être remplie, sinon `NotEnoughDeliveredItemsException`. Les items livrés sur des commissions d'une qualité supérieure comptent aussi (`countDeliveredItems` additionne les qualités à partir de celle demandée) ;
-5. la banque doit payer (`withdrawFromBank`), sinon `NotEnoughBankMoneyException` ;
+4. pour le tier du tableau, chaque condition de livraison doit être remplie, sinon `NotEnoughDeliveredItemsException` ;
+5. la banque doit payer (`withdrawFromBank`, qui vérifie lui-même le solde), sinon `NotEnoughBankMoneyException` ;
 6. le tableau est amélioré, enregistré, puis `refillBoard` remplit un éventuel slot débloqué.
+
+Risque accepté : la banque est débitée avant l'enregistrement du tableau, sans transaction commune. Si l'enregistrement échoue, la guilde a payé sans être améliorée.
 
 Une amélioration ne touche pas aux commissions en cours : elle s'applique à la prochaine génération. Le bonus d'argent ne change pas les récompenses déjà figées.
 
-`changeUsageTax(player, boardId, taux)` : même vérification du rôle, puis `changeUsageTax` du tableau. Le nouveau taux s'applique dès la livraison suivante, y compris aux commissions déjà générées.
+`changeUsageTax(player, boardId, usageTaxPercent)` : même vérification du rôle, puis `changeUsageTax` du tableau avec un `UsageTaxRate`, qui refuse un taux hors limites. Le nouveau taux s'applique dès la livraison suivante, y compris aux commissions déjà générées.
 
-`findNextUpgradeStep`, `getMaxLevelAtBoardTier` (le plus haut niveau qu'une amélioration peut atteindre au tier actuel du tableau), `getMoneyBonusRate`, `countDeliveredItems` et `getBankBalance` servent à l'affichage du menu de gestion.
+`findNextUpgradeConditions`, `getMaxLevelAtBoardTier` (le plus haut niveau qu'une amélioration peut atteindre au tier actuel du tableau), `getMoneyBonusRate` et `getBankBalance` servent à l'affichage du menu de gestion.
 
 ## 6. Cycle de vie
 
@@ -265,4 +293,4 @@ Une amélioration ne touche pas aux commissions en cours : elle s'applique à la
 
 - Aucune limite de commissions par joueur.
 - Aucun filtre selon le joueur ou les recettes connues de la guilde.
-- Aucun événement de domaine publié à la livraison : l'XP et la taxe passent par `recordDelivery`.
+- Aucun événement de domaine publié à la livraison : l'XP et la taxe passent par `GuildIncomePort`.

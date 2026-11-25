@@ -1,53 +1,68 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryRequirement;
-import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardDeliveryProgress;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
+import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeConditions;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeStep;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.GuildId;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardManagementNotAllowedException;
-import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardTierTooLowException;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardNotFoundException;
+import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardTierTooLowException;
+import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardUpgradeMaxLevelReachedException;
 import onl.tesseract.srp.commission.domain.model.exception.InvalidUsageTaxRateException;
 import onl.tesseract.srp.commission.domain.model.exception.NotEnoughBankMoneyException;
 import onl.tesseract.srp.commission.domain.model.exception.NotEnoughDeliveredItemsException;
-import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardUpgradeMaxLevelReachedException;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionBoardRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionConfigRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.CommissionRepository;
 import onl.tesseract.srp.commission.domain.port.serverside.GuildBankPort;
+import onl.tesseract.srp.commission.domain.port.serverside.GuildMembershipPort;
 import onl.tesseract.srp.common.domain.model.PlayerId;
-import onl.tesseract.srp.common.domain.model.enums.Quality;
 
-import java.util.Arrays;
 import java.util.Optional;
 
-/** Gère un tableau de guilde : ses améliorations, payées par la banque, et sa taxe d'usage. */
+/** Gère un tableau de guilde : qui peut le gérer, ses améliorations payées par la banque, et sa taxe d'usage. */
 public class CommissionBoardManagementService {
     private final CommissionBoardRepository commissionBoardRepository;
     private final CommissionConfigRepository commissionConfigRepository;
     private final CommissionRepository commissionRepository;
     private final GuildBankPort guildBankPort;
+    private final GuildMembershipPort guildMembershipPort;
     private final CommissionBoardService commissionBoardService;
     private final CommissionBoardRefillService commissionBoardRefillService;
 
     public CommissionBoardManagementService(CommissionBoardRepository commissionBoardRepository,
                                             CommissionConfigRepository commissionConfigRepository,
                                             CommissionRepository commissionRepository,
-                                            GuildBankPort guildBankPort, CommissionBoardService commissionBoardService,
+                                            GuildBankPort guildBankPort, GuildMembershipPort guildMembershipPort,
+                                            CommissionBoardService commissionBoardService,
                                             CommissionBoardRefillService commissionBoardRefillService) {
         this.commissionBoardRepository = commissionBoardRepository;
         this.commissionConfigRepository = commissionConfigRepository;
         this.commissionRepository = commissionRepository;
         this.guildBankPort = guildBankPort;
+        this.guildMembershipPort = guildMembershipPort;
         this.commissionBoardService = commissionBoardService;
         this.commissionBoardRefillService = commissionBoardRefillService;
     }
 
-    /** @return le prochain palier de l'amélioration, ou {@link Optional#empty()} si elle est au niveau maximal */
-    public Optional<CommissionBoardUpgradeStep> findNextUpgradeStep(CommissionBoard commissionBoard, CommissionBoardUpgradeType upgradeType) {
-        return commissionConfigRepository.findUpgradeStep(upgradeType, commissionBoard.getLevels().getLevel(upgradeType) + 1);
+    /** @return {@code true} si le joueur peut améliorer le tableau et changer sa taxe (Adjoint ou chef) ; toujours faux au spawn */
+    public boolean canManageBoard(PlayerId player, CommissionBoard commissionBoard) {
+        return findManagedGuildId(player, commissionBoard).isPresent();
+    }
+
+    /**
+     * Évalue les conditions du prochain palier de l'amélioration : solde de la banque, tier du tableau et
+     * livraisons faites. Les livraisons comptent sur des commissions de la qualité demandée ou d'une qualité supérieure.
+     *
+     * @return les conditions, ou {@link Optional#empty()} si l'amélioration est au niveau maximal
+     */
+    public Optional<CommissionBoardUpgradeConditions> findNextUpgradeConditions(CommissionBoard commissionBoard,
+                                                                                CommissionBoardUpgradeType upgradeType) {
+        return findNextUpgradeStep(commissionBoard, upgradeType).map(step -> evaluateConditions(commissionBoard, step));
     }
 
     /**
@@ -65,23 +80,9 @@ public class CommissionBoardManagementService {
         return level;
     }
 
-    private boolean isUnlockedAtBoardTier(CommissionBoardUpgradeType upgradeType, int upgradeLevel, int boardTier) {
-        return commissionConfigRepository.findUpgradeStep(upgradeType, upgradeLevel)
-                .filter(step -> step.requiredBoardTier() <= boardTier)
-                .isPresent();
-    }
-
     /** @return taux du bonus d'argent à ce niveau d'amélioration */
     public double getMoneyBonusRate(int moneyBonusLevel) {
         return commissionConfigRepository.getMoneyBonusRate(moneyBonusLevel);
-    }
-
-    /** @return items livrés sur ce tableau pour cette condition, sur des commissions de sa qualité ou d'une qualité supérieure */
-    public int countDeliveredItems(CommissionBoard commissionBoard, CommissionBoardDeliveryRequirement requirement) {
-        return Arrays.stream(Quality.values())
-                .filter(quality -> quality.isAtLeast(requirement.minimalQuality()))
-                .mapToInt(quality -> commissionRepository.countDeliveredItems(commissionBoard.getId(), requirement.type(), quality))
-                .sum();
     }
 
     /** @return solde de la banque de la guilde, en lys */
@@ -91,9 +92,10 @@ public class CommissionBoardManagementService {
 
     /**
      * Monte l'amélioration d'un palier, payé par la banque de la guilde. Débloquer un slot le remplit
-     * aussitôt ; les autres améliorations ne s'appliquent qu'aux commissions générées ensuite.
+     * aussitôt ; les autres améliorations ne s'appliquent qu'aux commissions générées ensuite. La banque est
+     * débitée avant l'enregistrement du tableau, hors de toute transaction commune : si l'enregistrement
+     * échoue, la guilde a payé sans être améliorée.
      *
-     * @return le tableau amélioré
      * @throws CommissionBoardNotFoundException si le tableau n'existe pas
      * @throws CommissionBoardManagementNotAllowedException si le joueur ne peut pas gérer le tableau
      * @throws CommissionBoardUpgradeMaxLevelReachedException si l'amélioration est au niveau maximal
@@ -101,47 +103,73 @@ public class CommissionBoardManagementService {
      * @throws NotEnoughDeliveredItemsException si le tableau n'a pas reçu les livraisons demandées par le palier
      * @throws NotEnoughBankMoneyException si la banque ne peut pas payer le palier
      */
-    public CommissionBoard upgradeBoard(PlayerId player, CommissionBoardId boardId, CommissionBoardUpgradeType upgradeType) {
+    public void upgradeBoard(PlayerId player, CommissionBoardId boardId, CommissionBoardUpgradeType upgradeType) {
         CommissionBoard commissionBoard = commissionBoardService.getBoard(boardId);
         GuildId guildId = getManagedGuildId(player, commissionBoard);
-        CommissionBoardUpgradeStep nextStep = findNextUpgradeStep(commissionBoard, upgradeType)
-                .orElseThrow(() -> new CommissionBoardUpgradeMaxLevelReachedException(upgradeType));
-        int boardTier = commissionBoard.getLevels().boardTier();
-        if (boardTier < nextStep.requiredBoardTier()) {
-            throw new CommissionBoardTierTooLowException(boardId, nextStep.requiredBoardTier(), boardTier);
+        CommissionBoardUpgradeConditions conditions = findNextUpgradeConditions(commissionBoard, upgradeType)
+                .orElseThrow(() -> new CommissionBoardUpgradeMaxLevelReachedException(boardId, upgradeType));
+        CommissionBoardUpgradeStep step = conditions.step();
+        if (!conditions.hasBoardTier()) {
+            throw new CommissionBoardTierTooLowException(boardId, step.requiredBoardTier(), commissionBoard.getLevels().boardTier());
         }
-        for (CommissionBoardDeliveryRequirement requirement : nextStep.deliveryRequirements()) {
-            int deliveredItemCount = countDeliveredItems(commissionBoard, requirement);
-            if (deliveredItemCount < requirement.itemCount()) {
-                throw new NotEnoughDeliveredItemsException(boardId, requirement, deliveredItemCount);
+        for (CommissionBoardDeliveryProgress progress : conditions.deliveryProgress()) {
+            if (!progress.isMet()) {
+                throw new NotEnoughDeliveredItemsException(boardId, progress.requirement(), progress.deliveredItemCount());
             }
         }
-        if (!guildBankPort.withdrawFromBank(guildId, nextStep.cost())) {
-            throw new NotEnoughBankMoneyException(guildId, nextStep.cost());
+        if (!guildBankPort.withdrawFromBank(guildId, step.cost())) {
+            throw new NotEnoughBankMoneyException(guildId, step.cost());
         }
         commissionBoard.upgrade(upgradeType);
         commissionBoardRepository.save(commissionBoard);
         commissionBoardRefillService.refillBoard(commissionBoard);
-        return commissionBoard;
     }
 
     /**
      * Change le taux de taxe d'usage, gratuitement. Le nouveau taux s'applique aux livraisons suivantes.
      *
+     * @param usageTaxPercent nouveau taux, en pourcentage
      * @throws CommissionBoardNotFoundException si le tableau n'existe pas
      * @throws CommissionBoardManagementNotAllowedException si le joueur ne peut pas gérer le tableau
      * @throws InvalidUsageTaxRateException si le taux sort de l'intervalle autorisé
      */
-    public void changeUsageTax(PlayerId player, CommissionBoardId boardId, double usageTaxRate) {
+    public void changeUsageTax(PlayerId player, CommissionBoardId boardId, int usageTaxPercent) {
         CommissionBoard commissionBoard = commissionBoardService.getBoard(boardId);
-        getManagedGuildId(player, commissionBoard);
-        commissionBoard.changeUsageTax(usageTaxRate);
+        if (!canManageBoard(player, commissionBoard)) {
+            throw new CommissionBoardManagementNotAllowedException(player, boardId);
+        }
+        commissionBoard.changeUsageTax(new UsageTaxRate(usageTaxPercent));
         commissionBoardRepository.save(commissionBoard);
     }
 
+    private Optional<CommissionBoardUpgradeStep> findNextUpgradeStep(CommissionBoard commissionBoard,
+                                                                     CommissionBoardUpgradeType upgradeType) {
+        return commissionConfigRepository.findUpgradeStep(upgradeType, commissionBoard.getLevels().getLevel(upgradeType) + 1);
+    }
+
+    private CommissionBoardUpgradeConditions evaluateConditions(CommissionBoard commissionBoard, CommissionBoardUpgradeStep step) {
+        boolean hasEnoughMoney = commissionBoard.findGuildId()
+                .map(guildId -> guildBankPort.getBankBalance(guildId) >= step.cost())
+                .orElse(false);
+        boolean hasBoardTier = commissionBoard.getLevels().boardTier() >= step.requiredBoardTier();
+        return new CommissionBoardUpgradeConditions(step, hasEnoughMoney, hasBoardTier, step.deliveryRequirements().stream()
+                .map(requirement -> new CommissionBoardDeliveryProgress(requirement, commissionRepository.countDeliveredItemsAtLeast(
+                        commissionBoard.getId(), requirement.type(), requirement.minimalQuality())))
+                .toList());
+    }
+
+    private boolean isUnlockedAtBoardTier(CommissionBoardUpgradeType upgradeType, int upgradeLevel, int boardTier) {
+        return commissionConfigRepository.findUpgradeStep(upgradeType, upgradeLevel)
+                .filter(step -> step.requiredBoardTier() <= boardTier)
+                .isPresent();
+    }
+
+    private Optional<GuildId> findManagedGuildId(PlayerId player, CommissionBoard commissionBoard) {
+        return commissionBoard.findGuildId().filter(guildId -> guildMembershipPort.canManageBoard(guildId, player));
+    }
+
     private GuildId getManagedGuildId(PlayerId player, CommissionBoard commissionBoard) {
-        return commissionBoard.findGuildId()
-                .filter(guildId -> commissionBoardService.canManageBoard(player, commissionBoard))
-                .orElseThrow(() -> new CommissionBoardManagementNotAllowedException(player));
+        return findManagedGuildId(player, commissionBoard)
+                .orElseThrow(() -> new CommissionBoardManagementNotAllowedException(player, commissionBoard.getId()));
     }
 }

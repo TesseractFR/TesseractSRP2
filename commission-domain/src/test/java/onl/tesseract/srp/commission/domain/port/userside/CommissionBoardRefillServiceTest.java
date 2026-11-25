@@ -1,5 +1,9 @@
 package onl.tesseract.srp.commission.domain.port.userside;
 
+import java.util.Map;
+import onl.tesseract.srp.commission.domain.model.commission.QuantityRate;
+import onl.tesseract.srp.commission.domain.model.commission.CommissionQualityWeights;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardId;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardLevels;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
@@ -28,7 +32,6 @@ import java.util.random.RandomGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -45,11 +48,11 @@ class CommissionBoardRefillServiceTest {
     private static final MaterialName TITANIUM = new MaterialName("TITANE");
 
     private static CommissionBoard guildBoard(CommissionBoardLevels levels) {
-        return CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, levels, 0.25);
+        return CommissionBoard.guildBoard(GUILD_BOARD_ID, GUILD_ID, levels, new UsageTaxRate(25));
     }
 
     private static CommissionBoard spawnBoard() {
-        return CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(6));
+        return CommissionBoard.spawnBoard(SPAWN_BOARD_ID, 6);
     }
 
     private static Commission commission(CommissionBoardId boardId, int deliveredQuantity) {
@@ -58,6 +61,7 @@ class CommissionBoardRefillServiceTest {
     }
 
     private CommissionRepository commissionRepository;
+    private CommissionConfigRepository commissionConfigRepository;
     private CommissionCatalogRepository commissionCatalogRepository;
     private RandomGenerator random;
     private CommissionBoardRefillService commissionBoardRefillService;
@@ -65,7 +69,7 @@ class CommissionBoardRefillServiceTest {
     @BeforeEach
     void setUp() {
         commissionRepository = mock(CommissionRepository.class);
-        CommissionConfigRepository commissionConfigRepository = mock(CommissionConfigRepository.class);
+        commissionConfigRepository = mock(CommissionConfigRepository.class);
         commissionCatalogRepository = mock(CommissionCatalogRepository.class);
         random = mock(RandomGenerator.class);
         commissionBoardRefillService = new CommissionBoardRefillService(commissionRepository, commissionConfigRepository,
@@ -73,8 +77,9 @@ class CommissionBoardRefillServiceTest {
 
         when(commissionCatalogRepository.getUnitValue(any(), any())).thenReturn(MoneyValue.of(2));
         when(commissionConfigRepository.getSpawnRewardRate()).thenReturn(0.5);
+        when(commissionConfigRepository.getQualityWeights()).thenReturn(new CommissionQualityWeights(Map.of(Quality.POOR, 1.0)));
+        when(commissionConfigRepository.getQuantityRate(any())).thenReturn(QuantityRate.NEUTRAL);
         when(random.nextDouble()).thenReturn(0.0);
-        when(random.nextInt(anyInt())).thenReturn(0);
     }
 
     @SuppressWarnings("unchecked")
@@ -119,16 +124,30 @@ class CommissionBoardRefillServiceTest {
     }
 
     @Test
-    void refillBoard_drawsTheMinimalQualityAmongAllQualities() {
-        // given
+    void refillBoard_drawsTheMinimalQualityWithTheConfiguredWeights() {
+        // given : seule la qualité exceptionnelle a un poids
         when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 10, 0)));
-        when(random.nextInt(Quality.values().length)).thenReturn(Quality.EXCEPTIONAL.ordinal());
+        when(commissionConfigRepository.getQualityWeights()).thenReturn(new CommissionQualityWeights(Map.of(Quality.EXCEPTIONAL, 1.0)));
 
         // when
         commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
 
         // then
         assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.minimalQuality() == Quality.EXCEPTIONAL));
+    }
+
+    @Test
+    void refillBoard_appliesTheQuantityRateOfTheDrawnQuality() {
+        // given : 40 items demandés de base, et un quart seulement en qualité exceptionnelle
+        when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(WOOD, 1, 1, 40, 0)));
+        when(commissionConfigRepository.getQualityWeights()).thenReturn(new CommissionQualityWeights(Map.of(Quality.EXCEPTIONAL, 1.0)));
+        when(commissionConfigRepository.getQuantityRate(Quality.EXCEPTIONAL)).thenReturn(new QuantityRate(0.25));
+
+        // when
+        commissionBoardRefillService.refillBoard(guildBoard(CommissionBoardLevels.GUILD_BOARD_START));
+
+        // then
+        assertTrue(captureNewCommissions().stream().allMatch(draft -> draft.quantity() == 10));
     }
 
     @Test
@@ -177,7 +196,7 @@ class CommissionBoardRefillServiceTest {
         when(commissionCatalogRepository.findAllCatalogItems(any())).thenReturn(List.of(new CommissionCatalogItem(STONE, 1, 1, 10, 0)));
 
         // when
-        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(1)));
+        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, 1));
 
         // then : seule la liste d'artisanat est complétée, rien n'est retiré
         assertEquals(List.of(), captureRemovedCommissions());
@@ -193,7 +212,7 @@ class CommissionBoardRefillServiceTest {
         when(commissionRepository.findAllByBoard(SPAWN_BOARD_ID)).thenReturn(List.of(harvestCommission, craftCommission));
 
         // when
-        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, CommissionBoardLevels.forSpawnBoard(1)));
+        commissionBoardRefillService.refillBoard(CommissionBoard.spawnBoard(SPAWN_BOARD_ID, 1));
 
         // then
         verify(commissionRepository, never()).replaceCommissions(any(), any());

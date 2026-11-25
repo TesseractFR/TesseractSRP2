@@ -3,9 +3,8 @@ package onl.tesseract.srp.commission.adapter.userside.controller.message;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.format.NamedTextColor;
-import onl.tesseract.srp.commission.adapter.userside.controller.menu.CommissionDisplay;
-import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardUpgradeType;
+import onl.tesseract.srp.commission.domain.model.board.UsageTaxRate;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
 import onl.tesseract.srp.commission.domain.model.exception.CommissionBoardManagementNotAllowedException;
@@ -48,8 +47,6 @@ public class CommissionMessageFormatter {
                 .map(customMaterial -> customMaterial.displayName().value())
                 .orElseGet(() -> formatVanillaMaterialName(material));
     }
-
-    // ---- Livraison
 
     /**
      * Une seule ligne pour le livreur : ses lys, taxe déjà déduite (elle est détaillée dans le menu avant
@@ -106,18 +103,14 @@ public class CommissionMessageFormatter {
                 NamedTextColor.WHITE);
     }
 
-    // ---- Gestion du tableau
-
     public Component formatUpgradeSucceeded(CommissionBoardUpgradeType upgradeType) {
-        return success("Amélioration effectuée : " + CommissionDisplay.formatUpgradeName(upgradeType)
+        return success("Amélioration effectuée : " + CommissionLabels.formatUpgradeName(upgradeType)
                 + ". Les commissions en cours ne changent pas.");
     }
 
-    public Component formatUsageTaxChanged(double usageTaxRate) {
-        return success("La taxe des externes est maintenant de " + CommissionDisplay.formatPercent(usageTaxRate) + ".");
+    public Component formatUsageTaxChanged(UsageTaxRate usageTaxRate) {
+        return success("La taxe des externes est maintenant de " + CommissionLabels.formatUsageTax(usageTaxRate) + ".");
     }
-
-    // ---- Refus métier
 
     public Component formatRefusal(CommissionException refusal) {
         return error(switch (refusal) {
@@ -132,7 +125,7 @@ public class CommissionMessageFormatter {
             case NotEnoughDeliveredItemsException ignored -> "Le tableau n'a pas encore reçu assez de livraisons pour monter de tier.";
             case NotEnoughBankMoneyException ignored -> "La banque de la guilde n'a pas assez de lys.";
             case InvalidUsageTaxRateException ignored ->
-                    "La taxe doit rester entre 0 % et " + CommissionDisplay.formatPercent(CommissionBoard.MAX_USAGE_TAX_RATE) + ".";
+                    "La taxe doit rester entre 0 % et " + UsageTaxRate.MAX_PERCENT + " %.";
         });
     }
 

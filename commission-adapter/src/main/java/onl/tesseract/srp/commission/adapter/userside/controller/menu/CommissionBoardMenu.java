@@ -4,12 +4,14 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import onl.tesseract.lib.itembuilder.ItemBuilder;
 import onl.tesseract.lib.menu.MenuSize;
+import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionLabels;
 import onl.tesseract.srp.commission.adapter.userside.controller.message.CommissionMessageFormatter;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoardPart;
 import onl.tesseract.srp.commission.domain.model.board.CommissionBoard;
 import onl.tesseract.srp.commission.domain.model.commission.Commission;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionType;
 import onl.tesseract.srp.commission.domain.model.commission.CommissionDelivery;
+import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardAccessService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardManagementService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionBoardService;
 import onl.tesseract.srp.commission.domain.port.userside.CommissionDeliveryService;
@@ -17,13 +19,12 @@ import onl.tesseract.srp.common.adapter.userside.menu.CustomMenuButton;
 import onl.tesseract.srp.common.adapter.userside.menu.ItemAdderMenu;
 import onl.tesseract.srp.common.domain.model.PlayerId;
 import onl.tesseract.srp.customitem.domain.port.userside.CustomItemService;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /** Menu d'un tableau : ses commissions par partie et par type, et l'accès à la gestion pour les adjoints et le chef. */
 public class CommissionBoardMenu extends ItemAdderMenu {
@@ -43,18 +44,21 @@ public class CommissionBoardMenu extends ItemAdderMenu {
 
     private final CommissionBoard commissionBoard;
     private final CommissionBoardService commissionBoardService;
+    private final CommissionBoardAccessService commissionBoardAccessService;
     private final CommissionBoardManagementService commissionBoardManagementService;
     private final CommissionDeliveryService commissionDeliveryService;
     private final CustomItemService customItemService;
     private final CommissionMessageFormatter commissionMessageFormatter;
 
     public CommissionBoardMenu(CommissionBoard commissionBoard, CommissionBoardService commissionBoardService,
+                               CommissionBoardAccessService commissionBoardAccessService,
                                CommissionBoardManagementService commissionBoardManagementService,
                                CommissionDeliveryService commissionDeliveryService, CustomItemService customItemService,
                                CommissionMessageFormatter commissionMessageFormatter) {
         super(MenuSize.Six, BACKGROUND_ID, "", null, TEXTURE_OFFSET);
         this.commissionBoard = commissionBoard;
         this.commissionBoardService = commissionBoardService;
+        this.commissionBoardAccessService = commissionBoardAccessService;
         this.commissionBoardManagementService = commissionBoardManagementService;
         this.commissionDeliveryService = commissionDeliveryService;
         this.customItemService = customItemService;
@@ -64,11 +68,11 @@ public class CommissionBoardMenu extends ItemAdderMenu {
     @Override
     public void placeButtons(Player viewer) {
         PlayerId player = new PlayerId(viewer.getUniqueId());
-        List<Commission> visibleCommissions = commissionDeliveryService.findAllVisibleCommissions(player, commissionBoard);
+        List<Commission> visibleCommissions = commissionBoardService.findAllVisibleCommissions(player, commissionBoard);
         placeBoardPart(viewer, CommissionBoardPart.PUBLIC, visibleCommissions);
         placeGuildPart(viewer, visibleCommissions);
         addInformationButton();
-        if (commissionBoardService.canManageBoard(player, commissionBoard)) {
+        if (commissionBoardManagementService.canManageBoard(player, commissionBoard)) {
             addManagementButton(viewer);
         }
     }
@@ -76,19 +80,10 @@ public class CommissionBoardMenu extends ItemAdderMenu {
     /** Rouvre le menu avec le tableau relu, pour afficher la progression et les commissions arrivées entre-temps. */
     public void reopenWithUpToDateBoard(Player viewer) {
         CommissionBoard upToDateBoard = commissionBoard.findGuildId()
-                .map(commissionBoardService::getGuildBoard)
-                .orElseGet(commissionBoardService::getSpawnBoard);
-        new CommissionBoardMenu(upToDateBoard, commissionBoardService, commissionBoardManagementService, commissionDeliveryService,
-                customItemService, commissionMessageFormatter).open(viewer);
-    }
-
-    /** Prévient les autres membres connectés de la guilde de ce que la livraison lui rapporte ; le livreur a déjà son message. */
-    public void announceDeliveryToGuild(Player deliverer, Commission commission, CommissionDelivery delivery) {
-        commissionMessageFormatter.formatGuildDeliveryNotice(deliverer.getName(), commission, delivery)
-                .ifPresent(notice -> commissionBoardService.findAllGuildMembers(commissionBoard).stream()
-                        .flatMap(member -> Optional.ofNullable(Bukkit.getPlayer(member.value())).stream())
-                        .filter(onlineMember -> !onlineMember.equals(deliverer))
-                        .forEach(onlineMember -> onlineMember.sendMessage(notice)));
+                .map(commissionBoardService::openGuildBoard)
+                .orElseGet(commissionBoardService::openSpawnBoard);
+        new CommissionBoardMenu(upToDateBoard, commissionBoardService, commissionBoardAccessService, commissionBoardManagementService,
+                commissionDeliveryService, customItemService, commissionMessageFormatter).open(viewer);
     }
 
     private void addManagementButton(Player viewer) {
@@ -101,11 +96,13 @@ public class CommissionBoardMenu extends ItemAdderMenu {
     }
 
     private void placeGuildPart(Player viewer, List<Commission> visibleCommissions) {
-        if (commissionBoardService.canAccessPart(new PlayerId(viewer.getUniqueId()), commissionBoard, CommissionBoardPart.GUILD)) {
+        if (commissionBoardAccessService.canAccessPart(new PlayerId(viewer.getUniqueId()), commissionBoard, CommissionBoardPart.GUILD)) {
             placeBoardPart(viewer, CommissionBoardPart.GUILD, visibleCommissions);
             return;
         }
-        String unavailableReason = commissionBoard.isSpawnBoard() ? "Pas de commissions de guilde au spawn" : "Réservé aux membres de la guilde";
+        String unavailableReason = commissionBoard.isSpawnBoard()
+                ? "Pas de commissions de guilde au spawn"
+                : "Réservé aux membres de la guilde";
         addUnavailableGuildSlots(GUILD_HARVEST_SLOTS, unavailableReason);
         addUnavailableGuildSlots(GUILD_CRAFT_SLOTS, unavailableReason);
     }
@@ -120,20 +117,24 @@ public class CommissionBoardMenu extends ItemAdderMenu {
         boolean isPublic = boardPart == CommissionBoardPart.PUBLIC;
         addTypeIcon(isPublic ? PUBLIC_HARVEST_ICON_SLOT : GUILD_HARVEST_ICON_SLOT, CommissionType.HARVEST, Material.IRON_PICKAXE);
         addTypeIcon(isPublic ? PUBLIC_CRAFT_ICON_SLOT : GUILD_CRAFT_ICON_SLOT, CommissionType.CRAFT, Material.ANVIL);
-        placeCommissionSlots(viewer, boardPart, CommissionType.HARVEST, isPublic ? PUBLIC_HARVEST_SLOTS : GUILD_HARVEST_SLOTS, visibleCommissions);
-        placeCommissionSlots(viewer, boardPart, CommissionType.CRAFT, isPublic ? PUBLIC_CRAFT_SLOTS : GUILD_CRAFT_SLOTS, visibleCommissions);
+        int[] harvestSlots = isPublic ? PUBLIC_HARVEST_SLOTS : GUILD_HARVEST_SLOTS;
+        int[] craftSlots = isPublic ? PUBLIC_CRAFT_SLOTS : GUILD_CRAFT_SLOTS;
+        placeCommissionSlots(viewer, boardPart, CommissionType.HARVEST, harvestSlots, visibleCommissions);
+        placeCommissionSlots(viewer, boardPart, CommissionType.CRAFT, craftSlots, visibleCommissions);
     }
 
     private void addTypeIcon(int iconSlot, CommissionType commissionType, Material iconMaterial) {
-        String description = commissionType == CommissionType.HARVEST ? "Items récoltés avec les métiers" : "Items fabriqués en artisanat";
-        addButton(iconSlot, new ItemBuilder(iconMaterial).name(CommissionDisplay.formatCommissionType(commissionType), NamedTextColor.GOLD)
+        String description = commissionType == CommissionType.HARVEST
+                ? "Items récoltés avec les métiers"
+                : "Items fabriqués en artisanat";
+        addButton(iconSlot, new ItemBuilder(iconMaterial).name(CommissionLabels.formatCommissionType(commissionType), NamedTextColor.GOLD)
                 .lore(List.of(CommissionDisplay.coloredText(description, NamedTextColor.GRAY))).build());
     }
 
     private void placeCommissionSlots(Player viewer, CommissionBoardPart boardPart, CommissionType commissionType, int[] menuSlots,
                                       List<Commission> visibleCommissions) {
         List<Commission> listCommissions = visibleCommissions.stream()
-                .filter(commission -> commission.isInList(boardPart, commissionType))
+                .filter(commission -> commission.belongsTo(boardPart, commissionType))
                 .toList();
         for (int listPosition = 0; listPosition < menuSlots.length; listPosition++) {
             boolean isUnlocked = listPosition < commissionBoard.getLevels().getSlotsFor(commissionType);
@@ -152,18 +153,25 @@ public class CommissionBoardMenu extends ItemAdderMenu {
     }
 
     private void addCommissionButton(Player viewer, int menuSlot, Commission commission) {
-        addButton(menuSlot, buildCommissionIcon(viewer, commission, true), () -> new CommissionDeliveryMenu(commission, this, commissionDeliveryService,
-                commissionMessageFormatter, buildCommissionIcon(viewer, commission, false)).open(viewer));
+        addButton(menuSlot, buildCommissionIcon(viewer, commission, true), () -> new CommissionDeliveryMenu(commissionBoard, commission,
+                this, commissionDeliveryService, commissionBoardAccessService, commissionMessageFormatter,
+                buildCommissionIcon(viewer, commission, false)).open(viewer));
     }
 
     private ItemStack buildCommissionIcon(Player viewer, Commission commission, boolean showsDeliveryHint) {
-        CommissionDelivery delivery = commissionDeliveryService.computeDelivery(new PlayerId(viewer.getUniqueId()), commissionBoard, commission);
+        PlayerId player = new PlayerId(viewer.getUniqueId());
+        CommissionDelivery delivery = commissionDeliveryService.computeDelivery(player, commissionBoard, commission);
         ItemStack commissionIcon = customItemService.getItemStack(commission.material());
         commissionIcon.editMeta(meta -> {
             meta.displayName(CommissionDisplay.coloredText(commissionMessageFormatter.formatMaterialName(commission.material()),
                     NamedTextColor.GOLD));
-            meta.lore(CommissionDisplay.describeCommission(commission, commissionBoardService.getCommissionTier(commission),
+            List<Component> loreLines = new ArrayList<>();
+            loreLines.add(commissionBoardService.findCommissionTier(commission)
+                    .map(tier -> CommissionDisplay.describeCommissionHeader(commission.type(), tier))
+                    .orElseGet(() -> CommissionDisplay.describeCommissionHeader(commission.type())));
+            loreLines.addAll(CommissionDisplay.describeCommission(commission,
                     commissionDeliveryService.computeTotalGuildXp(commissionBoard, commission), delivery, showsDeliveryHint));
+            meta.lore(loreLines);
         });
         return commissionIcon;
     }

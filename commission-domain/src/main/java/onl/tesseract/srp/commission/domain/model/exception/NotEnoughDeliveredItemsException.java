@@ -11,7 +11,8 @@ public final class NotEnoughDeliveredItemsException extends CommissionException 
     private final CommissionBoardDeliveryRequirement requirement;
     private final int deliveredItemCount;
 
-    public NotEnoughDeliveredItemsException(CommissionBoardId boardId, CommissionBoardDeliveryRequirement requirement, int deliveredItemCount) {
+    public NotEnoughDeliveredItemsException(CommissionBoardId boardId, CommissionBoardDeliveryRequirement requirement,
+                                            int deliveredItemCount) {
         super("Le tableau " + boardId.value() + " a reçu " + deliveredItemCount + " items " + requirement.type()
                 + " de qualité " + requirement.minimalQuality() + " ou mieux, il en faut " + requirement.itemCount());
         this.boardId = boardId;
